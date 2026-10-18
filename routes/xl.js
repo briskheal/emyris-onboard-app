@@ -4987,68 +4987,14 @@ const validateProductsData = (pData) => {
     return true;
 };
 
+const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateStandard');
+
 function normalizeDateStr(dStr) {
-    if (!dStr) return '';
-    const str = String(dStr).trim();
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-        const parts = str.substring(0, 10).split('-');
-        const p1 = parseInt(parts[1], 10);
-        if (p1 > 12) {
-            return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
-        }
-        return `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}-${parts[0]}`;
-    }
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
-        const parts = str.split('-');
-        const p1 = parseInt(parts[0], 10);
-        // If first number > 12, it is definitely a day (DD-MM-YYYY) -> flip to MM-DD-YYYY
-        if (p1 > 12) {
-            return `${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}-${parts[2]}`;
-        }
-        return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
-    }
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const y = d.getFullYear();
-        return `${m}-${day}-${y}`;
-    }
-    return str;
+    return toStorageDate(dStr);
 }
 
 function getMonthYearFromDate(dStr) {
-    if (!dStr) return { month: '', year: '' };
-    const str = String(dStr).trim();
-    const allMonthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
-        const parts = str.split('-');
-        const p1 = parseInt(parts[0], 10);
-        const p2 = parseInt(parts[1], 10);
-        const monthNum = p1 > 12 ? p2 : p1;
-        return {
-            month: allMonthsShort[monthNum - 1] || '',
-            year: parts[2]
-        };
-    }
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-        const parts = str.substring(0, 10).split('-');
-        const p1 = parseInt(parts[1], 10);
-        const p2 = parseInt(parts[2], 10);
-        const monthNum = p1 > 12 ? p2 : p1;
-        return {
-            month: allMonthsShort[monthNum - 1] || '',
-            year: parts[0]
-        };
-    }
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-        return {
-            month: d.toLocaleString('en-US', { month: 'short' }),
-            year: d.getFullYear().toString()
-        };
-    }
-    return { month: '', year: '' };
+    return getMonthYear(dStr);
 }
 
 router.post('/primary-sales/save', async (req, res) => {
@@ -5277,24 +5223,7 @@ router.get('/reports/primary-sales', async (req, res) => {
                 d.productName = prodMap[d.product];
             }
             if (d.date) {
-                const dateParts = d.date.split('-');
-                if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    const p1 = parseInt(dateParts[1], 10);
-                    if (p1 > 12) {
-                        d.displayDate = `${dateParts[2].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}-${dateParts[0]}`;
-                    } else {
-                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}-${dateParts[0]}`;
-                    }
-                } else if (dateParts.length === 3 && dateParts[2].length === 4) {
-                    const p0 = parseInt(dateParts[0], 10);
-                    if (p0 > 12) {
-                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}-${dateParts[2]}`;
-                    } else {
-                        d.displayDate = d.date;
-                    }
-                } else {
-                    d.displayDate = d.date;
-                }
+                d.displayDate = toDisplayDate(d.date);
             }
             d.totalSales = Number(d.totalSales || 0);
         });
@@ -5392,24 +5321,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
                 d.productName = prodMap[d.product];
             }
             if (d.date) {
-                const dateParts = d.date.split('-');
-                if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    const p1 = parseInt(dateParts[1], 10);
-                    if (p1 > 12) {
-                        d.displayDate = `${dateParts[2].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}-${dateParts[0]}`;
-                    } else {
-                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}-${dateParts[0]}`;
-                    }
-                } else if (dateParts.length === 3 && dateParts[2].length === 4) {
-                    const p0 = parseInt(dateParts[0], 10);
-                    if (p0 > 12) {
-                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}-${dateParts[2]}`;
-                    } else {
-                        d.displayDate = d.date;
-                    }
-                } else {
-                    d.displayDate = d.date;
-                }
+                d.displayDate = toDisplayDate(d.date);
             }
             // Add quantity/averagePrice safely for fallback mapping
             d.quantity = Number(d.quantity || 0);
