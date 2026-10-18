@@ -59,12 +59,13 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Status', key: 'status' }
   ],
   'Secondary Sales': [
-    { label: 'Invoice Number ↑', key: 'invoiceNumber' },
-    { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
-    { label: 'Month', key: 'month' },
-    { label: 'Created By', key: 'employeeName' },
+    { label: 'Month ↑', key: 'month' },
+    { label: 'Year', key: 'year' },
     { label: 'Stockist', key: 'stockist' },
     { label: 'Headquarter', key: 'headquarter' },
+    { label: 'Division', key: 'division' },
+    { label: 'Total Value (₹)', key: 'amount' },
+    { label: 'Created By', key: 'employeeName' },
     { label: 'Submitted On ↑', key: 'createdAt', isDate: true }
   ],
   'Primary Sales': [

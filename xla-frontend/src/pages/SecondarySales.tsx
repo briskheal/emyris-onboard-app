@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { formatStorageDate, toInputDateValue } from '../utils/dateUtils';
+import { formatStorageDate } from '../utils/dateUtils';
 
 const todayFormatted = () => {
   const d = new Date();
@@ -234,8 +234,12 @@ export default function SecondarySales() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.stockist, formData.month, formData.year]);
 
-  const filteredProducts = formData.division ? products.filter(p => p.division === formData.division) : products;
-  const filteredStockists = formData.headquarter ? stockists.filter(s => s.headquarter === formData.headquarter) : stockists;
+  const filteredProducts = formData.division 
+    ? products.filter(p => p.division && p.division.trim().toLowerCase() === formData.division.trim().toLowerCase()) 
+    : products;
+  const filteredStockists = formData.headquarter 
+    ? stockists.filter(s => s.headquarter && s.headquarter.trim().toLowerCase() === formData.headquarter.trim().toLowerCase()) 
+    : stockists;
 
   const totals = rows.reduce((acc, row) => {
     const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
@@ -435,7 +439,7 @@ export default function SecondarySales() {
             </div>
 
             {/* Stockist */}
-            <div className="flex flex-col flex-1 min-w-[190px] max-w-[290px]">
+            <div className="flex flex-col flex-1 min-w-[200px] max-w-[340px]">
               <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
                 Stockist <span className="text-rose-500">*</span>
               </label>
@@ -448,37 +452,8 @@ export default function SecondarySales() {
               />
             </div>
 
-            {/* Invoice Date */}
-            <div className="flex flex-col w-[125px] shrink-0">
-              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
-                Invoice Date
-              </label>
-              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2 flex items-center h-[30px]">
-                <input 
-                  type="date" 
-                  value={toInputDateValue(formData.invoiceDate)} 
-                  onChange={e => setFormData({...formData, invoiceDate: e.target.value})} 
-                  className="w-full bg-transparent outline-none text-xs text-white" 
-                />
-              </div>
-            </div>
-
-            {/* Invoice Number */}
-            <div className="flex flex-col w-[115px] shrink-0">
-              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
-                Invoice No
-              </label>
-              <input 
-                type="text" 
-                value={formData.invoiceNumber} 
-                onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} 
-                className="w-full h-[30px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2.5 text-xs text-white outline-none focus:border-sky-500" 
-                placeholder="Invoice No" 
-              />
-            </div>
-
             {/* All Sec Sales Button */}
-            <div className="flex flex-col justify-end w-[105px] shrink-0">
+            <div className="flex flex-col justify-end w-[110px] shrink-0 ml-auto">
               <button 
                 onClick={() => navigate('/extras/secondary/all')} 
                 className="h-[30px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-md font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors"
@@ -541,9 +516,11 @@ export default function SecondarySales() {
                         <CustomSelect 
                           compact={true}
                           options={(() => {
-                            const opts = filteredProducts.map((p: any) => ({ value: p.uid || p._id, label: p.productName }));
+                            const opts = filteredProducts.map((p: any) => ({ value: p.uid || p._id, label: p.productName || p.name || p.uid }));
                             if (row.productId && !opts.find(o => o.value === row.productId)) {
-                              opts.unshift({ value: row.productId, label: `${row.productId} ⚠ (re-select)` });
+                              const globalProd = products.find(p => p.uid === row.productId || p._id === row.productId || p.productName === row.productId);
+                              const label = globalProd ? (globalProd.productName || globalProd.name || globalProd.uid) : row.productId;
+                              opts.unshift({ value: row.productId, label });
                             }
                             return opts;
                           })()}

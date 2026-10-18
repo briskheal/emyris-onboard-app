@@ -159,29 +159,30 @@ export default function AllSecondarySales() {
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
                   <th className="p-3 font-semibold text-center w-12 border-r border-[#3b3b5a]/50">Sr<br/>no.</th>
-                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Number</th>
-                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Date</th>
+                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Month / Year</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Stockist</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Headquarter</th>
+                  <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Division</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Total Value (₹)</th>
+                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Entry Date</th>
                   <th className="p-3 font-semibold text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-[#3b3b5a]/30">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">Loading records...</td>
+                    <td colSpan={8} className="p-8 text-center text-[#8b8baf]">Loading records...</td>
                   </tr>
                 ) : sales.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">
-                      <p className="mb-2 font-medium">No approved sales records found for {viewAll ? 'All Invoices' : `${selectedMonth} ${selectedYear}`}</p>
+                    <td colSpan={8} className="p-8 text-center text-[#8b8baf]">
+                      <p className="mb-2 font-medium">No approved sales records found for {viewAll ? 'All Months' : `${selectedMonth} ${selectedYear}`}</p>
                       {!viewAll && (
                         <button 
                           onClick={() => setViewAll(true)} 
                           className="text-xs text-sky-400 hover:text-sky-300 font-semibold bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 active:scale-95 transition-all"
                         >
-                          View all approved invoices across all months
+                          View all approved records across all months
                         </button>
                       )}
                     </td>
@@ -191,13 +192,14 @@ export default function AllSecondarySales() {
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.invoiceDate || sale.date)}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">{sale.month} {sale.year}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
+                        <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.division || '-'}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-emerald-400">
                             {sale.amount ? sale.amount.toFixed(2) : '-'}
                         </td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-xs text-[#8b8baf]">{formatMMDDYYYY(sale.date || sale.createdAt)}</td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
                               <button onClick={() => navigate(`/extras/secondary/edit/${sale._id}`)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1.5 rounded-full hover:bg-emerald-500/10" title="Edit">

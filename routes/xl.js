@@ -7768,13 +7768,13 @@ router.post('/secondary-sales/save', async (req, res) => {
 router.put('/secondary-sales/update/:id', async (req, res) => {
     try {
         const { XlSecondarySalesItem } = require('../db');
-        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status } = req.body;
+        const { date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status } = req.body;
         
         const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
         const my = getMonthYearFromDate(savedInvDate || savedDate);
-        const month = my.month || new Date().toLocaleString('en-US', { month: 'short' });
-        const year = my.year || new Date().getFullYear().toString();
+        const month = reqMonth || my.month || new Date().toLocaleString('en-US', { month: 'short' });
+        const year = reqYear || my.year || new Date().getFullYear().toString();
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
 
@@ -7965,11 +7965,15 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
         });
 
         const allProductIds = [...new Set([...Object.keys(productMap), ...Object.keys(closingMap)])];
-        const result = allProductIds.map(productId => ({
-            productId,
-            receivedQty: productMap[productId] || 0,
-            openingQty: closingMap[productId] || 0
-        }));
+        const result = allProductIds.map(productId => {
+            const p = allProducts.find(x => x.uid === productId || String(x._id) === String(productId) || x.productName === productId);
+            return {
+                productId: p ? (p.uid || String(p._id)) : productId,
+                productName: p ? p.productName : productId,
+                receivedQty: productMap[productId] || 0,
+                openingQty: closingMap[productId] || 0
+            };
+        });
 
         res.json({ success: true, data: result });
     } catch (error) {
