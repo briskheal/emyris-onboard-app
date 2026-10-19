@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle, Send } from 'lucide-react';
+import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle, Send, Eye } from 'lucide-react';
 import axios from 'axios';
 
 interface ProductSelect { product: string; qty: number; }
@@ -83,7 +83,9 @@ function CallPlan() {
 
   const fetchTourProgramStatus = async () => {
     try {
-      const res = await axios.get(`/api/xl/tour-program/my?email=${activeUser?.employeeId}&month=${month}&year=${year}`);
+      const mNum = parseInt(month, 10);
+      const mShort = new Date(parseInt(year), mNum - 1, 1).toLocaleString('en-US', { month: 'short' }).toLowerCase();
+      const res = await axios.get(`/api/xl/tour-program/my?email=${activeUser?.employeeId}&month=${mShort}&year=${year}`);
       if (res.data?.success && res.data?.data) {
         const tp = res.data.data;
         const st = tp.status || 'Draft';
@@ -545,17 +547,17 @@ function CallPlan() {
               className="bg-[#1c1c2e] p-2.5 rounded-lg border border-rose-500/40 hover:border-rose-400 flex flex-col justify-between cursor-pointer transition-all active:scale-95 group"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-rose-300 uppercase flex items-center gap-1">
-                  Miss. Nos <span className="underline decoration-dotted text-[9px] text-rose-400">(View)</span>
+                <span className="text-[10px] font-bold text-rose-300 uppercase">
+                  Miss. Nos
                 </span>
-                <AlertCircle className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
+                <Eye className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform shrink-0" />
               </div>
               <div className="mt-1.5">
                 <p className="text-base font-extrabold text-rose-400 leading-none">
                   {planningStats.missedCount} <span className="text-xs font-normal text-slate-400">Drs</span>
                 </p>
                 <p className="text-[10px] text-rose-300/80 mt-1">
-                  {planningStats.missedCount === 0 ? 'All doctors planned!' : 'Tap to see missed list'}
+                  {planningStats.missedCount === 0 ? 'All planned!' : 'Tap to see list'}
                 </p>
               </div>
             </div>

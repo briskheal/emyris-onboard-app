@@ -2416,13 +2416,48 @@ router.get('/tour-program/my', async (req, res) => {
         
           const rawMonth = (req.query.month || '').trim();
         const cleanMonth = rawMonth.toLowerCase();
+        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        const monthShorts = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        
+        let extraVariants = [];
+        const mNum = parseInt(rawMonth, 10);
+        if (!isNaN(mNum) && mNum >= 1 && mNum <= 12) {
+            const longName = monthNames[mNum - 1];
+            const shortName = monthShorts[mNum - 1];
+            extraVariants = [
+                longName,
+                shortName,
+                shortName.toUpperCase(),
+                shortName.charAt(0).toUpperCase() + shortName.slice(1),
+                longName.charAt(0).toUpperCase() + longName.slice(1),
+                String(mNum),
+                String(mNum).padStart(2, '0')
+            ];
+        } else {
+            const idxShort = monthShorts.indexOf(cleanMonth.slice(0, 3));
+            if (idxShort !== -1) {
+                const longName = monthNames[idxShort];
+                const shortName = monthShorts[idxShort];
+                extraVariants = [
+                    String(idxShort + 1),
+                    String(idxShort + 1).padStart(2, '0'),
+                    shortName,
+                    shortName.toUpperCase(),
+                    shortName.charAt(0).toUpperCase() + shortName.slice(1),
+                    longName,
+                    longName.charAt(0).toUpperCase() + longName.slice(1)
+                ];
+            }
+        }
+
         const monthVariants = Array.from(new Set([
             rawMonth,
             cleanMonth,
             cleanMonth.charAt(0).toUpperCase() + cleanMonth.slice(1),
             rawMonth.slice(0, 3),
             rawMonth.slice(0, 3).toLowerCase(),
-            rawMonth.slice(0, 3).charAt(0).toUpperCase() + rawMonth.slice(0, 3).toLowerCase().slice(1)
+            rawMonth.slice(0, 3).charAt(0).toUpperCase() + rawMonth.slice(0, 3).toLowerCase().slice(1),
+            ...extraVariants
         ])).filter(Boolean);
 
         const tps = await XlTourProgram.findAll({ 

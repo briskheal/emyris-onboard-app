@@ -344,10 +344,21 @@ export default function TourProgram() {
 
   return (
     <div className="min-h-full bg-[#1e2335] font-sans flex flex-col" style={{ paddingBottom: 'calc(105px + env(safe-area-inset-bottom))' }}>
-      {/* App Header Removed */}
+      {/* Header */}
+      <div className="px-4 pt-4 pb-4 bg-[#1c1c2e] shadow-md border-b border-[#3b3b5a] sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
+            <ChevronLeft size={20} className="text-white" />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-white leading-tight">Tour Program</h1>
+            <p className="text-xs text-slate-400">Monthly field tour destinations & work areas</p>
+          </div>
+        </div>
+      </div>
 
       {/* Selectors */}
-      <div className="px-2 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-0 z-10">
+      <div className="px-3 py-2 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-[69px] z-30">
         <div className="flex items-center gap-1.5 px-1.5">
            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
              tpStatus === 'Approved' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
@@ -398,10 +409,6 @@ export default function TourProgram() {
               </div>
             )}
           </div>
-      </div>
-      
-      <div className="px-4 py-2 bg-green-500/10 text-green-400 text-center text-sm font-medium border-b border-green-500/20 flex items-center justify-center gap-2">
-        <UserIcon /> Add Tour Program for another user
       </div>
 
       {/* List */}
