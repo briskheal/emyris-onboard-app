@@ -115,10 +115,10 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-full relative z-10 overflow-hidden">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] relative z-10">
       
-      {/* TOP TOOLBAR (Fixed) */}
-      <div className="flex-shrink-0 px-4 sm:px-6 py-2 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-20 space-y-2">
+      {/* TOP TOOLBAR */}
+      <div className="px-4 sm:px-6 py-2.5 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-20 space-y-2">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT TYPE</label>
@@ -156,10 +156,10 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
         </div>
       </div>
 
-      {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 overflow-auto bg-[#1e1e2d] w-full">
+      {/* SPREADSHEET GRID (Free-flowing records) */}
+      <div className="w-full overflow-x-auto bg-[#1e1e2d]">
         <table className="w-full min-w-max text-left border-collapse">
-          <thead className="sticky top-0 z-50 shadow-md">
+          <thead>
             <tr className="border-b border-[#3b3b5a]">
               <th className="p-2 border-r border-[#3b3b5a] text-center w-10 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
               
@@ -234,8 +234,8 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
         </table>
       </div>
 
-      {/* BOTTOM PAGINATION (Fixed) */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-[#252538] border-t border-[#3b3b5a] z-20 text-xs">
+      {/* BOTTOM PAGINATION (Directly below the last record in normal document flow) */}
+      <div className="flex items-center justify-between px-4 py-3 bg-[#252538] border-t border-[#3b3b5a] text-xs">
         <div className="flex items-center gap-3">
           <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2.5 py-1 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
             &lt; Prev
@@ -1371,7 +1371,7 @@ export default function ManageDCS() {
         </div>
         
         {/* Right Content Area */}
-        <div className={`flex-1 min-w-0 bg-slate-900 ${activeTab === 'edit_delete' && !editingRecord ? 'p-0 flex flex-col overflow-hidden' : 'p-4 md:p-6 overflow-y-auto'}`}>
+        <div className={`flex-1 min-w-0 bg-slate-900 ${activeTab === 'edit_delete' && !editingRecord ? 'p-0 flex flex-col overflow-y-auto' : 'p-4 md:p-6 overflow-y-auto'}`}>
       
       {activeTab === 'create_doctor' && (
         <CreateDoctorTab 
@@ -1413,7 +1413,7 @@ export default function ManageDCS() {
         />
       )}
       {activeTab === 'edit_delete' && !editingRecord && (
-        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 min-w-0 flex flex-col">
           <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} fetchData={fetchData} />
         </div>
       )}
