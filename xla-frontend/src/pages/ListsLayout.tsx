@@ -9,6 +9,7 @@ export default function ListsLayout() {
     { label: 'Doctors List', path: '/utilities/lists/doctors' },
     { label: 'Chemists List', path: '/utilities/lists/chemists' },
     { label: 'Stockists List', path: '/utilities/lists/stockists' },
+    { label: 'Call Plan Lists', path: '/utilities/lists/call-plans' },
     { label: 'HQ / City / Local Area', path: '/utilities/lists/locations' },
     { label: 'Geo Fencing', path: '/utilities/lists/geo-fencing' },
     { label: 'Product List', path: '/utilities/lists/products' },

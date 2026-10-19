@@ -839,7 +839,7 @@ const { Op } = require('sequelize');
 
 // Middleware to block locked users from any mobile API route instantly
 router.use(async (req, res, next) => {
-    const empId = req.body.employeeId || req.query.employeeId || req.body.email || req.query.email;
+    const empId = req.body?.employeeId || req.query?.employeeId || req.body?.email || req.query?.email;
     if (empId) {
         try {
             const user = await XlUser.findOne({ 
@@ -2025,6 +2025,196 @@ router.get('/reports/locations', async (req, res) => {
         });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch locations data for reports' });
+    }
+});
+
+// Reports Route for Call Plan Lists (Approved Only)
+router.get('/reports/call-plans', async (req, res) => {
+    try {
+        const { employeeId, hq, month, year, search } = req.query;
+        const { Op } = require('sequelize');
+
+        // Requirement: Approved only plans
+        let where = { status: 'Approved' };
+
+        // Month & Year filtering
+        if (month && year) {
+            let mNum;
+            const monthMap = {
+                'jan': 1, 'january': 1, 'feb': 2, 'february': 2, 'mar': 3, 'march': 3,
+                'apr': 4, 'april': 4, 'may': 5, 'jun': 6, 'june': 6, 'jul': 7, 'july': 7,
+                'aug': 8, 'august': 8, 'sep': 9, 'september': 9, 'oct': 10, 'october': 10,
+                'nov': 11, 'november': 11, 'dec': 12, 'december': 12
+            };
+            const cleanM = String(month).trim().toLowerCase();
+            if (monthMap[cleanM]) {
+                mNum = String(monthMap[cleanM]).padStart(2, '0');
+            } else if (!isNaN(parseInt(month, 10))) {
+                mNum = String(parseInt(month, 10)).padStart(2, '0');
+            }
+
+            if (mNum) {
+                const y = parseInt(year, 10);
+                const lastDay = new Date(y, parseInt(mNum, 10), 0).getDate();
+                const startDate = `${y}-${mNum}-01`;
+                const endDate = `${y}-${mNum}-${String(lastDay).padStart(2, '0')}`;
+                where.date = { [Op.between]: [startDate, endDate] };
+            }
+        } else if (year) {
+            where.date = { [Op.like]: `${year}-%` };
+        }
+
+        // Employee & HQ filtering
+        let targetEmployeeIds = [];
+        if (employeeId && employeeId !== 'ALL') {
+            targetEmployeeIds = [employeeId];
+        } else if (hq && hq !== 'ALL') {
+            const hqUsers = await XlUser.findAll({
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('hq')), hq.trim().toLowerCase()),
+                attributes: ['employeeId', 'uid', '_id']
+            });
+            targetEmployeeIds = hqUsers.map(u => u.employeeId || u.uid || u._id).filter(Boolean);
+            if (targetEmployeeIds.length === 0) {
+                return res.json({ success: true, count: 0, totalCalls: 0, data: [] });
+            }
+        }
+
+        if (targetEmployeeIds.length > 0) {
+            where.employeeId = { [Op.in]: targetEmployeeIds };
+        }
+
+        const plans = await XlCallPlan.findAll({
+            where,
+            order: [['date', 'ASC'], ['employeeId', 'ASC']]
+        });
+
+        if (plans.length === 0) {
+            return res.json({ success: true, count: 0, totalCalls: 0, data: [] });
+        }
+
+        // Collect all employee IDs & Doctor IDs for batch lookup
+        const empIdSet = new Set();
+        const docIdSet = new Set();
+
+        plans.forEach(p => {
+            if (p.employeeId) empIdSet.add(p.employeeId);
+            let docItems = [];
+            try { docItems = JSON.parse(p.doctors || '[]'); } catch(e){}
+            if (!Array.isArray(docItems)) docItems = Object.values(docItems || {});
+            docItems.forEach(item => {
+                const id = typeof item === 'string' ? item : (item.id || item._id);
+                if (id && !String(id).startsWith('slot_open_')) docIdSet.add(id);
+            });
+        });
+
+        // Batch fetch users
+        const users = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { employeeId: Array.from(empIdSet) },
+                    { uid: Array.from(empIdSet) },
+                    { _id: Array.from(empIdSet) }
+                ]
+            },
+            attributes: ['_id', 'uid', 'employeeId', 'name', 'firstName', 'lastName', 'hq', 'designation']
+        });
+        const userMap = {};
+        users.forEach(u => {
+            const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId;
+            if (u.employeeId) userMap[u.employeeId] = { ...u.toJSON(), name };
+            if (u.uid) userMap[u.uid] = { ...u.toJSON(), name };
+            if (u._id) userMap[u._id] = { ...u.toJSON(), name };
+        });
+
+        // Batch fetch doctors
+        const doctors = await XlDoctor.findAll({
+            where: {
+                [Op.or]: [
+                    { _id: Array.from(docIdSet) },
+                    { uid: Array.from(docIdSet) }
+                ]
+            },
+            attributes: ['_id', 'uid', 'name', 'category', 'hospital', 'degree', 'specialization', 'workingArea', 'mobile', 'headquarter']
+        });
+        const docMap = {};
+        doctors.forEach(d => {
+            docMap[d._id] = d;
+            if (d.uid) docMap[d.uid] = d;
+        });
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        let totalCallsCount = 0;
+
+        const formatted = plans.map(p => {
+            const user = userMap[p.employeeId] || {};
+            let docItems = [];
+            try { docItems = JSON.parse(p.doctors || '[]'); } catch(e){}
+            if (!Array.isArray(docItems)) docItems = Object.values(docItems || {});
+
+            const planDateObj = new Date(p.date + 'T00:00:00');
+            const dayOfWeek = isNaN(planDateObj.getTime()) ? '' : dayNames[planDateObj.getDay()];
+
+            const enrichedDoctors = docItems.map((item, idx) => {
+                const id = typeof item === 'string' ? item : (item.id || item._id);
+                const doc = docMap[id];
+                const rawName = typeof item === 'object' ? (item.name || item.doctorName || '') : '';
+                const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+
+                return {
+                    srNo: idx + 1,
+                    _id: id,
+                    name: (doc ? doc.name : (!isNameAnId ? rawName : null)) || (String(id).startsWith('slot_open_') ? '(Open Slot)' : `Doctor (${id})`),
+                    category: doc?.category || (typeof item === 'object' ? item.category : 'General') || 'General',
+                    hospital: doc?.hospital || (typeof item === 'object' ? item.hospital : '-') || '-',
+                    workingArea: doc?.workingArea || (typeof item === 'object' ? item.workingArea : '-') || '-',
+                    degree: doc?.degree || '',
+                    specialization: doc?.specialization || '',
+                    mobile: doc?.mobile || ''
+                };
+            });
+
+            totalCallsCount += enrichedDoctors.length;
+            const uniqueWorkingAreas = [...new Set(enrichedDoctors.map(d => d.workingArea).filter(w => w && w !== '-'))];
+
+            return {
+                _id: p._id,
+                date: p.date,
+                dayOfWeek,
+                employeeId: p.employeeId,
+                userName: user.name || p.employeeId,
+                headquarter: user.hq || '-',
+                designation: user.designation || 'MR',
+                status: p.status || 'Approved',
+                adminRemarks: p.adminRemarks || '',
+                approvedBy: p.approvedBy || 'Admin',
+                doctorCount: enrichedDoctors.length,
+                workingAreas: uniqueWorkingAreas,
+                doctors: enrichedDoctors
+            };
+        });
+
+        // Optional post-search
+        let results = formatted;
+        if (search && search.trim()) {
+            const s = search.trim().toLowerCase();
+            results = results.filter(p => 
+                p.userName.toLowerCase().includes(s) ||
+                p.headquarter.toLowerCase().includes(s) ||
+                p.date.includes(s) ||
+                p.workingAreas.some(w => w.toLowerCase().includes(s)) ||
+                p.doctors.some(d => d.name.toLowerCase().includes(s) || d.hospital.toLowerCase().includes(s))
+            );
+        }
+
+        res.json({
+            success: true,
+            count: results.length,
+            totalCalls: totalCallsCount,
+            data: results
+        });
+    } catch (e) {
+        console.error('Call plans report error:', e);
+        res.status(500).json({ error: 'Failed to fetch approved call plans', details: e.message });
     }
 });
 

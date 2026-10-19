@@ -166,6 +166,10 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;',
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP WITH TIME ZONE;',
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;',
+            'ALTER TABLE xl_call_plans ADD COLUMN IF NOT EXISTS "approvedBy" VARCHAR(255);',
+            'ALTER TABLE xl_call_plans ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;',
+            'ALTER TABLE xl_call_plans ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP WITH TIME ZONE;',
+            'ALTER TABLE xl_call_plans ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;',
             'ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "resetOtp" VARCHAR(255);',
             'ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "resetOtpExpires" TIMESTAMP WITH TIME ZONE;'
         ] : [
@@ -213,7 +217,11 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_tour_programs ADD COLUMN approvedBy VARCHAR(255);',
             'ALTER TABLE xl_tour_programs ADD COLUMN adminRemarks TEXT;',
             'ALTER TABLE xl_tour_programs ADD COLUMN submittedAt DATETIME;',
-            'ALTER TABLE xl_tour_programs ADD COLUMN approvedAt DATETIME;'
+            'ALTER TABLE xl_tour_programs ADD COLUMN approvedAt DATETIME;',
+            'ALTER TABLE xl_call_plans ADD COLUMN approvedBy VARCHAR(255);',
+            'ALTER TABLE xl_call_plans ADD COLUMN adminRemarks TEXT;',
+            'ALTER TABLE xl_call_plans ADD COLUMN submittedAt DATETIME;',
+            'ALTER TABLE xl_call_plans ADD COLUMN approvedAt DATETIME;'
         ];
         for (const q of queries) {
             try { await sequelize.query(q); } catch (e) {}

@@ -6917,6 +6917,15 @@ router.get('/debug/dash', async (req, res) => {
   } catch(e) {
     res.json({ error: e.message });
   }
+router.get('/lists/call-plans', async (req, res, next) => {
+    // Forward to xl route handler
+    try {
+        const xlRouter = require('./xl');
+        req.url = '/reports/call-plans';
+        return xlRouter(req, res, next);
+    } catch(e) {
+        next(e);
+    }
 });
 
 module.exports = router;

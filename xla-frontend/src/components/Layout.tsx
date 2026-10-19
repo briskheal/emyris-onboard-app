@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, 
@@ -149,10 +149,31 @@ export default function Layout() {
   const user = userStr ? JSON.parse(userStr) : null;
   const userName = user?.name || user?.firstName || user?.businessName || user?.username || 'Rishita';
 
-  const filteredGlobalRoutes = GLOBAL_ROUTES.filter(r => 
-    r.title.toLowerCase().includes(globalSearchTerm.toLowerCase()) || 
-    r.breadcrumb.toLowerCase().includes(globalSearchTerm.toLowerCase())
-  );
+  const filteredGlobalRoutes = useMemo(() => {
+    if (!globalSearchTerm.trim()) return [];
+    const query = globalSearchTerm.trim().toLowerCase();
+    const tokens = query.split(/\s+/).filter(Boolean);
+
+    const seenKeys = new Set<string>();
+    return GLOBAL_ROUTES.filter(r => {
+      const key = `${r.path}_${r.title}`;
+      if (!r.path || seenKeys.has(key)) return false;
+
+      const searchableCorpus = [
+        r.title,
+        r.breadcrumb,
+        r.path,
+        ...(r.keywords || [])
+      ].join(' ').toLowerCase();
+
+      const matches = tokens.every(token => searchableCorpus.includes(token));
+      if (matches) {
+        seenKeys.add(key);
+        return true;
+      }
+      return false;
+    });
+  }, [globalSearchTerm]);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
