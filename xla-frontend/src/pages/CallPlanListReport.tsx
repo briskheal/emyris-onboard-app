@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { 
   Eye, Calendar, Search, X, Check, 
-  MapPin, ChevronDown, RefreshCw, FileSpreadsheet, ShieldCheck
+  MapPin, ChevronDown, ChevronUp, RefreshCw, FileSpreadsheet, ShieldCheck, ChevronsUpDown
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import CustomLocationSelect from '../components/CustomLocationSelect';
 import CustomUserSelect from '../components/CustomUserSelect';
 
@@ -24,6 +24,17 @@ const MONTHS = [
 ];
 
 const YEARS = ['2024', '2025', '2026', '2027', '2028'];
+
+// Helper to format date string to DD-MM-YYYY (e.g. 01-10-2026)
+const formatDisplayDate = (dStr: string) => {
+  if (!dStr) return '-';
+  const parts = dStr.split('-');
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    return `${d}-${m}-${y}`;
+  }
+  return dStr;
+};
 
 export default function CallPlanListReport() {
   const [loading, setLoading] = useState(false);
@@ -50,6 +61,9 @@ export default function CallPlanListReport() {
 
   // Modal State for Viewing Detailed Doctor Plan
   const [viewingPlan, setViewingPlan] = useState<any | null>(null);
+
+  // Collapsible / Expandable rows state
+  const [expandedPlanIds, setExpandedPlanIds] = useState<Set<string>>(new Set());
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,9 +134,10 @@ export default function CallPlanListReport() {
       p.employeeId.toLowerCase().includes(q) ||
       p.headquarter.toLowerCase().includes(q) ||
       p.date.includes(q) ||
+      formatDisplayDate(p.date).includes(q) ||
       (p.dayOfWeek || '').toLowerCase().includes(q) ||
-      p.workingAreas.some((w: string) => w.toLowerCase().includes(q)) ||
-      p.doctors.some((d: any) => d.name.toLowerCase().includes(q) || (d.hospital || '').toLowerCase().includes(q))
+      (p.workingAreas || []).some((w: string) => w.toLowerCase().includes(q)) ||
+      (p.doctors || []).some((d: any) => d.name.toLowerCase().includes(q) || (d.hospital || '').toLowerCase().includes(q))
     );
   }, [plans, searchQuery]);
 
@@ -131,26 +146,78 @@ export default function CallPlanListReport() {
     return filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [filteredList, currentPage, itemsPerPage]);
 
+  // Toggle single row expand/collapse
+  const toggleExpand = (id: string) => {
+    setExpandedPlanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Toggle expand all rows on the current page
+  const isAllExpanded = paginatedList.length > 0 && paginatedList.every(p => expandedPlanIds.has(p._id));
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      setExpandedPlanIds(new Set());
+    } else {
+      setExpandedPlanIds(new Set(paginatedList.map(p => p._id)));
+    }
+  };
+
   // Selected month name helper
   const selectedMonthObj = MONTHS.find(m => m.value === selectedMonth) || MONTHS[0];
 
-  // Excel Export Logic
+  // Excel Export Logic with Light Blue Header Styling
   const handleExportToExcel = () => {
     if (plans.length === 0) {
       alert('No approved call plans available to export for the selected filters.');
       return;
     }
 
+    // Helper to apply Light Blue Header style with heading items
+    const applyLightBlueHeaderStyle = (ws: any) => {
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!ws[address]) continue;
+        ws[address].s = {
+          fill: {
+            fgColor: { rgb: "D9E1F2" } // Light Blue header background
+          },
+          font: {
+            name: "Calibri",
+            sz: 11,
+            bold: true,
+            color: { rgb: "1F497D" } // Heading font color (Dark Blue / Navy)
+          },
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true
+          },
+          border: {
+            top: { style: "thin", color: { rgb: "B4C6E7" } },
+            bottom: { style: "medium", color: { rgb: "41719C" } },
+            left: { style: "thin", color: { rgb: "B4C6E7" } },
+            right: { style: "thin", color: { rgb: "B4C6E7" } }
+          }
+        };
+      }
+    };
+
     // Sheet 1: Detailed Doctor-by-Doctor Call Plan Rows
     const detailedData: any[] = [];
     let rowSr = 1;
 
     plans.forEach(plan => {
+      const formattedDate = formatDisplayDate(plan.date);
       if (plan.doctors && plan.doctors.length > 0) {
         plan.doctors.forEach((doc: any) => {
           detailedData.push({
             'Sr No.': rowSr++,
-            'Plan Date': plan.date,
+            'Plan Date': formattedDate,
             'Day': plan.dayOfWeek || '-',
             'Month & Year': `${selectedMonthObj.label} ${selectedYear}`,
             'Employee ID': plan.employeeId,
@@ -171,7 +238,7 @@ export default function CallPlanListReport() {
         // Day with no doctors entered
         detailedData.push({
           'Sr No.': rowSr++,
-          'Plan Date': plan.date,
+          'Plan Date': formattedDate,
           'Day': plan.dayOfWeek || '-',
           'Month & Year': `${selectedMonthObj.label} ${selectedYear}`,
           'Employee ID': plan.employeeId,
@@ -193,7 +260,7 @@ export default function CallPlanListReport() {
     // Sheet 2: Day-Wise Plan Summary
     const summaryData = plans.map((plan, idx) => ({
       'Sr No.': idx + 1,
-      'Plan Date': plan.date,
+      'Plan Date': formatDisplayDate(plan.date),
       'Day': plan.dayOfWeek || '-',
       'Employee ID': plan.employeeId,
       'Employee Name': plan.userName,
@@ -211,26 +278,45 @@ export default function CallPlanListReport() {
     const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
     const wsSummary = XLSX.utils.json_to_sheet(summaryData);
 
-    // Auto width adjustments
-    const wscols = [
+    // Apply Light Blue styled headers
+    applyLightBlueHeaderStyle(wsDetailed);
+    applyLightBlueHeaderStyle(wsSummary);
+
+    // Auto column widths
+    const detailedCols = [
       { wch: 8 },  // Sr No.
-      { wch: 14 }, // Date
+      { wch: 14 }, // Date (DD-MM-YYYY)
       { wch: 12 }, // Day
       { wch: 16 }, // Month Year
       { wch: 14 }, // Emp ID
       { wch: 22 }, // Emp Name
       { wch: 20 }, // Headquarter
-      { wch: 18 }, // Designation
+      { wch: 20 }, // Designation
       { wch: 26 }, // Doctor Name
       { wch: 14 }, // Category
       { wch: 24 }, // Hospital
       { wch: 20 }, // Working Area
-      { wch: 22 }, // Degree
+      { wch: 24 }, // Degree
       { wch: 16 }, // Mobile
       { wch: 12 }, // Status
       { wch: 14 }, // Approved By
     ];
-    wsDetailed['!cols'] = wscols;
+    wsDetailed['!cols'] = detailedCols;
+
+    const summaryCols = [
+      { wch: 8 },  // Sr No.
+      { wch: 14 }, // Date (DD-MM-YYYY)
+      { wch: 12 }, // Day
+      { wch: 14 }, // Emp ID
+      { wch: 22 }, // Emp Name
+      { wch: 20 }, // Headquarter
+      { wch: 20 }, // Designation
+      { wch: 22 }, // Total Doctors Planned
+      { wch: 28 }, // Working Areas Covered
+      { wch: 12 }, // Status
+      { wch: 14 }, // Approved By
+    ];
+    wsSummary['!cols'] = summaryCols;
 
     XLSX.utils.book_append_sheet(wb, wsDetailed, 'Approved Call Plans');
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Day-wise Summary');
@@ -411,7 +497,7 @@ export default function CallPlanListReport() {
 
         </div>
 
-        {/* Live Filter Bar & KPI Cards */}
+        {/* Live Filter Bar, Expand All, & KPI Cards */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
           
           {/* Quick Search */}
@@ -419,7 +505,7 @@ export default function CallPlanListReport() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search user, HQ, date, doctor, hospital..."
+              placeholder="Search user, HQ, date (DD-MM-YYYY), doctor, hospital..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl py-2 pl-10 pr-9 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:border-sky-500 transition-colors"
@@ -434,8 +520,19 @@ export default function CallPlanListReport() {
             )}
           </div>
 
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-3 self-end sm:self-center">
+          {/* Expand/Collapse All Button & Quick Metrics */}
+          <div className="flex flex-wrap items-center gap-3 self-end sm:self-center">
+            {paginatedList.length > 0 && (
+              <button
+                onClick={toggleExpandAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-400 border border-slate-700 transition-colors shadow-sm"
+                title={isAllExpanded ? "Collapse all rows" : "Expand all rows to view all doctors"}
+              >
+                <ChevronsUpDown size={14} />
+                <span>{isAllExpanded ? "Collapse All" : "Expand All"}</span>
+              </button>
+            )}
+
             <div className="bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-xl text-center">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Approved Days</span>
               <span className="text-sm font-black text-sky-400">{filteredList.length}</span>
@@ -476,13 +573,13 @@ export default function CallPlanListReport() {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800 bg-[#141420] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                  <th className="py-3 px-4 w-12 text-center">Sr.</th>
+                  <th className="py-3 px-3 w-14 text-center">Sr.</th>
                   <th className="py-3 px-4">Date & Day</th>
                   <th className="py-3 px-4">User / Representative</th>
                   <th className="py-3 px-4">Headquarter</th>
                   <th className="py-3 px-4 text-center">Planned Calls</th>
                   <th className="py-3 px-4">Working Areas</th>
-                  <th className="py-3 px-4">Planned Doctors Preview</th>
+                  <th className="py-3 px-4">Planned Doctors</th>
                   <th className="py-3 px-4 text-center">Status</th>
                   <th className="py-3 px-4 text-center w-20">View</th>
                 </tr>
@@ -490,110 +587,241 @@ export default function CallPlanListReport() {
               <tbody className="divide-y divide-slate-800/60">
                 {paginatedList.map((plan, idx) => {
                   const globalIdx = (currentPage - 1) * itemsPerPage + idx + 1;
+                  const isExpanded = expandedPlanIds.has(plan._id);
+
                   return (
-                    <tr 
-                      key={plan._id || idx}
-                      className="hover:bg-slate-800/40 transition-colors group"
-                    >
-                      <td className="py-3 px-4 text-center text-slate-500 font-mono text-[11px]">
-                        {globalIdx}
-                      </td>
-
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-bold text-white text-xs">{plan.date}</div>
-                        <span className="text-[10px] text-sky-400 font-medium">
-                          {plan.dayOfWeek || '-'}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-700/80 flex items-center justify-center text-slate-300 shrink-0 text-[10px] font-bold">
-                            {plan.userName.charAt(0).toUpperCase()}
+                    <React.Fragment key={plan._id || idx}>
+                      {/* Main Plan Row */}
+                      <tr 
+                        className={`hover:bg-slate-800/40 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-800/25' : ''}`}
+                        onClick={() => toggleExpand(plan._id)}
+                      >
+                        <td className="py-3 px-3 text-center text-slate-500 font-mono text-[11px]">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-colors"
+                              title={isExpanded ? "Collapse Planned Doctors" : "Expand to view all Planned Doctors"}
+                            >
+                              <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180 text-sky-400' : ''}`} />
+                            </button>
+                            <span>{globalIdx}</span>
                           </div>
-                          <div>
-                            <span className="font-bold text-slate-200 block truncate max-w-[150px]">
-                              {plan.userName}
-                            </span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
-                              {plan.employeeId} {plan.designation ? `• ${plan.designation}` : ''}
-                            </span>
+                        </td>
+
+                        {/* Date formatted as DD-MM-YYYY */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="font-bold text-white text-xs tracking-wide">
+                            {formatDisplayDate(plan.date)}
                           </div>
-                        </div>
-                      </td>
+                          <span className="text-[10px] text-sky-400 font-medium">
+                            {plan.dayOfWeek || '-'}
+                          </span>
+                        </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700/60 text-slate-300 font-medium text-[11px]">
-                          <MapPin size={11} className="text-rose-400 shrink-0" />
-                          <span>{plan.headquarter}</span>
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-xs">
-                          {plan.doctorCount || 0} Calls
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 max-w-[180px]">
-                        <div className="flex flex-wrap gap-1">
-                          {plan.workingAreas && plan.workingAreas.length > 0 ? (
-                            plan.workingAreas.map((w: string, wIdx: number) => (
-                              <span 
-                                key={wIdx}
-                                className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700/50 truncate max-w-[120px]"
-                              >
-                                {w}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-700/80 flex items-center justify-center text-slate-300 shrink-0 text-[10px] font-bold">
+                              {plan.userName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <span className="font-bold text-slate-200 block truncate max-w-[150px]">
+                                {plan.userName}
                               </span>
-                            ))
-                          ) : (
-                            <span className="text-slate-500 text-[10px]">-</span>
-                          )}
-                        </div>
-                      </td>
+                              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
+                                {plan.employeeId} {plan.designation ? `• ${plan.designation}` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
 
-                      <td className="py-3 px-4 max-w-[240px]">
-                        <div className="flex flex-wrap gap-1">
-                          {plan.doctors && plan.doctors.length > 0 ? (
-                            <>
-                              {plan.doctors.slice(0, 3).map((doc: any, dIdx: number) => (
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700/60 text-slate-300 font-medium text-[11px]">
+                            <MapPin size={11} className="text-rose-400 shrink-0" />
+                            <span>{plan.headquarter}</span>
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-xs">
+                            {plan.doctorCount || 0} Calls
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 max-w-[180px]">
+                          <div className="flex flex-wrap gap-1">
+                            {plan.workingAreas && plan.workingAreas.length > 0 ? (
+                              plan.workingAreas.map((w: string, wIdx: number) => (
                                 <span 
-                                  key={dIdx} 
-                                  className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-medium truncate max-w-[140px]"
-                                  title={`${doc.name} (${doc.category})`}
+                                  key={wIdx}
+                                  className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700/50 truncate max-w-[120px]"
                                 >
-                                  {doc.name}
+                                  {w}
                                 </span>
-                              ))}
-                              {plan.doctors.length > 3 && (
-                                <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 text-[10px] font-bold">
-                                  +{plan.doctors.length - 3} more
-                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-500 text-[10px]">-</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Planned Doctors Column with interactive expansion trigger */}
+                        <td className="py-3 px-4 max-w-[260px]">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {plan.doctors && plan.doctors.length > 0 ? (
+                              <>
+                                {plan.doctors.slice(0, 3).map((doc: any, dIdx: number) => (
+                                  <span 
+                                    key={dIdx} 
+                                    className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-medium truncate max-w-[140px]"
+                                    title={`${doc.name} (${doc.category})`}
+                                  >
+                                    {doc.name}
+                                  </span>
+                                ))}
+                                {plan.doctors.length > 3 ? (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                      isExpanded 
+                                        ? 'bg-sky-500/25 text-sky-300 border border-sky-400/50' 
+                                        : 'bg-slate-800 hover:bg-sky-500/20 text-sky-400 border border-slate-700 hover:border-sky-500/40'
+                                    }`}
+                                    title="Click to expand/collapse all doctors"
+                                  >
+                                    <span>{isExpanded ? 'Hide' : `+${plan.doctors.length - 3} more`}</span>
+                                    {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
+                                    className="p-1 text-slate-400 hover:text-sky-400"
+                                    title="Expand details"
+                                  >
+                                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-slate-500 text-[10px]">No doctors scheduled</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-wider uppercase">
+                            <Check size={11} strokeWidth={3} />
+                            <span>Approved</span>
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setViewingPlan(plan); }}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 transition-colors border border-slate-700 hover:border-sky-500/40"
+                            title="View Complete Doctor Visit List"
+                          >
+                            <Eye size={15} />
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* Collapsible / Expandable Sub-Row */}
+                      {isExpanded && (
+                        <tr className="bg-[#151525] border-b border-slate-700/80">
+                          <td colSpan={9} className="p-3 sm:p-5">
+                            <div className="bg-[#1b1b2f] border border-slate-700/80 rounded-xl p-4 shadow-inner space-y-3">
+                              
+                              {/* Header inside expanded sub-row */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                  <span className="text-xs font-bold text-white">
+                                    All Planned Doctors on {formatDisplayDate(plan.date)} ({plan.dayOfWeek})
+                                  </span>
+                                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                    {plan.doctors?.length || 0} Doctors Scheduled
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                                  {plan.workingAreas && plan.workingAreas.length > 0 && (
+                                    <span>
+                                      Route/Areas: <strong className="text-slate-200">{plan.workingAreas.join(', ')}</strong>
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() => toggleExpand(plan._id)}
+                                    className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 px-2 py-1 rounded-lg border border-slate-700 transition-colors"
+                                  >
+                                    <span>Collapse</span>
+                                    <ChevronUp size={13} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Doctor Grid */}
+                              {(!plan.doctors || plan.doctors.length === 0) ? (
+                                <div className="py-4 text-center text-slate-500 text-xs">
+                                  No doctor records available for this day.
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                                  {plan.doctors.map((doc: any, dIdx: number) => (
+                                    <div
+                                      key={doc._id || dIdx}
+                                      className="p-3 rounded-xl bg-[#22223a] border border-slate-700/60 hover:border-sky-500/40 transition-colors flex flex-col justify-between shadow-sm"
+                                    >
+                                      <div>
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold shrink-0 mt-0.5 border border-slate-700">
+                                              {dIdx + 1}
+                                            </span>
+                                            <div>
+                                              <h5 className="font-bold text-white text-xs leading-snug">
+                                                {doc.name}
+                                              </h5>
+                                              {(doc.degree || doc.specialization) && (
+                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                  {[doc.degree, doc.specialization].filter(Boolean).join(' • ')}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                            doc.category === 'Super Core' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                                            doc.category === 'Core' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                            'bg-slate-700 text-slate-300'
+                                          }`}>
+                                            {doc.category || 'General'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-2 pt-2 border-t border-slate-700/40 text-[10px] text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
+                                        {doc.hospital && doc.hospital !== '-' && (
+                                          <span className="truncate max-w-[200px]" title={doc.hospital}>
+                                            🏥 {doc.hospital}
+                                          </span>
+                                        )}
+                                        {doc.workingArea && doc.workingArea !== '-' && (
+                                          <span>📍 {doc.workingArea}</span>
+                                        )}
+                                        {doc.mobile && (
+                                          <span>📞 {doc.mobile}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
-                            </>
-                          ) : (
-                            <span className="text-slate-500 text-[10px]">No doctors</span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-wider uppercase">
-                          <Check size={11} strokeWidth={3} />
-                          <span>Approved</span>
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => setViewingPlan(plan)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 transition-colors border border-slate-700 hover:border-sky-500/40"
-                          title="View Complete Doctor Visit List"
-                        >
-                          <Eye size={15} />
-                        </button>
-                      </td>
-                    </tr>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -645,7 +873,7 @@ export default function CallPlanListReport() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 font-bold">
-                    {viewingPlan.date}
+                    {formatDisplayDate(viewingPlan.date)}
                   </span>
                   <span className="text-xs text-slate-400">({viewingPlan.dayOfWeek})</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 uppercase">
