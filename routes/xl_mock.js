@@ -2768,7 +2768,7 @@ router.get('/call-plan/month', async (req, res) => {
         const docMap = new Map();
         dbDocs.forEach(d => docMap.set(d._id, d));
 
-        const dbChems = allChemIds.size > 0 ? await XlChemist.findAll({ where: { _id: { [Op.in]: Array.from(allChemIds) } }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const dbChems = allChemIds.size > 0 ? await XlChemist.findAll({ where: { _id: { [Op.in]: Array.from(allChemIds) } }, attributes: ['_id', 'businessName', 'proprietorName', 'workingArea'] }) : [];
         const chemMap = new Map();
         dbChems.forEach(c => chemMap.set(c._id, c));
 

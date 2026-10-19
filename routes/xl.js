@@ -3945,7 +3945,7 @@ router.get('/approvals/pending', async (req, res) => {
             const pDocMap = new Map();
             fetchedDocs.forEach(d => pDocMap.set(d._id, d));
 
-            const fetchedChems = bulkChemIds.size > 0 ? await PChemist.findAll({ where: { _id: Array.from(bulkChemIds) }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+            const fetchedChems = bulkChemIds.size > 0 ? await PChemist.findAll({ where: { _id: Array.from(bulkChemIds) }, attributes: ['_id', 'businessName', 'proprietorName', 'workingArea'] }) : [];
             const pChemMap = new Map();
             fetchedChems.forEach(c => pChemMap.set(c._id, c));
 
@@ -4554,7 +4554,7 @@ router.get('/call-plan/month', async (req, res) => {
         const docMap = new Map();
         dbDocs.forEach(d => docMap.set(d._id, d));
 
-        const dbChems = allChemIds.size > 0 ? await XlChemist.findAll({ where: { _id: { [Op.in]: Array.from(allChemIds) } }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const dbChems = allChemIds.size > 0 ? await XlChemist.findAll({ where: { _id: { [Op.in]: Array.from(allChemIds) } }, attributes: ['_id', 'businessName', 'proprietorName', 'workingArea'] }) : [];
         const chemMap = new Map();
         dbChems.forEach(c => chemMap.set(c._id, c));
 
@@ -4740,7 +4740,7 @@ router.post('/call-plan/bulk', async (req, res) => {
         const bDocMap = new Map();
         bDocs.forEach(d => bDocMap.set(d._id, d));
 
-        const bChems = inChemIds.length > 0 ? await BChemist.findAll({ where: { _id: inChemIds }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const bChems = inChemIds.length > 0 ? await BChemist.findAll({ where: { _id: inChemIds }, attributes: ['_id', 'businessName', 'proprietorName', 'workingArea'] }) : [];
         const bChemMap = new Map();
         bChems.forEach(c => bChemMap.set(c._id, c));
 
