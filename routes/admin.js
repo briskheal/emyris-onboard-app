@@ -6133,11 +6133,27 @@ router.post('/dcs/call-plan/save', async (req, res) => {
       if (day.type !== 'Working' || !day.doctors || day.doctors.length === 0) continue;
       
       const sDate = day.date; // YYYY-MM-DD
-      const doctorIds = day.doctors.map(d => (d._id || d.id || d));
+      const doctorList = day.doctors.map(d => {
+        if (typeof d === 'object') {
+          return {
+            id: d._id || d.id,
+            _id: d._id || d.id,
+            name: d.name,
+            doctorName: d.name,
+            category: d.category || 'General',
+            hospital: d.hospital || '-',
+            workingArea: d.workingArea || '-',
+            info: d.workingArea || d.hospital || '',
+            samples: d.samples || [],
+            gifts: d.gifts || []
+          };
+        }
+        return { id: d, _id: d, name: d, info: '' };
+      });
 
       const existing = await XlCallPlan.findOne({ where: { employeeId, date: sDate } });
       if (existing) {
-        existing.doctors = JSON.stringify(doctorIds);
+        existing.doctors = JSON.stringify(doctorList);
         existing.status = 'Approved';
         existing.approvedBy = 'Admin';
         await existing.save();
@@ -6145,7 +6161,7 @@ router.post('/dcs/call-plan/save', async (req, res) => {
         await XlCallPlan.create({
           employeeId,
           date: sDate,
-          doctors: JSON.stringify(doctorIds),
+          doctors: JSON.stringify(doctorList),
           chemists: '[]',
           stockists: '[]',
           status: 'Approved',
@@ -6191,9 +6207,13 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
 
     const allDoctorIds = new Set();
     plans.forEach(p => {
-      let ids = [];
-      try { ids = JSON.parse(p.doctors || '[]'); } catch(e){}
-      ids.forEach(id => allDoctorIds.add(id));
+      let items = [];
+      try { items = JSON.parse(p.doctors || '[]'); } catch(e){}
+      if (!Array.isArray(items)) items = Object.values(items || {});
+      items.forEach(item => {
+        const id = typeof item === 'string' ? item : (item.id || item._id);
+        if (id && !String(id).startsWith('slot_open_')) allDoctorIds.add(id);
+      });
     });
 
     const doctors = await XlDoctor.findAll({
@@ -6203,18 +6223,41 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
     const docMap = {};
     doctors.forEach(d => { docMap[d._id] = d; });
 
+    let totalPlannedCalls = 0;
     const formattedPlans = plans.map(p => {
-      let ids = [];
-      try { ids = JSON.parse(p.doctors || '[]'); } catch(e){}
+      let items = [];
+      try { items = JSON.parse(p.doctors || '[]'); } catch(e){}
+      if (!Array.isArray(items)) items = Object.values(items || {});
+      totalPlannedCalls += items.length;
       return {
         _id: p._id,
         date: p.date,
         status: p.status,
-        doctors: ids.map(id => docMap[id] || { _id: id, name: 'Doctor (' + id + ')' })
+        doctors: items.map(item => {
+          const id = typeof item === 'string' ? item : (item.id || item._id);
+          const doc = docMap[id];
+          const rawName = typeof item === 'object' ? (item.name || item.doctorName || '') : '';
+          const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+          return {
+            _id: id,
+            id: id,
+            name: (doc ? doc.name : (!isNameAnId ? rawName : null)) || (String(id).startsWith('slot_open_') ? '(Open Slot)' : `Doctor (${id})`),
+            category: doc ? doc.category : (typeof item === 'object' ? item.category : 'General'),
+            hospital: doc ? doc.hospital : (typeof item === 'object' ? item.hospital : '-'),
+            workingArea: doc ? doc.workingArea : (typeof item === 'object' ? item.workingArea : '-')
+          };
+        })
       };
     });
 
-    res.json({ success: true, hasSavedPlan: true, count: plans.length, plans: formattedPlans });
+    res.json({
+      success: true,
+      hasSavedPlan: true,
+      count: plans.length,
+      totalPlannedCalls,
+      status: plans[0]?.status || 'Approved',
+      plans: formattedPlans
+    });
   } catch (e) {
     console.error('Fetch saved call plan error:', e);
     res.status(500).json({ success: false, message: e.message });

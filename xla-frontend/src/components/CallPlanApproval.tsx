@@ -68,48 +68,52 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     return [];
   };
 
-  const resolveEntity = (item: any, map: Map<string, string>, defaultPrefix: string) => {
+  const resolveEntity = (item: any, map: Map<string, any>, defaultPrefix: string) => {
     if (!item) return { name: '-', info: '' };
-    if (typeof item === 'object') {
-      const id = item.id || item._id || item.uid;
-      const name = (item.name || item.doctorName || item.chemistName || item.stockistName || (id && map.get(id)) || `${defaultPrefix} (${id || 'Unknown'})`).trim();
-      const info = item.info || item.headquarter || item.hq || item.address || '';
-      return { name, info };
-    }
-    const idStr = String(item).trim();
-    const name = map.get(idStr) || `${defaultPrefix} (${idStr})`;
-    return { name, info: '' };
+    const id = typeof item === 'object' ? (item.id || item._id || item.uid) : String(item).trim();
+    const rawName = typeof item === 'object' ? (item.name || item.doctorName || item.chemistName || item.stockistName || '').trim() : '';
+    const masterObj = id ? map.get(id) : null;
+    const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+
+    const name = (masterObj ? (masterObj.name || masterObj.doctorName || masterObj.businessName) : null) ||
+                 (!isNameAnId ? rawName : null) ||
+                 (id && String(id).startsWith('slot_open_') ? '(Open Slot - Pending Doctor Addition)' : null) ||
+                 `${defaultPrefix} (${id || 'Unknown'})`;
+
+    const info = (masterObj ? (masterObj.workingArea || masterObj.hospital || masterObj.headquarter || masterObj.address) : null) ||
+                 (typeof item === 'object' && item.info && item.info !== 'Imported' ? item.info : null) ||
+                 (typeof item === 'object' ? (item.workingArea || item.hospital || item.headquarter || item.hq) : null) ||
+                 '';
+
+    return { name, info };
   };
 
   const doctorMap = useMemo(() => {
-    const map = new Map();
+    const map = new Map<string, any>();
     allDoctors.forEach(d => {
-      const name = d.doctorName || d.name;
-      if (d._id) map.set(d._id, name);
-      if (d.uid) map.set(d.uid, name);
-      if (d.id) map.set(d.id, name);
+      if (d._id) map.set(d._id, d);
+      if (d.uid) map.set(d.uid, d);
+      if (d.id) map.set(d.id, d);
     });
     return map;
   }, [allDoctors]);
 
   const chemistMap = useMemo(() => {
-    const map = new Map();
+    const map = new Map<string, any>();
     allChemists.forEach(c => {
-      const name = c.chemistName || c.name || c.businessName;
-      if (c._id) map.set(c._id, name);
-      if (c.uid) map.set(c.uid, name);
-      if (c.id) map.set(c.id, name);
+      if (c._id) map.set(c._id, c);
+      if (c.uid) map.set(c.uid, c);
+      if (c.id) map.set(c.id, c);
     });
     return map;
   }, [allChemists]);
 
   const stockistMap = useMemo(() => {
-    const map = new Map();
+    const map = new Map<string, any>();
     allStockists.forEach(s => {
-      const name = s.stockistName || s.name || s.businessName;
-      if (s._id) map.set(s._id, name);
-      if (s.uid) map.set(s.uid, name);
-      if (s.id) map.set(s.id, name);
+      if (s._id) map.set(s._id, s);
+      if (s.uid) map.set(s.uid, s);
+      if (s.id) map.set(s.id, s);
     });
     return map;
   }, [allStockists]);

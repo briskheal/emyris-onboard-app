@@ -148,6 +148,13 @@ export default function MonthlyCallPlanTab({
     }
   }, [selectedHq, level1Users]);
 
+  const [existingPlanInfo, setExistingPlanInfo] = useState<{
+    hasSavedPlan: boolean;
+    count: number;
+    totalPlannedCalls: number;
+    status: string;
+  } | null>(null);
+
   // Automatically check if a saved plan exists for this user/month/year
   useEffect(() => {
     if (selectedEmployeeId && selectedMonth && selectedYear) {
@@ -162,16 +169,32 @@ export default function MonthlyCallPlanTab({
       });
       if (res.data?.success && res.data.hasSavedPlan) {
         setIsSavedInDb(true);
+        setExistingPlanInfo({
+          hasSavedPlan: true,
+          count: res.data.count || 0,
+          totalPlannedCalls: res.data.totalPlannedCalls || 0,
+          status: res.data.status || 'Approved'
+        });
       } else {
         setIsSavedInDb(false);
+        setExistingPlanInfo(null);
       }
     } catch (e) {
       setIsSavedInDb(false);
+      setExistingPlanInfo(null);
     }
   };
 
   const handleGeneratePlan = async () => {
     if (!selectedHq) return alert('Please select a Headquarters');
+
+    if (existingPlanInfo?.hasSavedPlan) {
+      const proceed = window.confirm(
+        `⚠️ CAUTION: An active Call Plan (${existingPlanInfo.count} days, ${existingPlanInfo.totalPlannedCalls} calls) already exists in the XL Portal for this employee.\n\nRegenerating will replace the preview. If you subsequently save & approve, it will OVERWRITE the employee's custom plan.\n\nDo you want to proceed with regenerating?`
+      );
+      if (!proceed) return;
+    }
+
     setLoading(true);
     try {
       const res = await axios.post('/api/admin/dcs/call-plan/generate', {
@@ -218,8 +241,15 @@ export default function MonthlyCallPlanTab({
     const empObj = usersList.find(u => u.employeeId === selectedEmployeeId);
     const empName = empObj ? `${empObj.firstName || ''} ${empObj.lastName || ''}`.trim() : selectedEmployeeId;
 
-    if (!window.confirm(`Save and approve this ${planSummary?.totalPlannedCalls || 0}-call plan for ${empName} (${selectedEmployeeId})? This will immediately sync to their XL Field CRM.`)) {
-      return;
+    if (existingPlanInfo?.hasSavedPlan) {
+      const proceed = window.confirm(
+        `🚨 OVERWRITE WARNING 🚨\n\nA Call Plan is already ACTIVE in the XL User Portal for ${empName} (${selectedMonth}/${selectedYear}) with ${existingPlanInfo.count} days planned (${existingPlanInfo.totalPlannedCalls} calls).\n\nIf the field representative has already made customizations or added doctor calls in their mobile app, saving now will PERMANENTLY OVERWRITE their customizations with this automated schedule.\n\nAre you sure you want to proceed and overwrite?`
+      );
+      if (!proceed) return;
+    } else {
+      if (!window.confirm(`Save and approve this ${planSummary?.totalPlannedCalls || 0}-call plan for ${empName} (${selectedEmployeeId})? This will immediately sync to their XL Field CRM.`)) {
+        return;
+      }
     }
 
     setSaving(true);
@@ -233,6 +263,7 @@ export default function MonthlyCallPlanTab({
 
       if (res.data?.success) {
         setIsSavedInDb(true);
+        checkSavedPlan();
         alert(`Success! ${res.data.message || 'Call plan saved and approved.'}`);
       } else {
         alert(res.data?.message || 'Failed to save call plan');
@@ -444,6 +475,26 @@ export default function MonthlyCallPlanTab({
             </select>
           </div>
         </div>
+
+        {/* Existing Plan Caution Notice */}
+        {existingPlanInfo?.hasSavedPlan && (
+          <div className="bg-amber-950/40 border border-amber-500/50 rounded-xl p-3.5 flex items-start gap-3">
+            <AlertTriangle className="text-amber-400 shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-amber-300 uppercase tracking-wide">
+                  Active Call Plan in XL User Portal
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {existingPlanInfo.count} Days Planned ({existingPlanInfo.totalPlannedCalls} Calls) &bull; Status: {existingPlanInfo.status}
+                </span>
+              </div>
+              <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
+                <strong>Caution:</strong> A monthly Call Plan is already active for this employee in the XL User Portal. The field representative may have already customized their visits, added local doctors, or adjusted schedules. Generating and pushing a new plan will <strong>overwrite</strong> their customizations.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Rule Summary Chips */}
         <div className="flex flex-wrap items-center gap-2 pt-1">

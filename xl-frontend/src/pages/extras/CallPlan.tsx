@@ -1,7 +1,6 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2 } from 'lucide-react';
+import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 interface ProductSelect { product: string; qty: number; }
@@ -33,6 +32,11 @@ function CallPlan() {
   const [stockists, setStockists] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [giftsList, setGiftsList] = useState<any[]>([]);
+
+  // Planning Analytics & Missed Doctors Modal
+  const [showMissedModal, setShowMissedModal] = useState(false);
+  const [missedSearch, setMissedSearch] = useState('');
+  const [missedFilterCat, setMissedFilterCat] = useState<'All' | 'Super Core' | 'Core' | 'Non-Core'>('All');
 
   // 'loading' = calendar list loading; 'saving' = save button submitting
   const [loading, setLoading] = useState(true);
@@ -134,24 +138,108 @@ function CallPlan() {
 
   const isSunday = (day: number) => new Date(parseInt(year), parseInt(month) - 1, day).getDay() === 0;
 
-  const safeParse = (str: any): PlannedEntity[] => {
+  const safeParse = (str: any, type: 'Doctors' | 'Chemists' | 'Stockists' = 'Doctors'): PlannedEntity[] => {
     try {
-      const parsed = JSON.parse(str || '[]');
+      const parsed = typeof str === 'string' ? JSON.parse(str || '[]') : str;
       if (!Array.isArray(parsed)) return [];
-      return parsed.map((item: any) =>
-        typeof item === 'string'
-          ? { id: item, name: item, info: 'Imported', samples: [], gifts: [] }
-          : item
-      );
+      const masterList = type === 'Doctors' ? doctors : type === 'Chemists' ? chemists : stockists;
+      return parsed.map((item: any) => {
+        const id = typeof item === 'string' ? item : (item.id || item._id);
+        const m = masterList.find((l: any) => (l._id || l.id) === id);
+        const rawName = typeof item === 'object' ? (item.name || item.doctorName || item.chemistName || item.stockistName || '') : '';
+        const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+        const resolvedName = (m ? (m.name || m.businessName || m.doctorName || m.chemistName || m.stockistName) : null) ||
+                             (!isNameAnId ? rawName : null) ||
+                             (String(id).startsWith('slot_open_') ? '(Open Slot - Pending Doctor Addition)' : id);
+        const resolvedInfo = (m ? (m.workingArea || m.hospital || m.headquarter || m.hq || m.address) : null) ||
+                             (typeof item === 'object' && item.info && item.info !== 'Imported' ? item.info : null) ||
+                             (typeof item === 'object' && (item.workingArea || item.hospital || item.headquarter || item.hq)) ||
+                             '';
+        return {
+          id,
+          name: resolvedName,
+          info: resolvedInfo,
+          samples: (typeof item === 'object' && item.samples) ? item.samples : [],
+          gifts: (typeof item === 'object' && item.gifts) ? item.gifts : []
+        };
+      });
     } catch(e) { return []; }
   };
 
   const loadPlanIntoState = (p: any) => {
     if (!p) { setPlannedDocs([]); setPlannedChems([]); setPlannedStocks([]); return; }
-    setPlannedDocs(safeParse(p.doctors));
-    setPlannedChems(safeParse(p.chemists));
-    setPlannedStocks(safeParse(p.stockists));
+    setPlannedDocs(safeParse(p.doctors, 'Doctors'));
+    setPlannedChems(safeParse(p.chemists, 'Chemists'));
+    setPlannedStocks(safeParse(p.stockists, 'Stockists'));
   };
+
+  const planningStats = useMemo(() => {
+    const isSuperCore = (d: any) => (d.category || '').toLowerCase().includes('super');
+    const isCore = (d: any) => {
+      const c = (d.category || '').toLowerCase();
+      return c.includes('core') && !c.includes('super') && !c.includes('non');
+    };
+    const isNonCore = (d: any) => !isSuperCore(d) && !isCore(d);
+
+    const superCoreDocs = doctors.filter(isSuperCore);
+    const coreDocs = doctors.filter(isCore);
+    const nonCoreDocs = doctors.filter(isNonCore);
+
+    const plannedDocIds = new Set<string>();
+    const docCallsCount: Record<string, number> = {};
+    let totalPlannedCalls = 0;
+
+    (monthlyPlans || []).forEach(p => {
+      let pDocs: any[] = [];
+      try {
+        pDocs = typeof p.doctors === 'string' ? JSON.parse(p.doctors || '[]') : (p.doctors || []);
+      } catch(e) {}
+      if (!Array.isArray(pDocs)) pDocs = Object.values(pDocs || {});
+      pDocs.forEach(item => {
+        const id = typeof item === 'string' ? item : (item.id || item._id);
+        if (id && !String(id).startsWith('slot_open_')) {
+          plannedDocIds.add(id);
+          docCallsCount[id] = (docCallsCount[id] || 0) + 1;
+          totalPlannedCalls++;
+        }
+      });
+    });
+
+    const plannedSuperCore = superCoreDocs.filter(d => plannedDocIds.has(d._id || d.id)).length;
+    const superCoreCalls = superCoreDocs.reduce((acc, d) => acc + (docCallsCount[d._id || d.id] || 0), 0);
+
+    const plannedCore = coreDocs.filter(d => plannedDocIds.has(d._id || d.id)).length;
+    const coreCalls = coreDocs.reduce((acc, d) => acc + (docCallsCount[d._id || d.id] || 0), 0);
+
+    const plannedNonCore = nonCoreDocs.filter(d => plannedDocIds.has(d._id || d.id)).length;
+    const nonCoreCalls = nonCoreDocs.reduce((acc, d) => acc + (docCallsCount[d._id || d.id] || 0), 0);
+
+    const missedDoctors = doctors.filter(d => !plannedDocIds.has(d._id || d.id));
+    const missedCount = missedDoctors.length;
+
+    const totalDoctorsCount = doctors.length;
+    const coveragePct = totalDoctorsCount > 0 ? Math.round((plannedDocIds.size / totalDoctorsCount) * 100) : 0;
+    const targetCalls = (superCoreDocs.length * 3) + (coreDocs.length * 2) + (nonCoreDocs.length * 1);
+
+    return {
+      totSuperCore: superCoreDocs.length,
+      plannedSuperCore,
+      superCoreCalls,
+      totCore: coreDocs.length,
+      plannedCore,
+      coreCalls,
+      totNonCore: nonCoreDocs.length,
+      plannedNonCore,
+      nonCoreCalls,
+      missedDoctors,
+      missedCount,
+      totalDoctorsCount,
+      uniquePlannedCount: plannedDocIds.size,
+      coveragePct,
+      totalPlannedCalls,
+      targetCalls
+    };
+  }, [doctors, monthlyPlans]);
 
   const openSinglePlan = (day: number) => {
     if (isSunday(day)) return;
@@ -193,12 +281,20 @@ function CallPlan() {
     const current = activeTab === 'Doctors' ? plannedDocs : activeTab === 'Chemists' ? plannedChems : plannedStocks;
     const newEntities = Array.from(selectedEntityIds).map(id => {
       const existing = current.find(e => e.id === id);
-      if (existing) return existing;
       const item = (list.find((l: any) => (l._id || l.id) === id) || {}) as any;
+      const realName = item.name || item.businessName || item.doctorName || item.chemistName || item.stockistName || (existing ? existing.name : id);
+      const realInfo = item.workingArea || item.hospital || item.headquarter || item.hq || item.address || (existing ? existing.info : '');
+      if (existing) {
+        return {
+          ...existing,
+          name: realName,
+          info: realInfo
+        };
+      }
       return {
         id,
-        name: item.name || item.businessName || item.doctorName || item.chemistName || item.stockistName || id,
-        info: item.headquarter || item.hq || item.address || '',
+        name: realName,
+        info: realInfo,
         samples: [],
         gifts: []
       };
@@ -296,6 +392,110 @@ function CallPlan() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Planning Analytics Dashboard Bar */}
+        <div className="bg-[#24243a] border border-[#3b3b5a] rounded-xl p-3.5 mb-4 shadow-lg">
+          <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#3b3b5a]/60">
+            <div className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Monthly Call Plan Analytics
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                {planningStats.totalPlannedCalls} Total Calls Planned
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {/* Super Core */}
+            <div className="bg-[#1c1c2e] p-2.5 rounded-lg border border-purple-500/30 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-purple-300 uppercase">Tot S.Core / Plan</span>
+                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+              </div>
+              <div className="mt-1.5">
+                <p className="text-base font-extrabold text-white leading-none">
+                  {planningStats.plannedSuperCore} <span className="text-xs font-normal text-slate-400">/ {planningStats.totSuperCore}</span>
+                </p>
+                <p className="text-[10px] text-purple-300/80 mt-1">
+                  {planningStats.superCoreCalls} calls (3x target)
+                </p>
+              </div>
+            </div>
+
+            {/* Core */}
+            <div className="bg-[#1c1c2e] p-2.5 rounded-lg border border-sky-500/30 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-sky-300 uppercase">Tot Core / Plan</span>
+                <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+              </div>
+              <div className="mt-1.5">
+                <p className="text-base font-extrabold text-white leading-none">
+                  {planningStats.plannedCore} <span className="text-xs font-normal text-slate-400">/ {planningStats.totCore}</span>
+                </p>
+                <p className="text-[10px] text-sky-300/80 mt-1">
+                  {planningStats.coreCalls} calls (2x target)
+                </p>
+              </div>
+            </div>
+
+            {/* Non-Core */}
+            <div className="bg-[#1c1c2e] p-2.5 rounded-lg border border-emerald-500/30 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-emerald-300 uppercase">Tot N.Core / Plan</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              </div>
+              <div className="mt-1.5">
+                <p className="text-base font-extrabold text-white leading-none">
+                  {planningStats.plannedNonCore} <span className="text-xs font-normal text-slate-400">/ {planningStats.totNonCore}</span>
+                </p>
+                <p className="text-[10px] text-emerald-300/80 mt-1">
+                  {planningStats.nonCoreCalls} calls (1x target)
+                </p>
+              </div>
+            </div>
+
+            {/* Missed Doctors */}
+            <div 
+              onClick={() => setShowMissedModal(true)}
+              className="bg-[#1c1c2e] p-2.5 rounded-lg border border-rose-500/40 hover:border-rose-400 flex flex-col justify-between cursor-pointer transition-all active:scale-95 group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-rose-300 uppercase flex items-center gap-1">
+                  Miss. Nos <span className="underline decoration-dotted text-[9px] text-rose-400">(View)</span>
+                </span>
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="mt-1.5">
+                <p className="text-base font-extrabold text-rose-400 leading-none">
+                  {planningStats.missedCount} <span className="text-xs font-normal text-slate-400">Drs</span>
+                </p>
+                <p className="text-[10px] text-rose-300/80 mt-1">
+                  {planningStats.missedCount === 0 ? 'All doctors planned!' : 'Tap to see missed list'}
+                </p>
+              </div>
+            </div>
+
+            {/* Coverage % */}
+            <div className="col-span-2 sm:col-span-1 bg-[#1c1c2e] p-2.5 rounded-lg border border-amber-500/30 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-amber-300 uppercase">Coverage %</span>
+                <span className={`w-2 h-2 rounded-full ${planningStats.coveragePct >= 90 ? 'bg-emerald-400' : planningStats.coveragePct >= 70 ? 'bg-amber-400' : 'bg-rose-400'}`}></span>
+              </div>
+              <div className="mt-1.5">
+                <p className={`text-base font-extrabold leading-none ${planningStats.coveragePct >= 90 ? 'text-emerald-400' : planningStats.coveragePct >= 70 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {planningStats.coveragePct}%
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {planningStats.uniquePlannedCount}/{planningStats.totalDoctorsCount} Drs planned
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -476,6 +676,128 @@ function CallPlan() {
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e]">
             <button onClick={confirmEntitySelection} className="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg">
               Confirm Selection ({selectedEntityIds.size})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Missed Doctors Modal */}
+      {showMissedModal && (
+        <div className="fixed inset-0 w-full max-w-md mx-auto z-[85] bg-[#1c1c2e] flex flex-col sm:shadow-2xl sm:border-x sm:border-[#3b3b5a]">
+          <div className="p-4 border-b border-[#3b3b5a] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-rose-400" />
+              <div>
+                <h2 className="font-bold text-base text-white">Missed Doctors ({planningStats.missedCount})</h2>
+                <p className="text-xs text-slate-400">Allotted doctors not yet planned in this month</p>
+              </div>
+            </div>
+            <button onClick={() => setShowMissedModal(false)} className="w-8 h-8 rounded-lg bg-[#27273f] flex items-center justify-center">
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+          </div>
+
+          {/* Search & Filter pills */}
+          <div className="p-3 border-b border-[#3b3b5a] space-y-2.5">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search missed doctors or areas..."
+                value={missedSearch}
+                onChange={e => setMissedSearch(e.target.value)}
+                className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg py-2 pl-9 pr-3 text-xs text-white focus:outline-none"
+              />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs">
+              {(['All', 'Super Core', 'Core', 'Non-Core'] as const).map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setMissedFilterCat(cat)}
+                  className={`px-2.5 py-1 rounded-full font-bold text-[11px] shrink-0 transition-colors ${
+                    missedFilterCat === cat 
+                      ? 'bg-sky-500 text-white' 
+                      : 'bg-[#27273f] text-slate-300 border border-[#3b3b5a]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* List of Missed Doctors */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {planningStats.missedDoctors
+              .filter(d => {
+                const name = (d.name || d.doctorName || '').toLowerCase();
+                const area = (d.workingArea || d.hospital || '').toLowerCase();
+                const q = missedSearch.toLowerCase();
+                const matchSearch = !q || name.includes(q) || area.includes(q);
+
+                const c = (d.category || '').toLowerCase();
+                const isSC = c.includes('super');
+                const isC = c.includes('core') && !isSC && !c.includes('non');
+                const isNC = !isSC && !isC;
+
+                const matchCat = missedFilterCat === 'All' 
+                  ? true 
+                  : missedFilterCat === 'Super Core' 
+                    ? isSC 
+                    : missedFilterCat === 'Core' 
+                      ? isC 
+                      : isNC;
+
+                return matchSearch && matchCat;
+              })
+              .map(doc => {
+                const id = doc._id || doc.id;
+                const c = (doc.category || '').toLowerCase();
+                const isSC = c.includes('super');
+                const isC = c.includes('core') && !isSC && !c.includes('non');
+
+                return (
+                  <div key={id} className="bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-white">{doc.name || doc.doctorName}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">{doc.workingArea || doc.hospital || doc.headquarter || '-'}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${
+                        isSC 
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' 
+                          : isC 
+                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' 
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      }`}>
+                        {doc.category || 'General'}
+                      </span>
+                    </div>
+                    {doc.visitDays && (
+                      <div className="mt-2 text-[10px] text-slate-400 flex items-center gap-1.5">
+                        <span className="font-bold text-slate-300">Visit Days:</span>
+                        <span className="text-amber-300">{doc.visitDays}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+            {planningStats.missedDoctors.length === 0 && (
+              <div className="text-center py-12">
+                <Check className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-white">Congratulations!</p>
+                <p className="text-xs text-slate-400 mt-1">All doctors from your master list have been planned for this month.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-3 border-t border-[#3b3b5a] bg-[#1c1c2e]">
+            <button
+              onClick={() => setShowMissedModal(false)}
+              className="w-full bg-[#27273f] hover:bg-[#3b3b5a] text-white font-bold py-2.5 rounded-lg text-xs"
+            >
+              Close
             </button>
           </div>
         </div>

@@ -4029,52 +4029,136 @@ router.get('/approvals/pending', async (req, res) => {
             }
 
             if (type === 'Call Plans') {
-                let docList = [];
-                let chemList = [];
-                let stockList = [];
-                try { docList = typeof pData.doctors === 'string' ? JSON.parse(pData.doctors || '[]') : (pData.doctors || []); } catch(e){}
-                try { chemList = typeof pData.chemists === 'string' ? JSON.parse(pData.chemists || '[]') : (pData.chemists || []); } catch(e){}
-                try { stockList = typeof pData.stockists === 'string' ? JSON.parse(pData.stockists || '[]') : (pData.stockists || []); } catch(e){}
-                if (!Array.isArray(docList)) docList = Object.values(docList || {});
-                if (!Array.isArray(chemList)) chemList = Object.values(chemList || {});
-                if (!Array.isArray(stockList)) stockList = Object.values(stockList || {});
+                const { XlDoctor: PDoctor, XlChemist: PChemist, XlStockist: PStockist } = require('../db');
+                const bulkDocIds = new Set();
+                const bulkChemIds = new Set();
+                const bulkStockIds = new Set();
 
-                pData.parsedDoctors = docList.map(d => {
-                    if (typeof d === 'string') return { id: d, name: d };
-                    return {
-                        id: d.id || d._id || d.doctorId || '',
-                        name: d.name || d.doctorName || d.id || 'Doctor',
-                        info: d.info || d.headquarter || d.hq || d.speciality || '',
-                        shifts: d.shifts || (d.shift ? [d.shift] : []),
-                        priority: d.priority || ''
+                pending.forEach(p => {
+                    const parseSafe = (f) => {
+                        try {
+                            const parsed = typeof f === 'string' ? JSON.parse(f) : f;
+                            return Array.isArray(parsed) ? parsed : Object.values(parsed || {});
+                        } catch(e) { return []; }
                     };
-                });
-                pData.parsedChemists = chemList.map(c => {
-                    if (typeof c === 'string') return { id: c, name: c };
-                    return {
-                        id: c.id || c._id || c.chemistId || '',
-                        name: c.name || c.businessName || c.chemistName || c.id || 'Chemist',
-                        info: c.info || c.headquarter || c.hq || ''
-                    };
-                });
-                pData.parsedStockists = stockList.map(s => {
-                    if (typeof s === 'string') return { id: s, name: s };
-                    return {
-                        id: s.id || s._id || s.stockistId || '',
-                        name: s.name || s.businessName || s.stockistName || s.id || 'Stockist',
-                        info: s.info || s.headquarter || s.hq || ''
-                    };
+                    parseSafe(p.doctors).forEach(d => {
+                        const id = typeof d === 'string' ? d : (d.id || d._id || d.doctorId);
+                        if (id && !String(id).startsWith('slot_open_')) bulkDocIds.add(id);
+                    });
+                    parseSafe(p.chemists).forEach(c => {
+                        const id = typeof c === 'string' ? c : (c.id || c._id || c.chemistId);
+                        if (id) bulkChemIds.add(id);
+                    });
+                    parseSafe(p.stockists).forEach(s => {
+                        const id = typeof s === 'string' ? s : (s.id || s._id || s.stockistId);
+                        if (id) bulkStockIds.add(id);
+                    });
                 });
 
-                pData.doctorCount = pData.parsedDoctors.length;
-                pData.chemistCount = pData.parsedChemists.length;
-                pData.stockistCount = pData.parsedStockists.length;
+                const fetchedDocs = bulkDocIds.size > 0 ? await PDoctor.findAll({ where: { _id: Array.from(bulkDocIds) }, attributes: ['_id', 'name', 'hospital', 'workingArea', 'category'] }) : [];
+                const pDocMap = new Map();
+                fetchedDocs.forEach(d => pDocMap.set(d._id, d));
+
+                const fetchedChems = bulkChemIds.size > 0 ? await PChemist.findAll({ where: { _id: Array.from(bulkChemIds) }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+                const pChemMap = new Map();
+                fetchedChems.forEach(c => pChemMap.set(c._id, c));
+
+                const fetchedStocks = bulkStockIds.size > 0 ? await PStockist.findAll({ where: { _id: Array.from(bulkStockIds) }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+                const pStockMap = new Map();
+                fetchedStocks.forEach(s => pStockMap.set(s._id, s));
+
+                for (const p of pending) {
+                    const pData = p.toJSON();
+                    let docList = [];
+                    let chemList = [];
+                    let stockList = [];
+                    try { docList = typeof pData.doctors === 'string' ? JSON.parse(pData.doctors || '[]') : (pData.doctors || []); } catch(e){}
+                    try { chemList = typeof pData.chemists === 'string' ? JSON.parse(pData.chemists || '[]') : (pData.chemists || []); } catch(e){}
+                    try { stockList = typeof pData.stockists === 'string' ? JSON.parse(pData.stockists || '[]') : (pData.stockists || []); } catch(e){}
+                    if (!Array.isArray(docList)) docList = Object.values(docList || {});
+                    if (!Array.isArray(chemList)) chemList = Object.values(chemList || {});
+                    if (!Array.isArray(stockList)) stockList = Object.values(stockList || {});
+
+                    const empId = pData.employeeId || pData.userAllotted;
+                    if (empId) {
+                        const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: empId }, { uid: empId }, { email: empId }] } });
+                        if (u) {
+                            pData.employeeName = pData.employeeName || ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || u.name;
+                            pData.employeeEmail = pData.employeeEmail || u.email;
+                            pData.designation = u.designation || '-';
+                            pData.reportingManager = u.reportingManager || '-';
+                            pData.hq = pData.headquarter || pData.hq || u.hq || 'HQ';
+                        }
+                    }
+
+                    pData.parsedDoctors = docList.map(d => {
+                        const id = typeof d === 'string' ? d : (d.id || d._id || d.doctorId || '');
+                        const dMaster = pDocMap.get(id);
+                        const rawName = typeof d === 'object' ? (d.name || d.doctorName || '') : '';
+                        const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+                        const name = (dMaster ? dMaster.name : (!isNameAnId ? rawName : null)) || (id.startsWith('slot_open_') ? '(Open Slot - Pending Doctor Addition)' : `Doctor (${id})`);
+                        const info = (dMaster ? (dMaster.workingArea || dMaster.hospital || '') : (typeof d === 'object' && d.info && d.info !== 'Imported' ? d.info : '')) || '';
+                        return {
+                            id,
+                            _id: id,
+                            name,
+                            doctorName: name,
+                            info,
+                            category: dMaster ? dMaster.category : (typeof d === 'object' ? d.category : 'General'),
+                            hospital: dMaster ? (dMaster.hospital || '-') : (typeof d === 'object' ? (d.hospital || '-') : '-'),
+                            workingArea: dMaster ? (dMaster.workingArea || '-') : (typeof d === 'object' ? (d.workingArea || '-') : '-'),
+                            shifts: typeof d === 'object' ? (d.shifts || (d.shift ? [d.shift] : [])) : [],
+                            priority: typeof d === 'object' ? (d.priority || '') : '',
+                            samples: typeof d === 'object' && d.samples ? d.samples : [],
+                            gifts: typeof d === 'object' && d.gifts ? d.gifts : []
+                        };
+                    });
+
+                    pData.parsedChemists = chemList.map(c => {
+                        const id = typeof c === 'string' ? c : (c.id || c._id || c.chemistId || '');
+                        const cMaster = pChemMap.get(id);
+                        const rawName = typeof c === 'object' ? (c.name || c.businessName || c.chemistName || '') : '';
+                        const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+                        const name = (cMaster ? (cMaster.name || cMaster.businessName) : (!isNameAnId ? rawName : null)) || `Chemist (${id})`;
+                        const info = (cMaster ? (cMaster.workingArea || '') : (typeof c === 'object' && c.info && c.info !== 'Imported' ? c.info : '')) || '';
+                        return {
+                            id,
+                            _id: id,
+                            name,
+                            chemistName: name,
+                            info,
+                            workingArea: cMaster ? (cMaster.workingArea || '-') : (typeof c === 'object' ? (c.workingArea || '-') : '-')
+                        };
+                    });
+
+                    pData.parsedStockists = stockList.map(s => {
+                        const id = typeof s === 'string' ? s : (s.id || s._id || s.stockistId || '');
+                        const sMaster = pStockMap.get(id);
+                        const rawName = typeof s === 'object' ? (s.name || s.businessName || s.stockistName || '') : '';
+                        const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+                        const name = (sMaster ? (sMaster.name || sMaster.businessName) : (!isNameAnId ? rawName : null)) || `Stockist (${id})`;
+                        const info = (sMaster ? (sMaster.workingArea || '') : (typeof s === 'object' && s.info && s.info !== 'Imported' ? s.info : '')) || '';
+                        return {
+                            id,
+                            _id: id,
+                            name,
+                            stockistName: name,
+                            info,
+                            workingArea: sMaster ? (sMaster.workingArea || '-') : (typeof s === 'object' ? (s.workingArea || '-') : '-')
+                        };
+                    });
+
+                    pData.doctors = JSON.stringify(pData.parsedDoctors);
+                    pData.chemists = JSON.stringify(pData.parsedChemists);
+                    pData.stockists = JSON.stringify(pData.parsedStockists);
+                    pData.doctorCount = pData.parsedDoctors.length;
+                    pData.chemistCount = pData.parsedChemists.length;
+                    pData.stockistCount = pData.parsedStockists.length;
+
+                    data.push(pData);
+                }
+                return res.json({ success: true, data });
             }
-
-            data.push(pData);
-        }
-
-        res.json({ success: true, data });
     } catch (e) {
         console.error('Pending approvals error:', e);
         res.status(500).json({ error: 'Failed to fetch pending approvals', message: e.message, stack: e.stack });
@@ -4433,8 +4517,123 @@ router.get('/call-plan/month', async (req, res) => {
             },
             order: [['date', 'ASC']]
         });
+
+        // Auto-hydrate doctor, chemist, stockist names from master tables
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        const allDocIds = new Set();
+        const allChemIds = new Set();
+        const allStockIds = new Set();
+
+        plans.forEach(p => {
+            const parseSafe = (f) => {
+                try {
+                    const parsed = typeof f === 'string' ? JSON.parse(f) : f;
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch(e) { return []; }
+            };
+            parseSafe(p.doctors).forEach(d => {
+                const id = typeof d === 'string' ? d : (d.id || d._id);
+                if (id && !id.startsWith('slot_open_')) allDocIds.add(id);
+            });
+            parseSafe(p.chemists).forEach(c => {
+                const id = typeof c === 'string' ? c : (c.id || c._id);
+                if (id) allChemIds.add(id);
+            });
+            parseSafe(p.stockists).forEach(s => {
+                const id = typeof s === 'string' ? s : (s.id || s._id);
+                if (id) allStockIds.add(id);
+            });
+        });
+
+        const dbDocs = allDocIds.size > 0 ? await XlDoctor.findAll({ where: { _id: { [Op.in]: Array.from(allDocIds) } }, attributes: ['_id', 'name', 'hospital', 'workingArea', 'category'] }) : [];
+        const docMap = new Map();
+        dbDocs.forEach(d => docMap.set(d._id, d));
+
+        const dbChems = allChemIds.size > 0 ? await XlChemist.findAll({ where: { _id: { [Op.in]: Array.from(allChemIds) } }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const chemMap = new Map();
+        dbChems.forEach(c => chemMap.set(c._id, c));
+
+        const dbStocks = allStockIds.size > 0 ? await XlStockist.findAll({ where: { _id: { [Op.in]: Array.from(allStockIds) } }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const stockMap = new Map();
+        dbStocks.forEach(s => stockMap.set(s._id, s));
+
+        const hydratedPlans = plans.map(p => {
+            const pObj = p.toJSON ? p.toJSON() : { ...p };
+            const parseSafe = (f) => {
+                try {
+                    const parsed = typeof f === 'string' ? JSON.parse(f) : f;
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch(e) { return []; }
+            };
+
+            const docs = parseSafe(pObj.doctors).map(item => {
+                const id = typeof item === 'string' ? item : (item.id || item._id);
+                const d = docMap.get(id);
+                if (d) {
+                    return {
+                        id: d._id,
+                        _id: d._id,
+                        name: d.name,
+                        doctorName: d.name,
+                        category: d.category,
+                        hospital: d.hospital || '-',
+                        workingArea: d.workingArea || '-',
+                        info: d.workingArea || d.hospital || '',
+                        samples: (typeof item === 'object' && item.samples) ? item.samples : [],
+                        gifts: (typeof item === 'object' && item.gifts) ? item.gifts : []
+                    };
+                }
+                if (typeof item === 'string' && item.startsWith('slot_open_')) {
+                    return {
+                        id: item,
+                        _id: item,
+                        name: '(Open Slot - Pending Doctor Addition)',
+                        category: 'Open Slot',
+                        hospital: 'Dedicated for Tour Market',
+                        workingArea: 'Ex-Market',
+                        info: 'Open Slot'
+                    };
+                }
+                return item;
+            });
+            pObj.doctors = JSON.stringify(docs);
+
+            const chems = parseSafe(pObj.chemists).map(item => {
+                const id = typeof item === 'string' ? item : (item.id || item._id);
+                const c = chemMap.get(id);
+                if (c) {
+                    return {
+                        id: c._id,
+                        _id: c._id,
+                        name: c.name || c.businessName,
+                        workingArea: c.workingArea || '-',
+                        info: c.workingArea || ''
+                    };
+                }
+                return item;
+            });
+            pObj.chemists = JSON.stringify(chems);
+
+            const stocks = parseSafe(pObj.stockists).map(item => {
+                const id = typeof item === 'string' ? item : (item.id || item._id);
+                const s = stockMap.get(id);
+                if (s) {
+                    return {
+                        id: s._id,
+                        _id: s._id,
+                        name: s.name || s.businessName,
+                        workingArea: s.workingArea || '-',
+                        info: s.workingArea || ''
+                    };
+                }
+                return item;
+            });
+            pObj.stockists = JSON.stringify(stocks);
+
+            return pObj;
+        });
         
-        res.json({ success: true, data: plans });
+        res.json({ success: true, data: hydratedPlans });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch call plans' });
@@ -4527,23 +4726,89 @@ router.post('/call-plan/bulk', async (req, res) => {
         const isAdminCallPlan = !!req.body.fromAdmin || req.body.status === 'Approved';
         const planStatus = isAdminCallPlan ? 'Approved' : 'Submitted';
 
+        const { XlDoctor: BDoctor, XlChemist: BChemist, XlStockist: BStockist } = require('../db');
+        const inDocIds = (doctors || []).map(d => typeof d === 'string' ? d : (d.id || d._id)).filter(id => id && !String(id).startsWith('slot_open_'));
+        const inChemIds = (chemists || []).map(c => typeof c === 'string' ? c : (c.id || c._id)).filter(Boolean);
+        const inStockIds = (stockists || []).map(s => typeof s === 'string' ? s : (s.id || s._id)).filter(Boolean);
+
+        const bDocs = inDocIds.length > 0 ? await BDoctor.findAll({ where: { _id: inDocIds }, attributes: ['_id', 'name', 'hospital', 'workingArea', 'category'] }) : [];
+        const bDocMap = new Map();
+        bDocs.forEach(d => bDocMap.set(d._id, d));
+
+        const bChems = inChemIds.length > 0 ? await BChemist.findAll({ where: { _id: inChemIds }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const bChemMap = new Map();
+        bChems.forEach(c => bChemMap.set(c._id, c));
+
+        const bStocks = inStockIds.length > 0 ? await BStockist.findAll({ where: { _id: inStockIds }, attributes: ['_id', 'name', 'businessName', 'workingArea'] }) : [];
+        const bStockMap = new Map();
+        bStocks.forEach(s => bStockMap.set(s._id, s));
+
+        const hydratedDocsToSave = (doctors || []).map(d => {
+            const id = typeof d === 'string' ? d : (d.id || d._id);
+            const m = bDocMap.get(id);
+            const rawName = typeof d === 'object' ? (d.name || d.doctorName || '') : '';
+            const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+            return {
+                id,
+                _id: id,
+                name: (m ? m.name : (!isNameAnId ? rawName : null)) || (String(id).startsWith('slot_open_') ? '(Open Slot - Pending Doctor Addition)' : id),
+                doctorName: (m ? m.name : (!isNameAnId ? rawName : null)) || (String(id).startsWith('slot_open_') ? '(Open Slot - Pending Doctor Addition)' : id),
+                category: m ? m.category : (typeof d === 'object' ? d.category : 'General'),
+                hospital: m ? (m.hospital || '-') : (typeof d === 'object' ? (d.hospital || '-') : '-'),
+                workingArea: m ? (m.workingArea || '-') : (typeof d === 'object' ? (d.workingArea || '-') : '-'),
+                info: (m ? (m.workingArea || m.hospital || '') : (typeof d === 'object' && d.info && d.info !== 'Imported' ? d.info : '')) || '',
+                samples: typeof d === 'object' && d.samples ? d.samples : [],
+                gifts: typeof d === 'object' && d.gifts ? d.gifts : []
+            };
+        });
+
+        const hydratedChemsToSave = (chemists || []).map(c => {
+            const id = typeof c === 'string' ? c : (c.id || c._id);
+            const m = bChemMap.get(id);
+            const rawName = typeof c === 'object' ? (c.name || c.businessName || c.chemistName || '') : '';
+            const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+            return {
+                id,
+                _id: id,
+                name: (m ? (m.name || m.businessName) : (!isNameAnId ? rawName : null)) || id,
+                chemistName: (m ? (m.name || m.businessName) : (!isNameAnId ? rawName : null)) || id,
+                workingArea: m ? (m.workingArea || '-') : (typeof c === 'object' ? (c.workingArea || '-') : '-'),
+                info: m ? (m.workingArea || '') : (typeof c === 'object' ? (c.info || '') : '')
+            };
+        });
+
+        const hydratedStocksToSave = (stockists || []).map(s => {
+            const id = typeof s === 'string' ? s : (s.id || s._id);
+            const m = bStockMap.get(id);
+            const rawName = typeof s === 'object' ? (s.name || s.businessName || s.stockistName || '') : '';
+            const isNameAnId = !rawName || rawName === id || (rawName.length > 15 && !rawName.includes(' ') && /^[a-z0-9]+$/i.test(rawName));
+            return {
+                id,
+                _id: id,
+                name: (m ? (m.name || m.businessName) : (!isNameAnId ? rawName : null)) || id,
+                stockistName: (m ? (m.name || m.businessName) : (!isNameAnId ? rawName : null)) || id,
+                workingArea: m ? (m.workingArea || '-') : (typeof s === 'object' ? (s.workingArea || '-') : '-'),
+                info: m ? (m.workingArea || '') : (typeof s === 'object' ? (s.info || '') : '')
+            };
+        });
+
         for (const date of dates) {
             const sDate = normalizeDate(date);
             let plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date: sDate } });
             try {
                 if (plan) {
-                    plan.doctors = JSON.stringify(doctors || []);
-                    plan.chemists = JSON.stringify(chemists || []);
-                    plan.stockists = JSON.stringify(stockists || []);
+                    plan.doctors = JSON.stringify(hydratedDocsToSave);
+                    plan.chemists = JSON.stringify(hydratedChemsToSave);
+                    plan.stockists = JSON.stringify(hydratedStocksToSave);
                     plan.status = planStatus;
                     await plan.save();
                 } else {
                     await XlCallPlan.create({
                         employeeId: userForId?.employeeId || employeeId,
                         date: sDate,
-                        doctors: JSON.stringify(doctors || []),
-                        chemists: JSON.stringify(chemists || []),
-                        stockists: JSON.stringify(stockists || []),
+                        doctors: JSON.stringify(hydratedDocsToSave),
+                        chemists: JSON.stringify(hydratedChemsToSave),
+                        stockists: JSON.stringify(hydratedStocksToSave),
                         status: planStatus
                     });
                 }
