@@ -2308,6 +2308,95 @@ router.put('/tour-program/:id/unsubmit', async (req, res) => {
 });
 
 
+// Check Tour Program submission reminder for coming month (triggers by 25th of every month)
+router.get('/tour-program/submission-reminder', async (req, res) => {
+    try {
+        const { employeeId, preview } = req.query;
+        const { XlTourProgram, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        const now = new Date();
+        const currentDay = now.getDate();
+        const isAfter25th = currentDay >= 25;
+
+        // Calculate coming month comparing current month
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const comingDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const comingMonthName = monthNames[comingDate.getMonth()];
+        const comingMonthShort = comingMonthName.slice(0, 3);
+        const comingYear = comingDate.getFullYear().toString();
+        const comingMonthStr = `${comingMonthName} ${comingYear}`;
+
+        // Exact message format: "Submit your Tour Plan for Coming Month- xxxxx"
+        const reminderMessage = `Submit your Tour Plan for Coming Month- ${comingMonthStr}`;
+
+        let isSubmitted = false;
+        let tpRecord = null;
+
+        if (employeeId) {
+            const user = await XlUser.findOne({ where: { employeeId } }) || 
+                         await XlUser.findOne({ where: { email: employeeId } }) || 
+                         await XlUser.findOne({ where: { uid: employeeId } });
+            
+            const idArray = [employeeId];
+            if (user) {
+                if (user.employeeId) idArray.push(user.employeeId);
+                if (user.email) idArray.push(user.email);
+                if (user.uid) idArray.push(user.uid);
+            }
+
+            const monthVariants = Array.from(new Set([
+                comingMonthName,
+                comingMonthName.toLowerCase(),
+                comingMonthShort,
+                comingMonthShort.toLowerCase(),
+                `${comingMonthShort.toLowerCase()} ${comingYear}`,
+                `${comingMonthName.toLowerCase()} ${comingYear}`,
+                String(comingDate.getMonth() + 1),
+                String(comingDate.getMonth() + 1).padStart(2, '0')
+            ]));
+
+            const tps = await XlTourProgram.findAll({
+                where: {
+                    employeeId: { [Op.in]: idArray },
+                    month: { [Op.in]: monthVariants },
+                    year: comingYear,
+                    status: { [Op.in]: ['Submitted', 'Approved'] }
+                }
+            });
+
+            if (tps && tps.length > 0) {
+                isSubmitted = true;
+                tpRecord = tps[0];
+            }
+        }
+
+        const isPreview = preview === 'true' || preview === '1';
+        // Message floats from 25th of the month onwards till submitted (or in preview mode)
+        const shouldShow = (!isSubmitted && isAfter25th) || (isPreview && !isSubmitted);
+
+        res.json({
+            success: true,
+            shouldShow,
+            isAfter25th,
+            currentDay,
+            isSubmitted,
+            comingMonth: comingMonthName,
+            comingYear,
+            comingMonthStr,
+            reminderMessage,
+            targetUrl: '/extras/tour-program',
+            tpStatus: tpRecord ? tpRecord.status : (isSubmitted ? 'Submitted' : 'Pending')
+        });
+    } catch (e) {
+        console.error('Submission reminder error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // Get my TP for a specific month/year
 router.get('/tour-program/my', async (req, res) => {
     try {

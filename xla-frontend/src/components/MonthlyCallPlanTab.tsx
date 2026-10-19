@@ -23,8 +23,12 @@ interface DayPlan {
   day: number;
   token: string;
   dayName: string;
-  type: 'Working' | 'Sunday' | 'Holiday';
+  type: 'Working' | 'Sunday' | 'Holiday' | 'Leave';
   title: string;
+  isExMarket?: boolean;
+  marketName?: string | null;
+  tpRoute?: string | null;
+  tpActivity?: string;
   doctors: DoctorItem[];
 }
 
@@ -62,6 +66,7 @@ export default function MonthlyCallPlanTab({
   const [planDays, setPlanDays] = useState<DayPlan[]>([]);
   const [planSummary, setPlanSummary] = useState<any>(null);
   const [doctorSummary, setDoctorSummary] = useState<DoctorSummaryItem[]>([]);
+  const [tourProgramInfo, setTourProgramInfo] = useState<any>(null);
   const [isSavedInDb, setIsSavedInDb] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
 
@@ -89,24 +94,54 @@ export default function MonthlyCallPlanTab({
     }
   }, [propUsers]);
 
-  // When HQ changes, auto-select corresponding TBM user
+  // Filter exclusively for Level 1 employees (Frontline Territory Business Managers / TBMs)
+  // Per requirement: Level 2 or managers follow the plan of the field force and are excluded
+  const isLevel1Employee = (u: any) => {
+    const desig = (u.designation || '').toLowerCase().trim();
+    // Frontline field force designations (Level 1)
+    if (desig.includes('territory') || desig.includes('tbm') || desig.includes('medical representative') || desig.includes('field officer')) {
+      return true;
+    }
+    // Exclude all Level 2+ managers and higher leadership
+    if (
+      desig.includes('area') ||
+      desig.includes('regional') ||
+      desig.includes('zonal') ||
+      desig.includes('national') ||
+      desig.includes('product manager') ||
+      desig.includes('sales manager') ||
+      desig.includes('president') || 
+      desig.includes('director') || 
+      desig.includes('gm') || 
+      desig.includes('head') || 
+      desig.includes('vp') ||
+      desig.includes('admin')
+    ) {
+      return false;
+    }
+    return !desig.includes('manager');
+  };
+
+  const level1Users = usersList.filter(isLevel1Employee);
+
+  // When HQ changes, auto-select corresponding Level 1 user
   useEffect(() => {
-    if (!selectedHq || usersList.length === 0) return;
+    if (!selectedHq || level1Users.length === 0) return;
     const cleanHq = selectedHq.toUpperCase().trim();
     // Prioritize user whose HQ matches
-    const matchingUser = usersList.find((u: any) => 
+    const matchingUser = level1Users.find((u: any) => 
       (u.hq || '').toUpperCase().trim() === cleanHq ||
       cleanHq.includes((u.hq || '').toUpperCase().trim())
     );
     if (matchingUser) {
       setSelectedEmployeeId(matchingUser.employeeId);
     } else {
-      // Default to first user or keep
-      if (!selectedEmployeeId && usersList[0]) {
-        setSelectedEmployeeId(usersList[0].employeeId);
+      // Default to first Level 1 user
+      if (!selectedEmployeeId && level1Users[0]) {
+        setSelectedEmployeeId(level1Users[0].employeeId);
       }
     }
-  }, [selectedHq, usersList]);
+  }, [selectedHq, level1Users]);
 
   // Automatically check if a saved plan exists for this user/month/year
   useEffect(() => {
@@ -146,6 +181,7 @@ export default function MonthlyCallPlanTab({
         setPlanDays(res.data.data.days);
         setPlanSummary(res.data.data.summary);
         setDoctorSummary(res.data.data.doctorSummary);
+        setTourProgramInfo(res.data.data.tourProgramInfo || null);
         setIsSavedInDb(false);
 
         // Expand first 3 working days by default
@@ -281,7 +317,7 @@ export default function MonthlyCallPlanTab({
               Automated Monthly Call Planner
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Generates 8 calls/day for working days, respecting weekday availability & category frequencies (SuperCore ≥3, Core ≥2, Non-Core ≥1).
+              Exclusively for Level 1 field force (TBMs), integrating Tour Program Ex-Market destinations, weekday availability & category frequencies.
             </p>
           </div>
 
@@ -341,19 +377,19 @@ export default function MonthlyCallPlanTab({
             </select>
           </div>
 
-          {/* Select User */}
+          {/* Select User - Filtered Exclusively for Level 1 Employees */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <User size={12} className="text-emerald-400" /> ASSIGNED XL USER
+              <User size={12} className="text-emerald-400" /> LEVEL 1 FIELD FORCE (TBM)
             </label>
             <select
               value={selectedEmployeeId}
               onChange={e => setSelectedEmployeeId(e.target.value)}
               className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[34px]"
             >
-              {usersList.map((u: any) => (
+              {level1Users.map((u: any) => (
                 <option key={u.employeeId} value={u.employeeId}>
-                  {u.firstName} {u.lastName} ({u.employeeId}) - {u.hq || 'No HQ'}
+                  {u.firstName} {u.lastName} ({u.employeeId}) - {u.designation || 'TBM'} [{u.hq || 'HQ'}]
                 </option>
               ))}
             </select>
@@ -422,6 +458,30 @@ export default function MonthlyCallPlanTab({
             Repeat day rotation once minimums covered
           </span>
         </div>
+
+        {/* Tour Program Linkage Indicator */}
+        {tourProgramInfo && (
+          <div className="pt-1">
+            {tourProgramInfo.linked ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/40 text-purple-200 text-xs flex-wrap">
+                <span className="text-sm">✈️</span>
+                <span className="font-semibold">Tour Program Linked:</span>
+                <span className="font-bold text-white bg-purple-600/40 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">
+                  {tourProgramInfo.status}
+                </span>
+                <span className="text-purple-300">({tourProgramInfo.month})</span>
+                <span className="text-purple-400">•</span>
+                <span className="font-semibold text-emerald-400">
+                  {tourProgramInfo.exMarketDaysCount} Ex-Market Tour Day(s) Scheduled with All Market Doctors
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs">
+                <span>ℹ️ No submitted Tour Program found for this user/month. Call plan generated using HQ Local weekday rules.</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* KPI METRIC CARDS */}
@@ -567,10 +627,17 @@ export default function MonthlyCallPlanTab({
                     <div className="flex items-center gap-3">
                       {isWorking ? (
                         <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-                            <CheckCircle2 size={13} />
-                            {day.doctors.length} Doctor Calls Planned
-                          </span>
+                          {day.isExMarket ? (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/25 text-purple-300 border border-purple-500/40 flex items-center gap-1.5 shadow-sm">
+                              <span>🚆 Ex-Market Tour: {day.marketName?.toUpperCase()}</span>
+                              <span className="bg-purple-600/40 px-1.5 py-0.5 rounded text-[10px] font-mono">({day.doctors.length} Market Drs Planned)</span>
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                              <CheckCircle2 size={13} />
+                              {day.doctors.length} Doctor Calls Planned (HQ Local)
+                            </span>
+                          )}
                           <button className="text-slate-400 hover:text-white p-1">
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
@@ -578,6 +645,10 @@ export default function MonthlyCallPlanTab({
                       ) : isSunday ? (
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
                           Sunday (Weekly Off)
+                        </span>
+                      ) : day.type === 'Leave' ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5">
+                          {day.title}
                         </span>
                       ) : (
                         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">

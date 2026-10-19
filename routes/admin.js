@@ -5621,9 +5621,58 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       if (h.date) holidayMap[h.date] = h.name || h.title || 'Holiday';
     });
 
-    // 4. Build Days of the Month
+    // 3b. Fetch Tour Program for employee if specified
+    const { XlTourProgram, sequelize } = require('../db');
+    let tourProgram = null;
+    const tpMap = {};
     const mNum = parseInt(month, 10);
     const yNum = parseInt(year, 10);
+
+    if (employeeId) {
+      const dObj = new Date(yNum, mNum - 1, 1);
+      const monthLong = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+      const monthShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+      const monthNumStr = String(mNum);
+
+      tourProgram = await XlTourProgram.findOne({
+        where: {
+          employeeId,
+          year: String(yNum),
+          [Op.or]: [
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort + ' ' + yNum),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong + ' ' + yNum),
+            { month: monthNumStr },
+            { month: monthNumStr.padStart(2, '0') }
+          ]
+        },
+        order: [
+          [sequelize.literal("CASE WHEN status = 'Approved' THEN 1 WHEN status = 'Submitted' THEN 2 ELSE 3 END"), 'ASC'],
+          ['createdAt', 'DESC']
+        ]
+      });
+
+      if (tourProgram && tourProgram.entries) {
+        let entries = [];
+        try {
+          entries = typeof tourProgram.entries === 'string' ? JSON.parse(tourProgram.entries) : tourProgram.entries;
+        } catch(e) {}
+        if (Array.isArray(entries)) {
+          entries.forEach(e => {
+            if (e.date) tpMap[e.date] = e;
+          });
+        }
+      }
+    }
+
+    const extractMarket = (toMarketStr) => {
+      if (!toMarketStr) return '';
+      const parts = toMarketStr.split('-');
+      return parts[parts.length - 1].trim().toLowerCase();
+    };
+
+    // 4. Build Days of the Month
     const lastDay = new Date(yNum, mNum, 0).getDate();
 
     const weekdayTokens = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
@@ -5639,12 +5688,39 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       const token = weekdayTokens[dayOfWeek];
       const dayName = weekdayNames[dayOfWeek];
 
+      const tpEntry = tpMap[dateStr];
+      const tpActivity = tpEntry ? (tpEntry.activityType || tpEntry.type || '') : '';
+      const isTpLeave = tpActivity.toLowerCase().includes('leave');
+
       if (dayOfWeek === 0) {
         allDays.push({ date: dateStr, day: d, token, dayName, type: 'Sunday', title: 'Sunday Off', doctors: [] });
       } else if (holidayMap[dateStr]) {
         allDays.push({ date: dateStr, day: d, token, dayName, type: 'Holiday', title: holidayMap[dateStr], doctors: [] });
+      } else if (isTpLeave) {
+        allDays.push({ date: dateStr, day: d, token, dayName, type: 'Leave', title: `Leave: ${tpActivity}`, doctors: [] });
       } else {
-        const dayEntry = { date: dateStr, day: d, token, dayName, type: 'Working', title: 'Working Day', doctors: [] };
+        // Detect Ex-Market / Out-Market from Tour Program
+        const tpType = ((tpEntry?.type || '') + ' ' + (tpEntry?.areaType || '')).toLowerCase();
+        const isExOrOut = tpType.includes('ex') || tpType.includes('out') || tpType.includes('station');
+        const destMarket = extractMarket(tpEntry?.toMarket || tpEntry?.route || tpEntry?.market || tpEntry?.area);
+
+        // Check if destination is outside base HQ
+        const hqBase = hq.toLowerCase().split('-')[0].trim();
+        const isExMarketTour = (isExOrOut && destMarket) || (destMarket && !hq.toLowerCase().includes(destMarket) && !destMarket.includes(hqBase));
+
+        const dayEntry = {
+          date: dateStr,
+          day: d,
+          token,
+          dayName,
+          type: 'Working',
+          title: isExMarketTour ? `Ex-Market Tour: ${destMarket.toUpperCase()}` : 'Working Day',
+          isExMarket: !!isExMarketTour,
+          marketName: isExMarketTour ? destMarket : null,
+          tpRoute: tpEntry?.toMarket || tpEntry?.route || null,
+          tpActivity: tpEntry?.activityType || tpEntry?.type || 'Working',
+          doctors: []
+        };
         allDays.push(dayEntry);
         workingDays.push(dayEntry);
       }
@@ -5679,6 +5755,39 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
     const targetCalls = parseInt(callsPerDay, 10) || 8;
 
     workingDays.forEach((wDay, dayIdx) => {
+      // RULE: If Ex-Market or Out-Market day planned in Tour Program,
+      // all doctors in that market need to be covered on that tour day!
+      if (wDay.isExMarket && wDay.marketName) {
+        const destLower = wDay.marketName.toLowerCase();
+        const marketDoctors = doctors.filter(doc => {
+          const area = (doc.workingArea || '').toLowerCase();
+          const hosp = (doc.hospital || '').toLowerCase();
+          const addr = (doc.address || '').toLowerCase();
+          return area.includes(destLower) || hosp.includes(destLower) || addr.includes(destLower);
+        });
+
+        if (marketDoctors.length > 0) {
+          // Schedule all market doctors on this Ex-Market tour date
+          marketDoctors.forEach(doc => {
+            callCounts[doc._id]++;
+            lastSeenDate[doc._id] = dayIdx;
+          });
+
+          wDay.doctors = marketDoctors.map(d => ({
+            _id: d._id,
+            name: d.name,
+            category: d.category,
+            hospital: d.hospital || '-',
+            degree: d.degree || '-',
+            specialization: d.specialization || '-',
+            visitDays: d.visitDays,
+            workingArea: d.workingArea || '-'
+          }));
+          return; // Completed allocation for this Ex-Market day
+        }
+      }
+
+      // Normal HQ Working Day: Select 8 calls per day based on weekday availability and category priorities
       const token = wDay.token;
 
       // Filter doctors whose visitDays includes this weekday
@@ -5813,6 +5922,13 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
           doctorsBelowMinimum: belowMinimum,
           coveragePercent: ((metMinimum / doctors.length) * 100).toFixed(1),
           categoryBreakdown
+        },
+        tourProgramInfo: {
+          linked: !!tourProgram,
+          status: tourProgram ? tourProgram.status : 'Not Found',
+          month: tourProgram ? tourProgram.month : null,
+          totalEntries: Object.keys(tpMap).length,
+          exMarketDaysCount: allDays.filter(d => d.isExMarket).length
         },
         doctorSummary
       }

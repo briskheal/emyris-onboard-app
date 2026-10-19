@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, ChevronDown, Download, Activity, Check, Calendar } from 'lucide-react';
+import { User, ChevronDown, Download, Activity, Check, Calendar, Send, ArrowRight, Clock } from 'lucide-react';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<any[]>([]);
   const [selectedDashboardUser, setSelectedDashboardUser] = useState<any>(null);
   const [userSearchOpen, setUserSearchOpen] = useState(false);
@@ -15,6 +17,10 @@ export default function Dashboard() {
   });
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
+
+  // Tour Program Coming Month Submission Reminder
+  const [tpReminder, setTpReminder] = useState<any>(null);
+  const [previewReminder, setPreviewReminder] = useState<boolean>(() => localStorage.getItem('xla_simulate_25th_tp') === 'true');
 
   useEffect(() => {
       const [year, monthNum] = monthInput.split('-');
@@ -45,6 +51,16 @@ export default function Dashboard() {
   const user = userStr ? JSON.parse(userStr) : null;
   const userName = user?.name || user?.firstName || user?.businessName || 'User';
 
+  useEffect(() => {
+    const empId = user?.employeeId || user?.email || user?.uid || '';
+    const q = previewReminder ? `?employeeId=${encodeURIComponent(empId)}&preview=true` : `?employeeId=${encodeURIComponent(empId)}`;
+    axios.get(`/api/xl/tour-program/submission-reminder${q}`).then(res => {
+      if (res.data && res.data.success) {
+        setTpReminder(res.data);
+      }
+    }).catch(e => console.error('TP Reminder error:', e));
+  }, [previewReminder]);
+
   const dateObj = new Date(monthInput + '-01');
   const monthName = dateObj.toLocaleString('default', { month: 'long' });
   const yearStr = dateObj.getFullYear().toString();
@@ -53,6 +69,69 @@ export default function Dashboard() {
   return (
     <div className="min-h-full flex flex-col pb-24 font-sans transition-colors bg-slate-50 dark:bg-[#1a1a2e] text-slate-900 dark:text-slate-100 p-5 md:p-6 space-y-6">
       <div className="space-y-6">
+        
+        {/* FLOATING TOUR PLAN REMINDER SCROLL MESSAGE (Active by 25th of every month till TP is submitted) */}
+        {tpReminder && tpReminder.shouldShow && (
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-rose-500/20 border-2 border-amber-500/50 shadow-lg backdrop-blur-md p-2.5 sm:p-3 transition-all hover:border-amber-400">
+            <div className="flex items-center justify-between gap-3">
+              {/* Badge */}
+              <div className="flex items-center gap-1.5 shrink-0 bg-amber-500 text-slate-950 font-black px-2.5 py-1.5 rounded-xl shadow-md text-[11px] sm:text-xs uppercase tracking-wider animate-pulse">
+                <Send size={14} className="rotate-45" />
+                <span>TP REMINDER</span>
+              </div>
+
+              {/* Marquee Ticker Area */}
+              <div 
+                onClick={() => navigate(tpReminder.targetUrl || '/extras/tour-program')}
+                className="flex-1 overflow-hidden relative cursor-pointer py-1 group"
+                title="Click to Submit your Tour Program"
+              >
+                <div className="animate-marquee-scroll flex items-center gap-12 font-bold text-xs sm:text-sm md:text-base text-amber-900 dark:text-amber-200">
+                  <span className="flex items-center gap-2">
+                    📢 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
+                    <span className="text-xs opacity-80 font-normal ml-1">• Mandatory submission before month-end • Click here to submit now</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    🚀 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
+                    <span className="text-xs opacity-80 font-normal ml-1">• Ensure all Doctor & Market tours are scheduled</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    📢 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
+                    <span className="text-xs opacity-80 font-normal ml-1">• Floating reminder active till TP is submitted</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Action Button & Preview Toggle */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => navigate(tpReminder.targetUrl || '/extras/tour-program')}
+                  className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-md transition-transform active:scale-95"
+                >
+                  <span>Submit Now</span>
+                  <ArrowRight size={13} />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const next = !previewReminder;
+                    setPreviewReminder(next);
+                    localStorage.setItem('xla_simulate_25th_tp', String(next));
+                  }}
+                  title={previewReminder ? "Test preview active. Click to use real calendar date." : "Click to test 25th condition right now"}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
+                    previewReminder 
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
+                      : 'bg-slate-800/40 text-slate-400 border-slate-700'
+                  }`}
+                >
+                  {previewReminder ? 'Test: ON' : 'Test 25th'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Welcome Banner & Action Buttons */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-5 shadow-lg">
@@ -64,6 +143,22 @@ export default function Dashboard() {
            </div>
            
            <div className="flex flex-wrap items-center gap-3">
+              {/* If reminder is hidden (e.g. before 25th), allow simulating 25th condition */}
+              {(!tpReminder || !tpReminder.shouldShow) && (
+                <button 
+                  onClick={() => {
+                    const next = !previewReminder;
+                    setPreviewReminder(next);
+                    localStorage.setItem('xla_simulate_25th_tp', String(next));
+                  }}
+                  className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95"
+                  title="Simulate 25th TP Reminder Float"
+                >
+                   <Clock size={15} className="text-amber-500" />
+                   <span>Test 25th TP Reminder</span>
+                </button>
+              )}
+
               <button className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] border border-slate-200 dark:border-[#3b3b5a] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95">
                  <Download size={16} className="text-sky-400" />
                  Consolidated Reports
