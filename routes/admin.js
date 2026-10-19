@@ -5714,6 +5714,12 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         'anand', 'bharuch', 'padra', 'godadhra', 'goraj', 'palanpur', 'ankaleswar', 'nadiad', 'karamsad', 'sanand', 'gandhinagar', 'mehsana', 'kadi', 'kalol'
       ]));
 
+      // 1. If workingArea explicitly matches base city or local terms, it is strictly LOCAL!
+      if (area.includes(hqBase) || area.includes('local') || area.includes('univercity') || area.includes('university') || area.includes('alkapuri') || area.includes('manjalpur') || area.includes('sayajigunj') || area.includes('gotri') || area.includes('subhanpura') || area.includes('karelibaug') || area.includes('city')) {
+        return true;
+      }
+
+      // 2. Check known ex-markets against workingArea, hospital, and address
       for (const em of allExMarkers) {
         if (em && (area === em || area.includes(em) || hosp.includes(em) || addr.includes(em))) {
           if (!em.includes(hqBase) && !hqBase.includes(em)) {
@@ -5722,12 +5728,7 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         }
       }
 
-      // If workingArea explicitly matches base city or local terms
-      if (area.includes(hqBase) || area.includes('local') || area.includes('univercity') || area.includes('university') || area.includes('alkapuri') || area.includes('manjalpur') || area.includes('sayajigunj') || area.includes('gotri') || area.includes('subhanpura') || area.includes('karelibaug') || area.includes('city')) {
-        return true;
-      }
-
-      // If working area is different from hqBase and length > 2
+      // 3. If working area is different from hqBase and length > 2
       if (area && area !== hqBase && area.length > 2) {
         return false;
       }
