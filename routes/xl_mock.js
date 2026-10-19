@@ -9,9 +9,10 @@ const verifyToken = (req, res, next) => {
         '/api/xl/login', '/login', 
         '/api/xl/admin-login', '/admin-login', 
         '/api/xl/register', '/register',
-        '/company-profile'
+        '/company-profile',
+        '/tour-program/submission-reminder', '/api/xl/tour-program/submission-reminder'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-')) {
+    if (openRoutes.includes(req.path) || req.path.includes('submission-reminder') || req.path.includes('/cleanup-') || req.path.includes('/debug-')) {
         return next();
     }
     

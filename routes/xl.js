@@ -25,9 +25,10 @@ const verifyToken = (req, res, next) => {
         '/api/xl/register', '/register',
         '/company-profile',
         '/admin/settings/typography', '/api/xl/admin/settings/typography',
-        '/tile-proxy', '/api/xl/tile-proxy'
+        '/tile-proxy', '/api/xl/tile-proxy',
+        '/tour-program/submission-reminder', '/api/xl/tour-program/submission-reminder'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password')) {
+    if (openRoutes.includes(req.path) || req.path.includes('submission-reminder') || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password')) {
         return next();
     }
     
