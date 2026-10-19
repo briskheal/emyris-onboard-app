@@ -2116,11 +2116,11 @@ router.get('/reports/call-plans', async (req, res) => {
                     { _id: Array.from(empIdSet) }
                 ]
             },
-            attributes: ['_id', 'uid', 'employeeId', 'name', 'firstName', 'lastName', 'hq', 'designation']
+            attributes: ['_id', 'uid', 'employeeId', 'firstName', 'middleName', 'lastName', 'hq', 'designation']
         });
         const userMap = {};
         users.forEach(u => {
-            const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId;
+            const name = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.employeeId;
             if (u.employeeId) userMap[u.employeeId] = { ...u.toJSON(), name };
             if (u.uid) userMap[u.uid] = { ...u.toJSON(), name };
             if (u._id) userMap[u._id] = { ...u.toJSON(), name };
