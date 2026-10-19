@@ -23,7 +23,10 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem('xla_dcs_items_per_page');
+    return saved ? Number(saved) : 20;
+  });
   
   let displayList: any[] = [];
   if (filterType === 'Doctor') displayList = doctors;
@@ -97,7 +100,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   };
 
   const ThBase = ({ children, align = 'left', border = true }: { children: React.ReactNode, align?: 'left'|'center', border?: boolean }) => (
-    <th className={`px-2 py-3 ${border ? 'border-r border-[#3b3b5a]' : ''} font-bold text-slate-300 text-sm whitespace-nowrap bg-[#252538] text-${align}`}>
+    <th className={`px-2 py-2 ${border ? 'border-r border-[#3b3b5a]' : ''} font-bold text-slate-300 text-xs whitespace-nowrap bg-[#252538] text-${align}`}>
       {children}
     </th>
   );
@@ -115,26 +118,26 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
     <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-full relative z-10 overflow-hidden">
       
       {/* TOP TOOLBAR (Fixed) */}
-      <div className="flex-shrink-0 px-4 sm:px-6 py-3 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-20 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex flex-col gap-1">
+      <div className="flex-shrink-0 px-4 sm:px-6 py-2 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-20 space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT TYPE</label>
-            <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
+            <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[32px]">
               <option value="Doctor">Doctor</option>
               <option value="Chemist">Chemist</option>
               <option value="Stockist">Stockist</option>
             </select>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT STATE</label>
-            <select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
+            <select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[32px]">
               <option value="">All States</option>
               {states.map((s: any) => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT HQ</label>
-            <select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
+            <select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[32px]">
               <option value="">All Headquarters</option>
               {hqs.filter((h: any) => !filterState || h.state === filterState).map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
             </select>
@@ -144,12 +147,10 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
         <div className="flex flex-wrap gap-2 justify-between items-center">
           <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">SHOWING ({displayList.length}) ENTRIES</span>
           
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white w-56 sm:w-64 focus:outline-none focus:border-sky-500 h-[36px]" />
-            </div>
-            <button onClick={handleBatchDelete} className="text-rose-500 hover:text-rose-400 hover:scale-110 transition-all p-1.5" title="Delete Selected">
-              <Trash2 size={20} className="fill-current" />
+          <div className="flex items-center gap-2">
+            <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-[#3b3b5a] rounded-lg px-2.5 py-1 text-xs text-white w-52 sm:w-60 focus:outline-none focus:border-sky-500 h-[32px]" />
+            <button onClick={handleBatchDelete} className="text-rose-500 hover:text-rose-400 hover:scale-110 transition-all p-1" title="Delete Selected">
+              <Trash2 size={18} className="fill-current" />
             </button>
           </div>
         </div>
@@ -160,7 +161,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
         <table className="w-full min-w-max text-left border-collapse">
           <thead className="sticky top-0 z-50 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
-              <th className="p-4 border-r border-[#3b3b5a] text-center w-12 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
+              <th className="p-2 border-r border-[#3b3b5a] text-center w-10 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
               
               <ThBase align="center">Sr no.</ThBase>
               
@@ -171,7 +172,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
                   <ThWithIcons label="Specialization" sortable />
                   <ThWithIcons label="Category" sortable />
                   <ThWithIcons label="Hospital" />
-                    <ThWithIcons label="Visit Days" />
+                  <ThWithIcons label="Visit Days" />
                 </>
               ) : (
                 <>
@@ -188,34 +189,34 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
           </thead>
           <tbody>
             {paginatedList.length === 0 ? (
-              <tr><td colSpan={10} className="py-12 text-center text-slate-500 font-medium">No records found.</td></tr>
+              <tr><td colSpan={10} className="py-8 text-center text-slate-500 font-medium">No records found.</td></tr>
             ) : paginatedList.map((d, i) => (
-              <tr key={d._id} className="border-b border-[#3b3b5a]/50 hover:bg-[#252538] text-white text-sm transition-colors">
-                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer accent-sky-500" /></td>
-                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-center font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+              <tr key={d._id} className="border-b border-[#3b3b5a]/40 hover:bg-[#252538] text-white text-xs transition-colors">
+                <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer accent-sky-500" /></td>
+                <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-center font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + i + 1}</td>
                 
                 {filterType === 'Doctor' ? (
                   <>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-bold">{d.name}</td>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.degree || '-'}</td>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.specialization || '-'}</td>
-                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-emerald-400 font-semibold">{d.category || '-'}</td>
-                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300 truncate max-w-[200px]">{d.hospital || '-'}</td>
-                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.visitDays || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 font-bold">{d.name}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300">{d.degree || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300">{d.specialization || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-emerald-400 font-semibold">{d.category || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300 truncate max-w-[200px]">{d.hospital || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300">{d.visitDays || '-'}</td>
                   </>
                 ) : (
                   <>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-bold text-sky-400">{d.businessName}</td>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.proprietorName || d.name || '-'}</td>
-                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed">{d.address || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 font-bold text-sky-400">{d.businessName}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300">{d.proprietorName || d.name || '-'}</td>
+                    <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed">{d.address || '-'}</td>
                   </>
                 )}
                 
-                <td className="px-2 py-3 border-r border-[#3b3b5a]/50">{d.mobile || d.contact || '-'}</td>
-                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
-                <td className="px-2 py-3 text-center">
-                  <div className="flex items-center justify-center gap-3">
-                    <button title="Edit Record" onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
+                <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40">{d.mobile || d.contact || '-'}</td>
+                <td className="px-2 py-1.5 border-r border-[#3b3b5a]/40 font-medium">{d.headquarter || '-'}</td>
+                <td className="px-2 py-1.5 text-center">
+                  <div className="flex items-center justify-center gap-2.5">
+                    <button title="Edit Record" onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={14} /></button>
                     <button title="Reset GPS Locations" onClick={async () => {
                       if(!window.confirm('Erase all GPS location tags for this record? This allows the MR to re-tag them.')) return;
                       try {
@@ -223,8 +224,8 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
                         fetchData();
                         alert('GPS Locations reset successfully!');
                       } catch (e) { alert('Error resetting GPS'); }
-                    }} className="text-amber-400 hover:text-amber-300 hover:scale-110 transition-transform"><MapPinOff size={16} /></button>
-                    <button title="Delete Record" onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={16} /></button>
+                    }} className="text-amber-400 hover:text-amber-300 hover:scale-110 transition-transform"><MapPinOff size={14} /></button>
+                    <button title="Delete Record" onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={14} /></button>
                   </div>
                 </td>
               </tr>
@@ -234,25 +235,34 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
       </div>
 
       {/* BOTTOM PAGINATION (Fixed) */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 bg-[#252538] border-t border-[#3b3b5a] z-20">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-[#252538] border-t border-[#3b3b5a] z-20 text-xs">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2.5 py-1 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
             &lt; Prev
           </button>
-          <span className="text-sm text-slate-400 font-medium">Page {currentPage} of {totalPages}</span>
-          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+          <span className="text-slate-400 font-medium">Page {currentPage} of {totalPages}</span>
+          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2.5 py-1 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
             Next &gt;
           </button>
         </div>
         
-        <div className="flex items-center gap-6">
-          <button onClick={exportToExcel} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 font-semibold px-4 py-1.5 rounded border border-[#3b3b5a] bg-[#1e1e2d] hover:bg-[#3b3b5a]/50 transition-colors">
-            <Download size={16} /> Export
+        <div className="flex items-center gap-4">
+          <button onClick={exportToExcel} className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 font-semibold px-3 py-1 rounded border border-[#3b3b5a] bg-[#1e1e2d] hover:bg-[#3b3b5a]/50 transition-colors">
+            <Download size={14} /> Export
           </button>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2">
             <span className="text-slate-400">Show</span>
-            <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="bg-[#1e1e2d] border border-[#3b3b5a] rounded px-2 py-1 text-slate-300 focus:outline-none">
-              {[5, 10, 20, 50, 100, 200, 500, 1000].map(n => (
+            <select 
+              value={itemsPerPage} 
+              onChange={e => { 
+                const val = Number(e.target.value);
+                setItemsPerPage(val); 
+                localStorage.setItem('xla_dcs_items_per_page', val.toString());
+                setCurrentPage(1); 
+              }} 
+              className="bg-[#1e1e2d] border border-[#3b3b5a] rounded px-2 py-0.5 text-slate-300 focus:outline-none cursor-pointer"
+            >
+              {[10, 15, 20, 25, 50, 100, 200, 500, 1000].map(n => (
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
