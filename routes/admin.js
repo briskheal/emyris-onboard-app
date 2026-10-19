@@ -5580,15 +5580,22 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
     if (!hq || !month || !year) {
       return res.status(400).json({ success: false, message: 'HQ, month, and year are required' });
     }
-    const { XlDoctor, XlHoliday, XlUser, XlHQ } = require('../db');
+    const { XlDoctor, XlHoliday, XlUser, XlHQ, XlRoute, XlTourProgram, sequelize } = require('../db');
     const { Op } = require('sequelize');
+
+    const mNum = parseInt(month, 10);
+    const yNum = parseInt(year, 10);
+    const mNumStr = String(mNum).padStart(2, '0');
+    const monthPrefix = `${yNum}-${mNumStr}`;
+    const dObjForName = new Date(yNum, mNum - 1, 1);
+    const monthLong = dObjForName.toLocaleString('en-US', { month: 'long' });
 
     // 1. Fetch Doctors for this HQ
     const doctors = await XlDoctor.findAll({
       where: {
         headquarter: { [Op.iLike]: hq.trim() }
       },
-      attributes: ['_id', 'name', 'category', 'visitDays', 'hospital', 'degree', 'specialization', 'headquarter', 'workingArea', 'mobile']
+      attributes: ['_id', 'name', 'category', 'visitDays', 'hospital', 'degree', 'specialization', 'headquarter', 'workingArea', 'address', 'mobile']
     });
 
     if (doctors.length === 0) {
@@ -5606,45 +5613,58 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       if (hqObj) userState = hqObj.state;
     }
 
-    // 3. Fetch Holidays
+    // 3. Fetch Holidays strictly for this month, year, and state
     const holidayWhere = [
       { state: null },
       { state: '' },
       { state: 'All' },
-      { state: 'N/A' }
+      { state: 'N/A' },
+      { state: 'National' }
     ];
-    if (userState) holidayWhere.push({ state: userState });
+    if (userState) {
+      holidayWhere.push({ state: userState });
+      holidayWhere.push({ state: { [Op.iLike]: userState.trim() } });
+    } else {
+      if (hq.toLowerCase().includes('vadodara') || hq.toLowerCase().includes('ahmedabad')) {
+        holidayWhere.push({ state: { [Op.iLike]: 'Gujarat' } });
+      }
+    }
 
-    const holidays = await XlHoliday.findAll({ where: { [Op.or]: holidayWhere } });
-    const holidayMap = {};
-    holidays.forEach(h => {
-      if (h.date) holidayMap[h.date] = h.name || h.title || 'Holiday';
+    const holidays = await XlHoliday.findAll({
+      where: {
+        [Op.or]: holidayWhere
+      }
     });
 
-    // 3b. Fetch Tour Program for employee if specified
-    const { XlTourProgram, sequelize } = require('../db');
+    const holidayMap = {};
+    holidays.forEach(h => {
+      const hDate = String(h.date || '');
+      if (hDate.startsWith(monthPrefix)) {
+        holidayMap[hDate] = h.title || h.name || 'Holiday';
+      }
+    });
+
+    // 3b. Fetch Tour Program for employee for this month
     let tourProgram = null;
     const tpMap = {};
-    const mNum = parseInt(month, 10);
-    const yNum = parseInt(year, 10);
+    const plannedExMarketsInTP = new Set();
 
     if (employeeId) {
-      const dObj = new Date(yNum, mNum - 1, 1);
-      const monthLong = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-      const monthShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
-      const monthNumStr = String(mNum);
+      const mLong = monthLong.toLowerCase();
+      const mShort = dObjForName.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+      const mNumStrRaw = String(mNum);
 
       tourProgram = await XlTourProgram.findOne({
         where: {
           employeeId,
           year: String(yNum),
           [Op.or]: [
-            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong),
-            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort),
-            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort + ' ' + yNum),
-            sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong + ' ' + yNum),
-            { month: monthNumStr },
-            { month: monthNumStr.padStart(2, '0') }
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort + ' ' + yNum),
+            sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong + ' ' + yNum),
+            { month: mNumStrRaw },
+            { month: mNumStrRaw.padStart(2, '0') }
           ]
         },
         order: [
@@ -5660,21 +5680,101 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         } catch(e) {}
         if (Array.isArray(entries)) {
           entries.forEach(e => {
-            if (e.date) tpMap[e.date] = e;
+            if (e.date) {
+              tpMap[e.date] = e;
+              const t = ((e.type || '') + ' ' + (e.areaType || '')).toLowerCase();
+              if (t.includes('ex') || t.includes('out') || t.includes('station')) {
+                const toM = (e.toMarket || e.route || e.market || e.area || '').toLowerCase();
+                const mName = toM.split('-').pop().trim();
+                if (mName) plannedExMarketsInTP.add(mName);
+              }
+            }
           });
         }
       }
     }
 
-    const extractMarket = (toMarketStr) => {
-      if (!toMarketStr) return '';
-      const parts = toMarketStr.split('-');
-      return parts[parts.length - 1].trim().toLowerCase();
+    // 4. Fetch Routes to identify Ex-Markets
+    const routes = await XlRoute.findAll({ where: { hq: { [Op.iLike]: hq.trim() } } }).catch(() => []);
+    const exMarketsFromRoutes = (routes || [])
+      .filter(r => (r.areaType || '').toLowerCase().includes('ex') || (r.areaType || '').toLowerCase().includes('out'))
+      .map(r => (r.toCity || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const hqBase = hq.toLowerCase().split('-')[0].trim(); // e.g. "vadodara" or "ahmedabad"
+
+    const isDoctorLocal = (doc) => {
+      const area = (doc.workingArea || '').trim().toLowerCase();
+      const hosp = (doc.hospital || '').trim().toLowerCase();
+      const addr = (doc.address || '').trim().toLowerCase();
+
+      // Check known ex-markets
+      const allExMarkers = Array.from(new Set([
+        ...exMarketsFromRoutes,
+        'anand', 'bharuch', 'padra', 'godadhra', 'goraj', 'palanpur', 'ankaleswar', 'nadiad', 'karamsad', 'sanand', 'gandhinagar', 'mehsana', 'kadi', 'kalol'
+      ]));
+
+      for (const em of allExMarkers) {
+        if (em && (area === em || area.includes(em) || hosp.includes(em) || addr.includes(em))) {
+          if (!em.includes(hqBase) && !hqBase.includes(em)) {
+            return false; // Ex-Market doctor!
+          }
+        }
+      }
+
+      // If workingArea explicitly matches base city or local terms
+      if (area.includes(hqBase) || area.includes('local') || area.includes('univercity') || area.includes('university') || area.includes('alkapuri') || area.includes('manjalpur') || area.includes('sayajigunj') || area.includes('gotri') || area.includes('subhanpura') || area.includes('karelibaug') || area.includes('city')) {
+        return true;
+      }
+
+      // If working area is different from hqBase and length > 2
+      if (area && area !== hqBase && area.length > 2) {
+        return false;
+      }
+
+      return true;
     };
 
-    // 4. Build Days of the Month
-    const lastDay = new Date(yNum, mNum, 0).getDate();
+    const getDoctorMarket = (doc) => {
+      const area = (doc.workingArea || '').trim().toLowerCase();
+      const hosp = (doc.hospital || '').trim().toLowerCase();
+      const allExMarkers = Array.from(new Set([
+        ...exMarketsFromRoutes,
+        'anand', 'bharuch', 'padra', 'godadhra', 'goraj', 'palanpur', 'ankaleswar', 'nadiad', 'karamsad', 'sanand', 'gandhinagar', 'mehsana', 'kadi', 'kalol'
+      ]));
+      for (const em of allExMarkers) {
+        if (em && (area.includes(em) || hosp.includes(em))) return em;
+      }
+      return area || 'ex-market';
+    };
 
+    // Separate Local vs Ex-Market Doctors
+    const localDoctors = [];
+    const exMarketDoctors = [];
+    doctors.forEach(d => {
+      if (isDoctorLocal(d)) {
+        localDoctors.push(d);
+      } else {
+        exMarketDoctors.push(d);
+      }
+    });
+
+    // Check which Ex-Market Doctors are planned in TP vs Missed
+    const scheduledExDoctors = [];
+    const missedDoctors = [];
+
+    exMarketDoctors.forEach(d => {
+      const docMarket = getDoctorMarket(d);
+      const isPlanned = Array.from(plannedExMarketsInTP).some(pm => pm.includes(docMarket) || docMarket.includes(pm));
+      if (isPlanned) {
+        scheduledExDoctors.push(d);
+      } else {
+        missedDoctors.push(d);
+      }
+    });
+
+    // 5. Build Days of the Month
+    const lastDay = new Date(yNum, mNum, 0).getDate();
     const weekdayTokens = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
     const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -5682,7 +5782,7 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
     const workingDays = [];
 
     for (let d = 1; d <= lastDay; d++) {
-      const dateStr = `${yNum}-${String(mNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dateStr = `${yNum}-${mNumStr}-${String(d).padStart(2, '0')}`;
       const dObj = new Date(yNum, mNum - 1, d);
       const dayOfWeek = dObj.getDay();
       const token = weekdayTokens[dayOfWeek];
@@ -5699,14 +5799,11 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       } else if (isTpLeave) {
         allDays.push({ date: dateStr, day: d, token, dayName, type: 'Leave', title: `Leave: ${tpActivity}`, doctors: [] });
       } else {
-        // Detect Ex-Market / Out-Market from Tour Program
         const tpType = ((tpEntry?.type || '') + ' ' + (tpEntry?.areaType || '')).toLowerCase();
         const isExOrOut = tpType.includes('ex') || tpType.includes('out') || tpType.includes('station');
-        const destMarket = extractMarket(tpEntry?.toMarket || tpEntry?.route || tpEntry?.market || tpEntry?.area);
-
-        // Check if destination is outside base HQ
-        const hqBase = hq.toLowerCase().split('-')[0].trim();
-        const isExMarketTour = (isExOrOut && destMarket) || (destMarket && !hq.toLowerCase().includes(destMarket) && !destMarket.includes(hqBase));
+        const toMarketStr = tpEntry?.toMarket || tpEntry?.route || tpEntry?.market || tpEntry?.area || '';
+        const destMarket = toMarketStr.split('-').pop().trim().toLowerCase();
+        const isExMarketTour = (isExOrOut && destMarket) || (destMarket && !destMarket.includes(hqBase) && !hq.toLowerCase().includes(destMarket));
 
         const dayEntry = {
           date: dateStr,
@@ -5714,7 +5811,7 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
           token,
           dayName,
           type: 'Working',
-          title: isExMarketTour ? `Ex-Market Tour: ${destMarket.toUpperCase()}` : 'Working Day',
+          title: isExMarketTour ? `Ex-Market Tour: ${destMarket.toUpperCase()}` : 'Working Day (HQ Local)',
           isExMarket: !!isExMarketTour,
           marketName: isExMarketTour ? destMarket : null,
           tpRoute: tpEntry?.toMarket || tpEntry?.route || null,
@@ -5726,7 +5823,7 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       }
     }
 
-    // 5. Target Calculation Helpers (SuperCore >= 3, Core >= 2, Non-Core >= 1)
+    // 6. Target Calculation Helpers (SuperCore >= 3, Core >= 2, Non-Core >= 1)
     const getMinTarget = (category) => {
       const cat = (category || '').toLowerCase();
       if (cat.includes('ultra') || cat.includes('4 visit')) return 4;
@@ -5744,66 +5841,91 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       return 1;
     };
 
-    // 6. Scheduling Allocation
-    const callCounts = {};
-    const lastSeenDate = {};
+    // 7. Scheduling Allocation with Strict 8-9 Day Spacing Rule
+    const targetCalls = parseInt(callsPerDay, 10) || 8;
+    const callHistory = {}; // docId -> [calDay1, calDay2, ...]
     doctors.forEach(d => {
-      callCounts[d._id] = 0;
-      lastSeenDate[d._id] = -99;
+      callHistory[d._id] = [];
     });
 
-    const targetCalls = parseInt(callsPerDay, 10) || 8;
+    workingDays.forEach((wDay) => {
+      const calDay = wDay.day;
 
-    workingDays.forEach((wDay, dayIdx) => {
-      // RULE: If Ex-Market or Out-Market day planned in Tour Program,
-      // all doctors in that market need to be covered on that tour day!
+      // RULE 1: If Ex-Market Tour Day planned in Tour Program:
       if (wDay.isExMarket && wDay.marketName) {
         const destLower = wDay.marketName.toLowerCase();
-        const marketDoctors = doctors.filter(doc => {
+        const marketDoctors = scheduledExDoctors.filter(doc => {
           const area = (doc.workingArea || '').toLowerCase();
           const hosp = (doc.hospital || '').toLowerCase();
           const addr = (doc.address || '').toLowerCase();
           return area.includes(destLower) || hosp.includes(destLower) || addr.includes(destLower);
         });
 
-        if (marketDoctors.length > 0) {
-          // Schedule all market doctors on this Ex-Market tour date
-          marketDoctors.forEach(doc => {
-            callCounts[doc._id]++;
-            lastSeenDate[doc._id] = dayIdx;
+        marketDoctors.forEach(doc => {
+          callHistory[doc._id].push(calDay);
+          wDay.doctors.push({
+            _id: doc._id,
+            name: doc.name,
+            category: doc.category,
+            hospital: doc.hospital || '-',
+            degree: doc.degree || '-',
+            specialization: doc.specialization || '-',
+            visitDays: doc.visitDays,
+            workingArea: doc.workingArea || '-',
+            isPlaceholder: false
           });
+        });
 
-          wDay.doctors = marketDoctors.map(d => ({
-            _id: d._id,
-            name: d.name,
-            category: d.category,
-            hospital: d.hospital || '-',
-            degree: d.degree || '-',
-            specialization: d.specialization || '-',
-            visitDays: d.visitDays,
-            workingArea: d.workingArea || '-'
-          }));
-          return; // Completed allocation for this Ex-Market day
+        // User Rule: "if only one dr is there means user has not added drs, in that market. so you dedicate one day and leave other 7 blank so that user can add and plan."
+        while (wDay.doctors.length < targetCalls) {
+          const slotNum = wDay.doctors.length + 1;
+          wDay.doctors.push({
+            _id: `slot_open_${calDay}_${slotNum}`,
+            name: '(Open Slot - Pending Doctor Addition)',
+            category: 'Open Slot',
+            hospital: `Dedicated for ${wDay.marketName.toUpperCase()} Market`,
+            degree: '-',
+            specialization: 'Open for planning',
+            visitDays: wDay.token,
+            workingArea: wDay.marketName.toUpperCase(),
+            isPlaceholder: true
+          });
         }
+        return; // Completed Ex-Market Day
       }
 
-      // Normal HQ Working Day: Select 8 calls per day based on weekday availability and category priorities
+      // RULE 2: Normal Local HQ Working Day (Vadodara)
+      // Only schedule localDoctors (Bharuch/Padra/Anand are completely excluded)
       const token = wDay.token;
 
-      // Filter doctors whose visitDays includes this weekday
-      const eligible = doctors.filter(doc => {
+      // Spacing helper: minimum 8 days gap
+      const canSchedule = (docId, minGap = 8) => {
+        const hist = callHistory[docId] || [];
+        if (hist.length === 0) return true;
+        const last = hist[hist.length - 1];
+        return (calDay - last) >= minGap;
+      };
+
+      // Available on today's weekday
+      const availableWeekday = localDoctors.filter(doc => {
         if (!doc.visitDays) return false;
         const tokens = doc.visitDays.split(',').map(s => s.trim());
         return tokens.includes(token) || tokens.includes('ALL');
       });
 
-      // Sort with user rules:
-      // Minimum targets first, prioritized by deficit and category tier, then spacing visits
+      // Eligible with minimum 8 days gap
+      const eligible = availableWeekday.filter(d => canSchedule(d._id, 8));
+
+      // Sort by priority:
+      // 1. Doctors needing calls to reach minimum target
+      // 2. Deficit (target - count)
+      // 3. Category Tier (SuperCore 3 > Core 2 > NonCore 1)
+      // 4. Largest gap since last visit
       eligible.sort((a, b) => {
         const targetA = getMinTarget(a.category);
         const targetB = getMinTarget(b.category);
-        const countA = callCounts[a._id];
-        const countB = callCounts[b._id];
+        const countA = (callHistory[a._id] || []).length;
+        const countB = (callHistory[b._id] || []).length;
 
         const needsA = countA < targetA;
         const needsB = countB < targetB;
@@ -5818,31 +5940,47 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
           return getCategoryTier(b.category) - getCategoryTier(a.category);
         }
 
-        // Both met minimum: higher tier category first (SuperCore > Core > NonCore)
+        // Both met minimum: higher tier category first
         const tierDiff = getCategoryTier(b.category) - getCategoryTier(a.category);
         if (tierDiff !== 0) return tierDiff;
 
         // Then fewest extra calls
         if (countA !== countB) return countA - countB;
 
-        // Then largest gap since last visit
-        const gapA = dayIdx - lastSeenDate[a._id];
-        const gapB = dayIdx - lastSeenDate[b._id];
-        return gapB - gapA;
+        // Then largest gap
+        const histA = callHistory[a._id] || [];
+        const histB = callHistory[b._id] || [];
+        const lastA = histA.length > 0 ? histA[histA.length - 1] : -99;
+        const lastB = histB.length > 0 ? histB[histB.length - 1] : -99;
+        return (calDay - lastA) - (calDay - lastB);
       });
 
       const selected = eligible.slice(0, targetCalls);
 
-      // Fallback if weekday has fewer than targetCalls
+      // Fallback if weekday has fewer than targetCalls:
+      // Pick other local doctors with gap >= 8
       if (selected.length < targetCalls) {
-        const remaining = doctors.filter(d => !selected.some(s => s._id === d._id));
-        remaining.sort((a, b) => (callCounts[a._id] - callCounts[b._id]));
-        selected.push(...remaining.slice(0, targetCalls - selected.length));
+        const otherLocal = localDoctors.filter(d => !selected.some(s => s._id === d._id) && canSchedule(d._id, 8));
+        otherLocal.sort((a, b) => {
+          const targetA = getMinTarget(a.category);
+          const targetB = getMinTarget(b.category);
+          const countA = (callHistory[a._id] || []).length;
+          const countB = (callHistory[b._id] || []).length;
+          if (countA < targetA && countB >= targetB) return -1;
+          if (countA >= targetA && countB < targetB) return 1;
+          return countA - countB;
+        });
+        selected.push(...otherLocal.slice(0, targetCalls - selected.length));
+      }
+
+      // If still fewer than targetCalls, fallback with gap >= 7
+      if (selected.length < targetCalls) {
+        const fallback7 = localDoctors.filter(d => !selected.some(s => s._id === d._id) && canSchedule(d._id, 7));
+        selected.push(...fallback7.slice(0, targetCalls - selected.length));
       }
 
       selected.forEach(doc => {
-        callCounts[doc._id]++;
-        lastSeenDate[doc._id] = dayIdx;
+        callHistory[doc._id].push(calDay);
       });
 
       wDay.doctors = selected.map(d => ({
@@ -5853,23 +5991,29 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         degree: d.degree || '-',
         specialization: d.specialization || '-',
         visitDays: d.visitDays,
-        workingArea: d.workingArea || '-'
+        workingArea: d.workingArea || '-',
+        isPlaceholder: false
       }));
     });
 
-    // 7. Calculate Summaries
+    // 8. Calculate Summaries
     let totalPlannedCalls = 0;
-    workingDays.forEach(w => { totalPlannedCalls += w.doctors.length; });
+    workingDays.forEach(w => {
+      totalPlannedCalls += w.doctors.filter(d => !d.isPlaceholder).length;
+    });
 
     let metMinimum = 0;
     let moreThanMinimum = 0;
     let belowMinimum = 0;
     const categoryBreakdown = {};
 
+    const scheduledDoctorIds = new Set([...localDoctors.map(d => d._id), ...scheduledExDoctors.map(d => d._id)]);
+
     const doctorSummary = doctors.map(d => {
       const min = getMinTarget(d.category);
-      const count = callCounts[d._id] || 0;
+      const count = (callHistory[d._id] || []).length;
       const cat = d.category || 'General';
+      const isMissed = missedDoctors.some(m => m._id === d._id);
 
       if (!categoryBreakdown[cat]) {
         categoryBreakdown[cat] = { totalDocs: 0, minReq: min, totalCalls: 0, avgCalls: 0 };
@@ -5877,9 +6021,17 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
       categoryBreakdown[cat].totalDocs++;
       categoryBreakdown[cat].totalCalls += count;
 
-      if (count >= min) {
+      let status = 'Below Target';
+      if (isMissed) {
+        status = 'Missed (TP Not Planned)';
+      } else if (count >= min) {
         metMinimum++;
-        if (count > min) moreThanMinimum++;
+        if (count > min) {
+          moreThanMinimum++;
+          status = 'Exceeded Target';
+        } else {
+          status = 'Target Met';
+        }
       } else {
         belowMinimum++;
       }
@@ -5889,17 +6041,25 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         name: d.name,
         category: d.category,
         hospital: d.hospital,
+        workingArea: d.workingArea,
         visitDays: d.visitDays,
         minTarget: min,
         plannedCalls: count,
-        status: count >= min ? (count > min ? 'Exceeded Target' : 'Target Met') : 'Below Target'
+        visitDaysList: callHistory[d._id] || [],
+        isMissed,
+        status
       };
     });
 
     Object.keys(categoryBreakdown).forEach(k => {
       const item = categoryBreakdown[k];
-      item.avgCalls = (item.totalCalls / item.totalDocs).toFixed(1);
+      item.avgCalls = item.totalDocs > 0 ? (item.totalCalls / item.totalDocs).toFixed(1) : 0;
     });
+
+    const totalHolidaysInMonth = allDays.filter(d => d.type === 'Holiday').length;
+    const totalSundaysInMonth = allDays.filter(d => d.type === 'Sunday').length;
+    const totalLeavesInMonth = allDays.filter(d => d.type === 'Leave').length;
+    const totalWorkingDaysInMonth = workingDays.length;
 
     res.json({
       success: true,
@@ -5912,15 +6072,22 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
         days: allDays,
         summary: {
           totalDays: lastDay,
-          workingDays: workingDays.length,
-          holidays: Object.keys(holidayMap).length,
-          sundays: allDays.filter(d => d.type === 'Sunday').length,
+          workingDays: totalWorkingDaysInMonth,
+          holidays: totalHolidaysInMonth,
+          sundays: totalSundaysInMonth,
+          leaves: totalLeavesInMonth,
+          offDays: totalSundaysInMonth + totalHolidaysInMonth + totalLeavesInMonth,
           totalPlannedCalls,
           totalDoctors: doctors.length,
+          localDoctorsCount: localDoctors.length,
+          exMarketDoctorsCount: exMarketDoctors.length,
+          scheduledExDoctorsCount: scheduledExDoctors.length,
+          missedDoctorsCount: missedDoctors.length,
+          missedDoctorsRemarks: 'TP not planned for month',
           doctorsMetMinimum: metMinimum,
           doctorsAboveMinimum: moreThanMinimum,
           doctorsBelowMinimum: belowMinimum,
-          coveragePercent: ((metMinimum / doctors.length) * 100).toFixed(1),
+          coveragePercent: (((doctors.length - missedDoctors.length) / doctors.length) * 100).toFixed(1),
           categoryBreakdown
         },
         tourProgramInfo: {
@@ -5928,8 +6095,20 @@ router.post('/dcs/call-plan/generate', async (req, res) => {
           status: tourProgram ? tourProgram.status : 'Not Found',
           month: tourProgram ? tourProgram.month : null,
           totalEntries: Object.keys(tpMap).length,
-          exMarketDaysCount: allDays.filter(d => d.isExMarket).length
+          exMarketDaysCount: allDays.filter(d => d.isExMarket).length,
+          plannedExMarkets: Array.from(plannedExMarketsInTP)
         },
+        missedDoctors: missedDoctors.map(d => ({
+          _id: d._id,
+          name: d.name,
+          category: d.category,
+          hospital: d.hospital || '-',
+          workingArea: d.workingArea || '-',
+          specialization: d.specialization || '-',
+          degree: d.degree || '-',
+          reason: 'TP not planned for month',
+          remarks: `Tour Plan for market "${d.workingArea}" was not planned in the Tour Program for ${monthLong} ${yNum}`
+        })),
         doctorSummary
       }
     });

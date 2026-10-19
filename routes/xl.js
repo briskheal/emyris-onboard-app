@@ -2375,9 +2375,8 @@ router.get('/tour-program/submission-reminder', async (req, res) => {
             }
         }
 
-        const isPreview = preview === 'true' || preview === '1';
-        // Message floats from 25th of the month onwards till submitted (or in preview mode)
-        const shouldShow = (!isSubmitted && isAfter25th) || (isPreview && !isSubmitted);
+        // Message floats for all employees until they submit TP for the coming month
+        const shouldShow = !isSubmitted;
 
         res.json({
             success: true,

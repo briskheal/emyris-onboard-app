@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { TrendingUp, User, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
-    const [selectedMonth, setSelectedMonth] = useState('August');
+  const navigate = useNavigate();
+  const [selectedMonth, setSelectedMonth] = useState('August');
   const [selectedYear, setSelectedYear] = useState('2026');
   const [announcement, setAnnouncement] = useState('');
+  const [tpReminder, setTpReminder] = useState<any>(null);
 
   useEffect(() => {
     axios.get('/api/xl/admin/announcement')
@@ -15,12 +18,53 @@ export default function Dashboard() {
         }
       })
       .catch(e => console.error('Failed to fetch announcement:', e));
+
+    let employeeId = '';
+    try {
+      const storedUser = localStorage.getItem('xl_user');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        employeeId = u.employeeId || u.email || u.uid || '';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    axios.get(`/api/xl/tour-program/submission-reminder?employeeId=${encodeURIComponent(employeeId)}`)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setTpReminder(res.data);
+        }
+      })
+      .catch(e => console.error('Failed to fetch TP reminder:', e));
   }, []);
 
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-slate-100">
       
-            
+      {/* Floating Tour Plan Submission Reminder Scroll Message */}
+      {tpReminder && tpReminder.shouldShow && (
+        <div 
+          onClick={() => navigate(tpReminder.targetUrl || '/extras/tour-program')}
+          className="bg-gradient-to-r from-amber-600/30 via-orange-600/25 to-amber-600/30 border-b border-amber-500/50 overflow-hidden py-2.5 px-3 flex items-center gap-2.5 shadow-lg cursor-pointer active:opacity-90 select-none transition-all hover:bg-amber-600/40"
+          title="Click to open and submit your Tour Plan"
+        >
+          <div className="shrink-0 bg-amber-500 text-slate-950 text-[10px] sm:text-xs font-black uppercase px-2 py-0.5 rounded shadow flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+            <span>TP REMINDER</span>
+          </div>
+          <marquee className="text-amber-200 text-xs sm:text-sm font-bold tracking-wide cursor-pointer" scrollamount="6">
+            📢 {tpReminder.reminderMessage} &nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp; ⚠️ Mandatory Submission: Tap here to submit your Tour Plan now &nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp; 🚀 {tpReminder.reminderMessage}
+          </marquee>
+          <button 
+            onClick={(e) => { e.stopPropagation(); navigate(tpReminder.targetUrl || '/extras/tour-program'); }}
+            className="shrink-0 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-lg shadow transition active:scale-95 flex items-center gap-1"
+          >
+            <span>Submit</span>
+          </button>
+        </div>
+      )}
+
       {/* Global Scrolling Announcement */}
       {announcement && (
         <div className="bg-sky-600/20 border-b border-sky-500/30 overflow-hidden py-2 px-4 flex items-center shadow-md">

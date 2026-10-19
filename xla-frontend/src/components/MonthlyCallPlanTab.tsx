@@ -16,6 +16,7 @@ interface DoctorItem {
   specialization?: string;
   visitDays?: string;
   workingArea?: string;
+  isPlaceholder?: boolean;
 }
 
 interface DayPlan {
@@ -37,9 +38,12 @@ interface DoctorSummaryItem {
   name: string;
   category: string;
   hospital?: string;
+  workingArea?: string;
   visitDays?: string;
   minTarget: number;
   plannedCalls: number;
+  visitDaysList?: number[];
+  isMissed?: boolean;
   status: string;
 }
 
@@ -60,12 +64,13 @@ export default function MonthlyCallPlanTab({
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeSubView, setActiveSubView] = useState<'roster' | 'doctor_matrix'>('roster');
+  const [activeSubView, setActiveSubView] = useState<'roster' | 'doctor_matrix' | 'missed_doctors'>('roster');
 
   // Generated / Loaded Plan Data
   const [planDays, setPlanDays] = useState<DayPlan[]>([]);
   const [planSummary, setPlanSummary] = useState<any>(null);
   const [doctorSummary, setDoctorSummary] = useState<DoctorSummaryItem[]>([]);
+  const [missedDoctors, setMissedDoctors] = useState<any[]>([]);
   const [tourProgramInfo, setTourProgramInfo] = useState<any>(null);
   const [isSavedInDb, setIsSavedInDb] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
@@ -181,6 +186,7 @@ export default function MonthlyCallPlanTab({
         setPlanDays(res.data.data.days);
         setPlanSummary(res.data.data.summary);
         setDoctorSummary(res.data.data.doctorSummary);
+        setMissedDoctors(res.data.data.missedDoctors || []);
         setTourProgramInfo(res.data.data.tourProgramInfo || null);
         setIsSavedInDb(false);
 
@@ -487,7 +493,7 @@ export default function MonthlyCallPlanTab({
       {/* KPI METRIC CARDS */}
       {planSummary && (
         <div className="px-4 sm:px-6 py-3 border-b border-[#3b3b5a] bg-[#1a1a29]">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
             <div className="bg-[#252538] border border-[#3b3b5a] p-2.5 rounded-lg">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Days</span>
               <span className="text-lg font-black text-white">{planSummary.totalDays}</span>
@@ -498,7 +504,12 @@ export default function MonthlyCallPlanTab({
             </div>
             <div className="bg-[#252538] border border-amber-500/30 p-2.5 rounded-lg">
               <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">Off / Holidays</span>
-              <span className="text-lg font-black text-amber-400">{planSummary.sundays + planSummary.holidays} <span className="text-xs font-normal text-slate-400">({planSummary.sundays} Sun, {planSummary.holidays} Hol)</span></span>
+              <span className="text-lg font-black text-amber-400">
+                {planSummary.offDays || (planSummary.sundays + planSummary.holidays + (planSummary.leaves || 0))}
+                <span className="text-xs font-normal text-slate-400 ml-1">
+                  ({planSummary.sundays} Sun, {planSummary.holidays} Hol{planSummary.leaves ? `, ${planSummary.leaves} Leave` : ''})
+                </span>
+              </span>
             </div>
             <div className="bg-[#252538] border border-sky-500/30 p-2.5 rounded-lg">
               <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">Total Calls</span>
@@ -506,7 +517,17 @@ export default function MonthlyCallPlanTab({
             </div>
             <div className="bg-[#252538] border border-purple-500/30 p-2.5 rounded-lg">
               <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">Doctors In HQ</span>
-              <span className="text-lg font-black text-purple-400">{planSummary.totalDoctors}</span>
+              <span className="text-lg font-black text-purple-400">{planSummary.totalDoctors} <span className="text-[10px] font-normal text-slate-400 block">{planSummary.localDoctorsCount || 88} Local</span></span>
+            </div>
+            <div className="bg-[#252538] border border-rose-500/40 p-2.5 rounded-lg">
+              <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block flex items-center justify-between">
+                <span>Missed Dr's (Nos)</span>
+                {missedDoctors.length > 0 && <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>}
+              </span>
+              <span className="text-lg font-black text-rose-400">{missedDoctors.length}</span>
+              <span className="text-[10px] font-semibold text-rose-300 block truncate" title="Remarks: TP not planned for month">
+                Remarks: TP not planned
+              </span>
             </div>
             <div className="bg-[#252538] border border-emerald-500/40 p-2.5 rounded-lg">
               <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block">Target Coverage</span>
@@ -519,7 +540,7 @@ export default function MonthlyCallPlanTab({
       {/* VIEW SWITCHER & CONTROLS */}
       {planDays.length > 0 && (
         <div className="px-4 sm:px-6 py-2.5 bg-[#252538] border-b border-[#3b3b5a] flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveSubView('roster')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
@@ -541,6 +562,19 @@ export default function MonthlyCallPlanTab({
             >
               <Table size={14} />
               <span>Doctor-Wise Coverage Matrix ({doctorSummary.length} Drs)</span>
+            </button>
+            <button
+              onClick={() => setActiveSubView('missed_doctors')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                activeSubView === 'missed_doctors'
+                  ? 'bg-rose-500 text-white shadow'
+                  : missedDoctors.length > 0
+                  ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <AlertTriangle size={14} className={missedDoctors.length > 0 ? "text-rose-400 animate-pulse" : ""} />
+              <span>Missed Dr's ({missedDoctors.length} Nos) • Remarks: TP not planned</span>
             </button>
           </div>
 
@@ -675,29 +709,50 @@ export default function MonthlyCallPlanTab({
                           </tr>
                         </thead>
                         <tbody>
-                          {day.doctors.map((doc, idx) => (
-                            <tr key={doc._id} className="border-b border-[#3b3b5a]/30 hover:bg-[#32324d] transition-colors">
-                              <td className="py-2 px-2 text-center font-bold text-sky-400">{idx + 1}</td>
-                              <td className="py-2 px-3 font-bold text-white flex items-center gap-1.5">
-                                <Stethoscope size={13} className="text-sky-400 shrink-0" />
-                                <span>{doc.name}</span>
-                              </td>
-                              <td className="py-2 px-3">{getCategoryBadge(doc.category)}</td>
-                              <td className="py-2 px-3 text-slate-300">{doc.hospital || '-'}</td>
-                              <td className="py-2 px-3 text-slate-400">
-                                {doc.degree && doc.degree !== '-' ? doc.degree : ''} 
-                                {doc.degree && doc.specialization && doc.degree !== '-' && doc.specialization !== '-' ? ' • ' : ''}
-                                {doc.specialization && doc.specialization !== '-' ? doc.specialization : ''}
-                                {(!doc.degree || doc.degree === '-') && (!doc.specialization || doc.specialization === '-') ? '-' : ''}
-                              </td>
-                              <td className="py-2 px-3">
-                                <span className="font-mono text-[11px] text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                  {doc.visitDays || '-'}
-                                </span>
-                              </td>
-                              <td className="py-2 px-3 text-slate-400">{doc.workingArea || '-'}</td>
-                            </tr>
-                          ))}
+                          {day.doctors.map((doc, idx) => {
+                            if (doc.isPlaceholder) {
+                              return (
+                                <tr key={doc._id} className="border-b border-[#3b3b5a]/30 bg-amber-500/5 border-dashed">
+                                  <td className="py-2 px-2 text-center font-bold text-amber-400/80">{idx + 1}</td>
+                                  <td className="py-2 px-3 font-semibold text-amber-300 italic flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                                    <span>{doc.name}</span>
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono border border-amber-500/40">Open Slot</span>
+                                  </td>
+                                  <td className="py-2 px-3 text-slate-400 italic">{doc.hospital || '-'}</td>
+                                  <td className="py-2 px-3 text-slate-500 italic">{doc.specialization || 'Open for planning'}</td>
+                                  <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">-</td>
+                                  <td className="py-2 px-3 text-amber-400 font-bold">{doc.workingArea || '-'}</td>
+                                </tr>
+                              );
+                            }
+
+                            return (
+                              <tr key={doc._id} className="border-b border-[#3b3b5a]/30 hover:bg-[#32324d] transition-colors">
+                                <td className="py-2 px-2 text-center font-bold text-sky-400">{idx + 1}</td>
+                                <td className="py-2 px-3 font-bold text-white flex items-center gap-1.5">
+                                  <Stethoscope size={13} className="text-sky-400 shrink-0" />
+                                  <span>{doc.name}</span>
+                                </td>
+                                <td className="py-2 px-3">{getCategoryBadge(doc.category)}</td>
+                                <td className="py-2 px-3 text-slate-300">{doc.hospital || '-'}</td>
+                                <td className="py-2 px-3 text-slate-400">
+                                  {doc.degree && doc.degree !== '-' ? doc.degree : ''} 
+                                  {doc.degree && doc.specialization && doc.degree !== '-' && doc.specialization !== '-' ? ' • ' : ''}
+                                  {doc.specialization && doc.specialization !== '-' ? doc.specialization : ''}
+                                  {(!doc.degree || doc.degree === '-') && (!doc.specialization || doc.specialization === '-') ? '-' : ''}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <span className="font-mono text-[11px] text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                    {doc.visitDays || '-'}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-3 text-slate-400">{doc.workingArea || '-'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -751,7 +806,11 @@ export default function MonthlyCallPlanTab({
                         <td className="py-2 px-3 text-center font-bold text-slate-300">{d.minTarget}</td>
                         <td className="py-2 px-3 text-center font-black text-sky-400 text-sm">{d.plannedCalls}</td>
                         <td className="py-2 px-3 text-center">
-                          {exceeded ? (
+                          {d.isMissed ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                              Missed: TP Not Planned
+                            </span>
+                          ) : exceeded ? (
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
                               +{d.plannedCalls - d.minTarget} Extra Visit
                             </span>
@@ -771,6 +830,74 @@ export default function MonthlyCallPlanTab({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeSubView === 'missed_doctors' && (
+          /* SUBVIEW 3: MISSED DOCTORS REPORT (EX-MARKET) */
+          <div className="bg-[#252538] border border-rose-500/40 rounded-xl overflow-hidden shadow-xl">
+            <div className="p-3.5 bg-rose-950/40 border-b border-rose-500/30 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-rose-500 text-white text-xs font-black px-2 py-0.5 rounded shadow uppercase">
+                  Missed Doctors Summary
+                </span>
+                <span className="text-xs text-rose-200 font-bold">
+                  Missed Dr's: {missedDoctors.length} (Nos)
+                </span>
+              </div>
+              <span className="text-xs font-medium text-rose-300/90 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/30">
+                ⚠️ Remarks: TP not planned for month
+              </span>
+            </div>
+
+            {missedDoctors.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                <CheckCircle2 size={32} className="text-emerald-400" />
+                <span className="text-sm font-bold text-white">All Ex-Market Doctors Planned</span>
+                <p className="text-xs text-slate-400">All doctor markets are fully covered in this month's Tour Program!</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-[#3b3b5a] text-slate-300 font-bold bg-[#1e1e2d]">
+                      <th className="py-2.5 px-3 text-center w-12">Sr #</th>
+                      <th className="py-2.5 px-3">Doctor Name</th>
+                      <th className="py-2.5 px-3">Ex-Market / City</th>
+                      <th className="py-2.5 px-3">Category</th>
+                      <th className="py-2.5 px-3">Hospital / Clinic</th>
+                      <th className="py-2.5 px-3">Degree & Specialization</th>
+                      <th className="py-2.5 px-3">Remarks / Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {missedDoctors.map((doc, i) => (
+                      <tr key={doc._id} className="border-b border-[#3b3b5a]/40 hover:bg-[#32324d] transition-colors">
+                        <td className="py-2.5 px-3 text-center text-slate-500">{i + 1}</td>
+                        <td className="py-2.5 px-3 font-bold text-white">{doc.name}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/40 text-[11px]">
+                            {doc.workingArea || 'Ex-Market'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">{getCategoryBadge(doc.category)}</td>
+                        <td className="py-2.5 px-3 text-slate-300">{doc.hospital || '-'}</td>
+                        <td className="py-2.5 px-3 text-slate-400">
+                          {doc.degree && doc.degree !== '-' ? doc.degree : ''} 
+                          {doc.degree && doc.specialization && doc.degree !== '-' && doc.specialization !== '-' ? ' • ' : ''}
+                          {doc.specialization && doc.specialization !== '-' ? doc.specialization : ''}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-rose-400 font-bold text-xs bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
+                            TP not planned for month
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
