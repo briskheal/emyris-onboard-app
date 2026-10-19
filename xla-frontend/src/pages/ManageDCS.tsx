@@ -4,9 +4,10 @@ import axios from 'axios';
 import { 
   Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff,
   Stethoscope, Pill, Building2, UserCog, UploadCloud, ListChecks, PanelLeftClose, PanelLeftOpen,
-  CheckCircle, XCircle
+  CheckCircle, XCircle, CalendarDays
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import MonthlyCallPlanTab from '../components/MonthlyCallPlanTab';
 
 const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fetchData, onEdit }: any) => {
   const checkHQMatch = (h1?: string, h2?: string) => {
@@ -279,7 +280,7 @@ export default function ManageDCS() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'upload_dcs' | 'dcs_list_management'>(
+  const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'monthly_call_plan' | 'upload_dcs' | 'dcs_list_management'>(
     location.state?.activeTab || 'create_doctor'
   );
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -326,6 +327,7 @@ export default function ManageDCS() {
     { id: 'create_chemist', label: 'Create Chemists', icon: Pill },
     { id: 'create_stockist', label: 'Create Stockists', icon: Building2 },
     { id: 'edit_delete', label: 'Edit / Delete', icon: UserCog },
+    { id: 'monthly_call_plan', label: 'Monthly Call Plan', icon: CalendarDays },
     { id: 'upload_dcs', label: 'Upload DCS City / Area', icon: UploadCloud },
     { id: 'dcs_list_management', label: 'DCS List Management', icon: ListChecks },
   ] as const;
@@ -1371,7 +1373,7 @@ export default function ManageDCS() {
         </div>
         
         {/* Right Content Area */}
-        <div className={`flex-1 min-w-0 bg-slate-900 ${activeTab === 'edit_delete' && !editingRecord ? 'p-0 flex flex-col overflow-y-auto' : 'p-4 md:p-6 overflow-y-auto'}`}>
+        <div className={`flex-1 min-w-0 bg-slate-900 ${(activeTab === 'edit_delete' && !editingRecord) || activeTab === 'monthly_call_plan' ? 'p-0 flex flex-col overflow-y-auto' : 'p-4 md:p-6 overflow-y-auto'}`}>
       
       {activeTab === 'create_doctor' && (
         <CreateDoctorTab 
@@ -1422,6 +1424,7 @@ export default function ManageDCS() {
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Stockist' && <CreateStockistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
       {activeTab === 'upload_dcs' && <UploadDCSTab />}
       {activeTab === 'dcs_list_management' && <ListManagementTab />}
+      {activeTab === 'monthly_call_plan' && <MonthlyCallPlanTab hqs={hqs} />}
         </div>
       </div>
     </div>

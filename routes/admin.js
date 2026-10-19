@@ -5570,6 +5570,361 @@ router.get('/force-reseed-hospitals', async (req, res) => {
 router.put('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.update(req.body, { where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
+// ==========================================
+// AUTOMATED MONTHLY CALL PLAN APIS
+// ==========================================
+
+router.post('/dcs/call-plan/generate', async (req, res) => {
+  try {
+    const { hq, employeeId, month, year, callsPerDay = 8 } = req.body;
+    if (!hq || !month || !year) {
+      return res.status(400).json({ success: false, message: 'HQ, month, and year are required' });
+    }
+    const { XlDoctor, XlHoliday, XlUser, XlHQ } = require('../db');
+    const { Op } = require('sequelize');
+
+    // 1. Fetch Doctors for this HQ
+    const doctors = await XlDoctor.findAll({
+      where: {
+        headquarter: { [Op.iLike]: hq.trim() }
+      },
+      attributes: ['_id', 'name', 'category', 'visitDays', 'hospital', 'degree', 'specialization', 'headquarter', 'workingArea', 'mobile']
+    });
+
+    if (doctors.length === 0) {
+      return res.json({ success: false, message: `No doctors found for Headquarters: ${hq}` });
+    }
+
+    // 2. Fetch User & State for Holiday resolution
+    let userState = null;
+    if (employeeId) {
+      const u = await XlUser.findOne({ where: { employeeId } });
+      if (u) userState = u.state;
+    }
+    if (!userState) {
+      const hqObj = await XlHQ.findOne({ where: { hqName: { [Op.iLike]: hq.trim() } } });
+      if (hqObj) userState = hqObj.state;
+    }
+
+    // 3. Fetch Holidays
+    const holidayWhere = [
+      { state: null },
+      { state: '' },
+      { state: 'All' },
+      { state: 'N/A' }
+    ];
+    if (userState) holidayWhere.push({ state: userState });
+
+    const holidays = await XlHoliday.findAll({ where: { [Op.or]: holidayWhere } });
+    const holidayMap = {};
+    holidays.forEach(h => {
+      if (h.date) holidayMap[h.date] = h.name || h.title || 'Holiday';
+    });
+
+    // 4. Build Days of the Month
+    const mNum = parseInt(month, 10);
+    const yNum = parseInt(year, 10);
+    const lastDay = new Date(yNum, mNum, 0).getDate();
+
+    const weekdayTokens = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const allDays = [];
+    const workingDays = [];
+
+    for (let d = 1; d <= lastDay; d++) {
+      const dateStr = `${yNum}-${String(mNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dObj = new Date(yNum, mNum - 1, d);
+      const dayOfWeek = dObj.getDay();
+      const token = weekdayTokens[dayOfWeek];
+      const dayName = weekdayNames[dayOfWeek];
+
+      if (dayOfWeek === 0) {
+        allDays.push({ date: dateStr, day: d, token, dayName, type: 'Sunday', title: 'Sunday Off', doctors: [] });
+      } else if (holidayMap[dateStr]) {
+        allDays.push({ date: dateStr, day: d, token, dayName, type: 'Holiday', title: holidayMap[dateStr], doctors: [] });
+      } else {
+        const dayEntry = { date: dateStr, day: d, token, dayName, type: 'Working', title: 'Working Day', doctors: [] };
+        allDays.push(dayEntry);
+        workingDays.push(dayEntry);
+      }
+    }
+
+    // 5. Target Calculation Helpers (SuperCore >= 3, Core >= 2, Non-Core >= 1)
+    const getMinTarget = (category) => {
+      const cat = (category || '').toLowerCase();
+      if (cat.includes('ultra') || cat.includes('4 visit')) return 4;
+      if (cat.includes('supercore') || cat.includes('3 visit')) return 3;
+      if (cat.includes('core') && !cat.includes('non-core')) return 2;
+      if (cat.includes('non-core') || cat.includes('1 visit')) return 1;
+      return 1;
+    };
+
+    const getCategoryTier = (category) => {
+      const cat = (category || '').toLowerCase();
+      if (cat.includes('ultra')) return 4;
+      if (cat.includes('supercore')) return 3;
+      if (cat.includes('core') && !cat.includes('non-core')) return 2;
+      return 1;
+    };
+
+    // 6. Scheduling Allocation
+    const callCounts = {};
+    const lastSeenDate = {};
+    doctors.forEach(d => {
+      callCounts[d._id] = 0;
+      lastSeenDate[d._id] = -99;
+    });
+
+    const targetCalls = parseInt(callsPerDay, 10) || 8;
+
+    workingDays.forEach((wDay, dayIdx) => {
+      const token = wDay.token;
+
+      // Filter doctors whose visitDays includes this weekday
+      const eligible = doctors.filter(doc => {
+        if (!doc.visitDays) return false;
+        const tokens = doc.visitDays.split(',').map(s => s.trim());
+        return tokens.includes(token) || tokens.includes('ALL');
+      });
+
+      // Sort with user rules:
+      // Minimum targets first, prioritized by deficit and category tier, then spacing visits
+      eligible.sort((a, b) => {
+        const targetA = getMinTarget(a.category);
+        const targetB = getMinTarget(b.category);
+        const countA = callCounts[a._id];
+        const countB = callCounts[b._id];
+
+        const needsA = countA < targetA;
+        const needsB = countB < targetB;
+
+        if (needsA && !needsB) return -1;
+        if (!needsA && needsB) return 1;
+
+        if (needsA && needsB) {
+          const deficitA = targetA - countA;
+          const deficitB = targetB - countB;
+          if (deficitB !== deficitA) return deficitB - deficitA;
+          return getCategoryTier(b.category) - getCategoryTier(a.category);
+        }
+
+        // Both met minimum: higher tier category first (SuperCore > Core > NonCore)
+        const tierDiff = getCategoryTier(b.category) - getCategoryTier(a.category);
+        if (tierDiff !== 0) return tierDiff;
+
+        // Then fewest extra calls
+        if (countA !== countB) return countA - countB;
+
+        // Then largest gap since last visit
+        const gapA = dayIdx - lastSeenDate[a._id];
+        const gapB = dayIdx - lastSeenDate[b._id];
+        return gapB - gapA;
+      });
+
+      const selected = eligible.slice(0, targetCalls);
+
+      // Fallback if weekday has fewer than targetCalls
+      if (selected.length < targetCalls) {
+        const remaining = doctors.filter(d => !selected.some(s => s._id === d._id));
+        remaining.sort((a, b) => (callCounts[a._id] - callCounts[b._id]));
+        selected.push(...remaining.slice(0, targetCalls - selected.length));
+      }
+
+      selected.forEach(doc => {
+        callCounts[doc._id]++;
+        lastSeenDate[doc._id] = dayIdx;
+      });
+
+      wDay.doctors = selected.map(d => ({
+        _id: d._id,
+        name: d.name,
+        category: d.category,
+        hospital: d.hospital || '-',
+        degree: d.degree || '-',
+        specialization: d.specialization || '-',
+        visitDays: d.visitDays,
+        workingArea: d.workingArea || '-'
+      }));
+    });
+
+    // 7. Calculate Summaries
+    let totalPlannedCalls = 0;
+    workingDays.forEach(w => { totalPlannedCalls += w.doctors.length; });
+
+    let metMinimum = 0;
+    let moreThanMinimum = 0;
+    let belowMinimum = 0;
+    const categoryBreakdown = {};
+
+    const doctorSummary = doctors.map(d => {
+      const min = getMinTarget(d.category);
+      const count = callCounts[d._id] || 0;
+      const cat = d.category || 'General';
+
+      if (!categoryBreakdown[cat]) {
+        categoryBreakdown[cat] = { totalDocs: 0, minReq: min, totalCalls: 0, avgCalls: 0 };
+      }
+      categoryBreakdown[cat].totalDocs++;
+      categoryBreakdown[cat].totalCalls += count;
+
+      if (count >= min) {
+        metMinimum++;
+        if (count > min) moreThanMinimum++;
+      } else {
+        belowMinimum++;
+      }
+
+      return {
+        _id: d._id,
+        name: d.name,
+        category: d.category,
+        hospital: d.hospital,
+        visitDays: d.visitDays,
+        minTarget: min,
+        plannedCalls: count,
+        status: count >= min ? (count > min ? 'Exceeded Target' : 'Target Met') : 'Below Target'
+      };
+    });
+
+    Object.keys(categoryBreakdown).forEach(k => {
+      const item = categoryBreakdown[k];
+      item.avgCalls = (item.totalCalls / item.totalDocs).toFixed(1);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        hq,
+        employeeId,
+        month: mNum,
+        year: yNum,
+        callsPerDay: targetCalls,
+        days: allDays,
+        summary: {
+          totalDays: lastDay,
+          workingDays: workingDays.length,
+          holidays: Object.keys(holidayMap).length,
+          sundays: allDays.filter(d => d.type === 'Sunday').length,
+          totalPlannedCalls,
+          totalDoctors: doctors.length,
+          doctorsMetMinimum: metMinimum,
+          doctorsAboveMinimum: moreThanMinimum,
+          doctorsBelowMinimum: belowMinimum,
+          coveragePercent: ((metMinimum / doctors.length) * 100).toFixed(1),
+          categoryBreakdown
+        },
+        doctorSummary
+      }
+    });
+  } catch (e) {
+    console.error('Call plan generation error:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.post('/dcs/call-plan/save', async (req, res) => {
+  try {
+    const { employeeId, days, month, year } = req.body;
+    if (!employeeId || !days || !Array.isArray(days)) {
+      return res.status(400).json({ success: false, message: 'Invalid payload: employeeId and days are required' });
+    }
+
+    const { XlCallPlan } = require('../db');
+
+    let savedCount = 0;
+    for (const day of days) {
+      if (day.type !== 'Working' || !day.doctors || day.doctors.length === 0) continue;
+      
+      const sDate = day.date; // YYYY-MM-DD
+      const doctorIds = day.doctors.map(d => (d._id || d.id || d));
+
+      const existing = await XlCallPlan.findOne({ where: { employeeId, date: sDate } });
+      if (existing) {
+        existing.doctors = JSON.stringify(doctorIds);
+        existing.status = 'Approved';
+        existing.approvedBy = 'Admin';
+        await existing.save();
+      } else {
+        await XlCallPlan.create({
+          employeeId,
+          date: sDate,
+          doctors: JSON.stringify(doctorIds),
+          chemists: '[]',
+          stockists: '[]',
+          status: 'Approved',
+          approvedBy: 'Admin'
+        });
+      }
+      savedCount++;
+    }
+
+    res.json({ success: true, message: `Successfully saved and approved ${savedCount} daily call plans for ${employeeId}!`, count: savedCount });
+  } catch (e) {
+    console.error('Call plan save error:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.get('/dcs/call-plan/saved', async (req, res) => {
+  try {
+    const { employeeId, month, year } = req.query;
+    if (!employeeId || !month || !year) {
+      return res.status(400).json({ success: false, message: 'employeeId, month, and year are required' });
+    }
+
+    const { XlCallPlan, XlDoctor } = require('../db');
+    const { Op } = require('sequelize');
+
+    const mNum = String(parseInt(month, 10)).padStart(2, '0');
+    const startDate = `${year}-${mNum}-01`;
+    const lastDay = new Date(parseInt(year, 10), parseInt(month, 10), 0).getDate();
+    const endDate = `${year}-${mNum}-${String(lastDay).padStart(2, '0')}`;
+
+    const plans = await XlCallPlan.findAll({
+      where: {
+        employeeId,
+        date: { [Op.between]: [startDate, endDate] }
+      },
+      order: [['date', 'ASC']]
+    });
+
+    if (plans.length === 0) {
+      return res.json({ success: true, hasSavedPlan: false, plans: [] });
+    }
+
+    const allDoctorIds = new Set();
+    plans.forEach(p => {
+      let ids = [];
+      try { ids = JSON.parse(p.doctors || '[]'); } catch(e){}
+      ids.forEach(id => allDoctorIds.add(id));
+    });
+
+    const doctors = await XlDoctor.findAll({
+      where: { _id: Array.from(allDoctorIds) },
+      attributes: ['_id', 'name', 'category', 'hospital', 'degree', 'specialization', 'visitDays', 'workingArea']
+    });
+    const docMap = {};
+    doctors.forEach(d => { docMap[d._id] = d; });
+
+    const formattedPlans = plans.map(p => {
+      let ids = [];
+      try { ids = JSON.parse(p.doctors || '[]'); } catch(e){}
+      return {
+        _id: p._id,
+        date: p.date,
+        status: p.status,
+        doctors: ids.map(id => docMap[id] || { _id: id, name: 'Doctor (' + id + ')' })
+      };
+    });
+
+    res.json({ success: true, hasSavedPlan: true, count: plans.length, plans: formattedPlans });
+  } catch (e) {
+    console.error('Fetch saved call plan error:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/dcs/upload', upload.single('file'), async (req, res) => {
