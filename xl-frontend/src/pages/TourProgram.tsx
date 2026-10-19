@@ -347,7 +347,7 @@ export default function TourProgram() {
       {/* Header */}
       <div className="px-4 pt-4 pb-4 bg-[#1c1c2e] shadow-md border-b border-[#3b3b5a] sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
+          <button onClick={() => navigate('/dashboard')} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
             <ChevronLeft size={20} className="text-white" />
           </button>
           <div>

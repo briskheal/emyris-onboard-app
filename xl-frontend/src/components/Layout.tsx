@@ -71,18 +71,7 @@ export default function Layout() {
           setShowNotifMenu(false);
           return;
       }
-      const path = location.pathname;
-      if (path.startsWith('/extras/performance/')) {
-          navigate('/extras/performance');
-      } else if (path === '/extras/performance') {
-          navigate('/extras');
-      } else if (path.startsWith('/extras/')) {
-          navigate('/extras');
-      } else if (window.history.state && window.history.state.idx > 0) {
-          navigate(-1);
-      } else {
-          navigate('/dashboard');
-      }
+      navigate('/dashboard');
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
