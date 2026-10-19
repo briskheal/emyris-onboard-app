@@ -167,6 +167,9 @@ export default function MonthlyCallPlanTab({
       const res = await axios.get('/api/admin/dcs/call-plan/saved', {
         params: { employeeId: selectedEmployeeId, month: selectedMonth, year: selectedYear }
       });
+      if (res.data?.tourProgram) {
+        setTourProgramInfo(res.data.tourProgram);
+      }
       if (res.data?.success && res.data.hasSavedPlan) {
         setIsSavedInDb(true);
         setExistingPlanInfo({
@@ -240,6 +243,13 @@ export default function MonthlyCallPlanTab({
 
     const empObj = usersList.find(u => u.employeeId === selectedEmployeeId);
     const empName = empObj ? `${empObj.firstName || ''} ${empObj.lastName || ''}`.trim() : selectedEmployeeId;
+
+    // Strict Tour Program check: XLA can only submit/save Call Plan if TP is submitted by XL user or approved
+    const isTpValid = tourProgramInfo?.linked && ['Submitted', 'Approved'].includes(tourProgramInfo.status);
+    if (tourProgramInfo && !isTpValid) {
+      alert(`❌ Cannot Submit Call Plan:\n\nNo Tour Program has been submitted by ${empName} (or approved by Admin) for ${selectedMonth}/${selectedYear}.\n\nA Tour Program must be submitted by the XL user first before any Call Plan can be submitted.`);
+      return;
+    }
 
     if (existingPlanInfo?.hasSavedPlan) {
       const proceed = window.confirm(
@@ -360,17 +370,17 @@ export default function MonthlyCallPlanTab({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              onClick={handleGeneratePlan}
-              disabled={loading}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              <span>{planDays.length > 0 ? 'Regenerate Plan' : 'Generate Automated Plan'}</span>
-            </button>
-
             {planDays.length > 0 && (
               <>
+                <button
+                  onClick={handleGeneratePlan}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                  <span>Regenerate Plan</span>
+                </button>
+
                 <button
                   onClick={handleSaveAndApprove}
                   disabled={saving}
@@ -519,22 +529,27 @@ export default function MonthlyCallPlanTab({
         {/* Tour Program Linkage Indicator */}
         {tourProgramInfo && (
           <div className="pt-1">
-            {tourProgramInfo.linked ? (
+            {tourProgramInfo.linked && ['Submitted', 'Approved'].includes(tourProgramInfo.status) ? (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/40 text-purple-200 text-xs flex-wrap">
                 <span className="text-sm">✈️</span>
                 <span className="font-semibold">Tour Program Linked:</span>
-                <span className="font-bold text-white bg-purple-600/40 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">
+                <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+                  tourProgramInfo.status === 'Approved' ? 'bg-emerald-600/50 text-emerald-300' : 'bg-sky-600/50 text-sky-300'
+                }`}>
                   {tourProgramInfo.status}
                 </span>
-                <span className="text-purple-300">({tourProgramInfo.month})</span>
+                <span className="text-purple-300">({tourProgramInfo.month || `${selectedMonth}/${selectedYear}`})</span>
                 <span className="text-purple-400">•</span>
                 <span className="font-semibold text-emerald-400">
-                  {tourProgramInfo.exMarketDaysCount} Ex-Market Tour Day(s) Scheduled with All Market Doctors
+                  {tourProgramInfo.exMarketDaysCount || 0} Ex-Market Tour Day(s) Scheduled with All Market Doctors
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs">
-                <span>ℹ️ No submitted Tour Program found for this user/month. Call plan generated using HQ Local weekday rules.</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs">
+                <span className="text-base">⚠️</span>
+                <span>
+                  <strong className="text-white">Tour Program Required:</strong> No Tour Program has been submitted by the XL user (or approved by Admin) for {selectedMonth}/{selectedYear}. <strong>Call Plan cannot be submitted or saved to CRM</strong> until a Tour Program is submitted by the field representative.
+                </span>
               </div>
             )}
           </div>

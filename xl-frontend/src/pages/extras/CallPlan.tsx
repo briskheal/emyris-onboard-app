@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle, Send } from 'lucide-react';
 import axios from 'axios';
 
 interface ProductSelect { product: string; qty: number; }
@@ -41,6 +41,12 @@ function CallPlan() {
   // 'loading' = calendar list loading; 'saving' = save button submitting
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [submittingAll, setSubmittingAll] = useState(false);
+  const [tourProgramInfo, setTourProgramInfo] = useState<{
+    exists: boolean;
+    status: string;
+    isSubmittedOrApproved: boolean;
+  } | null>(null);
 
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showEntityModal, setShowEntityModal] = useState(false);
@@ -71,8 +77,28 @@ function CallPlan() {
       fetchMasterData();
       fetchMonthlyPlans();
       fetchHolidays();
+      fetchTourProgramStatus();
     }
   }, [activeUser, month, year]);
+
+  const fetchTourProgramStatus = async () => {
+    try {
+      const res = await axios.get(`/api/xl/tour-program/my?email=${activeUser?.employeeId}&month=${month}&year=${year}`);
+      if (res.data?.success && res.data?.data) {
+        const tp = res.data.data;
+        const st = tp.status || 'Draft';
+        setTourProgramInfo({
+          exists: true,
+          status: st,
+          isSubmittedOrApproved: ['Submitted', 'Approved'].includes(st)
+        });
+      } else {
+        setTourProgramInfo({ exists: false, status: 'Not Submitted', isSubmittedOrApproved: false });
+      }
+    } catch (e) {
+      setTourProgramInfo({ exists: false, status: 'Not Submitted', isSubmittedOrApproved: false });
+    }
+  };
 
   const fetchSubordinates = async () => {
     try {
@@ -332,6 +358,50 @@ function CallPlan() {
     setSaving(false);
   };
 
+  const handleSubmitAll = async () => {
+    if (!tourProgramInfo?.isSubmittedOrApproved) {
+      alert(`❌ Cannot submit Call Plan:\n\nNo Tour Program has been submitted (or approved) for ${new Date(parseInt(year), parseInt(month)-1, 1).toLocaleString('default', { month: 'long' })} ${year}.\n\nA Tour Program must be submitted first before submitting your Call Plan.`);
+      return;
+    }
+
+    const plannedDays = (monthlyPlans || []).filter(p => {
+      const pDocs = safeParse(p.doctors, 'Doctors');
+      const pChems = safeParse(p.chemists, 'Chemists');
+      const pStocks = safeParse(p.stockists, 'Stockists');
+      return pDocs.length > 0 || pChems.length > 0 || pStocks.length > 0;
+    });
+
+    if (plannedDays.length === 0) {
+      alert('No planned days found in this month. Please plan calls before submitting.');
+      return;
+    }
+
+    const monthName = new Date(parseInt(year), parseInt(month)-1, 1).toLocaleString('default', { month: 'long' });
+    const confirmMsg = `Submit Call Plan for all ${plannedDays.length} planned days (${planningStats.totalPlannedCalls} doctor calls) for ${monthName} ${year} to your manager for approval?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setSubmittingAll(true);
+    try {
+      const res = await axios.post('/api/xl/call-plan/submit-all', {
+        employeeId: activeUser?.employeeId,
+        month,
+        year
+      });
+
+      if (res.data?.success) {
+        alert(`Success! ${res.data.message || 'Call Plan submitted successfully to manager.'}`);
+        fetchMonthlyPlans();
+      } else {
+        alert(res.data?.message || 'Failed to submit Call Plan.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || 'Error submitting Call Plan. Please try again.');
+    } finally {
+      setSubmittingAll(false);
+    }
+  };
+
   return (
     <div className="min-h-full bg-[#1c1c2e] text-white font-sans pb-24">
       {/* Header */}
@@ -397,14 +467,23 @@ function CallPlan() {
 
         {/* Planning Analytics Dashboard Bar */}
         <div className="bg-[#24243a] border border-[#3b3b5a] rounded-xl p-3.5 mb-4 shadow-lg">
-          <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#3b3b5a]/60">
+          <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#3b3b5a]/60 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-sky-400" />
               <span className="text-xs font-bold text-white uppercase tracking-wider">
                 Monthly Call Plan Analytics
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {tourProgramInfo && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  tourProgramInfo.isSubmittedOrApproved 
+                    ? (tourProgramInfo.status === 'Approved' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30')
+                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                }`}>
+                  TP: {tourProgramInfo.status || 'Not Submitted'}
+                </span>
+              )}
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
                 {planningStats.totalPlannedCalls} Total Calls Planned
               </span>
@@ -499,6 +578,19 @@ function CallPlan() {
           </div>
         </div>
 
+        {/* Tour Program Required Warning if Not Submitted/Approved */}
+        {tourProgramInfo && !tourProgramInfo.isSubmittedOrApproved && (
+          <div className="bg-rose-500/15 border border-rose-500/40 rounded-xl p-3 mb-4 flex items-start gap-2.5 text-xs text-rose-300 shadow-lg">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-white">Tour Program Not Submitted for this Month</p>
+              <p className="text-[11px] text-rose-200/80 mt-0.5">
+                No Tour Program has been submitted (or approved) for this month. You must submit your Tour Program first before your Call Plan can be submitted for approval.
+              </p>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-slate-400 text-center py-10 font-bold">Loading plans...</p>
         ) : (
@@ -522,7 +614,11 @@ function CallPlan() {
                   onClick={() => isHol ? null : (isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day))}
                   className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors`}
                 >
-                  <div className={`w-14 h-16 shrink-0 flex flex-col items-center justify-center ${isHol ? 'bg-slate-700/50' : isPlanned ? 'bg-emerald-600' : 'bg-[#1e88e5]'}`}>
+                  <div className={`w-14 h-16 shrink-0 flex flex-col items-center justify-center ${
+                    isHol ? 'bg-slate-700/50' : 
+                    isPlanned ? (plan?.status === 'Approved' ? 'bg-emerald-600' : plan?.status === 'Submitted' ? 'bg-sky-600' : 'bg-teal-600') : 
+                    'bg-[#1e88e5]'
+                  }`}>
                     <span className="text-xl font-bold leading-none text-white opacity-90">{day}</span>
                     <span className="text-[9px] font-bold uppercase text-white opacity-75 mt-0.5">
                       {new Date(parseInt(year), parseInt(month)-1, day).toLocaleString('en-US', { weekday: 'short' })}
@@ -536,21 +632,30 @@ function CallPlan() {
                       </div>
                     ) : (
                       <>
-                        {plan ? (
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
-                            <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
-                            <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
+                        {plan && isPlanned ? (
+                          <div className="flex items-center justify-between w-full pr-1 gap-2">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                              <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
+                              <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
+                              <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
+                            </div>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
+                              plan.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                              plan.status === 'Submitted' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' :
+                              'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            }`}>
+                              {plan.status || 'Draft'}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-sm font-bold text-slate-200">Plan DCS calls</span>
                         )}
                         {isMultiMode ? (
-                          <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center shrink-0 ml-2">
                             {selectedDates.has(day) && <Check className="w-4 h-4 text-sky-400" />}
                           </div>
                         ) : (
-                          !plan && <Plus className="w-5 h-5 text-emerald-500" />
+                          !plan && <Plus className="w-5 h-5 text-emerald-500 shrink-0 ml-2" />
                         )}
                       </>
                     )}
@@ -562,23 +667,48 @@ function CallPlan() {
         )}
       </div>
 
-      {/* Multiple CPs button - Fixed bottom */}
+      {/* Fixed bottom action dock: Submit All & Multiple CPs */}
       {!loading && (
         <div 
-          className="fixed right-4 sm:right-auto sm:left-1/2 sm:ml-[110px] z-50 flex gap-2"
-          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom) + 16px)' }}
+          className="fixed left-0 right-0 max-w-md mx-auto px-4 z-40 flex items-center gap-2.5"
+          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom) + 12px)' }}
         >
           {!isMultiMode ? (
-            <button onClick={() => setIsMultiMode(true)} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2">
-              <Plus className="w-5 h-5" /> Multiple CPs
-            </button>
+            <>
+              <button
+                onClick={handleSubmitAll}
+                disabled={submittingAll || planningStats.totalPlannedCalls === 0}
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 px-3 rounded-xl font-bold text-xs sm:text-sm shadow-xl shadow-emerald-950/40 border border-emerald-400/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                <span>{submittingAll ? 'Submitting...' : 'Submit All'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsMultiMode(true)}
+                className="bg-[#27273f] hover:bg-[#343454] text-sky-400 border border-sky-500/40 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Multiple CPs</span>
+              </button>
+            </>
           ) : (
             <>
-              <button onClick={() => { setIsMultiMode(false); setSelectedDates(new Set()); }} className="bg-slate-700 text-white px-5 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
-                <X className="w-5 h-5" /> Cancel
+              <button
+                onClick={() => { setIsMultiMode(false); setSelectedDates(new Set()); }}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancel</span>
               </button>
-              <button onClick={openMultiPlan} disabled={selectedDates.size === 0} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 disabled:opacity-50">
-                <Check className="w-5 h-5" /> Add {selectedDates.size} CPs
+
+              <button
+                onClick={openMultiPlan}
+                disabled={selectedDates.size === 0}
+                className="flex-1 bg-sky-500 hover:bg-sky-400 text-white py-3 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Add {selectedDates.size} CPs</span>
               </button>
             </>
           )}

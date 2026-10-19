@@ -6126,7 +6126,40 @@ router.post('/dcs/call-plan/save', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid payload: employeeId and days are required' });
     }
 
-    const { XlCallPlan } = require('../db');
+    const { XlCallPlan, XlTourProgram, sequelize } = require('../db');
+    const { Op } = require('sequelize');
+
+    // Strict TP Check: XLA can only submit/save Call Plan if TP is submitted by XL user or approved
+    const mNum = parseInt(month, 10);
+    const yNum = parseInt(year, 10);
+    const dObj = new Date(yNum, mNum - 1, 1);
+    const monthLong = dObj.toLocaleString('en-US', { month: 'long' });
+    const mLong = monthLong.toLowerCase();
+    const mShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+    const mNumStr = String(mNum);
+
+    const tourProgram = await XlTourProgram.findOne({
+      where: {
+        employeeId,
+        year: String(yNum),
+        [Op.or]: [
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort + ' ' + yNum),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong + ' ' + yNum),
+          { month: mNumStr },
+          { month: mNumStr.padStart(2, '0') }
+        ],
+        status: { [Op.in]: ['Submitted', 'Approved'] }
+      }
+    });
+
+    if (!tourProgram) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot submit Call Plan: No Tour Program has been submitted by the XL user (or approved by Admin) for ${monthLong} ${yNum}. A Tour Program must be submitted first.`
+      });
+    }
 
     let savedCount = 0;
     for (const day of days) {
@@ -6185,10 +6218,44 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
       return res.status(400).json({ success: false, message: 'employeeId, month, and year are required' });
     }
 
-    const { XlCallPlan, XlDoctor } = require('../db');
+    const { XlCallPlan, XlDoctor, XlTourProgram, sequelize } = require('../db');
     const { Op } = require('sequelize');
 
     const mNum = String(parseInt(month, 10)).padStart(2, '0');
+    const mNumInt = parseInt(month, 10);
+    const yNumInt = parseInt(year, 10);
+    const dObj = new Date(yNumInt, mNumInt - 1, 1);
+    const mLong = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+    const mShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+    const mNumStr = String(mNumInt);
+
+    // Also look up Tour Program status for this employee and month
+    const tp = await XlTourProgram.findOne({
+      where: {
+        employeeId,
+        year: String(yNumInt),
+        [Op.or]: [
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort + ' ' + yNumInt),
+          sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong + ' ' + yNumInt),
+          { month: mNumStr },
+          { month: mNumStr.padStart(2, '0') }
+        ]
+      },
+      order: [
+        [sequelize.literal("CASE WHEN status = 'Approved' THEN 1 WHEN status = 'Submitted' THEN 2 ELSE 3 END"), 'ASC'],
+        ['createdAt', 'DESC']
+      ]
+    });
+
+    const tourProgramInfo = {
+      linked: !!tp,
+      status: tp ? tp.status : 'Not Submitted',
+      isSubmittedOrApproved: tp ? ['Submitted', 'Approved'].includes(tp.status) : false,
+      month: tp ? tp.month : null
+    };
+
     const startDate = `${year}-${mNum}-01`;
     const lastDay = new Date(parseInt(year, 10), parseInt(month, 10), 0).getDate();
     const endDate = `${year}-${mNum}-${String(lastDay).padStart(2, '0')}`;
@@ -6202,7 +6269,7 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
     });
 
     if (plans.length === 0) {
-      return res.json({ success: true, hasSavedPlan: false, plans: [] });
+      return res.json({ success: true, hasSavedPlan: false, plans: [], tourProgram: tourProgramInfo });
     }
 
     const allDoctorIds = new Set();
@@ -6256,7 +6323,8 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
       count: plans.length,
       totalPlannedCalls,
       status: plans[0]?.status || 'Approved',
-      plans: formattedPlans
+      plans: formattedPlans,
+      tourProgram: tourProgramInfo
     });
   } catch (e) {
     console.error('Fetch saved call plan error:', e);

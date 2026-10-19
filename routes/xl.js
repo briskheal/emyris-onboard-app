@@ -4677,7 +4677,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                 where: {
                     employeeId: { [Op.in]: idArray },
                     year: tpYear,
-                    status: 'Approved',
+                    status: { [Op.in]: ['Submitted', 'Approved'] },
                     [Op.or]: [
                         sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong),
                         sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort),
@@ -4688,7 +4688,7 @@ router.post('/call-plan/bulk', async (req, res) => {
             });
 
             if (!approvedTp) {
-                return res.json({ success: false, message: `You must have an Approved Tour Program for ${monthLong} ${tpYear} before submitting Call Plans.` });
+                return res.json({ success: false, message: `You must have a Submitted or Approved Tour Program for ${monthLong} ${tpYear} before submitting Call Plans.` });
             }
             
             let tpEntries = [];
@@ -4698,7 +4698,7 @@ router.post('/call-plan/bulk', async (req, res) => {
             const matchingEntry = tpEntries.find(e => normalizeDate(e.date) === sDate);
 
             if (!matchingEntry) {
-                return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Approved Tour Program.` });
+                return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Tour Program.` });
             }
 
             if (matchingEntry.activityType === 'Leave' || matchingEntry.type === 'Holiday' || matchingEntry.activityType === 'Holiday' || matchingEntry.type === 'SUNDAY') {
@@ -4857,6 +4857,140 @@ router.post('/call-plan/bulk', async (req, res) => {
         console.error('Call Plan Save Error:', e);
         require('fs').appendFileSync('cp_error.log', (e.original ? e.original.message : '') + '\n' + (e.stack || e.message) + '\n');
         res.status(500).json({ error: 'Failed to save call plan' });
+    }
+});
+
+router.post('/call-plan/submit-all', async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.body;
+        if (!employeeId || !month || !year) {
+            return res.status(400).json({ success: false, message: 'employeeId, month, and year are required' });
+        }
+
+        const { Op } = require('sequelize');
+        const { XlUser, XlCallPlan, XlTourProgram, XlNotification, generateId, sequelize } = require('../db');
+
+        const userForId = await XlUser.findOne({ where: { employeeId } }) || 
+                          await XlUser.findOne({ where: { email: employeeId } }) || 
+                          await XlUser.findOne({ where: { uid: employeeId } });
+        let idArray = [employeeId];
+        if (userForId) {
+            if (userForId.employeeId) idArray.push(userForId.employeeId);
+            if (userForId.email) idArray.push(userForId.email);
+            if (userForId.uid) idArray.push(userForId.uid);
+        }
+        idArray = Array.from(new Set(idArray));
+
+        const mNum = parseInt(month, 10);
+        const yNum = parseInt(year, 10);
+        const dObj = new Date(yNum, mNum - 1, 1);
+        const monthLong = dObj.toLocaleString('en-US', { month: 'long' });
+        const mLong = monthLong.toLowerCase();
+        const mShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+        const mNumStr = String(mNum);
+        const mNumPad = mNumStr.padStart(2, '0');
+        const tpYear = String(yNum);
+
+        // Check Tour Program: User MUST have Submitted or Approved Tour Program for this month
+        const tp = await XlTourProgram.findOne({
+            where: {
+                employeeId: { [Op.in]: idArray },
+                year: tpYear,
+                status: { [Op.in]: ['Submitted', 'Approved'] },
+                [Op.or]: [
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), mShort + ' ' + yNum),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), mLong + ' ' + yNum),
+                    { month: mNumStr },
+                    { month: mNumPad }
+                ]
+            }
+        });
+
+        if (!tp) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot submit Call Plan: No Tour Program has been submitted (or approved) for ${monthLong} ${tpYear}. You must submit your Tour Program first.`
+            });
+        }
+
+        const startDate = `${yNum}-${mNumPad}-01`;
+        const lastDay = new Date(yNum, mNum, 0).getDate();
+        const endDate = `${yNum}-${mNumPad}-${String(lastDay).padStart(2, '0')}`;
+
+        const plans = await XlCallPlan.findAll({
+            where: {
+                employeeId: { [Op.in]: idArray },
+                date: { [Op.between]: [startDate, endDate] }
+            }
+        });
+
+        const parseSafe = (f) => {
+            try {
+                const parsed = typeof f === 'string' ? JSON.parse(f || '[]') : f;
+                return Array.isArray(parsed) ? parsed : [];
+            } catch(e) { return []; }
+        };
+
+        const plannedRecords = plans.filter(p => {
+            return parseSafe(p.doctors).length > 0 || parseSafe(p.chemists).length > 0 || parseSafe(p.stockists).length > 0;
+        });
+
+        if (plannedRecords.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: `No planned calls found for ${monthLong} ${tpYear}. Please plan your visits first before submitting.`
+            });
+        }
+
+        let totalPlannedCalls = 0;
+        for (const p of plannedRecords) {
+            p.status = 'Submitted';
+            await p.save();
+            totalPlannedCalls += parseSafe(p.doctors).length;
+        }
+
+        const senderName = userForId ? (((userForId.firstName || '') + ' ' + (userForId.lastName || '')).trim() || userForId.name || employeeId) : employeeId;
+
+        // Notify reporting manager
+        if (userForId && userForId.reportingManager) {
+            const managers = await XlUser.findAll({ where: { designation: userForId.reportingManager } });
+            for (const m of managers) {
+                await XlNotification.create({
+                    _id: generateId(),
+                    employeeId: m.employeeId,
+                    title: 'Monthly Call Plan Submitted',
+                    message: `${senderName} has submitted their complete Call Plan for ${monthLong} ${yNum} (${plannedRecords.length} working days, ${totalPlannedCalls} doctor calls) for approval.`
+                }).catch(() => {});
+            }
+        }
+
+        // Notify Admin
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId: 'ADMIN',
+            title: 'Monthly Call Plan Submitted',
+            message: `${senderName} has submitted their complete Call Plan for ${monthLong} ${yNum} (${plannedRecords.length} working days, ${totalPlannedCalls} doctor calls).`
+        }).catch(() => {});
+
+        // Notify Submitter
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId: userForId?.employeeId || employeeId,
+            title: 'Call Plan Submitted',
+            message: `Your Call Plan for ${monthLong} ${yNum} (${plannedRecords.length} working days, ${totalPlannedCalls} doctor calls) has been submitted successfully for approval.`
+        }).catch(() => {});
+
+        return res.json({
+            success: true,
+            message: `Successfully submitted Call Plan for ${plannedRecords.length} working days (${totalPlannedCalls} doctor calls) for approval!`,
+            count: plannedRecords.length,
+            totalPlannedCalls
+        });
+    } catch (e) {
+        console.error('Submit All Call Plans Error:', e);
+        return res.status(500).json({ success: false, message: 'Failed to submit call plans: ' + e.message });
     }
 });
 
