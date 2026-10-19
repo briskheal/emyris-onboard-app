@@ -569,19 +569,19 @@ export default function CallPlanListReport() {
             </div>
           </div>
         ) : (
-          <div className="bg-[#181826] border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="bg-[#181826] border border-slate-800 rounded-2xl shadow-xl overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse text-xs min-w-[920px]">
               <thead>
                 <tr className="border-b border-slate-800 bg-[#141420] text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                  <th className="py-3 px-3 w-14 text-center">Sr.</th>
-                  <th className="py-3 px-4">Date & Day</th>
-                  <th className="py-3 px-4">User / Representative</th>
-                  <th className="py-3 px-4">Headquarter</th>
-                  <th className="py-3 px-4 text-center">Planned Calls</th>
-                  <th className="py-3 px-4">Working Areas</th>
-                  <th className="py-3 px-4">Planned Doctors</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-center w-20">View</th>
+                  <th className="py-3 px-3 w-12 text-center whitespace-nowrap">Sr.</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Date & Day</th>
+                  <th className="py-3 px-4 whitespace-nowrap">User / Representative</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Headquarter</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Planned Calls</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Working Areas</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Planned Doctors</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Status</th>
+                  <th className="py-3 px-4 text-center w-16 whitespace-nowrap">View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -666,56 +666,40 @@ export default function CallPlanListReport() {
                         </td>
 
                         {/* Planned Doctors Column with interactive expansion trigger */}
-                        <td className="py-3 px-4 max-w-[260px]">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {plan.doctors && plan.doctors.length > 0 ? (
-                              <>
-                                {plan.doctors.slice(0, 3).map((doc: any, dIdx: number) => (
-                                  <span 
-                                    key={dIdx} 
-                                    className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-medium truncate max-w-[140px]"
-                                    title={`${doc.name} (${doc.category})`}
-                                  >
-                                    {doc.name}
-                                  </span>
-                                ))}
-                                {plan.doctors.length > 3 ? (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
-                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                                      isExpanded 
-                                        ? 'bg-sky-500/25 text-sky-300 border border-sky-400/50' 
-                                        : 'bg-slate-800 hover:bg-sky-500/20 text-sky-400 border border-slate-700 hover:border-sky-500/40'
-                                    }`}
-                                    title="Click to expand/collapse all doctors"
-                                  >
-                                    <span>{isExpanded ? 'Hide' : `+${plan.doctors.length - 3} more`}</span>
-                                    {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
-                                    className="p-1 text-slate-400 hover:text-sky-400"
-                                    title="Expand details"
-                                  >
-                                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-slate-500 text-[10px]">No doctors scheduled</span>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleExpand(plan._id); }}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                                isExpanded 
+                                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' 
+                                  : 'bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30'
+                              }`}
+                              title={isExpanded ? "Collapse Planned Doctors" : "Click to view all Planned Doctors"}
+                            >
+                              <span>{plan.doctorCount || (plan.doctors ? plan.doctors.length : 0)} Doctors</span>
+                              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                            {plan.doctors && plan.doctors.length > 0 && (
+                              <span 
+                                className="text-[11px] text-slate-400 truncate max-w-[150px] inline-block" 
+                                title={plan.doctors.map((d: any) => `${d.name} (${d.category || 'General'})`).join(', ')}
+                              >
+                                {plan.doctors.slice(0, 2).map((d: any) => d.name).join(', ')}
+                                {plan.doctors.length > 2 ? '...' : ''}
+                              </span>
                             )}
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-wider uppercase">
                             <Check size={11} strokeWidth={3} />
                             <span>Approved</span>
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
                           <button
                             onClick={(e) => { e.stopPropagation(); setViewingPlan(plan); }}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 transition-colors border border-slate-700 hover:border-sky-500/40"
@@ -729,8 +713,8 @@ export default function CallPlanListReport() {
                       {/* Collapsible / Expandable Sub-Row */}
                       {isExpanded && (
                         <tr className="bg-[#151525] border-b border-slate-700/80">
-                          <td colSpan={9} className="p-3 sm:p-5">
-                            <div className="bg-[#1b1b2f] border border-slate-700/80 rounded-xl p-4 shadow-inner space-y-3">
+                          <td colSpan={9} className="p-3 sm:p-4 max-w-full">
+                            <div className="bg-[#1b1b2f] border border-slate-700/80 rounded-xl p-3 sm:p-4 shadow-inner space-y-3">
                               
                               {/* Header inside expanded sub-row */}
                               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
@@ -760,30 +744,30 @@ export default function CallPlanListReport() {
                                 </div>
                               </div>
 
-                              {/* Doctor Grid */}
+                              {/* Doctor Grid - 2 columns maximum so right-side cards are never cut off */}
                               {(!plan.doctors || plan.doctors.length === 0) ? (
                                 <div className="py-4 text-center text-slate-500 text-xs">
                                   No doctor records available for this day.
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                                   {plan.doctors.map((doc: any, dIdx: number) => (
                                     <div
                                       key={doc._id || dIdx}
-                                      className="p-3 rounded-xl bg-[#22223a] border border-slate-700/60 hover:border-sky-500/40 transition-colors flex flex-col justify-between shadow-sm"
+                                      className="p-3 rounded-xl bg-[#22223a] border border-slate-700/60 hover:border-sky-500/40 transition-colors flex flex-col justify-between shadow-sm min-w-0"
                                     >
-                                      <div>
+                                      <div className="min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                          <div className="flex items-start gap-2">
+                                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
                                             <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold shrink-0 mt-0.5 border border-slate-700">
                                               {dIdx + 1}
                                             </span>
-                                            <div>
-                                              <h5 className="font-bold text-white text-xs leading-snug">
+                                            <div className="min-w-0 flex-1">
+                                              <h5 className="font-bold text-white text-xs leading-snug truncate" title={doc.name}>
                                                 {doc.name}
                                               </h5>
                                               {(doc.degree || doc.specialization) && (
-                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                <p className="text-[10px] text-slate-400 mt-0.5 truncate" title={[doc.degree, doc.specialization].filter(Boolean).join(' • ')}>
                                                   {[doc.degree, doc.specialization].filter(Boolean).join(' • ')}
                                                 </p>
                                               )}
@@ -800,14 +784,16 @@ export default function CallPlanListReport() {
                                         </div>
                                       </div>
 
-                                      <div className="mt-2 pt-2 border-t border-slate-700/40 text-[10px] text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
+                                      <div className="mt-2 pt-2 border-t border-slate-700/40 text-[10px] text-slate-400 flex flex-wrap gap-x-3 gap-y-1 min-w-0">
                                         {doc.hospital && doc.hospital !== '-' && (
-                                          <span className="truncate max-w-[200px]" title={doc.hospital}>
+                                          <span className="truncate max-w-[220px]" title={doc.hospital}>
                                             🏥 {doc.hospital}
                                           </span>
                                         )}
                                         {doc.workingArea && doc.workingArea !== '-' && (
-                                          <span>📍 {doc.workingArea}</span>
+                                          <span className="truncate max-w-[150px]" title={doc.workingArea}>
+                                            📍 {doc.workingArea}
+                                          </span>
                                         )}
                                         {doc.mobile && (
                                           <span>📞 {doc.mobile}</span>
