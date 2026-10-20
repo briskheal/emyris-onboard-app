@@ -35,7 +35,7 @@ export default function Reminders() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [meetingMode, setMeetingMode] = useState<'Google Meet' | 'Concall'>('Google Meet');
-  const [meetLink, setMeetLink] = useState('');
+  const [meetLink, setMeetLink] = useState(() => localStorage.getItem('xla_saved_meet_link') || '');
   const [emailDeliveryMode, setEmailDeliveryMode] = useState<'group' | 'individual'>('group');
   const [time, setTime] = useState('09:45');
   const [submitting, setSubmitting] = useState(false);
@@ -190,25 +190,33 @@ export default function Reminders() {
     );
   };
 
-  // Generate Google Calendar / Google Meet URL with pre-filled title, description, date/time, and selected emails
-  const buildGoogleCalendarMeetUrl = () => {
-    const cleanDate = selectedDate.replace(/-/g, '');
-    const [hh, mm] = (time || '09:45').split(':');
-    const startT = `${cleanDate}T${String(hh || '09').padStart(2, '0')}${String(mm || '45').padStart(2, '0')}00`;
-    const endH = String((parseInt(hh || '9', 10) + 1) % 24).padStart(2, '0');
-    const endT = `${cleanDate}T${endH}${String(mm || '45').padStart(2, '0')}00`;
-    const guests = selectedEmails.length > 0 ? `&add=${encodeURIComponent(selectedEmails.join(','))}` : '';
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title || 'Team Meeting')}&dates=${startT}/${endT}&details=${encodeURIComponent(description || 'Meeting Reminder')}${guests}`;
+  // Extract clean https://meet.google.com/xxx-yyyy-zzz from any pasted text
+  const extractMeetUrl = (raw: string) => {
+    const match = String(raw || '').match(/https?:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
+    if (match) return match[0].toLowerCase();
+    return raw.trim();
   };
 
   const handleGenerateMeetLink = () => {
-    // Generate a clean Google Meet link code & open Google Meet / Calendar creator
-    const chars = 'abcdefghijklmnopqrstuvwxyz';
-    const seg = (len: number) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    if (!meetLink) {
-      setMeetLink(`https://meet.google.com/${seg(3)}-${seg(4)}-${seg(3)}`);
+    // Open Google's official instant meeting creator which registers a real room on Google's servers
+    window.open('https://meet.google.com/new', '_blank', 'noopener,noreferrer');
+    showToast('Google Meet opened! Click the copy icon in Google Meet, then click "Paste Link" here.', 'success');
+  };
+
+  const handlePasteMeetLink = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const extracted = extractMeetUrl(text);
+      if (extracted && extracted.includes('meet.google.com/')) {
+        setMeetLink(extracted);
+        localStorage.setItem('xla_saved_meet_link', extracted);
+        showToast('Valid Google Meet room link pasted & saved!', 'success');
+      } else {
+        showToast('No meet.google.com/xxx-yyyy-zzz link found in clipboard. Copy the link from Google Meet first.', 'error');
+      }
+    } catch (e) {
+      showToast('Please press Ctrl+V inside the Google Meet Link box to paste.', 'error');
     }
-    window.open(buildGoogleCalendarMeetUrl(), '_blank', 'noopener,noreferrer');
   };
 
   const handleAddReminder = async () => {
@@ -220,6 +228,14 @@ export default function Reminders() {
       showToast('Please select at least one user from the dropdown.', 'error');
       return;
     }
+    const cleanedMeetLink = extractMeetUrl(meetLink);
+    if (meetingMode === 'Google Meet' && (!cleanedMeetLink || !/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(cleanedMeetLink))) {
+      showToast('Please click "Create Room" to open Google Meet, copy the real room link, and paste it into the Google Meet Link box.', 'error');
+      return;
+    }
+    if (cleanedMeetLink && /meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(cleanedMeetLink)) {
+      localStorage.setItem('xla_saved_meet_link', cleanedMeetLink);
+    }
 
     setSubmitting(true);
     try {
@@ -230,7 +246,7 @@ export default function Reminders() {
         description: description.trim(),
         time: time || '09:45',
         meetingMode,
-        meetLink: meetingMode === 'Google Meet' ? (meetLink.trim() || buildGoogleCalendarMeetUrl()) : '',
+        meetLink: meetingMode === 'Google Meet' ? cleanedMeetLink : '',
         emailDeliveryMode,
         selectedEmails
       });
@@ -537,20 +553,44 @@ export default function Reminders() {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
-                    placeholder="Google Meet Link (auto-generated or paste meet.google.com/...)"
+                    placeholder="Paste real Google Meet link (e.g. https://meet.google.com/abc-defg-hij)"
                     value={meetLink}
-                    onChange={e => setMeetLink(e.target.value)}
+                    onChange={e => setMeetLink(extractMeetUrl(e.target.value))}
                     className="flex-1 bg-[#25283c] border border-slate-700 rounded-lg px-3 py-2 text-xs text-sky-300 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                   />
                   <button
                     type="button"
                     onClick={handleGenerateMeetLink}
-                    className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0 transition-colors"
+                    className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0 transition-colors"
+                    title="Opens meet.google.com/new to create an active room on Google servers"
                   >
                     <ExternalLink size={13} />
-                    <span>Create Google Meet Link</span>
+                    <span>1. Create Room</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePasteMeetLink}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0 transition-colors"
+                    title="Paste copied Google Meet link from clipboard"
+                  >
+                    <Copy size={13} />
+                    <span>2. Paste Link</span>
                   </button>
                 </div>
+                {localStorage.getItem('xla_saved_meet_link') && meetLink !== localStorage.getItem('xla_saved_meet_link') && (
+                  <div className="flex items-center justify-between text-[11px] bg-slate-800/70 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                    <span className="text-slate-400 truncate">
+                      Saved Room: <strong className="text-sky-300">{localStorage.getItem('xla_saved_meet_link')}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMeetLink(localStorage.getItem('xla_saved_meet_link') || '')}
+                      className="text-sky-400 hover:text-sky-300 font-bold ml-2 shrink-0"
+                    >
+                      Use Saved Room
+                    </button>
+                  </div>
+                )}
 
                 {/* Email Delivery Mode & Recipient Tick-boxes */}
                 <div className="space-y-2 pt-1 border-t border-slate-800">
