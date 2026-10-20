@@ -10130,12 +10130,37 @@ router.get('/tile-proxy', (req, res) => {
 // EXCEL PORTAL (/xl) & XLA LINKED UTILITIES REPORTS
 // ==========================================
 
-// Helper: Resolve User and all valid identifiers (employeeId, uid, _id, email, hq)
+// Helper: Normalize any holiday date value to YYYY-MM-DD
+function normalizeHolidayDateStr(dVal) {
+    if (!dVal) return '';
+    const str = String(dVal).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+            const ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+            return ist.toISOString().split('T')[0];
+        }
+        return str.split('T')[0];
+    }
+    const dmy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmy) {
+        return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        const ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+        return ist.toISOString().split('T')[0];
+    }
+    return str;
+}
+
+// Helper: Resolve User and all valid identifiers (employeeId, uid, _id, email, hq, state)
 async function resolveUserContext(empIdentifier) {
-    const { XlUser, XlDesignation } = require('../db');
+    const { XlUser, XlDesignation, XlHQ } = require('../db');
     const { Op } = require('sequelize');
     if (!empIdentifier || empIdentifier === 'all' || empIdentifier === 'ALL') {
-        return { user: null, ids: [], hq: null, targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
+        return { user: null, ids: [], hq: null, state: '', targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
     }
     const user = await XlUser.findOne({
         where: {
@@ -10149,7 +10174,7 @@ async function resolveUserContext(empIdentifier) {
         raw: true
     });
     if (!user) {
-        return { user: null, ids: [empIdentifier], hq: null, targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
+        return { user: null, ids: [empIdentifier], hq: null, state: '', targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
     }
     const ids = [...new Set([user.employeeId, user.uid, user._id, user.email].filter(Boolean))];
     let targetDoctorCalls = 10;
@@ -10163,10 +10188,18 @@ async function resolveUserContext(empIdentifier) {
             if (desig.targetStockistCalls) targetStockistCalls = desig.targetStockistCalls;
         }
     }
+    let resolvedState = user.state || '';
+    if (!resolvedState && user.hq) {
+        try {
+            const hqRec = await XlHQ.findOne({ where: { hqName: user.hq.toUpperCase().trim() }, raw: true });
+            if (hqRec && hqRec.state) resolvedState = hqRec.state;
+        } catch (e) {}
+    }
     return {
         user,
         ids,
         hq: user.hq || '',
+        state: resolvedState,
         name: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || user.employeeId,
         targetDoctorCalls,
         targetChemistCalls,
@@ -10178,20 +10211,34 @@ async function resolveUserContext(empIdentifier) {
 router.get('/reports/quick-summary', async (req, res) => {
     try {
         const { employeeId } = req.query;
-        const { XlDCR, XlAttendance, XlTourProgram, XlCallPlan, XlExpense, XlLeave, XlPrimarySales, XlSecondarySales, XlTarget } = require('../db');
+        const { XlDCR, XlAttendance, XlTourProgram, XlCallPlan, XlExpense, XlLeave, XlPrimarySales, XlSecondarySales, XlTarget, XlHoliday } = require('../db');
         const { Op } = require('sequelize');
 
         const ctx = await resolveUserContext(employeeId);
         const ids = ctx.ids.length > 0 ? ctx.ids : [employeeId];
 
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const curYear = String(now.getFullYear());
-        const curMonthNum = String(now.getMonth() + 1).padStart(2, '0');
-        const curMonthShort = now.toLocaleString('en-US', { month: 'short' });
-        const curMonthLong = now.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const nowIst = new Date(Date.now() + 5.5 * 3600 * 1000);
+        const todayStr = nowIst.toISOString().split('T')[0];
+        const curYear = String(nowIst.getUTCFullYear());
+        const curMonthIdx = nowIst.getUTCMonth();
+        const curMonthNum = String(curMonthIdx + 1).padStart(2, '0');
+        const monthShortNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthLongNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        const curMonthShort = monthShortNames[curMonthIdx];
+        const curMonthLong = monthLongNames[curMonthIdx];
+        const curMonthTitle = curMonthLong.charAt(0).toUpperCase() + curMonthLong.slice(1);
+        const tpMonthVariants = [
+            curMonthLong,
+            curMonthTitle,
+            curMonthLong.toUpperCase(),
+            curMonthShort,
+            curMonthShort.toLowerCase(),
+            curMonthShort.toUpperCase(),
+            String(curMonthIdx + 1),
+            curMonthNum
+        ];
         const startOfMonth = `${curYear}-${curMonthNum}-01`;
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const lastDay = new Date(Number(curYear), curMonthIdx + 1, 0).getDate();
         const endOfMonth = `${curYear}-${curMonthNum}-${String(lastDay).padStart(2, '0')}`;
 
         const empWhere = ids.length > 0 ? { employeeId: { [Op.in]: ids } } : {};
@@ -10200,25 +10247,79 @@ router.get('/reports/quick-summary', async (req, res) => {
             todayAtt,
             monthAtts,
             monthDcrs,
-            curTp,
+            curTps,
             monthCallPlans,
             monthExpenses,
             monthLeaves,
             priSales,
             secSales,
-            targets
+            targets,
+            allHolidays
         ] = await Promise.all([
             XlAttendance.findOne({ where: { ...empWhere, date: todayStr }, raw: true }),
             XlAttendance.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
             XlDCR.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
-            XlTourProgram.findOne({ where: { ...empWhere, month: { [Op.in]: [curMonthLong, curMonthShort, String(now.getMonth() + 1)] }, year: curYear }, raw: true }),
+            XlTourProgram.findAll({ where: { ...empWhere, month: { [Op.in]: tpMonthVariants }, year: curYear }, raw: true }),
             XlCallPlan.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
             XlExpense.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
             XlLeave.findAll({ where: { ...empWhere, startDate: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
             XlPrimarySales.findAll({ where: empWhere, raw: true }),
             XlSecondarySales.findAll({ where: empWhere, raw: true }),
-            XlTarget.findAll({ where: { ...empWhere, year: curYear }, raw: true })
+            XlTarget.findAll({ where: { ...empWhere, year: curYear }, raw: true }),
+            XlHoliday.findAll({ raw: true })
         ]);
+
+        const tpStatusRank = { Approved: 1, Submitted: 2, Pending: 3, Draft: 4, Rejected: 5 };
+        const sortedTps = (curTps || []).sort((a, b) => {
+            const rA = tpStatusRank[a.status] || 9;
+            const rB = tpStatusRank[b.status] || 9;
+            if (rA !== rB) return rA - rB;
+            return (b.entries ? b.entries.length : 0) - (a.entries ? a.entries.length : 0);
+        });
+        const curTp = sortedTps[0] || null;
+
+        // Match today's Holiday from XlHoliday (State-matched first, then any holiday on today's date) or Tour Program
+        const userState = (ctx.state || '').toLowerCase().trim();
+        const holidaysOnToday = (allHolidays || []).filter(h => normalizeHolidayDateStr(h.date) === todayStr);
+        let todayHoliday = holidaysOnToday.find(h => {
+            const hs = (h.state || '').toLowerCase().trim();
+            return !hs || hs === 'all' || hs === 'n/a' || h.type === 'National' || (userState && hs === userState);
+        }) || holidaysOnToday[0] || null;
+
+        if (!todayHoliday && curTp) {
+            try {
+                const tpEntries = JSON.parse(curTp.entries || '[]');
+                const todayTpEntry = Array.isArray(tpEntries) ? tpEntries.find(e => normalizeHolidayDateStr(e.date) === todayStr) : null;
+                if (todayTpEntry && ((todayTpEntry.type || '').toLowerCase() === 'holiday' || (todayTpEntry.activity || '').toLowerCase() === 'holiday')) {
+                    todayHoliday = {
+                        date: todayStr,
+                        title: todayTpEntry.holidayTitle || todayTpEntry.remarks || 'Holiday',
+                        type: 'Holiday'
+                    };
+                }
+            } catch (e) {}
+        }
+
+        // Check if user is on Leave today
+        const todayLeave = (monthLeaves || []).find(l => {
+            if (l.status === 'Rejected') return false;
+            const s = normalizeHolidayDateStr(l.startDate);
+            const e = normalizeHolidayDateStr(l.endDate || l.startDate);
+            return s && e && todayStr >= s && todayStr <= e;
+        });
+
+        const isSunday = new Date(todayStr + 'T00:00:00').getDay() === 0;
+
+        let attendanceStatus = 'Not Punched In';
+        if (todayAtt) {
+            attendanceStatus = todayAtt.punchOutTime ? 'Completed' : 'Punched In';
+        } else if (todayHoliday) {
+            attendanceStatus = `Holiday: ${todayHoliday.title || 'Holiday'}`;
+        } else if (todayLeave) {
+            attendanceStatus = `On Leave (${todayLeave.leaveType || 'Leave'})`;
+        } else if (isSunday) {
+            attendanceStatus = 'Sunday (Weekly Off)';
+        }
 
         const parsePobVal = (dcr) => {
             let val = 0;
@@ -10263,7 +10364,13 @@ router.get('/reports/quick-summary', async (req, res) => {
             } : null,
             today: {
                 date: todayStr,
-                attendanceStatus: todayAtt ? (todayAtt.punchOutTime ? 'Completed' : 'Punched In') : 'Not Punched In',
+                attendanceStatus,
+                isHoliday: Boolean(todayHoliday),
+                holidayTitle: todayHoliday?.title || null,
+                holidayType: todayHoliday?.type || null,
+                isLeave: Boolean(todayLeave),
+                leaveType: todayLeave?.leaveType || null,
+                isSunday,
                 punchInTime: todayAtt?.punchInTime || '-',
                 punchOutTime: todayAtt?.punchOutTime || '-',
                 doctorCalls: todayDcrs.filter(d => d.entityType === 'Doctor').length,
@@ -10381,6 +10488,7 @@ router.get('/reports/pob', async (req, res) => {
 
                 cleanItems.push({
                     product: prodName,
+                    productName: prodName,
                     pobType: item.pobType || 'PTS',
                     rate,
                     qty,
@@ -10389,7 +10497,7 @@ router.get('/reports/pob', async (req, res) => {
                 });
 
                 if (!productAgg[prodName]) {
-                    productAgg[prodName] = { product: prodName, totalQty: 0, totalSampleQty: 0, totalValue: 0, orderCount: 0 };
+                    productAgg[prodName] = { product: prodName, productName: prodName, totalQty: 0, totalSampleQty: 0, totalValue: 0, orderCount: 0 };
                 }
                 productAgg[prodName].totalQty += qty;
                 productAgg[prodName].totalSampleQty += sQty;
@@ -10416,13 +10524,16 @@ router.get('/reports/pob', async (req, res) => {
                     workingAreas: d.workingAreas || '-',
                     items: cleanItems,
                     totalQty: dcrOrderQty,
+                    totalOrderQty: dcrOrderQty,
                     totalSampleQty: dcrSampleQty,
                     totalValue: dcrOrderVal,
+                    totalOrderValue: dcrOrderVal,
                     remarks: d.discussion || ''
                 });
             }
         });
 
+        const sortedProductSummary = Object.values(productAgg).sort((a, b) => b.totalValue - a.totalValue);
         res.json({
             success: true,
             summary: {
@@ -10433,7 +10544,8 @@ router.get('/reports/pob', async (req, res) => {
                 uniqueEntities: uniqueEntities.size
             },
             orders,
-            productSummary: Object.values(productAgg).sort((a, b) => b.totalValue - a.totalValue)
+            productSummary: sortedProductSummary,
+            productWise: sortedProductSummary
         });
     } catch (e) {
         console.error('POB report error:', e);
@@ -10455,7 +10567,9 @@ router.get('/reports/monthly-summary', async (req, res) => {
         const ctx = await resolveUserContext(employeeId);
         const ids = ctx.ids.length > 0 ? ctx.ids : [employeeId];
 
-        const monthNum = parseInt(month, 10) || (new Date().getMonth() + 1);
+        const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const mIdx = monthNamesShort.findIndex(m => m.toLowerCase() === String(month).trim().slice(0, 3).toLowerCase());
+        const monthNum = mIdx !== -1 ? (mIdx + 1) : (parseInt(month, 10) || (new Date().getMonth() + 1));
         const yearNum = parseInt(year, 10) || new Date().getFullYear();
         const mStr = String(monthNum).padStart(2, '0');
         const lastDay = new Date(yearNum, monthNum, 0).getDate();
@@ -10465,11 +10579,22 @@ router.get('/reports/monthly-summary', async (req, res) => {
         const dRef = new Date(yearNum, monthNum - 1, 1);
         const monthShort = dRef.toLocaleString('en-US', { month: 'short' });
         const monthLong = dRef.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const monthTitle = monthLong.charAt(0).toUpperCase() + monthLong.slice(1);
+        const tpMonthVariants = [
+            monthLong,
+            monthTitle,
+            monthLong.toUpperCase(),
+            monthShort,
+            monthShort.toLowerCase(),
+            monthShort.toUpperCase(),
+            String(monthNum),
+            mStr
+        ];
 
         const empWhere = { employeeId: { [Op.in]: ids } };
 
-        const [tps, callPlans, attendances, dcrs, leaves, expenses, holidays] = await Promise.all([
-            XlTourProgram.findAll({ where: { ...empWhere, month: { [Op.in]: [monthLong, monthShort, String(monthNum), mStr] }, year: String(yearNum) }, raw: true }),
+        const [tpsRaw, callPlans, attendances, dcrs, leaves, expenses, holidays] = await Promise.all([
+            XlTourProgram.findAll({ where: { ...empWhere, month: { [Op.in]: tpMonthVariants }, year: String(yearNum) }, raw: true }),
             XlCallPlan.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
             XlAttendance.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
             XlDCR.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
@@ -10478,6 +10603,14 @@ router.get('/reports/monthly-summary', async (req, res) => {
             XlHoliday.findAll({ raw: true })
         ]);
 
+        const tpStatusRank = { Approved: 1, Submitted: 2, Pending: 3, Draft: 4, Rejected: 5 };
+        const tps = (tpsRaw || []).sort((a, b) => {
+            const rA = tpStatusRank[a.status] || 9;
+            const rB = tpStatusRank[b.status] || 9;
+            if (rA !== rB) return rA - rB;
+            return (b.entries ? b.entries.length : 0) - (a.entries ? a.entries.length : 0);
+        });
+
         // Map TP entries by date
         const tpMap = {};
         tps.forEach(tp => {
@@ -10485,7 +10618,8 @@ router.get('/reports/monthly-summary', async (req, res) => {
             try { entries = JSON.parse(tp.entries || '[]'); } catch (e) {}
             if (Array.isArray(entries)) {
                 entries.forEach(en => {
-                    if (en.date) tpMap[en.date] = en;
+                    const nd = normalizeHolidayDateStr(en.date);
+                    if (nd && !tpMap[nd]) tpMap[nd] = en;
                 });
             }
         });
@@ -10502,12 +10636,15 @@ router.get('/reports/monthly-summary', async (req, res) => {
         const attMap = {};
         attendances.forEach(a => { attMap[a.date] = a; });
 
-        // Map Holidays by date
-        const userState = (ctx.user?.state || '').toLowerCase().trim();
+        // Map Holidays by date (State-matched or National or fallback)
+        const userState = (ctx.state || '').toLowerCase().trim();
         const holMap = {};
         holidays.forEach(h => {
-            if (!h.state || h.state === 'All' || h.state === 'N/A' || h.state.toLowerCase().trim() === userState) {
-                holMap[h.date] = h.title || 'Holiday';
+            const hd = normalizeHolidayDateStr(h.date);
+            if (!hd) return;
+            const hs = (h.state || '').toLowerCase().trim();
+            if (!hs || hs === 'all' || hs === 'n/a' || h.type === 'National' || (userState && hs === userState) || !holMap[hd]) {
+                holMap[hd] = h.title || 'Holiday';
             }
         });
 
@@ -10579,15 +10716,15 @@ router.get('/reports/monthly-summary', async (req, res) => {
                 } catch (e) {}
             });
 
-            let dayStatus = 'Absent';
+            let dayStatus = 'Absent / No DCR';
             if (att || dayDcrs.length > 0) {
-                dayStatus = 'Working';
+                dayStatus = 'Field Work';
                 workingDays++;
             } else if (leaveTitle) {
                 dayStatus = `Leave (${leaveTitle})`;
                 leaveDays++;
             } else if (holTitle) {
-                dayStatus = `Holiday (${holTitle})`;
+                dayStatus = `Holiday: ${holTitle}`;
                 holidayDays++;
             } else if (isSunday) {
                 dayStatus = 'Sunday';
@@ -10600,16 +10737,25 @@ router.get('/reports/monthly-summary', async (req, res) => {
             totalPobValue += dayPob;
             totalExpense += expAmt;
 
+            const plannedCitiesStr = tpEntry?.toMarket || (Array.isArray(tpEntry?.area) ? tpEntry.area.join(', ') : (tpEntry?.area || '-'));
+            const plannedActStr = tpEntry?.type || tpEntry?.visitType || (holTitle ? `Holiday (${holTitle})` : (isSunday ? 'Sunday' : '-'));
+
             days.push({
                 date: dateStr,
                 displayDate: `${String(d).padStart(2, '0')}-${mStr}-${yearNum}`,
                 dayOfWeek,
                 status: dayStatus,
+                holidayTitle: holTitle || null,
                 punchInTime: att?.punchInTime || '-',
                 punchOutTime: att?.punchOutTime || '-',
-                tpVisitType: tpEntry?.visitType || '-',
-                tpArea: Array.isArray(tpEntry?.area) ? tpEntry.area.join(', ') : (tpEntry?.area || '-'),
+                punchIn: att?.punchInTime || '-',
+                punchOut: att?.punchOutTime || '-',
+                tpVisitType: plannedActStr,
+                plannedActivity: plannedActStr,
+                tpArea: plannedCitiesStr,
+                plannedCities: plannedCitiesStr,
                 plannedDoctors: cpEntry?.count || 0,
+                plannedDoctorsCount: cpEntry?.count || 0,
                 doctorCalls: docCount,
                 chemistCalls: chemCount,
                 stockistCalls: stkCount,
@@ -10617,6 +10763,7 @@ router.get('/reports/monthly-summary', async (req, res) => {
                 totalCalls: dayDcrs.length,
                 pobValue: dayPob,
                 expenseAmount: expAmt,
+                visitedDoctors: dayDcrs.map(x => x.entityName).filter(Boolean).join(', '),
                 dcrs: dayDcrs.map(x => ({
                     _id: x._id,
                     entityType: x.entityType,
@@ -10642,19 +10789,24 @@ router.get('/reports/monthly-summary', async (req, res) => {
             },
             summary: {
                 monthLabel: `${monthShort} ${yearNum}`,
+                tpStatus: tps[0]?.status || 'Not Submitted',
+                cpStatus: callPlans.some(c => c.status === 'Approved') ? 'Approved' : (callPlans.length > 0 ? 'Pending' : 'Not Submitted'),
                 workingDays,
                 leaveDays,
                 holidayDays,
+                holidaysCount: holidayDays,
                 totalDoctorCalls,
                 totalChemistCalls,
                 totalStockistCalls,
                 totalReminderCalls,
                 totalAllCalls,
                 avgDailyCalls,
+                avgDoctorCalls: avgDailyCalls,
                 totalPobValue,
                 totalExpense
             },
-            days
+            days,
+            dailyRows: days
         });
     } catch (e) {
         console.error('Monthly summary error:', e);
@@ -10788,15 +10940,30 @@ router.get('/reports/samples', async (req, res) => {
             }
         });
 
-        const resultList = Object.values(sampleMap).map(item => ({
-            ...item,
-            availableQty: Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty)
-        }));
+        const resultList = Object.values(sampleMap).map(item => {
+            const avail = Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty);
+            return {
+                ...item,
+                productName: item.sampleName,
+                allotted: item.allottedQty,
+                distributed: item.distributedQty,
+                restored: item.restoredQty,
+                deAllotted: item.deAllottedQty,
+                available: avail,
+                availableQty: avail
+            };
+        });
+
+        const totalAllotted = resultList.reduce((s, x) => s + x.allottedQty, 0);
+        const totalDistributed = resultList.reduce((s, x) => s + x.distributedQty, 0);
+        const totalAvailable = resultList.reduce((s, x) => s + x.availableQty, 0);
 
         res.json({
             success: true,
+            summary: { totalAllotted, totalDistributed, totalAvailable },
             data: resultList,
-            products: products.map(p => ({ _id: p._id, uid: p.uid, name: p.productName }))
+            products: resultList,
+            catalogProducts: products.map(p => ({ _id: p._id, uid: p.uid, name: p.productName }))
         });
     } catch (e) {
         console.error('Samples report error:', e);
@@ -10806,14 +10973,15 @@ router.get('/reports/samples', async (req, res) => {
 
 router.post('/samples/allot', async (req, res) => {
     try {
-        const { employeeId, sampleName, allottedQty, restoredQty, deAllottedQty, month, year, remarks } = req.body;
-        if (!employeeId || !sampleName) {
+        const { employeeId, sampleName, productName, itemName, allottedQty, restoredQty, deAllottedQty, month, year, remarks } = req.body;
+        const resolvedSampleName = sampleName || productName || itemName;
+        if (!employeeId || !resolvedSampleName) {
             return res.status(400).json({ success: false, message: 'employeeId and sampleName are required' });
         }
         const { XlSample } = require('../db');
         const now = new Date();
         const details = JSON.stringify({
-            sampleName,
+            sampleName: resolvedSampleName,
             allottedQty: Number(allottedQty || 0),
             restoredQty: Number(restoredQty || 0),
             deAllottedQty: Number(deAllottedQty || 0),
@@ -10954,14 +11122,28 @@ router.get('/reports/gifts-management', async (req, res) => {
             }
         });
 
-        const resultList = Object.values(giftMap).map(item => ({
-            ...item,
-            availableQty: Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty)
-        }));
+        const resultList = Object.values(giftMap).map(item => {
+            const avail = Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty);
+            return {
+                ...item,
+                allotted: item.allottedQty,
+                distributed: item.distributedQty,
+                restored: item.restoredQty,
+                deAllotted: item.deAllottedQty,
+                available: avail,
+                availableQty: avail
+            };
+        });
+
+        const totalAllotted = resultList.reduce((s, x) => s + x.allottedQty, 0);
+        const totalDistributed = resultList.reduce((s, x) => s + x.distributedQty, 0);
+        const totalAvailable = resultList.reduce((s, x) => s + x.availableQty, 0);
 
         res.json({
             success: true,
+            summary: { totalAllotted, totalDistributed, totalAvailable },
             data: resultList,
+            gifts: resultList,
             catalog: Array.from(catalogNames)
         });
     } catch (e) {
@@ -11057,12 +11239,16 @@ router.get('/reports/reminders', async (req, res) => {
                 employeeId: r.employeeId,
                 employeeName: uInfo.name,
                 headquarter: uInfo.hq,
+                hq: uInfo.hq,
                 designation: uInfo.designation,
                 doctorName: r.entityName || '-',
+                entityName: r.entityName || '-',
                 entityId: r.entityId || '',
                 productsDetailed: Array.isArray(products) ? products : [],
+                products: Array.isArray(products) ? products : [],
                 giftsGiven: Array.isArray(gifts) ? gifts : [],
                 remarks: r.discussion || '',
+                discussion: r.discussion || '',
                 workingAreas: r.workingAreas || '-',
                 checkInTime: r.checkInTime || '-',
                 status: r.status || 'Submitted'
@@ -11082,8 +11268,10 @@ router.get('/reports/reminders', async (req, res) => {
 
 router.post('/reminders', async (req, res) => {
     try {
-        const { employeeId, date, doctorName, entityId, productsDetailed, remarks, time } = req.body;
-        if (!employeeId || !date || !doctorName) {
+        const { employeeId, date, doctorName, entityName, entityId, productsDetailed, remarks, discussion, time } = req.body;
+        const resolvedDoctor = doctorName || entityName;
+        const resolvedRemarks = remarks || discussion || '';
+        if (!employeeId || !date || !resolvedDoctor) {
             return res.status(400).json({ success: false, message: 'employeeId, date, and doctorName are required' });
         }
         const { XlDCR, XlNotification } = require('../db');
@@ -11095,9 +11283,9 @@ router.post('/reminders', async (req, res) => {
             date,
             entityType: 'Reminder',
             entityId: entityId || '',
-            entityName: doctorName,
+            entityName: resolvedDoctor,
             productsDetailed: JSON.stringify(Array.isArray(productsDetailed) ? productsDetailed : (productsDetailed ? [productsDetailed] : [])),
-            discussion: remarks || '',
+            discussion: resolvedRemarks,
             checkInTime: time || '09:30',
             workingAreas: ctx.hq || '-',
             status: 'Approved'
@@ -11289,8 +11477,12 @@ router.get('/reports/targets', async (req, res) => {
                 targetAmount: t.targetAmount,
                 primaryQty: a.primaryQty,
                 primaryAmount: a.primaryAmt,
+                achievedPrimaryQty: a.primaryQty,
+                achievedPrimaryVal: a.primaryAmt,
                 secondaryQty: a.secondaryQty,
                 secondaryAmount: a.secondaryAmt,
+                achievedSecondaryQty: a.secondaryQty,
+                achievedSecondaryVal: a.secondaryAmt,
                 pobQty: a.pobQty,
                 pobAmount: a.pobAmt,
                 achievedQty,
@@ -11302,6 +11494,8 @@ router.get('/reports/targets', async (req, res) => {
         const effectiveTotalTarget = totalLumpSumTarget + totalProductTargetAmount;
         const effectiveAchieved = primaryAchieved || secondaryAchieved || pobAchieved;
         const overallPct = effectiveTotalTarget > 0 ? Number(((effectiveAchieved / effectiveTotalTarget) * 100).toFixed(1)) : 0;
+        const primaryAchievementPct = effectiveTotalTarget > 0 ? Number(((primaryAchieved / effectiveTotalTarget) * 100).toFixed(1)) : 0;
+        const secondaryAchievementPct = effectiveTotalTarget > 0 ? Number(((secondaryAchieved / effectiveTotalTarget) * 100).toFixed(1)) : 0;
 
         res.json({
             success: true,
@@ -11316,9 +11510,14 @@ router.get('/reports/targets', async (req, res) => {
                 month: monthShort || 'All Months',
                 lumpSumTarget: totalLumpSumTarget,
                 productTargetAmount: totalProductTargetAmount,
+                productTargetTotal: totalProductTargetAmount,
                 totalTarget: effectiveTotalTarget,
                 primaryAchieved,
+                primarySalesAchieved: primaryAchieved,
+                primaryAchievementPct,
                 secondaryAchieved,
+                secondarySalesAchieved: secondaryAchieved,
+                secondaryAchievementPct,
                 pobAchieved,
                 overallAchievementPct: overallPct
             },

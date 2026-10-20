@@ -158,13 +158,16 @@ const MonthlyReportsView: React.FC = () => {
                         <div className="bg-white rounded-xl p-8 text-center text-xs font-bold text-gray-400">Loading monthly summary...</div>
                     ) : (
                         (report?.dailyRows || []).map((r: any, idx: number) => {
-                            const statusColors: Record<string, string> = {
-                                'Field Work': 'bg-emerald-50 text-emerald-600 border-emerald-200',
-                                'Leave': 'bg-rose-50 text-rose-600 border-rose-200',
-                                'Holiday': 'bg-purple-50 text-purple-600 border-purple-200',
-                                'Sunday': 'bg-gray-100 text-gray-500 border-gray-200',
-                                'Absent / No DCR': 'bg-amber-50 text-amber-600 border-amber-200'
-                            };
+                            const sStr = String(r.status || '');
+                            const badgeStyle = sStr.startsWith('Field Work')
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                : sStr.startsWith('Holiday')
+                                ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                : sStr.startsWith('Leave')
+                                ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                : sStr === 'Sunday'
+                                ? 'bg-gray-100 text-gray-500 border-gray-200'
+                                : 'bg-amber-50 text-amber-600 border-amber-200';
                             return (
                                 <div key={idx} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 space-y-1.5">
                                     <div className="flex items-center justify-between">
@@ -172,7 +175,7 @@ const MonthlyReportsView: React.FC = () => {
                                             <span className="text-xs font-black text-gray-800">{r.displayDate}</span>
                                             <span className="text-[10px] font-bold text-gray-400">({r.dayOfWeek})</span>
                                         </div>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColors[r.status] || 'bg-gray-50 text-gray-600'}`}>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeStyle}`}>
                                             {r.status}
                                         </span>
                                     </div>

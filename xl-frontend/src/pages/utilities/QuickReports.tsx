@@ -110,13 +110,38 @@ export default function QuickReports() {
                   <span className="text-xs font-bold text-white">{formatDDMMYYYY(today.date)}</span>
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                  today.attendanceStatus === 'Not Punched In'
+                  today.isHoliday
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : today.isLeave || today.isSunday
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    : today.attendanceStatus === 'Not Punched In'
                     ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                     : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                 }`}>
-                  {today.attendanceStatus || 'Not Punched In'}
+                  {today.isHoliday
+                    ? `🎉 HOLIDAY • ${today.holidayTitle || 'HOLIDAY'}`
+                    : (today.attendanceStatus || 'Not Punched In')}
                 </span>
               </div>
+
+              {today.isHoliday && (
+                <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 border border-amber-500/40 rounded-xl px-3.5 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🎉</span>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                        {today.holidayType || 'Official'} Holiday
+                      </div>
+                      <div className="text-sm font-black text-white">
+                        {today.holidayTitle || 'Holiday'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                    Holiday
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-4 gap-2 text-center">
                 <div className="bg-slate-800/80 rounded-xl p-2.5 border border-slate-700/50">
