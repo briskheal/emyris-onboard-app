@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, BellRing, RefreshCw, Plus, Trash2, Calendar, Clock, Download, X
+  ChevronLeft, BellRing, RefreshCw, Plus, Trash2, Calendar, Clock, Download, X, Video, PhoneCall, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -224,23 +224,48 @@ export default function ReminderReportsView() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center flex-wrap gap-2">
                       <span className="text-xs font-mono font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
                         {r.displayDate}
                       </span>
                       <span className="text-[10px] text-slate-400 flex items-center gap-1">
                         <Clock size={11} /> {r.checkInTime}
                       </span>
+                      {r.meetingMode && (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                            r.meetingMode === 'Google Meet'
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                          }`}
+                        >
+                          {r.meetingMode === 'Google Meet' ? <Video size={10} /> : <PhoneCall size={10} />}
+                          {r.meetingMode}
+                        </span>
+                      )}
                     </div>
-                    <h4 className="text-sm font-black text-white mt-1.5">{r.doctorName}</h4>
+                    <h4 className="text-sm font-black text-white mt-1.5">{r.title || r.doctorName}</h4>
                   </div>
                   <button
-                    onClick={() => handleDelete(r._id)}
+                    onClick={() => handleDelete(r.groupId || r._id)}
                     className="p-1.5 rounded-lg text-rose-400/70 hover:text-rose-400 hover:bg-rose-500/10"
                   >
                     <Trash2 size={15} />
                   </button>
                 </div>
+
+                {r.participants && r.participants.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {r.participants.map((p: any, idx: number) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold"
+                      >
+                        {p.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {r.productsDetailed && r.productsDetailed.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -259,6 +284,19 @@ export default function ReminderReportsView() {
                   <p className="text-xs text-slate-300 bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/50">
                     {r.remarks}
                   </p>
+                )}
+
+                {r.meetingMode === 'Google Meet' && r.meetLink && (
+                  <div className="pt-1 flex items-center gap-2">
+                    <a
+                      href={r.meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-colors"
+                    >
+                      <Video size={13} /> Join Google Meet <ExternalLink size={11} />
+                    </a>
+                  </div>
                 )}
               </div>
             ))}

@@ -11191,7 +11191,7 @@ router.delete('/gifts/:id', async (req, res) => {
     }
 });
 
-// 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9)
+// 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9 & XLA Reminders)
 router.get('/reports/reminders', async (req, res) => {
     try {
         const { employeeId, startDate, endDate, month, year } = req.query;
@@ -11221,9 +11221,11 @@ router.get('/reports/reminders', async (req, res) => {
         const userMap = {};
         allUsers.forEach(u => {
             const name = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.employeeId;
-            if (u.employeeId) userMap[u.employeeId] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
-            if (u.uid) userMap[u.uid] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
-            if (u._id) userMap[u._id] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+            const info = { name, firstName: u.firstName || name, email: u.email || '', hq: u.hq || '-', designation: u.designation || 'MR' };
+            if (u.employeeId) userMap[u.employeeId] = info;
+            if (u.uid) userMap[u.uid] = info;
+            if (u._id) userMap[u._id] = info;
+            if (u.email) userMap[u.email] = info;
         });
 
         const formatted = records.map(r => {
@@ -11231,9 +11233,21 @@ router.get('/reports/reminders', async (req, res) => {
             try { products = JSON.parse(r.productsDetailed || '[]'); } catch (e) {}
             let gifts = [];
             try { gifts = JSON.parse(r.gifts || '[]'); } catch (e) {}
-            const uInfo = userMap[r.employeeId] || { name: r.employeeName || r.employeeId, hq: '-', designation: 'MR' };
+            let meta = {};
+            try {
+                if (r.adminRemarks && r.adminRemarks.trim().startsWith('{')) {
+                    meta = JSON.parse(r.adminRemarks);
+                }
+            } catch (e) {}
+
+            const uInfo = userMap[r.employeeId] || { name: r.employeeName || r.employeeId, firstName: r.employeeName || r.employeeId, email: '', hq: '-', designation: 'MR' };
+            const participants = Array.isArray(meta.participants) && meta.participants.length > 0
+                ? meta.participants
+                : [{ employeeId: r.employeeId, name: uInfo.name, firstName: uInfo.firstName, email: uInfo.email }];
+
             return {
                 _id: r._id,
+                groupId: meta.groupId || r.entityId || r._id,
                 date: r.date,
                 displayDate: toDisplayDate(r.date),
                 employeeId: r.employeeId,
@@ -11241,24 +11255,53 @@ router.get('/reports/reminders', async (req, res) => {
                 headquarter: uInfo.hq,
                 hq: uInfo.hq,
                 designation: uInfo.designation,
+                title: r.entityName || '-',
                 doctorName: r.entityName || '-',
                 entityName: r.entityName || '-',
                 entityId: r.entityId || '',
+                meetingMode: meta.meetingMode || 'Google Meet',
+                meetLink: meta.meetLink || '',
+                calendarLink: meta.calendarLink || '',
+                participants,
+                emailSent: Boolean(meta.emailSent),
+                emailDeliveryMode: meta.emailDeliveryMode || 'group',
                 productsDetailed: Array.isArray(products) ? products : [],
                 products: Array.isArray(products) ? products : [],
                 giftsGiven: Array.isArray(gifts) ? gifts : [],
                 remarks: r.discussion || '',
                 discussion: r.discussion || '',
+                description: r.discussion || '',
                 workingAreas: r.workingAreas || '-',
                 checkInTime: r.checkInTime || '-',
+                time: r.checkInTime || '-',
                 status: r.status || 'Submitted'
             };
         });
 
+        // Deduplicate by groupId for XLA Joint Reminder view
+        const groupMap = new Map();
+        formatted.forEach(item => {
+            const gKey = item.groupId || item._id;
+            if (!groupMap.has(gKey)) {
+                groupMap.set(gKey, { ...item });
+            } else {
+                const existing = groupMap.get(gKey);
+                const existingIds = new Set((existing.participants || []).map(p => p.employeeId));
+                (item.participants || []).forEach(p => {
+                    if (!existingIds.has(p.employeeId)) {
+                        existing.participants.push(p);
+                        existingIds.add(p.employeeId);
+                    }
+                });
+            }
+        });
+        const grouped = Array.from(groupMap.values());
+
         res.json({
             success: true,
             count: formatted.length,
-            data: formatted
+            data: formatted,
+            grouped
         });
     } catch (e) {
         console.error('Reminders report error:', e);
@@ -11268,39 +11311,217 @@ router.get('/reports/reminders', async (req, res) => {
 
 router.post('/reminders', async (req, res) => {
     try {
-        const { employeeId, date, doctorName, entityName, entityId, productsDetailed, remarks, discussion, time } = req.body;
-        const resolvedDoctor = doctorName || entityName;
-        const resolvedRemarks = remarks || discussion || '';
-        if (!employeeId || !date || !resolvedDoctor) {
-            return res.status(400).json({ success: false, message: 'employeeId, date, and doctorName are required' });
-        }
-        const { XlDCR, XlNotification } = require('../db');
-        const ctx = await resolveUserContext(employeeId);
-
-        const rec = await XlDCR.create({
-            employeeId: ctx.user?.employeeId || employeeId,
-            employeeName: ctx.name || employeeId,
+        const {
+            employeeId,
+            employeeIds,
             date,
-            entityType: 'Reminder',
-            entityId: entityId || '',
-            entityName: resolvedDoctor,
-            productsDetailed: JSON.stringify(Array.isArray(productsDetailed) ? productsDetailed : (productsDetailed ? [productsDetailed] : [])),
-            discussion: resolvedRemarks,
-            checkInTime: time || '09:30',
-            workingAreas: ctx.hq || '-',
-            status: 'Approved'
+            title,
+            doctorName,
+            entityName,
+            entityId,
+            productsDetailed,
+            description,
+            remarks,
+            discussion,
+            time,
+            meetingMode = 'Google Meet',
+            meetLink = '',
+            emailDeliveryMode = 'group',
+            selectedEmails = []
+        } = req.body;
+
+        const resolvedTitle = title || doctorName || entityName;
+        const resolvedRemarks = description || remarks || discussion || '';
+        const targetEmpIds = Array.isArray(employeeIds) && employeeIds.length > 0
+            ? employeeIds
+            : (employeeId ? [employeeId] : []);
+
+        if (targetEmpIds.length === 0 || !date || !resolvedTitle) {
+            return res.status(400).json({ success: false, message: 'At least one user, date, and title are required' });
+        }
+
+        const { XlDCR, XlNotification, XlUser } = require('../db');
+        const allUsers = await XlUser.findAll({ raw: true });
+        const userLookup = {};
+        allUsers.forEach(u => {
+            const full = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.employeeId;
+            const rec = {
+                employeeId: u.employeeId || u.uid || u._id,
+                name: full,
+                firstName: u.firstName || full.split(' ')[0] || full,
+                email: u.email || '',
+                hq: u.hq || '-',
+                designation: u.designation || 'MR'
+            };
+            if (u.employeeId) userLookup[u.employeeId] = rec;
+            if (u.uid) userLookup[u.uid] = rec;
+            if (u._id) userLookup[u._id] = rec;
+            if (u.email) userLookup[u.email] = rec;
         });
 
-        try {
-            await XlNotification.create({
-                employeeId: ctx.user?.employeeId || employeeId,
-                title: `Reminder Call: ${doctorName}`,
-                message: `${date} at ${time || '09:30'} — ${remarks || 'Follow-up reminder call'}`
-            });
-        } catch (nErr) {}
+        const participants = targetEmpIds.map(id => {
+            return userLookup[id] || { employeeId: id, name: id, firstName: id, email: '', hq: '-', designation: 'MR' };
+        });
 
-        res.json({ success: true, data: rec });
+        const emailSet = new Set();
+        participants.forEach(p => { if (p.email && p.email.includes('@')) emailSet.add(p.email.trim()); });
+        if (Array.isArray(selectedEmails)) {
+            selectedEmails.forEach(em => { if (em && String(em).includes('@')) emailSet.add(String(em).trim()); });
+        }
+        const recipientEmails = Array.from(emailSet);
+
+        // Build Google Calendar + Google Meet Link
+        const cleanDate = String(date).replace(/-/g, '');
+        const cleanTime = String(time || '09:45').replace(':', '') + '00';
+        const endHour = String((parseInt(String(time || '09:45').split(':')[0], 10) + 1) % 24).padStart(2, '0');
+        const endMin = String(time || '09:45').split(':')[1] || '45';
+        const cleanEndTime = `${endHour}${endMin}00`;
+        const calendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(resolvedTitle)}&dates=${cleanDate}T${cleanTime}/${cleanDate}T${cleanEndTime}&details=${encodeURIComponent(resolvedRemarks)}${recipientEmails.length > 0 ? `&add=${encodeURIComponent(recipientEmails.join(','))}` : ''}`;
+
+        let finalMeetLink = meetLink ? meetLink.trim() : '';
+        if (meetingMode === 'Google Meet' && !finalMeetLink) {
+            finalMeetLink = 'https://meet.google.com/new';
+        }
+
+        const groupId = 'rem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        const displayDate = toDisplayDate(date);
+
+        // Send Email(s) via Zoho SMTP if recipients exist
+        let emailSent = false;
+        let emailCount = 0;
+        if (recipientEmails.length > 0 && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            try {
+                const nodemailer = require('nodemailer');
+                const transporter = nodemailer.createTransport({
+                    host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
+                    port: parseInt(process.env.EMAIL_PORT || '465', 10),
+                    secure: process.env.EMAIL_SECURE === 'true' || String(process.env.EMAIL_PORT || '465') === '465',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
+                    }
+                });
+
+                const buildHtml = (greetingName) => `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #0f172a, #1e293b); color: #ffffff; padding: 20px 24px;">
+                            <div style="font-size: 11px; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
+                                Emyris Biolifesciences • ${meetingMode === 'Google Meet' ? '🎥 Google Meet Invite' : '📞 Conference Call (Concall)'}
+                            </div>
+                            <h2 style="margin: 6px 0 0; font-size: 20px;">${resolvedTitle}</h2>
+                        </div>
+                        <div style="padding: 24px; background: #ffffff; color: #334155;">
+                            <p style="margin-top: 0;">Hello <strong>${greetingName}</strong>,</p>
+                            <p>You have been scheduled for a <strong>${meetingMode}</strong> reminder/meeting:</p>
+                            <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 16px; border-radius: 6px; margin: 16px 0;">
+                                <p style="margin: 4px 0;"><strong>📅 Date:</strong> ${displayDate}</p>
+                                <p style="margin: 4px 0;"><strong>⏰ Time:</strong> ${time || '09:45'}</p>
+                                <p style="margin: 4px 0;"><strong>📌 Mode:</strong> ${meetingMode}</p>
+                                <p style="margin: 4px 0;"><strong>👥 Participants:</strong> ${participants.map(p => p.name).join(', ')}</p>
+                            </div>
+                            ${resolvedRemarks ? `
+                                <div style="margin: 16px 0;">
+                                    <div style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Message / Agenda:</div>
+                                    <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 12px 14px; border-radius: 8px; color: #1e293b; white-space: pre-line;">${resolvedRemarks}</div>
+                                </div>
+                            ` : ''}
+                            ${meetingMode === 'Google Meet' ? `
+                                <div style="margin-top: 22px; text-align: center;">
+                                    <a href="${finalMeetLink}" style="display: inline-block; background: #0284c7; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 8px; margin-right: 8px;">
+                                        🎥 Join Google Meet
+                                    </a>
+                                    <a href="${calendarLink}" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 8px;">
+                                        📅 Open in Google Calendar
+                                    </a>
+                                </div>
+                                <p style="font-size: 12px; color: #64748b; margin-top: 14px; text-align: center;">
+                                    Google Meet Link: <a href="${finalMeetLink}" style="color: #0284c7;">${finalMeetLink}</a>
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                const fromAddr = process.env.EMAIL_FROM || `"Emyris Biolifesciences" <${process.env.EMAIL_USER}>`;
+                if (emailDeliveryMode === 'individual') {
+                    for (const p of participants) {
+                        if (!p.email || !p.email.includes('@')) continue;
+                        await transporter.sendMail({
+                            from: fromAddr,
+                            to: p.email.trim(),
+                            subject: `[${meetingMode}] ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`,
+                            html: buildHtml(p.name)
+                        });
+                        emailCount++;
+                    }
+                } else {
+                    await transporter.sendMail({
+                        from: fromAddr,
+                        to: recipientEmails.join(', '),
+                        subject: `[${meetingMode}] ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`,
+                        html: buildHtml('Team')
+                    });
+                    emailCount = recipientEmails.length;
+                }
+                emailSent = emailCount > 0;
+            } catch (mailErr) {
+                console.error('Reminder email error:', mailErr.message);
+            }
+        }
+
+        const metaStr = JSON.stringify({
+            groupId,
+            meetingMode,
+            meetLink: finalMeetLink,
+            calendarLink,
+            participants,
+            emailSent,
+            emailCount,
+            emailDeliveryMode
+        });
+
+        const createdRecords = [];
+        for (const p of participants) {
+            const rec = await XlDCR.create({
+                employeeId: p.employeeId,
+                employeeName: p.name,
+                date,
+                entityType: 'Reminder',
+                entityId: groupId,
+                entityName: resolvedTitle,
+                productsDetailed: JSON.stringify(Array.isArray(productsDetailed) ? productsDetailed : (productsDetailed ? [productsDetailed] : [])),
+                discussion: resolvedRemarks,
+                adminRemarks: metaStr,
+                checkInTime: time || '09:45',
+                workingAreas: p.hq || '-',
+                status: 'Approved'
+            });
+            createdRecords.push(rec);
+
+            try {
+                const notifTargets = [...new Set([p.employeeId, p.email].filter(Boolean))];
+                for (const nt of notifTargets) {
+                    await XlNotification.create({
+                        employeeId: nt,
+                        title: `${meetingMode}: ${resolvedTitle}`,
+                        message: `${displayDate} at ${time || '09:45'} — ${resolvedRemarks || 'Scheduled meeting'}${meetingMode === 'Google Meet' && finalMeetLink ? ` | Meet: ${finalMeetLink}` : ''}`
+                    });
+                }
+            } catch (nErr) {}
+        }
+
+        res.json({
+            success: true,
+            groupId,
+            emailSent,
+            emailCount,
+            meetLink: finalMeetLink,
+            calendarLink,
+            data: createdRecords[0],
+            recordsCount: createdRecords.length
+        });
     } catch (e) {
+        console.error('Create reminder error:', e);
         res.status(500).json({ success: false, message: e.message });
     }
 });
@@ -11308,7 +11529,17 @@ router.post('/reminders', async (req, res) => {
 router.delete('/reminders/:id', async (req, res) => {
     try {
         const { XlDCR } = require('../db');
-        await XlDCR.destroy({ where: { _id: req.params.id } });
+        const { Op } = require('sequelize');
+        const targetId = req.params.id;
+        await XlDCR.destroy({
+            where: {
+                entityType: 'Reminder',
+                [Op.or]: [
+                    { _id: targetId },
+                    { entityId: targetId }
+                ]
+            }
+        });
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
