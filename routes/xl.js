@@ -11317,11 +11317,21 @@ router.get('/reports/reminders', async (req, res) => {
         });
         const grouped = Array.from(groupMap.values());
 
+        let defaultMeetLink = '';
+        try {
+            const { XlGlobalSettings } = require('../db');
+            const gSet = await XlGlobalSettings.findOne();
+            if (gSet && gSet.settings && gSet.settings.defaultGoogleMeetLink) {
+                defaultMeetLink = gSet.settings.defaultGoogleMeetLink;
+            }
+        } catch (err) {}
+
         res.json({
             success: true,
             count: formatted.length,
             data: formatted,
-            grouped
+            grouped,
+            defaultMeetLink
         });
     } catch (e) {
         console.error('Reminders report error:', e);
@@ -11399,6 +11409,20 @@ router.post('/reminders', async (req, res) => {
         const calendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(resolvedTitle)}&dates=${cleanDate}T${cleanTime}/${cleanDate}T${cleanEndTime}&details=${encodeURIComponent(resolvedRemarks)}${recipientEmails.length > 0 ? `&add=${encodeURIComponent(recipientEmails.join(','))}` : ''}`;
 
         let finalMeetLink = meetLink ? meetLink.trim() : '';
+        try {
+            const { XlGlobalSettings } = require('../db');
+            let gSet = await XlGlobalSettings.findOne();
+            if (finalMeetLink && /meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(finalMeetLink)) {
+                if (!gSet) {
+                    await XlGlobalSettings.create({ settings: { defaultGoogleMeetLink: finalMeetLink } });
+                } else {
+                    gSet.settings = { ...(gSet.settings || {}), defaultGoogleMeetLink: finalMeetLink };
+                    await gSet.save();
+                }
+            } else if (meetingMode === 'Google Meet' && !finalMeetLink && gSet?.settings?.defaultGoogleMeetLink) {
+                finalMeetLink = gSet.settings.defaultGoogleMeetLink;
+            }
+        } catch (err) {}
         if (meetingMode === 'Google Meet' && !finalMeetLink) {
             finalMeetLink = 'https://meet.google.com/new';
         }

@@ -103,6 +103,10 @@ export default function Reminders() {
       const res = await axios.get('/api/xl/reports/reminders');
       if (res.data?.success) {
         setReminders(res.data.grouped || res.data.data || []);
+        if (res.data.defaultMeetLink) {
+          localStorage.setItem('xla_saved_meet_link', res.data.defaultMeetLink);
+          setMeetLink(prev => prev || res.data.defaultMeetLink);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -258,7 +262,7 @@ export default function Reminders() {
         showToast(`Reminder scheduled for ${selectedUserIds.length} user(s)${emailNote}!`, 'success');
         setTitle('');
         setDescription('');
-        setMeetLink('');
+        setMeetLink(cleanedMeetLink);
         setSelectedUserIds([]);
         fetchReminders();
       }
