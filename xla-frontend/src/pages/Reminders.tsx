@@ -55,24 +55,31 @@ export default function Reminders() {
     return () => clearInterval(timer);
   }, []);
 
-  // A meeting is considered over once 30 minutes have elapsed past its scheduled date & time
-  const isMeetingOver = (rem: any) => {
-    if (!rem?.date) return false;
+  const getMeetingTimestamp = (rem: any) => {
+    if (!rem?.date) return Number.MAX_SAFE_INTEGER;
     const datePart = String(rem.date).split('T')[0];
     const parts = datePart.split('-').map(Number);
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return Number.MAX_SAFE_INTEGER;
     const [y, m, d] = parts;
     const timeStr = String(rem.time || rem.checkInTime || '23:59').trim();
     const tMatch = timeStr.match(/^(\d{1,2}):(\d{2})/);
     const hh = tMatch ? parseInt(tMatch[1], 10) : 23;
     const mm = tMatch ? parseInt(tMatch[2], 10) : 59;
-    const startMs = new Date(y, m - 1, d, hh, mm, 0).getTime();
-    // Disappear once 30 minutes past scheduled start time
+    return new Date(y, m - 1, d, hh, mm, 0).getTime();
+  };
+
+  // A meeting is considered over once 30 minutes have elapsed past its scheduled date & time
+  const isMeetingOver = (rem: any) => {
+    const startMs = getMeetingTimestamp(rem);
+    if (startMs === Number.MAX_SAFE_INTEGER) return false;
     const endMs = startMs + 30 * 60 * 1000;
     return nowMs > endMs;
   };
 
-  const activeReminders = reminders.filter(r => !isMeetingOver(r));
+  // Sort active upcoming reminders chronologically (earliest meeting first: e.g., 21st before 22nd)
+  const activeReminders = reminders
+    .filter(r => !isMeetingOver(r))
+    .sort((a, b) => getMeetingTimestamp(a) - getMeetingTimestamp(b));
   const completedCount = reminders.filter(r => isMeetingOver(r)).length;
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
