@@ -11192,6 +11192,26 @@ router.delete('/gifts/:id', async (req, res) => {
 });
 
 // 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9 & XLA Reminders)
+router.get('/admin/users', async (req, res) => {
+    try {
+        const { XlUser } = require('../db');
+        const users = await XlUser.findAll({ order: [['firstName', 'ASC']] });
+        res.json({ success: true, users });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.get('/users', async (req, res) => {
+    try {
+        const { XlUser } = require('../db');
+        const users = await XlUser.findAll({ order: [['firstName', 'ASC']] });
+        res.json({ success: true, users });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.get('/reports/reminders', async (req, res) => {
     try {
         const { employeeId, startDate, endDate, month, year } = req.query;

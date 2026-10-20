@@ -52,13 +52,25 @@ export default function Reminders() {
   };
 
   useEffect(() => {
-    axios.get('/api/xl/admin/users')
-      .then(res => {
+    const loadUsers = async () => {
+      try {
+        const res = await axios.get('/api/admin/users', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         const list = Array.isArray(res.data) ? res.data : (res.data?.users || res.data?.data || []);
         const active = list.filter((u: any) => u.status !== 'Blocked');
         setUsers(active);
-      })
-      .catch(console.error);
+      } catch (err) {
+        try {
+          const fallback = await axios.get('/api/xl/admin/users');
+          const list = Array.isArray(fallback.data) ? fallback.data : (fallback.data?.users || fallback.data?.data || []);
+          setUsers(list.filter((u: any) => u.status !== 'Blocked'));
+        } catch (e2) {
+          console.error(e2);
+        }
+      }
+    };
+    loadUsers();
     fetchReminders();
   }, []);
 
@@ -142,14 +154,18 @@ export default function Reminders() {
 
   const reminderDatesSet = new Set(reminders.map(r => r.date));
 
+  const getUserName = (u: any) =>
+    u?.name || [u?.firstName, u?.middleName, u?.lastName].filter(Boolean).join(' ').trim() || u?.employeeId || u?.uid || 'User';
+
   // Filter users for multi-select dropdown
   const filteredUsers = users.filter(u => {
-    const full = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+    const full = getUserName(u).toLowerCase();
     const hq = (u.hq || '').toLowerCase();
     const desig = (u.designation || '').toLowerCase();
     const email = (u.email || '').toLowerCase();
+    const empId = (u.employeeId || u.uid || '').toLowerCase();
     const q = userSearch.toLowerCase();
-    return full.includes(q) || hq.includes(q) || desig.includes(q) || email.includes(q);
+    return full.includes(q) || hq.includes(q) || desig.includes(q) || email.includes(q) || empId.includes(q);
   });
 
   const toggleUser = (empId: string) => {
@@ -249,7 +265,7 @@ export default function Reminders() {
 
   const selectedUsersList = selectedUserIds.map(id => {
     const u = users.find(x => (x.employeeId || x.uid || x._id) === id);
-    const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || id : id;
+    const name = u ? getUserName(u) : id;
     const firstName = u?.firstName || name.split(' ')[0] || name;
     return { id, name, firstName, email: u?.email || '', designation: u?.designation || 'MR', hq: u?.hq || '' };
   });
@@ -399,9 +415,9 @@ export default function Reminders() {
 
               {/* Dropdown Menu with Tick-boxes */}
               {dropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-[#1e2030] border border-slate-600 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute left-0 right-0 top-full mt-2 bg-[#161826] border border-sky-500/50 rounded-xl shadow-[0_24px_60px_rgba(0,0,0,0.95)] z-50 overflow-hidden">
                   {/* Search & Select All Bar */}
-                  <div className="p-2.5 border-b border-slate-700/80 bg-[#25283c] space-y-2">
+                  <div className="p-2.5 border-b border-slate-700 bg-[#1e2136] space-y-2">
                     <div className="relative">
                       <Search size={14} className="text-slate-400 absolute left-3 top-2.5" />
                       <input
@@ -438,13 +454,13 @@ export default function Reminders() {
                   </div>
 
                   {/* User Tick-box List */}
-                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-800/80">
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-800/80 bg-[#161826]">
                     {filteredUsers.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-slate-500">No matching users found</div>
+                      <div className="p-4 text-center text-xs text-slate-400">No matching users found</div>
                     ) : (
                       filteredUsers.map((u, i) => {
                         const empId = u.employeeId || u.uid || u._id;
-                        const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId;
+                        const fullName = getUserName(u);
                         const checked = selectedUserIds.includes(empId);
                         return (
                           <div
