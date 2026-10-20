@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Clock, Trash2, CheckSquare, Square,
-  Video, PhoneCall, Mail, ExternalLink, Search, CheckCircle2, AlarmClock, X, Copy, Check
+  Video, PhoneCall, Mail, ExternalLink, CheckCircle2, AlarmClock, X, Copy, Check
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -30,6 +30,7 @@ export default function Reminders() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userInputRef = useRef<HTMLInputElement>(null);
 
   // Reminder Form State
   const [title, setTitle] = useState('');
@@ -490,82 +491,86 @@ export default function Reminders() {
                 className="w-full bg-[#2c2f45] border border-slate-700/60 focus:border-sky-500 rounded-xl px-4 py-2.5 text-sm font-medium text-white placeholder:text-slate-400 focus:outline-none transition-colors resize-y"
               />
 
-              {/* Multi-Select User Dropdown with Tick-boxes */}
+              {/* Multi-Select User Dropdown with Inline Search & Tick-boxes */}
               <div className="relative" ref={dropdownRef}>
                 <div
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`w-full bg-[#1e2030] border-2 rounded-xl px-4 py-2.5 cursor-pointer flex items-center justify-between transition-colors ${
+                  onClick={() => {
+                    setDropdownOpen(true);
+                    userInputRef.current?.focus();
+                  }}
+                  className={`w-full bg-[#1e2030] border-2 rounded-xl px-3.5 py-2 cursor-text flex items-center justify-between transition-colors ${
                     dropdownOpen ? 'border-sky-500' : 'border-sky-500/80 hover:border-sky-400'
                   }`}
                 >
-                  <div className="flex flex-wrap items-center gap-1.5 pr-2">
-                    {selectedUsersList.length === 0 ? (
-                      <span className="text-sm text-slate-400 font-medium">
-                        Call for a Meeting / Joint Reminder (Select Users)
+                  <div className="flex flex-wrap items-center gap-1.5 pr-2 flex-1 min-w-0">
+                    {selectedUsersList.map(u => (
+                      <span
+                        key={u.id}
+                        onClick={e => {
+                          e.stopPropagation();
+                          toggleUser(u.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-[#3b82f6] text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm hover:bg-blue-600 cursor-pointer"
+                      >
+                        {u.firstName}
+                        <X size={12} />
                       </span>
-                    ) : (
-                      selectedUsersList.map(u => (
-                        <span
-                          key={u.id}
-                          onClick={e => {
-                            e.stopPropagation();
-                            toggleUser(u.id);
-                          }}
-                          className="inline-flex items-center gap-1.5 bg-[#3b82f6] text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm hover:bg-blue-600"
-                        >
-                          {u.firstName}
-                          <X size={12} />
-                        </span>
-                      ))
-                    )}
+                    ))}
+                    <input
+                      ref={userInputRef}
+                      type="text"
+                      value={userSearch}
+                      onFocus={() => setDropdownOpen(true)}
+                      onChange={e => {
+                        setUserSearch(e.target.value);
+                        if (!dropdownOpen) setDropdownOpen(true);
+                      }}
+                      placeholder={selectedUsersList.length === 0 ? 'Call for a Meeting / Joint Reminder' : 'Type to search users...'}
+                      className="flex-1 min-w-[160px] bg-transparent text-sm font-medium text-white placeholder:text-slate-400 focus:outline-none py-0.5"
+                    />
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 border-l border-slate-600 pl-2.5">
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setDropdownOpen(prev => !prev);
+                    }}
+                    className="flex items-center gap-2 shrink-0 border-l border-slate-600 pl-2.5 py-0.5"
+                  >
                     {selectedUsersList.length > 0 && (
                       <span className="text-[11px] font-black text-sky-400">
-                        {selectedUsersList.length} Selected
+                        {selectedUsersList.length}
                       </span>
                     )}
                     <ChevronDown size={18} className={`text-slate-300 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
+                  </button>
                 </div>
 
-                {/* Dropdown Menu with Tick-boxes */}
+                {/* Dropdown Menu with Tick-boxes (No extra search box) */}
                 {dropdownOpen && (
                   <div className="absolute left-0 right-0 top-full mt-2 bg-[#161826] border border-sky-500/50 rounded-xl shadow-[0_24px_60px_rgba(0,0,0,0.95)] z-50 overflow-hidden">
-                    <div className="p-2.5 border-b border-slate-700 bg-[#1e2136] space-y-2">
-                      <div className="relative">
-                        <Search size={14} className="text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="text"
-                          placeholder="Search user, HQ, designation, or email..."
-                          value={userSearch}
-                          onChange={e => setUserSearch(e.target.value)}
-                          className="w-full bg-[#181926] border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between px-1">
+                    <div className="px-3.5 py-2 border-b border-slate-700 bg-[#1e2136] flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={toggleSelectAllFiltered}
+                        className="flex items-center gap-2 text-xs font-bold text-sky-400 hover:text-sky-300"
+                      >
+                        {filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.includes(u.employeeId || u.uid || u._id)) ? (
+                          <CheckSquare size={15} className="text-sky-400" />
+                        ) : (
+                          <Square size={15} className="text-slate-400" />
+                        )}
+                        <span>Select All ({filteredUsers.length})</span>
+                      </button>
+                      {selectedUserIds.length > 0 && (
                         <button
                           type="button"
-                          onClick={toggleSelectAllFiltered}
-                          className="flex items-center gap-2 text-xs font-bold text-sky-400 hover:text-sky-300"
+                          onClick={() => setSelectedUserIds([])}
+                          className="text-[11px] font-bold text-rose-400 hover:text-rose-300"
                         >
-                          {filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.includes(u.employeeId || u.uid || u._id)) ? (
-                            <CheckSquare size={15} className="text-sky-400" />
-                          ) : (
-                            <Square size={15} className="text-slate-400" />
-                          )}
-                          <span>Select All ({filteredUsers.length})</span>
+                          Clear All
                         </button>
-                        {selectedUserIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedUserIds([])}
-                            className="text-[11px] font-bold text-rose-400 hover:text-rose-300"
-                          >
-                            Clear All
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     <div className="max-h-56 overflow-y-auto divide-y divide-slate-800/80 bg-[#161826]">
