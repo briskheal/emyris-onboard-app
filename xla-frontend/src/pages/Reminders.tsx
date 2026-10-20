@@ -34,8 +34,9 @@ export default function Reminders() {
   // Reminder Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const DEFAULT_MEET_LINK = 'https://meet.google.com/gzo-dhjh-okf';
   const [meetingMode, setMeetingMode] = useState<'Google Meet' | 'Concall'>('Google Meet');
-  const [meetLink, setMeetLink] = useState(() => localStorage.getItem('xla_saved_meet_link') || '');
+  const [meetLink, setMeetLink] = useState(() => localStorage.getItem('xla_saved_meet_link') || DEFAULT_MEET_LINK);
   const [emailDeliveryMode, setEmailDeliveryMode] = useState<'group' | 'individual'>('group');
   const [time, setTime] = useState('09:45');
   const [submitting, setSubmitting] = useState(false);

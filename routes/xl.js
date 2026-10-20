@@ -11317,7 +11317,7 @@ router.get('/reports/reminders', async (req, res) => {
         });
         const grouped = Array.from(groupMap.values());
 
-        let defaultMeetLink = '';
+        let defaultMeetLink = 'https://meet.google.com/gzo-dhjh-okf';
         try {
             const { XlGlobalSettings } = require('../db');
             const gSet = await XlGlobalSettings.findOne();
@@ -11325,6 +11325,18 @@ router.get('/reports/reminders', async (req, res) => {
                 defaultMeetLink = gSet.settings.defaultGoogleMeetLink;
             }
         } catch (err) {}
+
+        // Ensure any reminder using Google Meet has a valid room link (upgrade old test links)
+        formatted.forEach(item => {
+            if (item.meetingMode === 'Google Meet' && (!item.meetLink || item.meetLink.includes('pyk-ndaa-ivm') || item.meetLink.endsWith('/new'))) {
+                item.meetLink = defaultMeetLink;
+            }
+        });
+        grouped.forEach(item => {
+            if (item.meetingMode === 'Google Meet' && (!item.meetLink || item.meetLink.includes('pyk-ndaa-ivm') || item.meetLink.endsWith('/new'))) {
+                item.meetLink = defaultMeetLink;
+            }
+        });
 
         res.json({
             success: true,
@@ -11424,7 +11436,7 @@ router.post('/reminders', async (req, res) => {
             }
         } catch (err) {}
         if (meetingMode === 'Google Meet' && !finalMeetLink) {
-            finalMeetLink = 'https://meet.google.com/new';
+            finalMeetLink = 'https://meet.google.com/gzo-dhjh-okf';
         }
 
         const groupId = 'rem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
