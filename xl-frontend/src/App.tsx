@@ -30,6 +30,20 @@ import TargetAnalysisReport from './pages/extras/performance/TargetAnalysisRepor
 import EffortAnalysisReport from './pages/extras/performance/EffortAnalysisReport';
 import Utilities from './pages/Utilities';
 import DailyCallReport from './pages/DailyCallReport';
+import QuickReports from './pages/utilities/QuickReports';
+import CallReportsView from './pages/utilities/CallReportsView';
+import AnalysisReportsView from './pages/utilities/AnalysisReportsView';
+import ReminderReportsView from './pages/utilities/ReminderReportsView';
+import ListsView from './pages/utilities/ListsView';
+import MissedReportsView from './pages/utilities/MissedReportsView';
+import PrimarySalesReportView from './pages/utilities/PrimarySalesReportView';
+import SalesInsightsView from './pages/utilities/SalesInsightsView';
+import SecondarySalesReportView from './pages/utilities/SecondarySalesReportView';
+import PobReportsView from './pages/utilities/PobReportsView';
+import MonthlyReportsView from './pages/utilities/MonthlyReportsView';
+import SampleManagementView from './pages/utilities/SampleManagementView';
+import GiftManagementView from './pages/utilities/GiftManagementView';
+import TargetsView from './pages/utilities/TargetsView';
 
 function App() {
   return (
@@ -67,6 +81,20 @@ function App() {
           <Route path="extras/performance/effort" element={<EffortAnalysisReport />} />
           <Route path="report" element={<DailyCallReport />} />
           <Route path="utilities" element={<Utilities />} />
+          <Route path="utilities/quick-reports" element={<QuickReports />} />
+          <Route path="utilities/call-reports" element={<CallReportsView />} />
+          <Route path="utilities/analysis-reports" element={<AnalysisReportsView />} />
+          <Route path="utilities/reminder-calls" element={<ReminderReportsView />} />
+          <Route path="utilities/lists" element={<ListsView />} />
+          <Route path="utilities/missed-reports" element={<MissedReportsView />} />
+          <Route path="utilities/primary-sales" element={<PrimarySalesReportView />} />
+          <Route path="utilities/sales-insights" element={<SalesInsightsView />} />
+          <Route path="utilities/secondary-sales" element={<SecondarySalesReportView />} />
+          <Route path="utilities/pob-reports" element={<PobReportsView />} />
+          <Route path="utilities/monthly-reports" element={<MonthlyReportsView />} />
+          <Route path="utilities/samples" element={<SampleManagementView />} />
+          <Route path="utilities/gifts" element={<GiftManagementView />} />
+          <Route path="utilities/targets" element={<TargetsView />} />
         </Route>
       </Routes>
     </BrowserRouter>

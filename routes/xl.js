@@ -7182,13 +7182,14 @@ router.get('/missed-reports', async (req, res) => {
         let empCode = null;
 
         if (userAllotted && userAllotted !== 'all') {
-            const userObj = allUsers.find(u => u._id === userAllotted);
+            const userObj = allUsers.find(u => u._id === userAllotted || u.employeeId === userAllotted || u.uid === userAllotted);
             if (userObj) {
                 actualEmployeeId = userObj.employeeId;
                 empCode = userObj.uid;
                 
                 const orConditions = [
-                    { userAllotted: userAllotted }
+                    { userAllotted: userAllotted },
+                    { userAllotted: userObj._id }
                 ];
                 
                 if (actualEmployeeId) orConditions.push({ employeeId: actualEmployeeId });
@@ -7434,8 +7435,15 @@ router.get('/reports/secondary-sales', async (req, res) => {
         }
 
         if (employeeId && employeeId !== 'all') {
-            whereClauses.push('s."employeeId" = :employeeId');
-            replacements.employeeId = employeeId;
+            const ctx = await resolveUserContext(employeeId);
+            if (ctx.hq) {
+                whereClauses.push('(s."employeeId" = :employeeId OR LOWER(TRIM(s.headquarter)) = LOWER(TRIM(:userHq)))');
+                replacements.employeeId = employeeId;
+                replacements.userHq = ctx.hq;
+            } else {
+                whereClauses.push('s."employeeId" = :employeeId');
+                replacements.employeeId = employeeId;
+            }
         }
 
         let selectParts = [];
@@ -7710,9 +7718,17 @@ router.get('/reports/sales-insights/charts', async (req, res) => {
             const targetFilterVal = subFilterValue || filterValue;
 
             if (filterType === 'User' && filterValue) {
-                priEntityCond += ` AND p."employeeId" = :userFilter`;
-                secEntityCond += ` AND s."employeeId" = :userFilter`;
-                replacements.userFilter = filterValue;
+                const ctx = await resolveUserContext(filterValue);
+                if (ctx.hq) {
+                    priEntityCond += ` AND (p."employeeId" = :userFilter OR LOWER(TRIM(p.headquarter)) = LOWER(TRIM(:userHq)))`;
+                    secEntityCond += ` AND (s."employeeId" = :userFilter OR LOWER(TRIM(s.headquarter)) = LOWER(TRIM(:userHq)))`;
+                    replacements.userFilter = filterValue;
+                    replacements.userHq = ctx.hq;
+                } else {
+                    priEntityCond += ` AND p."employeeId" = :userFilter`;
+                    secEntityCond += ` AND s."employeeId" = :userFilter`;
+                    replacements.userFilter = filterValue;
+                }
             }
             if (filterType === 'Stockist' && filterValue) {
                 priEntityCond += ` AND (p.stockist = :stockistFilter OR p.stockist ILIKE :stockistFilterLike)`;
@@ -7886,9 +7902,17 @@ router.get('/reports/sales-insights/table', async (req, res) => {
             let replacements = {};
 
             if (drillLevel === 'user_products' && filterValue) {
-                priWhere += ` AND p."employeeId" = :filterVal`;
-                secWhere += ` AND s."employeeId" = :filterVal`;
-                replacements.filterVal = filterValue;
+                const ctx = await resolveUserContext(filterValue);
+                if (ctx.hq) {
+                    priWhere += ` AND (p."employeeId" = :filterVal OR LOWER(TRIM(p.headquarter)) = LOWER(TRIM(:userHq)))`;
+                    secWhere += ` AND (s."employeeId" = :filterVal OR LOWER(TRIM(s.headquarter)) = LOWER(TRIM(:userHq)))`;
+                    replacements.filterVal = filterValue;
+                    replacements.userHq = ctx.hq;
+                } else {
+                    priWhere += ` AND p."employeeId" = :filterVal`;
+                    secWhere += ` AND s."employeeId" = :filterVal`;
+                    replacements.filterVal = filterValue;
+                }
             } else if (drillLevel === 'stockist_products' && filterValue) {
                 priWhere += ` AND (p.stockist = :filterVal OR p.stockist ILIKE :filterValLike)`;
                 secWhere += ` AND (s.stockist = :filterVal OR s.stockist ILIKE :filterValLike)`;
@@ -10099,6 +10123,1211 @@ router.get('/tile-proxy', (req, res) => {
         });
     } catch (e) {
         res.status(500).end();
+    }
+});
+
+// ==========================================
+// EXCEL PORTAL (/xl) & XLA LINKED UTILITIES REPORTS
+// ==========================================
+
+// Helper: Resolve User and all valid identifiers (employeeId, uid, _id, email, hq)
+async function resolveUserContext(empIdentifier) {
+    const { XlUser, XlDesignation } = require('../db');
+    const { Op } = require('sequelize');
+    if (!empIdentifier || empIdentifier === 'all' || empIdentifier === 'ALL') {
+        return { user: null, ids: [], hq: null, targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
+    }
+    const user = await XlUser.findOne({
+        where: {
+            [Op.or]: [
+                { employeeId: empIdentifier },
+                { uid: empIdentifier },
+                { _id: empIdentifier },
+                { email: empIdentifier }
+            ]
+        },
+        raw: true
+    });
+    if (!user) {
+        return { user: null, ids: [empIdentifier], hq: null, targetDoctorCalls: 0, targetChemistCalls: 0, targetStockistCalls: 0 };
+    }
+    const ids = [...new Set([user.employeeId, user.uid, user._id, user.email].filter(Boolean))];
+    let targetDoctorCalls = 10;
+    let targetChemistCalls = 5;
+    let targetStockistCalls = 2;
+    if (user.designation) {
+        const desig = await XlDesignation.findOne({ where: { designationName: user.designation }, raw: true });
+        if (desig) {
+            if (desig.targetDoctorCalls) targetDoctorCalls = desig.targetDoctorCalls;
+            if (desig.targetChemistCalls) targetChemistCalls = desig.targetChemistCalls;
+            if (desig.targetStockistCalls) targetStockistCalls = desig.targetStockistCalls;
+        }
+    }
+    return {
+        user,
+        ids,
+        hq: user.hq || '',
+        name: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') || user.employeeId,
+        targetDoctorCalls,
+        targetChemistCalls,
+        targetStockistCalls
+    };
+}
+
+// 1. QUICK REPORTS SUMMARY (Menu #1)
+router.get('/reports/quick-summary', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        const { XlDCR, XlAttendance, XlTourProgram, XlCallPlan, XlExpense, XlLeave, XlPrimarySales, XlSecondarySales, XlTarget } = require('../db');
+        const { Op } = require('sequelize');
+
+        const ctx = await resolveUserContext(employeeId);
+        const ids = ctx.ids.length > 0 ? ctx.ids : [employeeId];
+
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const curYear = String(now.getFullYear());
+        const curMonthNum = String(now.getMonth() + 1).padStart(2, '0');
+        const curMonthShort = now.toLocaleString('en-US', { month: 'short' });
+        const curMonthLong = now.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const startOfMonth = `${curYear}-${curMonthNum}-01`;
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const endOfMonth = `${curYear}-${curMonthNum}-${String(lastDay).padStart(2, '0')}`;
+
+        const empWhere = ids.length > 0 ? { employeeId: { [Op.in]: ids } } : {};
+
+        const [
+            todayAtt,
+            monthAtts,
+            monthDcrs,
+            curTp,
+            monthCallPlans,
+            monthExpenses,
+            monthLeaves,
+            priSales,
+            secSales,
+            targets
+        ] = await Promise.all([
+            XlAttendance.findOne({ where: { ...empWhere, date: todayStr }, raw: true }),
+            XlAttendance.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
+            XlDCR.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
+            XlTourProgram.findOne({ where: { ...empWhere, month: { [Op.in]: [curMonthLong, curMonthShort, String(now.getMonth() + 1)] }, year: curYear }, raw: true }),
+            XlCallPlan.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
+            XlExpense.findAll({ where: { ...empWhere, date: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
+            XlLeave.findAll({ where: { ...empWhere, startDate: { [Op.between]: [startOfMonth, endOfMonth] } }, raw: true }),
+            XlPrimarySales.findAll({ where: empWhere, raw: true }),
+            XlSecondarySales.findAll({ where: empWhere, raw: true }),
+            XlTarget.findAll({ where: { ...empWhere, year: curYear }, raw: true })
+        ]);
+
+        const parsePobVal = (dcr) => {
+            let val = 0;
+            try {
+                const items = JSON.parse(dcr.pobItems || '[]');
+                if (Array.isArray(items)) {
+                    items.forEach(it => {
+                        val += (Number(it.qty || 0) * Number(it.rate || 0));
+                    });
+                }
+            } catch (e) {}
+            return val;
+        };
+
+        const todayDcrs = monthDcrs.filter(d => d.date === todayStr);
+        let todayPob = 0;
+        todayDcrs.forEach(d => { todayPob += parsePobVal(d); });
+
+        let monthPob = 0;
+        monthDcrs.forEach(d => { monthPob += parsePobVal(d); });
+
+        // Primary & Secondary sales for current month
+        const monthPriSales = priSales.filter(p => (p.month === curMonthShort && p.year === curYear) || (p.date && p.date.startsWith(`${curYear}-${curMonthNum}`)) || (p.invoiceDate && p.invoiceDate.startsWith(`${curYear}-${curMonthNum}`)));
+        const monthSecSales = secSales.filter(s => (s.month === curMonthShort && s.year === curYear) || (s.date && s.date.startsWith(`${curYear}-${curMonthNum}`)));
+
+        const totalPri = monthPriSales.reduce((acc, s) => acc + Number(s.netInvValue || s.amount || 0), 0);
+        const totalSec = monthSecSales.reduce((acc, s) => acc + Number(s.amount || 0), 0);
+
+        const totalTarget = targets.reduce((acc, t) => acc + Number(t.lumpSumAmount || t.totalProductAmount || 0), 0);
+        const totalExpense = monthExpenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+
+        const approvedCallPlans = monthCallPlans.filter(cp => cp.status === 'Approved').length;
+        const pendingCallPlans = monthCallPlans.filter(cp => cp.status === 'Pending' || cp.status === 'Submitted').length;
+
+        res.json({
+            success: true,
+            user: ctx.user ? {
+                name: ctx.name,
+                employeeId: ctx.user.employeeId,
+                designation: ctx.user.designation,
+                hq: ctx.user.hq
+            } : null,
+            today: {
+                date: todayStr,
+                attendanceStatus: todayAtt ? (todayAtt.punchOutTime ? 'Completed' : 'Punched In') : 'Not Punched In',
+                punchInTime: todayAtt?.punchInTime || '-',
+                punchOutTime: todayAtt?.punchOutTime || '-',
+                doctorCalls: todayDcrs.filter(d => d.entityType === 'Doctor').length,
+                chemistCalls: todayDcrs.filter(d => d.entityType === 'Chemist').length,
+                stockistCalls: todayDcrs.filter(d => d.entityType === 'Stockist').length,
+                reminderCalls: todayDcrs.filter(d => d.entityType === 'Reminder').length,
+                totalCalls: todayDcrs.length,
+                pobValue: todayPob
+            },
+            month: {
+                monthLabel: `${curMonthShort} ${curYear}`,
+                workingDays: monthAtts.length,
+                doctorCalls: monthDcrs.filter(d => d.entityType === 'Doctor').length,
+                chemistCalls: monthDcrs.filter(d => d.entityType === 'Chemist').length,
+                stockistCalls: monthDcrs.filter(d => d.entityType === 'Stockist').length,
+                reminderCalls: monthDcrs.filter(d => d.entityType === 'Reminder').length,
+                totalCalls: monthDcrs.length,
+                expectedDoctorCalls: monthAtts.length * (ctx.targetDoctorCalls || 10),
+                primarySales: totalPri,
+                secondarySales: totalSec,
+                targetSales: totalTarget,
+                pobValue: monthPob,
+                totalExpense
+            },
+            approvals: {
+                tourProgramStatus: curTp?.status || 'Not Submitted',
+                approvedCallPlans,
+                pendingCallPlans,
+                pendingExpenses: monthExpenses.filter(e => e.status === 'Pending').length,
+                approvedExpenses: monthExpenses.filter(e => e.status === 'Approved').length,
+                pendingLeaves: monthLeaves.filter(l => l.status === 'Pending').length,
+                pendingDcrs: monthDcrs.filter(d => d.status === 'Pending' || d.status === 'Submitted').length
+            }
+        });
+    } catch (e) {
+        console.error('Quick summary error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 2. POB REPORTS (Menu #15)
+router.get('/reports/pob', async (req, res) => {
+    try {
+        const { employeeId, hq, startDate, endDate, month, year, entityType } = req.query;
+        const { XlDCR, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        let where = {};
+        if (startDate && endDate) {
+            where.date = { [Op.between]: [startDate, endDate] };
+        } else if (month && year) {
+            const m = String(parseInt(month, 10)).padStart(2, '0');
+            const y = parseInt(year, 10);
+            const lastDay = new Date(y, parseInt(month, 10), 0).getDate();
+            where.date = { [Op.between]: [`${y}-${m}-01`, `${y}-${m}-${String(lastDay).padStart(2, '0')}`] };
+        }
+
+        if (entityType && entityType !== 'All') {
+            where.entityType = entityType;
+        }
+
+        if (employeeId && employeeId !== 'all' && employeeId !== 'ALL') {
+            const ctx = await resolveUserContext(employeeId);
+            where.employeeId = { [Op.in]: ctx.ids.length > 0 ? ctx.ids : [employeeId] };
+        }
+
+        const dcrs = await XlDCR.findAll({
+            where,
+            order: [['date', 'DESC'], ['createdAt', 'DESC']],
+            raw: true
+        });
+
+        const allUsers = await XlUser.findAll({ raw: true });
+        const userMap = {};
+        allUsers.forEach(u => {
+            const name = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.employeeId;
+            if (u.employeeId) userMap[u.employeeId] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+            if (u.uid) userMap[u.uid] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+            if (u._id) userMap[u._id] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+        });
+
+        const orders = [];
+        const productAgg = {};
+        let totalOrders = 0;
+        let totalQty = 0;
+        let totalSampleQty = 0;
+        let totalValue = 0;
+        const uniqueEntities = new Set();
+
+        dcrs.forEach(d => {
+            let pobList = [];
+            try { pobList = JSON.parse(d.pobItems || '[]'); } catch (e) {}
+            if (!Array.isArray(pobList) || pobList.length === 0) return;
+
+            const uInfo = userMap[d.employeeId] || { name: d.employeeName || d.employeeId, hq: '-', designation: 'MR' };
+            if (hq && hq !== 'all' && hq !== 'ALL' && uInfo.hq.toLowerCase() !== hq.trim().toLowerCase()) {
+                return;
+            }
+
+            let dcrOrderQty = 0;
+            let dcrSampleQty = 0;
+            let dcrOrderVal = 0;
+            const cleanItems = [];
+
+            pobList.forEach(item => {
+                const qty = Number(item.qty || 0);
+                const sQty = Number(item.sampleQty || 0);
+                const rate = Number(item.rate || 0);
+                const val = qty * rate;
+                const prodName = item.product || 'Unknown Product';
+
+                dcrOrderQty += qty;
+                dcrSampleQty += sQty;
+                dcrOrderVal += val;
+
+                cleanItems.push({
+                    product: prodName,
+                    pobType: item.pobType || 'PTS',
+                    rate,
+                    qty,
+                    sampleQty: sQty,
+                    value: val
+                });
+
+                if (!productAgg[prodName]) {
+                    productAgg[prodName] = { product: prodName, totalQty: 0, totalSampleQty: 0, totalValue: 0, orderCount: 0 };
+                }
+                productAgg[prodName].totalQty += qty;
+                productAgg[prodName].totalSampleQty += sQty;
+                productAgg[prodName].totalValue += val;
+                productAgg[prodName].orderCount += 1;
+            });
+
+            if (cleanItems.length > 0) {
+                totalOrders += 1;
+                totalQty += dcrOrderQty;
+                totalSampleQty += dcrSampleQty;
+                totalValue += dcrOrderVal;
+                if (d.entityId || d.entityName) uniqueEntities.add(d.entityId || d.entityName);
+
+                orders.push({
+                    _id: d._id,
+                    date: d.date,
+                    displayDate: toDisplayDate(d.date),
+                    employeeId: d.employeeId,
+                    employeeName: uInfo.name,
+                    headquarter: uInfo.hq,
+                    entityType: d.entityType || 'Doctor',
+                    entityName: d.entityName || '-',
+                    workingAreas: d.workingAreas || '-',
+                    items: cleanItems,
+                    totalQty: dcrOrderQty,
+                    totalSampleQty: dcrSampleQty,
+                    totalValue: dcrOrderVal,
+                    remarks: d.discussion || ''
+                });
+            }
+        });
+
+        res.json({
+            success: true,
+            summary: {
+                totalOrders,
+                totalQty,
+                totalSampleQty,
+                totalValue,
+                uniqueEntities: uniqueEntities.size
+            },
+            orders,
+            productSummary: Object.values(productAgg).sort((a, b) => b.totalValue - a.totalValue)
+        });
+    } catch (e) {
+        console.error('POB report error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 3. MONTHLY SUMMARY REPORT (Menu #16)
+router.get('/reports/monthly-summary', async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.query;
+        if (!employeeId || !month || !year) {
+            return res.status(400).json({ success: false, message: 'employeeId, month, and year are required' });
+        }
+
+        const { XlTourProgram, XlCallPlan, XlAttendance, XlDCR, XlLeave, XlExpense, XlHoliday } = require('../db');
+        const { Op } = require('sequelize');
+
+        const ctx = await resolveUserContext(employeeId);
+        const ids = ctx.ids.length > 0 ? ctx.ids : [employeeId];
+
+        const monthNum = parseInt(month, 10) || (new Date().getMonth() + 1);
+        const yearNum = parseInt(year, 10) || new Date().getFullYear();
+        const mStr = String(monthNum).padStart(2, '0');
+        const lastDay = new Date(yearNum, monthNum, 0).getDate();
+        const startDate = `${yearNum}-${mStr}-01`;
+        const endDate = `${yearNum}-${mStr}-${String(lastDay).padStart(2, '0')}`;
+
+        const dRef = new Date(yearNum, monthNum - 1, 1);
+        const monthShort = dRef.toLocaleString('en-US', { month: 'short' });
+        const monthLong = dRef.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+
+        const empWhere = { employeeId: { [Op.in]: ids } };
+
+        const [tps, callPlans, attendances, dcrs, leaves, expenses, holidays] = await Promise.all([
+            XlTourProgram.findAll({ where: { ...empWhere, month: { [Op.in]: [monthLong, monthShort, String(monthNum), mStr] }, year: String(yearNum) }, raw: true }),
+            XlCallPlan.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
+            XlAttendance.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
+            XlDCR.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
+            XlLeave.findAll({ where: { ...empWhere, status: { [Op.ne]: 'Rejected' } }, raw: true }),
+            XlExpense.findAll({ where: { ...empWhere, date: { [Op.between]: [startDate, endDate] } }, raw: true }),
+            XlHoliday.findAll({ raw: true })
+        ]);
+
+        // Map TP entries by date
+        const tpMap = {};
+        tps.forEach(tp => {
+            let entries = [];
+            try { entries = JSON.parse(tp.entries || '[]'); } catch (e) {}
+            if (Array.isArray(entries)) {
+                entries.forEach(en => {
+                    if (en.date) tpMap[en.date] = en;
+                });
+            }
+        });
+
+        // Map CallPlans by date
+        const cpMap = {};
+        callPlans.forEach(cp => {
+            let docs = [];
+            try { docs = JSON.parse(cp.doctors || '[]'); } catch (e) {}
+            cpMap[cp.date] = { count: Array.isArray(docs) ? docs.length : 0, status: cp.status };
+        });
+
+        // Map Attendance by date
+        const attMap = {};
+        attendances.forEach(a => { attMap[a.date] = a; });
+
+        // Map Holidays by date
+        const userState = (ctx.user?.state || '').toLowerCase().trim();
+        const holMap = {};
+        holidays.forEach(h => {
+            if (!h.state || h.state === 'All' || h.state === 'N/A' || h.state.toLowerCase().trim() === userState) {
+                holMap[h.date] = h.title || 'Holiday';
+            }
+        });
+
+        // Map Leaves by date
+        const leaveMap = {};
+        leaves.forEach(l => {
+            if (l.startDate && l.endDate) {
+                let cur = new Date(l.startDate + 'T00:00:00');
+                const end = new Date(l.endDate + 'T00:00:00');
+                while (cur <= end) {
+                    const ds = cur.toISOString().split('T')[0];
+                    leaveMap[ds] = l.leaveType || 'Leave';
+                    cur.setDate(cur.getDate() + 1);
+                }
+            }
+        });
+
+        // Map Expenses by date
+        const expMap = {};
+        expenses.forEach(e => {
+            expMap[e.date] = (expMap[e.date] || 0) + Number(e.amount || 0);
+        });
+
+        // Map DCRs by date
+        const dcrMap = {};
+        dcrs.forEach(d => {
+            if (!dcrMap[d.date]) dcrMap[d.date] = [];
+            dcrMap[d.date].push(d);
+        });
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const days = [];
+        let workingDays = 0;
+        let leaveDays = 0;
+        let holidayDays = 0;
+        let totalDoctorCalls = 0;
+        let totalChemistCalls = 0;
+        let totalStockistCalls = 0;
+        let totalReminderCalls = 0;
+        let totalPobValue = 0;
+        let totalExpense = 0;
+
+        for (let d = 1; d <= lastDay; d++) {
+            const dateStr = `${yearNum}-${mStr}-${String(d).padStart(2, '0')}`;
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const dayOfWeek = dayNames[dateObj.getDay()];
+            const isSunday = dateObj.getDay() === 0;
+
+            const att = attMap[dateStr];
+            const dayDcrs = dcrMap[dateStr] || [];
+            const tpEntry = tpMap[dateStr];
+            const cpEntry = cpMap[dateStr];
+            const expAmt = expMap[dateStr] || 0;
+            const holTitle = holMap[dateStr];
+            const leaveTitle = leaveMap[dateStr];
+
+            const docCount = dayDcrs.filter(x => x.entityType === 'Doctor').length;
+            const chemCount = dayDcrs.filter(x => x.entityType === 'Chemist').length;
+            const stkCount = dayDcrs.filter(x => x.entityType === 'Stockist').length;
+            const remCount = dayDcrs.filter(x => x.entityType === 'Reminder').length;
+
+            let dayPob = 0;
+            dayDcrs.forEach(x => {
+                try {
+                    const items = JSON.parse(x.pobItems || '[]');
+                    if (Array.isArray(items)) {
+                        items.forEach(it => { dayPob += Number(it.qty || 0) * Number(it.rate || 0); });
+                    }
+                } catch (e) {}
+            });
+
+            let dayStatus = 'Absent';
+            if (att || dayDcrs.length > 0) {
+                dayStatus = 'Working';
+                workingDays++;
+            } else if (leaveTitle) {
+                dayStatus = `Leave (${leaveTitle})`;
+                leaveDays++;
+            } else if (holTitle) {
+                dayStatus = `Holiday (${holTitle})`;
+                holidayDays++;
+            } else if (isSunday) {
+                dayStatus = 'Sunday';
+            }
+
+            totalDoctorCalls += docCount;
+            totalChemistCalls += chemCount;
+            totalStockistCalls += stkCount;
+            totalReminderCalls += remCount;
+            totalPobValue += dayPob;
+            totalExpense += expAmt;
+
+            days.push({
+                date: dateStr,
+                displayDate: `${String(d).padStart(2, '0')}-${mStr}-${yearNum}`,
+                dayOfWeek,
+                status: dayStatus,
+                punchInTime: att?.punchInTime || '-',
+                punchOutTime: att?.punchOutTime || '-',
+                tpVisitType: tpEntry?.visitType || '-',
+                tpArea: Array.isArray(tpEntry?.area) ? tpEntry.area.join(', ') : (tpEntry?.area || '-'),
+                plannedDoctors: cpEntry?.count || 0,
+                doctorCalls: docCount,
+                chemistCalls: chemCount,
+                stockistCalls: stkCount,
+                reminderCalls: remCount,
+                totalCalls: dayDcrs.length,
+                pobValue: dayPob,
+                expenseAmount: expAmt,
+                dcrs: dayDcrs.map(x => ({
+                    _id: x._id,
+                    entityType: x.entityType,
+                    entityName: x.entityName,
+                    checkInTime: x.checkInTime || '-',
+                    workingAreas: x.workingAreas || '-',
+                    discussion: x.discussion || '',
+                    status: x.status
+                }))
+            });
+        }
+
+        const totalAllCalls = totalDoctorCalls + totalChemistCalls + totalStockistCalls + totalReminderCalls;
+        const avgDailyCalls = workingDays > 0 ? Number((totalAllCalls / workingDays).toFixed(1)) : 0;
+
+        res.json({
+            success: true,
+            user: {
+                name: ctx.name,
+                employeeId: ctx.user?.employeeId || employeeId,
+                designation: ctx.user?.designation || 'MR',
+                hq: ctx.user?.hq || '-'
+            },
+            summary: {
+                monthLabel: `${monthShort} ${yearNum}`,
+                workingDays,
+                leaveDays,
+                holidayDays,
+                totalDoctorCalls,
+                totalChemistCalls,
+                totalStockistCalls,
+                totalReminderCalls,
+                totalAllCalls,
+                avgDailyCalls,
+                totalPobValue,
+                totalExpense
+            },
+            days
+        });
+    } catch (e) {
+        console.error('Monthly summary error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 4. SAMPLE MANAGEMENT REPORTS & XLA ALLOTMENT (Menu #17)
+router.get('/reports/samples', async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.query;
+        const { XlSample, XlDCR, XlProduct } = require('../db');
+        const { Op } = require('sequelize');
+
+        const ctx = await resolveUserContext(employeeId);
+        const ids = ctx.ids.length > 0 ? ctx.ids : (employeeId && employeeId !== 'all' ? [employeeId] : []);
+        const empWhere = ids.length > 0 ? { employeeId: { [Op.in]: ids } } : {};
+
+        let dcrWhere = { ...empWhere };
+        if (month && year) {
+            const m = String(parseInt(month, 10)).padStart(2, '0');
+            const y = parseInt(year, 10);
+            const lastDay = new Date(y, parseInt(month, 10), 0).getDate();
+            dcrWhere.date = { [Op.between]: [`${y}-${m}-01`, `${y}-${m}-${String(lastDay).padStart(2, '0')}`] };
+        }
+
+        const [sampleAllotments, dcrs, products] = await Promise.all([
+            XlSample.findAll({ where: empWhere, order: [['createdAt', 'DESC']], raw: true }),
+            XlDCR.findAll({ where: dcrWhere, order: [['date', 'DESC']], raw: true }),
+            XlProduct.findAll({ order: [['productName', 'ASC']], raw: true })
+        ]);
+
+        const sampleMap = {};
+        const ensureSample = (name) => {
+            const key = String(name || '').trim();
+            if (!key) return null;
+            if (!sampleMap[key]) {
+                sampleMap[key] = {
+                    sampleName: key,
+                    allottedQty: 0,
+                    distributedQty: 0,
+                    restoredQty: 0,
+                    deAllottedQty: 0,
+                    availableQty: 0,
+                    allotmentHistory: [],
+                    distributions: []
+                };
+            }
+            return sampleMap[key];
+        };
+
+        // Process XLA Allotments from XlSample
+        sampleAllotments.forEach(rec => {
+            let parsed = {};
+            try { parsed = JSON.parse(rec.details || '{}'); } catch (e) {}
+            const items = Array.isArray(parsed) ? parsed : (parsed.items ? parsed.items : [parsed]);
+            items.forEach(it => {
+                const name = it.sampleName || it.product || it.name;
+                const entry = ensureSample(name);
+                if (entry) {
+                    const allotted = Number(it.allottedQty ?? it.qty ?? 0);
+                    const restored = Number(it.restoredQty || 0);
+                    const deAllotted = Number(it.deAllottedQty || 0);
+                    entry.allottedQty += allotted;
+                    entry.restoredQty += restored;
+                    entry.deAllottedQty += deAllotted;
+                    entry.allotmentHistory.push({
+                        _id: rec._id,
+                        date: rec.createdAt ? new Date(rec.createdAt).toISOString().split('T')[0] : '-',
+                        month: rec.month || '-',
+                        year: rec.year || '-',
+                        allottedQty: allotted,
+                        restoredQty: restored,
+                        deAllottedQty: deAllotted,
+                        remarks: rec.adminRemarks || it.remarks || ''
+                    });
+                }
+            });
+        });
+
+        // Process DCR Distributions from samplesGiven and pobItems.sampleQty
+        dcrs.forEach(d => {
+            let sGiven = [];
+            try { sGiven = JSON.parse(d.samplesGiven || '[]'); } catch (e) {}
+            if (Array.isArray(sGiven)) {
+                sGiven.forEach(sg => {
+                    const name = sg.product || sg.sample || sg.name;
+                    const qty = Number(sg.qty || sg.quantity || 0);
+                    if (name && qty > 0) {
+                        const entry = ensureSample(name);
+                        if (entry) {
+                            entry.distributedQty += qty;
+                            entry.distributions.push({
+                                dcrId: d._id,
+                                date: d.date,
+                                displayDate: toDisplayDate(d.date),
+                                entityName: d.entityName || '-',
+                                entityType: d.entityType || 'Doctor',
+                                employeeId: d.employeeId,
+                                employeeName: d.employeeName || d.employeeId,
+                                qty
+                            });
+                        }
+                    }
+                });
+            }
+
+            let pobList = [];
+            try { pobList = JSON.parse(d.pobItems || '[]'); } catch (e) {}
+            if (Array.isArray(pobList)) {
+                pobList.forEach(pob => {
+                    const name = pob.product;
+                    const qty = Number(pob.sampleQty || 0);
+                    if (name && qty > 0) {
+                        const entry = ensureSample(name);
+                        if (entry) {
+                            entry.distributedQty += qty;
+                            entry.distributions.push({
+                                dcrId: d._id,
+                                date: d.date,
+                                displayDate: toDisplayDate(d.date),
+                                entityName: d.entityName || '-',
+                                entityType: d.entityType || 'Doctor',
+                                employeeId: d.employeeId,
+                                employeeName: d.employeeName || d.employeeId,
+                                qty
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        const resultList = Object.values(sampleMap).map(item => ({
+            ...item,
+            availableQty: Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty)
+        }));
+
+        res.json({
+            success: true,
+            data: resultList,
+            products: products.map(p => ({ _id: p._id, uid: p.uid, name: p.productName }))
+        });
+    } catch (e) {
+        console.error('Samples report error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/samples/allot', async (req, res) => {
+    try {
+        const { employeeId, sampleName, allottedQty, restoredQty, deAllottedQty, month, year, remarks } = req.body;
+        if (!employeeId || !sampleName) {
+            return res.status(400).json({ success: false, message: 'employeeId and sampleName are required' });
+        }
+        const { XlSample } = require('../db');
+        const now = new Date();
+        const details = JSON.stringify({
+            sampleName,
+            allottedQty: Number(allottedQty || 0),
+            restoredQty: Number(restoredQty || 0),
+            deAllottedQty: Number(deAllottedQty || 0),
+            remarks: remarks || ''
+        });
+        const record = await XlSample.create({
+            employeeId,
+            month: month || now.toLocaleString('en-US', { month: 'short' }),
+            year: year || String(now.getFullYear()),
+            details,
+            status: 'Approved',
+            adminRemarks: remarks || ''
+        });
+        res.json({ success: true, data: record });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/samples/:id', async (req, res) => {
+    try {
+        const { XlSample } = require('../db');
+        await XlSample.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 5. GIFT MANAGEMENT REPORTS & XLA ALLOTMENT (Menu #18)
+router.get('/reports/gifts-management', async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.query;
+        const { XlGift, XlDCR } = require('../db');
+        const { Op } = require('sequelize');
+
+        const ctx = await resolveUserContext(employeeId);
+        const ids = ctx.ids.length > 0 ? ctx.ids : (employeeId && employeeId !== 'all' ? [employeeId] : []);
+        const empWhere = ids.length > 0 ? { employeeId: { [Op.in]: ids } } : {};
+
+        let dcrWhere = { ...empWhere };
+        if (month && year) {
+            const m = String(parseInt(month, 10)).padStart(2, '0');
+            const y = parseInt(year, 10);
+            const lastDay = new Date(y, parseInt(month, 10), 0).getDate();
+            dcrWhere.date = { [Op.between]: [`${y}-${m}-01`, `${y}-${m}-${String(lastDay).padStart(2, '0')}`] };
+        }
+
+        const [giftAllotments, allGiftsCatalog, dcrs] = await Promise.all([
+            XlGift.findAll({ where: empWhere, order: [['createdAt', 'DESC']], raw: true }),
+            XlGift.findAll({ order: [['createdAt', 'DESC']], raw: true }),
+            XlDCR.findAll({ where: dcrWhere, order: [['date', 'DESC']], raw: true })
+        ]);
+
+        const giftMap = {};
+        const ensureGift = (name) => {
+            const key = String(name || '').trim();
+            if (!key) return null;
+            if (!giftMap[key]) {
+                giftMap[key] = {
+                    giftName: key,
+                    allottedQty: 0,
+                    distributedQty: 0,
+                    restoredQty: 0,
+                    deAllottedQty: 0,
+                    availableQty: 0,
+                    allotmentHistory: [],
+                    distributions: []
+                };
+            }
+            return giftMap[key];
+        };
+
+        giftAllotments.forEach(rec => {
+            let parsed = {};
+            try { parsed = JSON.parse(rec.details || '{}'); } catch (e) {
+                parsed = { giftName: rec.details, allottedQty: 1 };
+            }
+            const items = Array.isArray(parsed) ? parsed : (parsed.items ? parsed.items : [parsed]);
+            items.forEach(it => {
+                const name = it.giftName || it.item || it.name || rec.details;
+                const entry = ensureGift(name);
+                if (entry) {
+                    const allotted = Number(it.allottedQty ?? it.qty ?? 0);
+                    const restored = Number(it.restoredQty || 0);
+                    const deAllotted = Number(it.deAllottedQty || 0);
+                    entry.allottedQty += allotted;
+                    entry.restoredQty += restored;
+                    entry.deAllottedQty += deAllotted;
+                    entry.allotmentHistory.push({
+                        _id: rec._id,
+                        date: rec.createdAt ? new Date(rec.createdAt).toISOString().split('T')[0] : '-',
+                        month: rec.month || '-',
+                        year: rec.year || '-',
+                        allottedQty: allotted,
+                        restoredQty: restored,
+                        deAllottedQty: deAllotted,
+                        remarks: rec.adminRemarks || it.remarks || ''
+                    });
+                }
+            });
+        });
+
+        dcrs.forEach(d => {
+            let gGiven = [];
+            try { gGiven = JSON.parse(d.gifts || '[]'); } catch (e) {}
+            if (Array.isArray(gGiven)) {
+                gGiven.forEach(gg => {
+                    const name = gg.item || gg.gift || gg.name;
+                    const qty = Number(gg.qty || gg.quantity || 0);
+                    if (name && qty > 0) {
+                        const entry = ensureGift(name);
+                        if (entry) {
+                            entry.distributedQty += qty;
+                            entry.distributions.push({
+                                dcrId: d._id,
+                                date: d.date,
+                                displayDate: toDisplayDate(d.date),
+                                entityName: d.entityName || '-',
+                                entityType: d.entityType || 'Doctor',
+                                employeeId: d.employeeId,
+                                employeeName: d.employeeName || d.employeeId,
+                                qty
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        const catalogNames = new Set();
+        allGiftsCatalog.forEach(g => {
+            try {
+                const p = JSON.parse(g.details || '{}');
+                if (p.giftName || p.name || p.item) catalogNames.add(p.giftName || p.name || p.item);
+            } catch (e) {
+                if (g.details) catalogNames.add(g.details);
+            }
+        });
+
+        const resultList = Object.values(giftMap).map(item => ({
+            ...item,
+            availableQty: Math.max(0, item.allottedQty + item.restoredQty - item.deAllottedQty - item.distributedQty)
+        }));
+
+        res.json({
+            success: true,
+            data: resultList,
+            catalog: Array.from(catalogNames)
+        });
+    } catch (e) {
+        console.error('Gifts management report error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/gifts/allot', async (req, res) => {
+    try {
+        const { employeeId, giftName, allottedQty, restoredQty, deAllottedQty, month, year, remarks } = req.body;
+        if (!employeeId || !giftName) {
+            return res.status(400).json({ success: false, message: 'employeeId and giftName are required' });
+        }
+        const { XlGift } = require('../db');
+        const now = new Date();
+        const details = JSON.stringify({
+            giftName,
+            allottedQty: Number(allottedQty || 0),
+            restoredQty: Number(restoredQty || 0),
+            deAllottedQty: Number(deAllottedQty || 0),
+            remarks: remarks || ''
+        });
+        const record = await XlGift.create({
+            employeeId,
+            month: month || now.toLocaleString('en-US', { month: 'short' }),
+            year: year || String(now.getFullYear()),
+            details,
+            status: 'Approved',
+            adminRemarks: remarks || ''
+        });
+        res.json({ success: true, data: record });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/gifts/:id', async (req, res) => {
+    try {
+        const { XlGift } = require('../db');
+        await XlGift.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9)
+router.get('/reports/reminders', async (req, res) => {
+    try {
+        const { employeeId, startDate, endDate, month, year } = req.query;
+        const { XlDCR, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        let where = { entityType: 'Reminder' };
+        if (startDate && endDate) {
+            where.date = { [Op.between]: [startDate, endDate] };
+        } else if (month && year) {
+            const m = String(parseInt(month, 10)).padStart(2, '0');
+            const y = parseInt(year, 10);
+            const lastDay = new Date(y, parseInt(month, 10), 0).getDate();
+            where.date = { [Op.between]: [`${y}-${m}-01`, `${y}-${m}-${String(lastDay).padStart(2, '0')}`] };
+        }
+
+        if (employeeId && employeeId !== 'all' && employeeId !== 'ALL') {
+            const ctx = await resolveUserContext(employeeId);
+            where.employeeId = { [Op.in]: ctx.ids.length > 0 ? ctx.ids : [employeeId] };
+        }
+
+        const [records, allUsers] = await Promise.all([
+            XlDCR.findAll({ where, order: [['date', 'DESC'], ['createdAt', 'DESC']], raw: true }),
+            XlUser.findAll({ raw: true })
+        ]);
+
+        const userMap = {};
+        allUsers.forEach(u => {
+            const name = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.employeeId;
+            if (u.employeeId) userMap[u.employeeId] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+            if (u.uid) userMap[u.uid] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+            if (u._id) userMap[u._id] = { name, hq: u.hq || '-', designation: u.designation || 'MR' };
+        });
+
+        const formatted = records.map(r => {
+            let products = [];
+            try { products = JSON.parse(r.productsDetailed || '[]'); } catch (e) {}
+            let gifts = [];
+            try { gifts = JSON.parse(r.gifts || '[]'); } catch (e) {}
+            const uInfo = userMap[r.employeeId] || { name: r.employeeName || r.employeeId, hq: '-', designation: 'MR' };
+            return {
+                _id: r._id,
+                date: r.date,
+                displayDate: toDisplayDate(r.date),
+                employeeId: r.employeeId,
+                employeeName: uInfo.name,
+                headquarter: uInfo.hq,
+                designation: uInfo.designation,
+                doctorName: r.entityName || '-',
+                entityId: r.entityId || '',
+                productsDetailed: Array.isArray(products) ? products : [],
+                giftsGiven: Array.isArray(gifts) ? gifts : [],
+                remarks: r.discussion || '',
+                workingAreas: r.workingAreas || '-',
+                checkInTime: r.checkInTime || '-',
+                status: r.status || 'Submitted'
+            };
+        });
+
+        res.json({
+            success: true,
+            count: formatted.length,
+            data: formatted
+        });
+    } catch (e) {
+        console.error('Reminders report error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/reminders', async (req, res) => {
+    try {
+        const { employeeId, date, doctorName, entityId, productsDetailed, remarks, time } = req.body;
+        if (!employeeId || !date || !doctorName) {
+            return res.status(400).json({ success: false, message: 'employeeId, date, and doctorName are required' });
+        }
+        const { XlDCR, XlNotification } = require('../db');
+        const ctx = await resolveUserContext(employeeId);
+
+        const rec = await XlDCR.create({
+            employeeId: ctx.user?.employeeId || employeeId,
+            employeeName: ctx.name || employeeId,
+            date,
+            entityType: 'Reminder',
+            entityId: entityId || '',
+            entityName: doctorName,
+            productsDetailed: JSON.stringify(Array.isArray(productsDetailed) ? productsDetailed : (productsDetailed ? [productsDetailed] : [])),
+            discussion: remarks || '',
+            checkInTime: time || '09:30',
+            workingAreas: ctx.hq || '-',
+            status: 'Approved'
+        });
+
+        try {
+            await XlNotification.create({
+                employeeId: ctx.user?.employeeId || employeeId,
+                title: `Reminder Call: ${doctorName}`,
+                message: `${date} at ${time || '09:30'} — ${remarks || 'Follow-up reminder call'}`
+            });
+        } catch (nErr) {}
+
+        res.json({ success: true, data: rec });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/reminders/:id', async (req, res) => {
+    try {
+        const { XlDCR } = require('../db');
+        await XlDCR.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// 7. TARGETS VS ACHIEVEMENT REPORT (Menu #19 - Linked with XLA Targets)
+router.get('/reports/targets', async (req, res) => {
+    try {
+        const { employeeId, year, month } = req.query;
+        const { XlTarget, XlPrimarySales, XlPrimarySalesItem, XlSecondarySales, XlSecondarySalesItem, XlDCR, XlProduct } = require('../db');
+        const { Op } = require('sequelize');
+
+        const ctx = await resolveUserContext(employeeId);
+        const ids = ctx.ids.length > 0 ? ctx.ids : (employeeId && employeeId !== 'all' ? [employeeId] : []);
+        const empWhere = ids.length > 0 ? { employeeId: { [Op.in]: ids } } : {};
+
+        const targetYear = String(year || new Date().getFullYear());
+
+        const [targets, priSales, secSales, dcrs, allProducts] = await Promise.all([
+            XlTarget.findAll({ where: { ...empWhere, year: targetYear }, order: [['createdAt', 'DESC']], raw: true }),
+            XlPrimarySales.findAll({ where: empWhere, raw: true }),
+            XlSecondarySales.findAll({ where: empWhere, raw: true }),
+            XlDCR.findAll({ where: empWhere, raw: true }),
+            XlProduct.findAll({ raw: true })
+        ]);
+
+        const prodPriceMap = {};
+        const prodNameMap = {};
+        allProducts.forEach(p => {
+            const name = p.productName || p.name;
+            if (p._id) { prodNameMap[p._id] = name; prodPriceMap[p._id] = Number(p.pts || p.ptr || p.mrp || 0); }
+            if (p.uid) { prodNameMap[p.uid] = name; prodPriceMap[p.uid] = Number(p.pts || p.ptr || p.mrp || 0); }
+            if (name) { prodNameMap[name] = name; prodPriceMap[name] = Number(p.pts || p.ptr || p.mrp || 0); }
+        });
+
+        // Filter targets by month if requested
+        const monthShort = month && month !== 'All'
+            ? (isNaN(Number(month)) ? String(month).slice(0, 3) : new Date(Number(targetYear), Number(month) - 1, 1).toLocaleString('en-US', { month: 'short' }))
+            : null;
+        const monthNumStr = month && month !== 'All' && !isNaN(Number(month))
+            ? String(Number(month)).padStart(2, '0')
+            : null;
+
+        const filteredTargets = monthShort
+            ? targets.filter(t => !t.month || t.month.toLowerCase().startsWith(monthShort.toLowerCase()) || t.targetPeriod === 'Yearly')
+            : targets;
+
+        // Filter Primary & Secondary sales for period
+        const periodPri = priSales.filter(p => {
+            const matchYear = p.year === targetYear || (p.date && p.date.startsWith(targetYear)) || (p.invoiceDate && p.invoiceDate.startsWith(targetYear));
+            if (!matchYear) return false;
+            if (!monthShort) return true;
+            return (p.month && p.month.toLowerCase().startsWith(monthShort.toLowerCase())) ||
+                   (monthNumStr && ((p.date && p.date.startsWith(`${targetYear}-${monthNumStr}`)) || (p.invoiceDate && p.invoiceDate.startsWith(`${targetYear}-${monthNumStr}`))));
+        });
+
+        const periodSec = secSales.filter(s => {
+            const matchYear = s.year === targetYear || (s.date && s.date.startsWith(targetYear));
+            if (!matchYear) return false;
+            if (!monthShort) return true;
+            return (s.month && s.month.toLowerCase().startsWith(monthShort.toLowerCase())) ||
+                   (monthNumStr && s.date && s.date.startsWith(`${targetYear}-${monthNumStr}`));
+        });
+
+        const periodDcrs = dcrs.filter(d => {
+            if (!d.date || !d.date.startsWith(targetYear)) return false;
+            if (!monthNumStr) return true;
+            return d.date.startsWith(`${targetYear}-${monthNumStr}`);
+        });
+
+        const priSaleIds = periodPri.map(p => p._id);
+        const secSaleIds = periodSec.map(s => s._id);
+
+        const [priItems, secItems] = await Promise.all([
+            priSaleIds.length > 0 ? XlPrimarySalesItem.findAll({ where: { saleId: { [Op.in]: priSaleIds } }, raw: true }) : [],
+            secSaleIds.length > 0 ? XlSecondarySalesItem.findAll({ where: { saleId: { [Op.in]: secSaleIds } }, raw: true }) : []
+        ]);
+
+        const primaryAchieved = periodPri.reduce((acc, p) => acc + Number(p.netInvValue || p.amount || 0), 0);
+        const secondaryAchieved = periodSec.reduce((acc, s) => acc + Number(s.amount || 0), 0);
+
+        let pobAchieved = 0;
+        const prodAchievedMap = {};
+        const addProdAchieved = (prodKey, qty, amt, source) => {
+            const cleanName = prodNameMap[prodKey] || prodKey;
+            if (!cleanName) return;
+            if (!prodAchievedMap[cleanName]) {
+                prodAchievedMap[cleanName] = { productName: cleanName, primaryQty: 0, primaryAmt: 0, secondaryQty: 0, secondaryAmt: 0, pobQty: 0, pobAmt: 0 };
+            }
+            if (source === 'primary') {
+                prodAchievedMap[cleanName].primaryQty += qty;
+                prodAchievedMap[cleanName].primaryAmt += amt;
+            } else if (source === 'secondary') {
+                prodAchievedMap[cleanName].secondaryQty += qty;
+                prodAchievedMap[cleanName].secondaryAmt += amt;
+            } else if (source === 'pob') {
+                prodAchievedMap[cleanName].pobQty += qty;
+                prodAchievedMap[cleanName].pobAmt += amt;
+            }
+        };
+
+        priItems.forEach(it => {
+            const q = Number(it.qty || 0);
+            const r = Number(it.basePrice || prodPriceMap[it.product] || 0);
+            addProdAchieved(it.product || it.productId, q, q * r, 'primary');
+        });
+
+        secItems.forEach(it => {
+            const q = Number(it.salesQty || it.qty || 0);
+            const r = Number(it.basePrice || it.customPrice || prodPriceMap[it.product] || 0);
+            addProdAchieved(it.product || it.productId, q, q * r, 'secondary');
+        });
+
+        periodDcrs.forEach(d => {
+            try {
+                const items = JSON.parse(d.pobItems || '[]');
+                if (Array.isArray(items)) {
+                    items.forEach(it => {
+                        const q = Number(it.qty || 0);
+                        const r = Number(it.rate || 0);
+                        pobAchieved += q * r;
+                        addProdAchieved(it.product, q, q * r, 'pob');
+                    });
+                }
+            } catch (e) {}
+        });
+
+        // Aggregate Product-wise targets
+        let totalLumpSumTarget = 0;
+        let totalProductTargetAmount = 0;
+        const prodTargetMap = {};
+
+        filteredTargets.forEach(t => {
+            totalLumpSumTarget += Number(t.lumpSumAmount || 0);
+            totalProductTargetAmount += Number(t.totalProductAmount || 0);
+
+            let pTargets = t.productTargets || [];
+            if (typeof pTargets === 'string') {
+                try { pTargets = JSON.parse(pTargets); } catch (e) { pTargets = []; }
+            }
+            if (Array.isArray(pTargets)) {
+                pTargets.forEach(pt => {
+                    const pName = prodNameMap[pt.productId || pt.productName || pt.product] || pt.productName || pt.product || 'Product';
+                    const tQty = Number(pt.targetQty || pt.qty || pt.units || 0);
+                    const tAmt = Number(pt.targetAmount || pt.amount || (tQty * (prodPriceMap[pName] || 0)) || 0);
+                    if (!prodTargetMap[pName]) {
+                        prodTargetMap[pName] = { productName: pName, targetQty: 0, targetAmount: 0 };
+                    }
+                    prodTargetMap[pName].targetQty += tQty;
+                    prodTargetMap[pName].targetAmount += tAmt;
+                });
+            }
+        });
+
+        const allProdKeys = new Set([...Object.keys(prodTargetMap), ...Object.keys(prodAchievedMap)]);
+        const productBreakdown = Array.from(allProdKeys).map(pName => {
+            const t = prodTargetMap[pName] || { targetQty: 0, targetAmount: 0 };
+            const a = prodAchievedMap[pName] || { primaryQty: 0, primaryAmt: 0, secondaryQty: 0, secondaryAmt: 0, pobQty: 0, pobAmt: 0 };
+            const achievedQty = a.primaryQty || a.secondaryQty || a.pobQty;
+            const achievedAmt = a.primaryAmt || a.secondaryAmt || a.pobAmt;
+            const pct = t.targetAmount > 0 ? Number(((achievedAmt / t.targetAmount) * 100).toFixed(1)) : (t.targetQty > 0 ? Number(((achievedQty / t.targetQty) * 100).toFixed(1)) : 0);
+            return {
+                productName: pName,
+                targetQty: t.targetQty,
+                targetAmount: t.targetAmount,
+                primaryQty: a.primaryQty,
+                primaryAmount: a.primaryAmt,
+                secondaryQty: a.secondaryQty,
+                secondaryAmount: a.secondaryAmt,
+                pobQty: a.pobQty,
+                pobAmount: a.pobAmt,
+                achievedQty,
+                achievedAmount: achievedAmt,
+                achievementPct: pct
+            };
+        });
+
+        const effectiveTotalTarget = totalLumpSumTarget + totalProductTargetAmount;
+        const effectiveAchieved = primaryAchieved || secondaryAchieved || pobAchieved;
+        const overallPct = effectiveTotalTarget > 0 ? Number(((effectiveAchieved / effectiveTotalTarget) * 100).toFixed(1)) : 0;
+
+        res.json({
+            success: true,
+            user: {
+                name: ctx.name,
+                employeeId: ctx.user?.employeeId || employeeId,
+                designation: ctx.user?.designation || 'MR',
+                hq: ctx.user?.hq || '-'
+            },
+            summary: {
+                year: targetYear,
+                month: monthShort || 'All Months',
+                lumpSumTarget: totalLumpSumTarget,
+                productTargetAmount: totalProductTargetAmount,
+                totalTarget: effectiveTotalTarget,
+                primaryAchieved,
+                secondaryAchieved,
+                pobAchieved,
+                overallAchievementPct: overallPct
+            },
+            productTargets: productBreakdown,
+            allocations: filteredTargets
+        });
+    } catch (e) {
+        console.error('Targets report error:', e);
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 
