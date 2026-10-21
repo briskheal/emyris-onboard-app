@@ -169,7 +169,9 @@ export default function Attendance() {
           setLiveDistanceMeters(effectiveDist);
 
           if (isCurrentlyPunchedIn) {
-            if (effectiveDist > officeConfig.officeRadius) {
+            if (officeConfig.officeWifiIp && isOnOfficeWifi) {
+              outsideStrikeCountRef.current = 0;
+            } else if (effectiveDist > officeConfig.officeRadius) {
               outsideStrikeCountRef.current += 1;
             } else {
               outsideStrikeCountRef.current = 0;
@@ -230,11 +232,12 @@ export default function Attendance() {
               officeConfig.officeLat,
               officeConfig.officeLng
             );
-            const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.4, 10);
+            const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.85, 80);
             const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
             setLiveDistanceMeters(effectiveDist);
 
-            if (type === 'in' && effectiveDist > officeConfig.officeRadius) {
+            const hasWifiMatch = Boolean(officeConfig.officeWifiIp && isOnOfficeWifi);
+            if (type === 'in' && !hasWifiMatch && effectiveDist > officeConfig.officeRadius) {
               setError(
                 `Outside ${officeConfig.officeName} (${effectiveDist}m away; allowed ${officeConfig.officeRadius}m for 480 sq.ft office). Please step inside the office to Punch In.`
               );
@@ -272,6 +275,7 @@ export default function Attendance() {
   };
 
   const isInsideOffice =
+    Boolean(officeConfig.officeWifiIp && isOnOfficeWifi) ||
     officeConfig.officeLat === null ||
     officeConfig.officeLng === null ||
     (liveDistanceMeters !== null && liveDistanceMeters <= officeConfig.officeRadius);
