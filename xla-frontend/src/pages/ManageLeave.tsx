@@ -5,6 +5,14 @@ import axios from 'axios';
 import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const YEAR_OPTIONS = [
+  { value: '2024-2025', label: '2024-2025' },
+  { value: '2025-2026', label: '2025-2026' },
+  { value: '2026-2027', label: '2026-2027' },
+  { value: '2027-2028', label: '2027-2028' },
+  { value: '2028-2029', label: '2028-2029' }
+];
+
 function CreateLeaveTypeTab() {
   const [types, setTypes] = useState([]);
   const [formData, setFormData] = useState({ name: '', code: '', description: '', isPaid: true });
@@ -196,7 +204,7 @@ function AssignLeaveTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT YEAR *</label>
           <CustomSelect
-                options={[]}
+                options={YEAR_OPTIONS}
                 value={formData.year}
                 onChange={(val) => setFormData({...formData, year: val})}
                 placeholder="Select Year"
@@ -372,7 +380,7 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
       </div>
       <div className="mb-4">
         <CustomSelect
-                options={[]}
+                options={YEAR_OPTIONS}
                 value={year}
                 onChange={(val) => setYear(val)}
                 placeholder="Select Year"

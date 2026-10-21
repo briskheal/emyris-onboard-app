@@ -6039,12 +6039,12 @@ router.get('/assigned-leaves', async (req, res) => {
         const rawData = await XlAssignedLeave.findAll({ where });
 
         const allUsers = await XlUser.findAll({
-            attributes: ['_id', 'uid', 'employeeId', 'email', 'firstName', 'lastName', 'name', 'designation', 'hq']
+            attributes: ['_id', 'uid', 'employeeId', 'email', 'firstName', 'lastName', 'designation', 'hq']
         });
 
         const userMap = new Map();
         for (const u of allUsers) {
-            const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || '';
+            const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
             const uObj = {
                 _id: u._id,
                 uid: u.uid,
