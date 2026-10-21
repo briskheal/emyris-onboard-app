@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { TrendingUp, User, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, User, ChevronDown, CheckCircle2, MapPin, Navigation, Clock, ShieldCheck } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -9,6 +9,22 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState('2026');
   const [announcement, setAnnouncement] = useState('');
   const [tpReminder, setTpReminder] = useState<any>(null);
+  const [officePunch, setOfficePunch] = useState<{
+    enabled: boolean;
+    isPunchedIn: boolean;
+    officeName: string;
+    sessions: any[];
+    totalMinutes: number;
+    loading: boolean;
+  }>({
+    enabled: false,
+    isPunchedIn: false,
+    officeName: 'Corporate Office',
+    sessions: [],
+    totalMinutes: 0,
+    loading: true
+  });
+  const [punchingIn, setPunchingIn] = useState(false);
 
   useEffect(() => {
     axios.get('/api/xl/admin/announcement')
@@ -30,6 +46,26 @@ export default function Dashboard() {
       console.error(e);
     }
 
+    if (employeeId) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      axios.get(`/api/xl/attendance/my?email=${encodeURIComponent(employeeId)}&date=${todayStr}`)
+        .then(res => {
+          if (res.data?.officePunchConfig?.enabled) {
+            setOfficePunch({
+              enabled: true,
+              isPunchedIn: Boolean(res.data.isCurrentlyPunchedIn),
+              officeName: res.data.officePunchConfig.officeName || 'Corporate Office',
+              sessions: res.data.sessions || [],
+              totalMinutes: Number(res.data.totalOfficeMinutes) || 0,
+              loading: false
+            });
+          } else {
+            setOfficePunch(prev => ({ ...prev, loading: false }));
+          }
+        })
+        .catch(() => setOfficePunch(prev => ({ ...prev, loading: false })));
+    }
+
     axios.get(`/api/xl/tour-program/submission-reminder?employeeId=${encodeURIComponent(employeeId)}`)
       .then(res => {
         if (res.data && res.data.success) {
@@ -38,6 +74,56 @@ export default function Dashboard() {
       })
       .catch(e => console.error('Failed to fetch TP reminder:', e));
   }, []);
+
+  const handleInlineOfficePunchIn = () => {
+    let employeeId = '';
+    try {
+      const storedUser = localStorage.getItem('xl_user');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        employeeId = u.employeeId || u.email || u.uid || '';
+      }
+    } catch {}
+    if (!employeeId) return;
+
+    setPunchingIn(true);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const doSubmit = async (lat: number | null, lng: number | null, acc: number | null) => {
+      try {
+        await axios.post('/api/xl/attendance/punch-in', {
+          employeeId,
+          date: todayStr,
+          punchInTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          punchInLat: lat,
+          punchInLng: lng,
+          gpsAccuracy: acc
+        });
+        navigate('/extras/attendance');
+      } catch {
+        navigate('/extras/attendance');
+      } finally {
+        setPunchingIn(false);
+      }
+    };
+
+    if (!navigator.geolocation) {
+      doSubmit(null, null, null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => doSubmit(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+      () => {
+        navigator.geolocation.getCurrentPosition(
+          (pos2) => doSubmit(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.accuracy),
+          () => doSubmit(null, null, null),
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 3500, maximumAge: 15000 }
+    );
+  };
 
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-slate-100">
@@ -74,8 +160,69 @@ export default function Dashboard() {
       )}
   
       
-      <div className="px-5 mt-4 space-y-8">
+      <div className="px-5 mt-4 space-y-6">
         
+        {/* Office Geo-Presence Attendance Action Card (For Users with PUNCHING enabled) */}
+        {officePunch.enabled && !officePunch.loading && (
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/40 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                  <ShieldCheck size={14} /> {officePunch.officeName}
+                </span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                officePunch.isPunchedIn
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              }`}>
+                {officePunch.isPunchedIn ? 'ACTIVE IN OFFICE' : 'NOT PUNCHED IN'}
+              </span>
+            </div>
+
+            {!officePunch.isPunchedIn ? (
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-white">
+                    {officePunch.sessions.length > 0
+                      ? 'Welcome Back. Tap to Re-Punch In'
+                      : 'You are in Office. Please Punch In to Start.'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    1-Tap Geo-Punch to begin logging your office session
+                  </p>
+                </div>
+                <button
+                  onClick={handleInlineOfficePunchIn}
+                  disabled={punchingIn}
+                  className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  <Navigation size={15} className={punchingIn ? 'animate-spin' : ''} />
+                  <span>{punchingIn ? 'VERIFYING GPS...' : (officePunch.sessions.length > 0 ? 'TAP TO RE-PUNCH IN' : 'PUNCH IN TO START')}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <Clock size={15} className="text-emerald-400" /> Session #{officePunch.sessions.length} Active
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Logged: {officePunch.totalMinutes}m inside office today
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/extras/attendance')}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl border border-slate-600 active:scale-95 transition-all"
+                >
+                  View Attendance
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Filters Section */}
         <div>
           <h2 className="text-xl font-bold text-sky-400 mb-4">My Stats</h2>

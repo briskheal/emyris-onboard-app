@@ -3060,6 +3060,22 @@ router.post('/attendance/punch-in', async (req, res) => {
             const nowMs = Date.now();
             const finalLat = (punchInLat !== undefined && punchInLat !== null) ? punchInLat : officePunchConfig.officeLat;
             const finalLng = (punchInLng !== undefined && punchInLng !== null) ? punchInLng : officePunchConfig.officeLng;
+
+            // Auto-lock office geo-location to employee's desk if not already set by Admin
+            if (user && finalLat != null && finalLng != null && (officePunchConfig.officeLat == null || officePunchConfig.officeLng == null)) {
+                let ctrls = user.controls || {};
+                if (typeof ctrls === 'string') {
+                    try { ctrls = JSON.parse(ctrls); } catch (e) { ctrls = {}; }
+                }
+                ctrls.officeLat = Number(Number(finalLat).toFixed(6));
+                ctrls.officeLng = Number(Number(finalLng).toFixed(6));
+                ctrls.officeRadius = ctrls.officeRadius || 50;
+                user.controls = ctrls;
+                await user.save();
+                officePunchConfig.officeLat = ctrls.officeLat;
+                officePunchConfig.officeLng = ctrls.officeLng;
+            }
+
             const officeSnapshot = {
                 officeName: officePunchConfig.officeName || 'Corporate Office',
                 officeLat: officePunchConfig.officeLat,
