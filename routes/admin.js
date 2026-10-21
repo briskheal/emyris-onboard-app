@@ -6628,6 +6628,19 @@ function normalizeMonth(m) {
     return null;
 }
 
+function isUserActive(u) {
+    if (!u) return false;
+    if (u.status === 'Deactivated' || u.status === 'Inactive') return false;
+    if (u.controls) {
+        let c = u.controls;
+        if (typeof c === 'string') {
+            try { c = JSON.parse(c); } catch(e) {}
+        }
+        if (c && c.locked === true) return false;
+    }
+    return true;
+}
+
 router.get('/targets/rollup', async (req, res) => {
     try {
         const { month, year } = req.query;
@@ -6660,8 +6673,9 @@ router.get('/targets/rollup', async (req, res) => {
         // Fetch all targets for the period
         const allTargets = await XlTarget.findAll({ where });
         
-        // Fetch all users to build hierarchy
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'reportingManager'] });
+        // Fetch only active users to build hierarchy and assign targets
+        const rawUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'status', 'controls', 'reportingManager'] });
+        const allUsers = rawUsers.filter(isUserActive);
         const userMap = {};
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
@@ -6835,7 +6849,8 @@ router.get('/targets/yearly', async (req, res) => {
         }
 
         const allTargets = await XlTarget.findAll({ where });
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'hq', 'division', 'designation', 'reportingManager'] });
+        const rawUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'hq', 'division', 'designation', 'status', 'controls', 'reportingManager'] });
+        const allUsers = rawUsers.filter(isUserActive);
         
         const userMap = {};
         allUsers.forEach(u => {

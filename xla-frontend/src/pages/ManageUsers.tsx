@@ -2859,6 +2859,17 @@ function SetTargetTab() {
       if (adminsRes.data.success) all = [...all, ...adminsRes.data.admins.map((x:any)=>({...x, isAdmin: true}))];
       if (usersRes.data.success) all = [...all, ...usersRes.data.users.map((x:any)=>({...x, isAdmin: false}))];
       
+      // Filter strictly active users only (exclude deactivated / resigned users)
+      all = all.filter(u => {
+        if (u.status === 'Deactivated' || u.status === 'Inactive') return false;
+        let c = u.controls;
+        if (typeof c === 'string') {
+          try { c = JSON.parse(c); } catch(e){}
+        }
+        if (c && c.locked === true) return false;
+        return true;
+      });
+
       // filter by HQ
       if (selectedHq) {
         all = all.filter(u => u.hq === selectedHq);
@@ -3032,6 +3043,14 @@ function SetTargetTab() {
 
   
   const filteredYearlyTargets = yearlyTargets.filter(t => {
+    // Only active users
+    if (t.status === 'Deactivated' || t.status === 'Inactive') return false;
+    let c = t.controls;
+    if (typeof c === 'string') {
+      try { c = JSON.parse(c); } catch(e){}
+    }
+    if (c && c.locked === true) return false;
+
     const searchStr = yearlySearch.toLowerCase();
     const matchesSearch = !yearlySearch || t.userName.toLowerCase().includes(searchStr) || (t.hq || '').toLowerCase().includes(searchStr);
     const matchesDiv = !yearlyDivision || (t.division && t.division === yearlyDivision);
@@ -3533,7 +3552,7 @@ function SetTargetTab() {
             </div>
           </div>
           
-          <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredYearlyTargets.length}) ENTRIES</h3>
+          <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredYearlyTargets.length}) ACTIVE USERS</h3>
           
           <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
             <div className="overflow-x-auto">
