@@ -1653,8 +1653,17 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
-  const activeProfiles = profiles.filter(p => p.status === 'Active' || !p.status);
-  const deactivatedProfiles = profiles.filter(p => p.status === 'Deactivated' || p.status === 'Inactive');
+  const isUserLocked = (p: any) => {
+    if (p.status === 'Deactivated' || p.status === 'Inactive') return true;
+    let c = p.controls;
+    if (typeof c === 'string') {
+      try { c = JSON.parse(c); } catch(e){}
+    }
+    return c?.locked === true;
+  };
+
+  const activeProfiles = profiles.filter(p => !isUserLocked(p));
+  const deactivatedProfiles = profiles.filter(p => isUserLocked(p));
 
   const filteredByStatus = statusFilter === 'Active'
     ? activeProfiles
@@ -1673,7 +1682,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
     return fullName.includes(q) || empId.includes(q) || email.includes(q) || hq.includes(q) || desig.includes(q);
   });
 
-  const infoFilteredProfiles = profiles.filter(p => {
+  const infoFilteredProfiles = filteredByStatus.filter(p => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     const fullName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
@@ -2130,9 +2139,40 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         <button onClick={() => setActivationMode(true)} className="text-sky-400 hover:text-white font-bold text-sm tracking-wide transition-colors">User Activation Control ?</button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">
-          SHOWING ({infoFilteredProfiles.length}) ENTRIES
-        </h3>
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">
+            SHOWING ({infoFilteredProfiles.length}) {statusFilter === 'Active' ? 'ACTIVE' : statusFilter === 'Deactivated' ? 'DE-ACTIVATED' : 'TOTAL'} ENTRIES
+          </h3>
+          <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('Active'); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded font-bold transition-all ${
+                statusFilter === 'Active' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Active Users ({activeProfiles.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('Deactivated'); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded font-bold transition-all ${
+                statusFilter === 'Deactivated' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              De-activated ({deactivatedProfiles.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('All'); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded font-bold transition-all ${
+                statusFilter === 'All' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              All ({profiles.length})
+            </button>
+          </div>
+        </div>
         <div className="relative w-full sm:w-72">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
@@ -2626,7 +2666,7 @@ function EditDeleteTab() {
   const [editUser, setEditUser] = useState<any>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [statusFilter, setStatusFilter] = useState<'Active' | 'Deactivated' | 'All'>('Active');
 
   const fetchProfiles = async () => {
     try {
@@ -2643,39 +2683,25 @@ function EditDeleteTab() {
 
   useEffect(() => { fetchProfiles(); }, []);
 
+  const isUserDeactivated = (p: any) => {
+    if (p.status === 'Deactivated' || p.status === 'Inactive') return true;
+    let c = p.controls;
+    if (typeof c === 'string') {
+      try { c = JSON.parse(c); } catch(e){}
+    }
+    return c?.locked === true;
+  };
 
+  const activeProfiles = profiles.filter(p => !isUserDeactivated(p));
+  const deactivatedProfiles = profiles.filter(p => isUserDeactivated(p));
 
+  const filteredByStatus = statusFilter === 'Active'
+    ? activeProfiles
+    : statusFilter === 'Deactivated'
+    ? deactivatedProfiles
+    : profiles;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const filteredProfiles = profiles.filter(p => {
+  const filteredProfiles = filteredByStatus.filter(p => {
     const s = searchQuery.toLowerCase();
     const fullName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
     return fullName.includes(s) || 
@@ -2685,8 +2711,6 @@ function EditDeleteTab() {
            (p.email && p.email.toLowerCase().includes(s));
   });
 
-  
-  
   const handleDelete = async (id: string, isAdmin: boolean) => {
     if (!window.confirm('Are you sure you want to completely delete this user?')) return;
     try {
@@ -2711,21 +2735,53 @@ function EditDeleteTab() {
   }
   return (
     <div className="max-w-full">
-      <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white tracking-wide uppercase">EDIT / DELETE Users</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-white tracking-wide uppercase">EDIT / DELETE Users</h2>
+            <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => { setStatusFilter('Active'); setCurrentPage(1); }}
+                className={`px-3 py-1 rounded font-bold transition-all ${
+                  statusFilter === 'Active' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Active Users ({activeProfiles.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStatusFilter('Deactivated'); setCurrentPage(1); }}
+                className={`px-3 py-1 rounded font-bold transition-all ${
+                  statusFilter === 'Deactivated' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                De-activated Users ({deactivatedProfiles.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStatusFilter('All'); setCurrentPage(1); }}
+                className={`px-3 py-1 rounded font-bold transition-all ${
+                  statusFilter === 'All' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All ({profiles.length})
+              </button>
+            </div>
+          </div>
           <div className="relative w-72">
-              <Search size={18} className="absolute left-3 top-3 text-slate-500" />
+              <Search size={18} className="absolute left-3 top-2 text-slate-500" />
               <input 
                   type="text"
-                  placeholder="Search name, hq, email..." 
+                  placeholder="Search by name, designation, HQ..." 
                   value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="w-full bg-slate-800/90 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 h-[34px]"
-                  placeholder="Search by name, designation, HQ..."
               />
           </div>
       </div>
-      <h3 className="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">SHOWING ({filteredProfiles.length}) ENTRIES</h3>
+      <h3 className="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">
+        SHOWING ({filteredProfiles.length}) {statusFilter === 'Active' ? 'ACTIVE' : statusFilter === 'Deactivated' ? 'DE-ACTIVATED' : 'TOTAL'} USERS
+      </h3>
       <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-md flex flex-col overflow-hidden">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
@@ -2740,38 +2796,55 @@ function EditDeleteTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
-              {paginated.map((p, i) => (
-                <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{p.firstName} {p.lastName}</td>
-                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.designation || '-'}</td>
-                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.hq || '-'}</td>
-                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.division || '-'}</td>
-                  <td className="px-2 py-1.5 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => setEditUser(p)} className="text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors">
-                        <Edit size={13} /> Edit
-                      </button>
-                      <button onClick={() => handleDelete(p._id, p.isAdmin)} className="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors" title="Delete User">
-                        <Trash2 size={13} /> Delete
-                      </button>
-                    </div>
+              {paginated.map((p, i) => {
+                const isDeact = isUserDeactivated(p);
+                return (
+                  <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">
+                      <div className="flex items-center gap-2">
+                        <span>{p.firstName} {p.lastName}</span>
+                        {isDeact && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            Deactivated
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.designation || '-'}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.hq || '-'}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.division || '-'}</td>
+                    <td className="px-2 py-1.5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => setEditUser(p)} className="text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors">
+                          <Edit size={13} /> Edit
+                        </button>
+                        <button onClick={() => handleDelete(p._id, p.isAdmin)} className="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors" title="Delete User">
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredProfiles.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-slate-500 text-xs font-semibold">
+                    {statusFilter === 'Deactivated' ? 'No deactivated users found.' : 'No records found.'}
                   </td>
                 </tr>
-              ))}
-              {filteredProfiles.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-500 text-xs font-semibold">No records found.</td></tr>}
+              )}
             </tbody>
           </table>
         </div>
         
         {/* Pagination */}
-        <TableFooter data={filteredProfiles} fileName="Users_List" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={filteredProfiles} fileName={statusFilter === 'Deactivated' ? 'Deactivated_Users_List' : 'Users_List'} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
       {showTransferModal && <TransferDataModal onClose={() => setShowTransferModal(false)} />}
     </div>
   );
 }
-
 
 // SET TARGET TAB
 function SetTargetTab() {
@@ -3462,8 +3535,13 @@ function SetTargetTab() {
                       {getRoleBadge(t.badge)}
                     </td>
                     <td className="p-4 border-r border-slate-700">
-                      <div className="text-white font-bold">{t.userName || t.userEmail}</div>
-                      <div className="text-xs text-slate-400 font-light mt-0.5">{t.designation || 'MR'}{t.hq ? ` • ${t.hq}` : ''}</div>
+                      <div className="flex items-center text-white font-bold truncate" style={{ paddingLeft: `${Math.min(t.treeDepth || 0, 4) * 12}px` }}>
+                        {(t.treeDepth || 0) > 0 && <span className="text-sky-400 mr-1.5 font-bold font-mono">↳</span>}
+                        <span className="truncate">{t.userName || t.userEmail}</span>
+                      </div>
+                      <div className="text-xs text-slate-400 font-light mt-0.5 truncate" style={{ paddingLeft: `${Math.min(t.treeDepth || 0, 4) * 12 + ((t.treeDepth || 0) > 0 ? 16 : 0)}px` }}>
+                        {t.designation || 'MR'}{t.hq ? ` • ${t.hq}` : ''}
+                      </div>
                     </td>
                     <td className="p-4 text-slate-200 border-r border-slate-700 text-right font-medium">
                       {(t.directTarget || 0) > 0 ? Math.round(t.directTarget).toLocaleString('en-IN') : '-'}
@@ -3584,8 +3662,15 @@ function SetTargetTab() {
                         {getRoleBadge(t.badge)}
                       </td>
                       <td className="sticky left-[128px] z-20 bg-slate-800 group-hover:bg-slate-700/90 transition-colors border-r-2 border-slate-600/80 p-2.5 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.6)] min-w-[210px] max-w-[230px]">
-                        <div className="text-slate-100 text-xs font-bold truncate">{t.userName}</div>
-                        {t.designation && <div className="text-[10px] text-slate-400 font-light truncate mt-0.5">{t.designation}{t.hq ? ` • ${t.hq}` : ''}</div>}
+                        <div className="flex items-center text-slate-100 text-xs font-bold truncate" style={{ paddingLeft: `${Math.min(t.treeDepth || 0, 4) * 10}px` }}>
+                          {(t.treeDepth || 0) > 0 && <span className="text-sky-400 mr-1 font-bold font-mono">↳</span>}
+                          <span className="truncate">{t.userName}</span>
+                        </div>
+                        {t.designation && (
+                          <div className="text-[10px] text-slate-400 font-light truncate mt-0.5" style={{ paddingLeft: `${Math.min(t.treeDepth || 0, 4) * 10 + ((t.treeDepth || 0) > 0 ? 14 : 0)}px` }}>
+                            {t.designation}{t.hq ? ` • ${t.hq}` : ''}
+                          </div>
+                        )}
                       </td>
                       <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
                         {(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr).toLocaleString('en-IN') : '-'}

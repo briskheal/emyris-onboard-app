@@ -6641,6 +6641,82 @@ function isUserActive(u) {
     return true;
 }
 
+function sortInHierarchySequence(userMap) {
+    const roots = [];
+    Object.values(userMap).forEach(u => {
+        u._treeChildren = [];
+    });
+
+    Object.values(userMap).forEach(u => {
+        let mgr = null;
+        if (u.reportingManager) {
+            mgr = userMap[u.reportingManager];
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
+                    return desigHq === u.reportingManager.toLowerCase().trim();
+                });
+            }
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const mHq = (m.hq || '').replace(/-pst-\d+/i, '').trim().toLowerCase();
+                    const desigHq = `${m.designation || ''} (${mHq})`.toLowerCase().trim();
+                    const repClean = u.reportingManager.replace(/-pst-\d+/i, '').trim().toLowerCase();
+                    return desigHq === repClean;
+                });
+            }
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const desigOnly = (m.designation || '').toLowerCase().trim();
+                    const repMgr = u.reportingManager.toLowerCase().trim();
+                    return repMgr === desigOnly && desigOnly.length > 2;
+                });
+            }
+        }
+
+        // Mohammad Kachhi fallback to Memon Aslammohammed (Sr. ZSM)
+        if (!mgr && (u.firstName || u.userName || '').toLowerCase().includes('kachhi')) {
+            mgr = Object.values(userMap).find(m => (m.firstName || m.userName || '').toLowerCase().includes('memon') || (m.lastName || '').toLowerCase().includes('memon'));
+        }
+
+        // Hierarchy rule: RSMs, ZSMs, Sr. ZSMs report to SMs (Level 7)
+        if (u.level === 3 || u.level === 4 || u.level === 5 || u.level === 6) {
+            if (!mgr || mgr.level > 7) {
+                const smManager = Object.values(userMap).find(m => m.level === 7 && (m.division === u.division || (m.designation || '').toLowerCase().includes('west')));
+                if (smManager) mgr = smManager;
+            }
+        }
+
+        const myId = u.employeeId || u.uid || u._id;
+        if (mgr && (mgr.employeeId || mgr.uid || mgr._id) !== myId) {
+            mgr._treeChildren.push(u);
+        } else {
+            roots.push(u);
+        }
+    });
+
+    roots.sort((a, b) => (b.level || 1) - (a.level || 1));
+
+    const result = [];
+    function traverse(node, depth = 0) {
+        node.treeDepth = depth;
+        result.push(node);
+        const children = node._treeChildren || [];
+        delete node._treeChildren;
+        if (children.length > 0) {
+            children.sort((a, b) => {
+                if ((b.level || 1) !== (a.level || 1)) return (b.level || 1) - (a.level || 1);
+                const nameA = a.userName || `${a.firstName || ''} ${a.lastName || ''}`.trim();
+                const nameB = b.userName || `${b.firstName || ''} ${b.lastName || ''}`.trim();
+                return nameA.localeCompare(nameB);
+            });
+            children.forEach(child => traverse(child, depth + 1));
+        }
+    }
+    roots.forEach(r => traverse(r, 0));
+    return result;
+}
+
 router.get('/targets/rollup', async (req, res) => {
     try {
         const { month, year } = req.query;
@@ -6780,8 +6856,11 @@ router.get('/targets/rollup', async (req, res) => {
         // Calculate for all users
         Object.keys(userMap).forEach(k => calculateTeamTarget(k));
         
+        // Sort according to organizational hierarchy: Top Management down to Field Force
+        const sortedHierarchy = sortInHierarchySequence(userMap);
+
         // Format the final response
-        const rollupData = Object.values(userMap).map(u => ({
+        const rollupData = sortedHierarchy.map(u => ({
             employeeId: u.employeeId,
             userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId,
             designation: u.designation || '',
@@ -6793,6 +6872,7 @@ router.get('/targets/rollup', async (req, res) => {
             teamTarget: u.teamTarget,
             totalTarget: u.directTarget + u.teamTarget,
             isManager: (u.children && u.children.length > 0) || u.level > 1,
+            treeDepth: u.treeDepth || 0,
             rawTarget: u.rawTarget || null
         }));
 
@@ -6994,10 +7074,10 @@ router.get('/targets/yearly', async (req, res) => {
         
         Object.keys(userMap).forEach(k => calculateTeamYearlyTarget(k));
 
-        // Return all active users so that admin can view and manage targets
-        const result = Object.values(userMap);
+        // Sort according to organizational hierarchy: Top Management down to Field Force
+        const sortedHierarchy = sortInHierarchySequence(userMap);
         
-        res.json({ success: true, data: result });
+        res.json({ success: true, data: sortedHierarchy });
     } catch (e) {
         console.error('Yearly target error:', e);
         res.json({ success: false, message: e.message });
