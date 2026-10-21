@@ -388,6 +388,17 @@ export default function Attendance() {
               </div>
             </div>
 
+            {/* Automatic Office Arrival Prompt Banner */}
+            {!isCurrentlyPunchedIn && isInsideOffice && (!officeConfig.requireWifiLock || isOnOfficeWifi) && (
+              <div className="w-full mb-4 bg-emerald-500/20 border-2 border-emerald-400/60 rounded-2xl px-4 py-3 text-center shadow-lg animate-pulse">
+                <p className="text-sm font-extrabold text-emerald-200 tracking-wide">
+                  {sessions.length > 0
+                    ? 'Welcome Back. Tap to Re-Punch In'
+                    : 'You are in Office. Please Punch In to Start.'}
+                </p>
+              </div>
+            )}
+
             {/* Repeated Punch-In / Punch-Out Button */}
             {!isCurrentlyPunchedIn ? (
               <button

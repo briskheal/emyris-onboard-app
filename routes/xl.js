@@ -3315,10 +3315,13 @@ router.post('/attendance/office-heartbeat', async (req, res) => {
             });
         }
 
+        const meta = parseOfficePunchMeta(att);
         return res.json({
             success: true,
             autoPunchedOut: false,
             isCurrentlyPunchedIn,
+            sessionCount: meta.sessions.length,
+            totalOfficeMinutes: meta.totalOfficeMinutes,
             clientIp,
             isOnOfficeWifi,
             officePunchConfig

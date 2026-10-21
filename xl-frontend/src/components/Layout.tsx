@@ -24,6 +24,15 @@ export default function Layout() {
   const [isLocked, setIsLocked] = useState(false);
   const [lockMessage, setLockMessage] = useState('');
 
+  // Office Wi-Fi / 480 sq.ft Arrival Prompt State (Exclusively for PUNCHING-enabled Office Staff)
+  const [officeArrivalPrompt, setOfficeArrivalPrompt] = useState<{
+    show: boolean;
+    isRePunch: boolean;
+    officeName: string;
+    sessionCount: number;
+  }>({ show: false, isRePunch: false, officeName: 'Office', sessionCount: 0 });
+  const [officePromptPunching, setOfficePromptPunching] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('xl_user');
     if (!storedUser) {
@@ -105,7 +114,7 @@ export default function Layout() {
 
   // Background 480 sq.ft Office Presence Watcher (ONLY runs for users with PUNCHING enabled in User Controls)
   useEffect(() => {
-    if (!user || location.pathname.includes('/extras/attendance')) return;
+    if (!user) return;
     const empId = user.employeeId || user.email || user.uid;
     if (!empId) return;
 
@@ -118,11 +127,84 @@ export default function Layout() {
           employeeId: empId,
           date: todayStr
         });
-        if (!hb.data?.officePunchConfig?.enabled || !hb.data?.isCurrentlyPunchedIn) {
+        if (!hb.data?.officePunchConfig?.enabled) {
           strikeCount = 0;
+          setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
           return;
         }
+
         const cfg = hb.data.officePunchConfig;
+        const isPunchedIn = Boolean(hb.data.isCurrentlyPunchedIn);
+        const sessionCount = Number(hb.data.sessionCount) || 0;
+        const isOnOfficeWifi = Boolean(hb.data.isOnOfficeWifi);
+
+        // CASE A: User is NOT Punched In and has reached the Office Wi-Fi / 480 sq.ft Zone -> Ask to Punch In / Re-Punch In!
+        if (!isPunchedIn) {
+          strikeCount = 0;
+          if (location.pathname.includes('/extras/attendance')) {
+            setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
+            return;
+          }
+          // If Wi-Fi Lock is configured and user is not on Office Wi-Fi, do not prompt
+          if (cfg.requireWifiLock && !isOnOfficeWifi) {
+            setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
+            return;
+          }
+
+          if (cfg.officeLat !== null && cfg.officeLng !== null && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const R = 6371000;
+                const toRad = (deg: number) => (deg * Math.PI) / 180;
+                const dLat = toRad(cfg.officeLat - pos.coords.latitude);
+                const dLng = toRad(cfg.officeLng - pos.coords.longitude);
+                const a =
+                  Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(pos.coords.latitude)) * Math.cos(toRad(cfg.officeLat)) *
+                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                const rawDist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+                const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.4, 10);
+                const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+
+                if (effectiveDist <= (cfg.officeRadius || 15)) {
+                  setOfficeArrivalPrompt({
+                    show: true,
+                    isRePunch: sessionCount > 0,
+                    officeName: cfg.officeName || 'Office',
+                    sessionCount
+                  });
+                } else {
+                  setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
+                }
+              },
+              () => {
+                // If on verified Office Wi-Fi even when GPS fix is slow indoors, still prompt
+                if (cfg.requireWifiLock && isOnOfficeWifi) {
+                  setOfficeArrivalPrompt({
+                    show: true,
+                    isRePunch: sessionCount > 0,
+                    officeName: cfg.officeName || 'Office',
+                    sessionCount
+                  });
+                }
+              },
+              { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
+            );
+          } else if (isOnOfficeWifi) {
+            setOfficeArrivalPrompt({
+              show: true,
+              isRePunch: sessionCount > 0,
+              officeName: cfg.officeName || 'Office',
+              sessionCount
+            });
+          }
+          return;
+        }
+
+        // CASE B: User IS Punched In -> hide arrival prompt & watch for leaving the 480 sq.ft Office Zone
+        setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
+        if (location.pathname.includes('/extras/attendance')) return;
+
         if (cfg.officeLat !== null && cfg.officeLng !== null && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -163,9 +245,48 @@ export default function Layout() {
       } catch {}
     };
 
-    const timer = setInterval(checkOfficePresence, 30000);
+    checkOfficePresence();
+    const timer = setInterval(checkOfficePresence, 20000);
     return () => clearInterval(timer);
   }, [user, location.pathname]);
+
+  const handleQuickOfficePunchIn = () => {
+    if (!user || !navigator.geolocation) {
+      navigate('/extras/attendance');
+      return;
+    }
+    const empId = user.employeeId || user.email || user.uid;
+    const todayStr = new Date().toISOString().split('T')[0];
+    setOfficePromptPunching(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await axios.post('/api/xl/attendance/punch-in', {
+            employeeId: empId,
+            date: todayStr,
+            punchInTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            punchInLat: pos.coords.latitude,
+            punchInLng: pos.coords.longitude,
+            gpsAccuracy: pos.coords.accuracy
+          });
+          setOfficeArrivalPrompt((prev) => ({ ...prev, show: false }));
+          navigate('/extras/attendance');
+        } catch {
+          setOfficeArrivalPrompt((prev) => ({ ...prev, show: false }));
+          navigate('/extras/attendance');
+        } finally {
+          setOfficePromptPunching(false);
+        }
+      },
+      () => {
+        setOfficePromptPunching(false);
+        setOfficeArrivalPrompt((prev) => ({ ...prev, show: false }));
+        navigate('/extras/attendance');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
@@ -207,6 +328,36 @@ export default function Layout() {
       
       {/* Drawer */}
       <NavigationDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} />
+
+      {/* OFFICE WI-FI / 480 SQ.FT ARRIVAL AUTO PUNCH-IN PROMPT MODAL */}
+      {officeArrivalPrompt.show && !isLocked && (
+        <div className="absolute inset-0 z-[9990] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-full max-w-xs bg-slate-800 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl flex flex-col items-center">
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 border border-emerald-400/40 animate-pulse">
+              <div className="w-4 h-4 rounded-full bg-emerald-400" />
+            </div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400 mb-1.5">
+              {officeArrivalPrompt.officeName}
+            </p>
+            <h2 className="text-lg font-extrabold text-white leading-snug mb-6">
+              {officeArrivalPrompt.isRePunch
+                ? 'Welcome Back. Tap to Re-Punch In'
+                : 'You are in Office. Please Punch In to Start.'}
+            </h2>
+            <button
+              onClick={handleQuickOfficePunchIn}
+              disabled={officePromptPunching}
+              className="w-full h-13 bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-sm tracking-wide rounded-2xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-all disabled:opacity-60"
+            >
+              {officePromptPunching
+                ? 'PUNCHING IN...'
+                : officeArrivalPrompt.isRePunch
+                ? 'TAP TO RE-PUNCH IN'
+                : 'PUNCH IN TO START'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* GLOBAL LOCKOUT OVERLAY */}
       {isLocked && (
