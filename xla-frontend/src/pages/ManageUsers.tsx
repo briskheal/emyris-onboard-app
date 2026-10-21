@@ -3555,43 +3555,77 @@ function SetTargetTab() {
           <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredYearlyTargets.length}) ACTIVE USERS</h3>
           
           <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse relative min-w-[1200px]">
-                <thead className="bg-slate-800 z-10 shadow-md">
-                  <tr className="border-b border-slate-700/50 text-slate-300">
-                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center w-16">Sr no.</th>
-                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center w-24">Role</th>
-                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800">User</th>
+            <div className="overflow-x-auto relative scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+              <table className="w-full text-left border-collapse relative min-w-[1300px]">
+                <thead className="bg-slate-900 shadow-md">
+                  <tr className="border-b border-slate-700 text-slate-300 text-xs">
+                    <th className="sticky left-0 z-30 bg-slate-900 border-r border-slate-700 py-3 px-2 font-bold uppercase tracking-wider text-center w-12 min-w-[48px] max-w-[48px]">
+                      Sr no.
+                    </th>
+                    <th className="sticky left-[48px] z-30 bg-slate-900 border-r border-slate-700 py-3 px-2 font-bold uppercase tracking-wider text-center w-20 min-w-[80px] max-w-[80px]">
+                      Role
+                    </th>
+                    <th className="sticky left-[128px] z-30 bg-slate-900 border-r-2 border-slate-600 py-3 px-3 font-bold uppercase tracking-wider shadow-[4px_0_8px_-2px_rgba(0,0,0,0.6)] min-w-[210px] max-w-[230px]">
+                      User
+                    </th>
                     {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map(m => (
-                      <th key={m} className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">{m}</th>
+                      <th key={m} className="border-r border-slate-700 py-3 px-2 font-bold uppercase tracking-wider text-center min-w-[82px]">{m}</th>
                     ))}
-                    <th className="p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Total</th>
+                    <th className="py-3 px-3 font-bold uppercase tracking-wider text-center min-w-[95px]">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   {filteredYearlyTargets.map((t, i) => (
-                    <tr key={t.uid} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                      <td className="border-r border-slate-700 p-4 text-slate-300 text-center font-mono">{i + 1}</td>
-                      <td className="border-r border-slate-700 p-4 text-center">
+                    <tr key={t.uid} className="group border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                      <td className="sticky left-0 z-20 bg-slate-800 group-hover:bg-slate-700/90 transition-colors border-r border-slate-700/60 p-2.5 text-slate-400 text-center font-mono text-xs w-12 min-w-[48px] max-w-[48px]">
+                        {i + 1}
+                      </td>
+                      <td className="sticky left-[48px] z-20 bg-slate-800 group-hover:bg-slate-700/90 transition-colors border-r border-slate-700/60 p-2 text-center w-20 min-w-[80px] max-w-[80px]">
                         {getRoleBadge(t.badge)}
                       </td>
-                      <td className="border-r border-slate-700 p-4">
-                        <div className="text-slate-200 text-sm font-bold">{t.userName}</div>
-                        {t.designation && <div className="text-xs text-slate-400 font-light mt-0.5">{t.designation}{t.hq ? ` • ${t.hq}` : ''}</div>}
+                      <td className="sticky left-[128px] z-20 bg-slate-800 group-hover:bg-slate-700/90 transition-colors border-r-2 border-slate-600/80 p-2.5 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.6)] min-w-[210px] max-w-[230px]">
+                        <div className="text-slate-100 text-xs font-bold truncate">{t.userName}</div>
+                        {t.designation && <div className="text-[10px] text-slate-400 font-light truncate mt-0.5">{t.designation}{t.hq ? ` • ${t.hq}` : ''}</div>}
                       </td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.May || 0) > 0 ? Math.round(t.months?.May).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.June || t.months?.Jun || 0) > 0 ? Math.round(t.months?.June || t.months?.Jun).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.July || t.months?.Jul || 0) > 0 ? Math.round(t.months?.July || t.months?.Jul).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.August || t.months?.Aug || 0) > 0 ? Math.round(t.months?.August || t.months?.Aug).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.September || t.months?.Sep || 0) > 0 ? Math.round(t.months?.September || t.months?.Sep).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.October || t.months?.Oct || 0) > 0 ? Math.round(t.months?.October || t.months?.Oct).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.November || t.months?.Nov || 0) > 0 ? Math.round(t.months?.November || t.months?.Nov).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.December || t.months?.Dec || 0) > 0 ? Math.round(t.months?.December || t.months?.Dec).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.January || t.months?.Jan || 0) > 0 ? Math.round(t.months?.January || t.months?.Jan).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.February || t.months?.Feb || 0) > 0 ? Math.round(t.months?.February || t.months?.Feb).toLocaleString('en-IN') : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.March || t.months?.Mar || 0) > 0 ? Math.round(t.months?.March || t.months?.Mar).toLocaleString('en-IN') : ''}</td>
-                      <td className="p-4 text-center text-emerald-400 font-bold">{t.total > 0 ? Math.round(t.total).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.May || 0) > 0 ? Math.round(t.months?.May).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.June || t.months?.Jun || 0) > 0 ? Math.round(t.months?.June || t.months?.Jun).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.July || t.months?.Jul || 0) > 0 ? Math.round(t.months?.July || t.months?.Jul).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.August || t.months?.Aug || 0) > 0 ? Math.round(t.months?.August || t.months?.Aug).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.September || t.months?.Sep || 0) > 0 ? Math.round(t.months?.September || t.months?.Sep).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.October || t.months?.Oct || 0) > 0 ? Math.round(t.months?.October || t.months?.Oct).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.November || t.months?.Nov || 0) > 0 ? Math.round(t.months?.November || t.months?.Nov).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.December || t.months?.Dec || 0) > 0 ? Math.round(t.months?.December || t.months?.Dec).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.January || t.months?.Jan || 0) > 0 ? Math.round(t.months?.January || t.months?.Jan).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.February || t.months?.Feb || 0) > 0 ? Math.round(t.months?.February || t.months?.Feb).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="border-r border-slate-700/50 py-2.5 px-2 text-center text-slate-300 font-mono text-xs min-w-[82px]">
+                        {(t.months?.March || t.months?.Mar || 0) > 0 ? Math.round(t.months?.March || t.months?.Mar).toLocaleString('en-IN') : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-emerald-400 font-bold font-mono text-xs min-w-[95px]">
+                        {t.total > 0 ? Math.round(t.total).toLocaleString('en-IN') : '-'}
+                      </td>
                     </tr>
                   ))}
                   {filteredYearlyTargets.length === 0 && (
@@ -3600,13 +3634,19 @@ function SetTargetTab() {
                     </tr>
                   )}
                 </tbody>
-                <tfoot className="sticky bottom-0 bg-slate-900 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                    <tr className="border-t-2 border-emerald-500/50">
-                      <td colSpan={3} className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-right uppercase tracking-wider text-sm">Grand Total (Corporate Direct Target)</td>
+                <tfoot className="bg-slate-900 border-t-2 border-emerald-500/50">
+                    <tr>
+                      <td colSpan={3} className="sticky left-0 z-30 bg-slate-900 border-r-2 border-slate-600 p-3 text-emerald-400 font-bold text-right uppercase tracking-wider text-xs shadow-[4px_0_8px_-2px_rgba(0,0,0,0.6)]">
+                        Grand Total (Corporate Direct Target)
+                      </td>
                       {['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'].map(m => (
-                        <td key={m} className="border-r border-slate-700 p-4 text-center text-emerald-400 font-bold text-sm font-mono">{yearlyTotals[m] > 0 ? Math.round(yearlyTotals[m]).toLocaleString('en-IN') : ''}</td>
+                        <td key={m} className="border-r border-slate-700 p-2.5 text-center text-emerald-400 font-bold text-xs font-mono min-w-[82px]">
+                          {yearlyTotals[m] > 0 ? Math.round(yearlyTotals[m]).toLocaleString('en-IN') : '-'}
+                        </td>
                       ))}
-                      <td className="p-4 text-center text-emerald-400 font-bold text-lg font-mono">{Math.round(yearlyTotals.total) > 0 ? Math.round(yearlyTotals.total).toLocaleString('en-IN') : ''}</td>
+                      <td className="p-2.5 text-center text-emerald-400 font-bold text-sm font-mono min-w-[95px]">
+                        {Math.round(yearlyTotals.total) > 0 ? Math.round(yearlyTotals.total).toLocaleString('en-IN') : '-'}
+                      </td>
                     </tr>
                 </tfoot>
               </table>
