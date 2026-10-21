@@ -5,8 +5,6 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
-  Wifi,
-  WifiOff,
   Download,
   RefreshCw,
   Building2,
@@ -186,7 +184,7 @@ export default function OfficeGeoPresenceReport() {
       'Time Spent Inside Office': s.durationFormatted,
       'Break Before Session': s.breakBeforeFormatted,
       'Distance From Office Center (m)': `${s.distanceFromOfficeMeters}m`,
-      'Login Network / IP': s.punchInIp,
+      'Punch-In Coordinates': s.punchInLat && s.punchInLng ? `${s.punchInLat}, ${s.punchInLng}` : '-',
       'Punch-Out Mode': s.outType
     }));
 
@@ -202,7 +200,7 @@ export default function OfficeGeoPresenceReport() {
         'Time Spent Inside Office': '0m',
         'Break Before Session': '-',
         'Distance From Office Center (m)': '-',
-        'Login Network / IP': '-',
+        'Punch-In Coordinates': '-',
         'Punch-Out Mode': '-'
       });
     }
@@ -302,16 +300,16 @@ export default function OfficeGeoPresenceReport() {
           </button>
         </div>
 
-        {/* User Wi-Fi & Toggle Status Pill */}
+        {/* User Office Punching Status Pill */}
         {report?.user && (
           <div className="flex items-center gap-2">
             {report.user.isPunchingCurrentlyEnabled ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                <Wifi size={14} /> Office Punching Active {report.user.wifiCredentialsActive ? '• Wi-Fi Bound' : ''}
+                <MapPin size={14} /> Office Geo-Punching Active
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                <WifiOff size={14} /> Punching Toggled OFF (Wi-Fi Removed • Historical DB Logs Preserved)
+                <ShieldCheck size={14} /> Punching Toggled OFF (Historical DB Logs Preserved)
               </span>
             )}
           </div>
@@ -426,7 +424,7 @@ export default function OfficeGeoPresenceReport() {
                       <th className="py-3 px-4">Inside Duration</th>
                       <th className="py-3 px-4">Break Before</th>
                       <th className="py-3 px-4">GPS Dist</th>
-                      <th className="py-3 px-4">Network / IP Audit</th>
+                      <th className="py-3 px-4">Login GPS Fix</th>
                       <th className="py-3 px-4">Punch-Out Mode</th>
                     </tr>
                   </thead>
@@ -446,13 +444,8 @@ export default function OfficeGeoPresenceReport() {
                           <td className="py-3 px-4 font-extrabold text-white">{s.durationFormatted}</td>
                           <td className="py-3 px-4 text-amber-300">{s.breakBeforeFormatted}</td>
                           <td className="py-3 px-4 text-slate-300">{s.distanceFromOfficeMeters}m</td>
-                          <td className="py-3 px-4 font-mono text-[11px] text-slate-300">
-                            {s.punchInIp}
-                            {s.wifiVerified && (
-                              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[9px] font-sans font-bold">
-                                Wi-Fi
-                              </span>
-                            )}
+                          <td className="py-3 px-4 font-mono text-[11px] text-sky-300">
+                            {s.punchInLat && s.punchInLng ? `${Number(s.punchInLat).toFixed(5)}, ${Number(s.punchInLng).toFixed(5)}` : 'Office Center'}
                           </td>
                           <td className="py-3 px-4">
                             <span

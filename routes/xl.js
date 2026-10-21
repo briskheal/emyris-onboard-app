@@ -2879,68 +2879,58 @@ function getOfficeDistanceMeters(lat1, lng1, lat2, lng2) {
     return R * c;
 }
 
-function getClientPublicIp(req) {
-    const xff = req.headers['x-forwarded-for'];
-    let raw = '';
-    if (typeof xff === 'string' && xff.trim()) {
-        raw = xff.split(',')[0].trim();
-    } else if (req.headers['cf-connecting-ip']) {
-        raw = String(req.headers['cf-connecting-ip']).trim();
-    } else if (req.headers['x-real-ip']) {
-        raw = String(req.headers['x-real-ip']).trim();
-    } else if (req.ip) {
-        raw = String(req.ip).trim();
-    } else if (req.socket && req.socket.remoteAddress) {
-        raw = String(req.socket.remoteAddress).trim();
+// Automatically clean up any legacy Wi-Fi / IP fields stored in XlUser.controls or XlAttendance.dayRemarks
+(async function cleanUnusedOfficeWifiDataInDb() {
+    try {
+        const { XlUser, XlAttendance } = require('../db');
+        const { Op } = require('sequelize');
+        const users = await XlUser.findAll();
+        for (const u of users) {
+            let ctrls = u.controls;
+            if (!ctrls) continue;
+            if (typeof ctrls === 'string') {
+                try { ctrls = JSON.parse(ctrls); } catch (e) { continue; }
+            }
+            if (ctrls && typeof ctrls === 'object' && ('officeWifiIp' in ctrls || 'requireWifiLock' in ctrls)) {
+                const cleaned = { ...ctrls };
+                delete cleaned.officeWifiIp;
+                delete cleaned.requireWifiLock;
+                u.controls = cleaned;
+                await u.save();
+            }
+        }
+        const officeAtts = await XlAttendance.findAll({
+            where: { dayRemarks: { [Op.like]: '%isOfficePunchMeta%' } }
+        });
+        for (const att of officeAtts) {
+            try {
+                const parsed = typeof att.dayRemarks === 'string' ? JSON.parse(att.dayRemarks) : att.dayRemarks;
+                if (parsed && parsed.isOfficePunchMeta) {
+                    let changed = false;
+                    if (parsed.officeSnapshot && 'requireWifiLock' in parsed.officeSnapshot) {
+                        delete parsed.officeSnapshot.requireWifiLock;
+                        changed = true;
+                    }
+                    if (Array.isArray(parsed.sessions)) {
+                        parsed.sessions.forEach(s => {
+                            if ('punchInIp' in s || 'wifiVerified' in s) {
+                                delete s.punchInIp;
+                                delete s.wifiVerified;
+                                changed = true;
+                            }
+                        });
+                    }
+                    if (changed) {
+                        att.dayRemarks = JSON.stringify(parsed);
+                        await att.save();
+                    }
+                }
+            } catch (e) {}
+        }
+    } catch (e) {
+        // Non-blocking startup cleanup
     }
-    return raw.replace(/^::ffff:/i, '');
-}
-
-function doesClientIpMatchOfficeWifi(clientIp, configuredWifiIp) {
-    if (!configuredWifiIp || !String(configuredWifiIp).trim()) return true;
-    if (!clientIp) return false;
-    const cleanClient = String(clientIp).trim().toLowerCase();
-    const allowedList = String(configuredWifiIp)
-        .split(',')
-        .map(s => s.trim().toLowerCase())
-        .filter(Boolean);
-    if (allowedList.length === 0) return true;
-
-    const getIpv6RouterPrefix = (ip) => {
-        if (!ip.includes(':')) return null;
-        const parts = ip.split(':').filter(Boolean);
-        return parts.length >= 4 ? parts.slice(0, 4).join(':') : null;
-    };
-
-    const getIpv4SubnetPrefix = (ip) => {
-        if (!ip.includes('.')) return null;
-        const parts = ip.split('.');
-        return parts.length === 4 ? parts.slice(0, 3).join('.') + '.' : null;
-    };
-
-    const clientV6Prefix = getIpv6RouterPrefix(cleanClient);
-    const clientV4Prefix = getIpv4SubnetPrefix(cleanClient);
-
-    return allowedList.some(allowed => {
-        if (cleanClient === allowed || cleanClient.startsWith(allowed)) return true;
-        // Match IPv6 /64 Office Router Prefix (same Wi-Fi router across laptop & mobile phone)
-        const allowedV6Prefix = getIpv6RouterPrefix(allowed);
-        if (clientV6Prefix && allowedV6Prefix && clientV6Prefix === allowedV6Prefix) return true;
-        // Match IPv4 /24 Subnet Prefix
-        const allowedV4Prefix = getIpv4SubnetPrefix(allowed);
-        if (clientV4Prefix && allowedV4Prefix && clientV4Prefix === allowedV4Prefix) return true;
-        return false;
-    });
-}
-
-// Helper endpoint for Admin & Office Staff to detect/bind current Office Wi-Fi Public IP
-router.get('/office-network-info', (req, res) => {
-    const clientIp = getClientPublicIp(req);
-    res.json({
-        success: true,
-        clientIp
-    });
-});
+})();
 
 async function getOfficePunchConfigForEmployee(identifier) {
     const defaultCfg = {
@@ -2948,9 +2938,7 @@ async function getOfficePunchConfigForEmployee(identifier) {
         officeName: 'Corporate Office',
         officeLat: null,
         officeLng: null,
-        officeRadius: 50,
-        officeWifiIp: '',
-        requireWifiLock: false
+        officeRadius: 50
     };
     if (!identifier) return { user: null, officePunchConfig: defaultCfg };
     try {
@@ -2981,9 +2969,7 @@ async function getOfficePunchConfigForEmployee(identifier) {
                 officeName: (controls.officeName && String(controls.officeName).trim()) || 'Corporate Office',
                 officeLat: hasLat ? Number(controls.officeLat) : null,
                 officeLng: hasLng ? Number(controls.officeLng) : null,
-                officeRadius: Number(controls.officeRadius) > 0 ? Number(controls.officeRadius) : 50,
-                officeWifiIp: '',
-                requireWifiLock: false
+                officeRadius: Number(controls.officeRadius) > 0 ? Number(controls.officeRadius) : 50
             }
         };
     } catch (e) {
@@ -3037,7 +3023,6 @@ router.post('/attendance/punch-in', async (req, res) => {
     try {
         const { employeeId, date, punchInTime, punchInLat, punchInLng, gpsAccuracy } = req.body;
         const { user, officePunchConfig } = await getOfficePunchConfigForEmployee(employeeId);
-        const clientIp = getClientPublicIp(req);
         const { Op } = require('sequelize');
         const idCandidates = [employeeId, user?.employeeId, user?.email, user?.uid].filter(Boolean);
 
@@ -3079,8 +3064,7 @@ router.post('/attendance/punch-in', async (req, res) => {
                 officeName: officePunchConfig.officeName || 'Corporate Office',
                 officeLat: officePunchConfig.officeLat,
                 officeLng: officePunchConfig.officeLng,
-                officeRadius: officePunchConfig.officeRadius || 50,
-                requireWifiLock: false
+                officeRadius: officePunchConfig.officeRadius || 50
             };
 
             if (!existing) {
@@ -3095,8 +3079,6 @@ router.post('/attendance/punch-in', async (req, res) => {
                             punchInMs: nowMs,
                             punchInLat: finalLat,
                             punchInLng: finalLng,
-                            punchInIp: clientIp,
-                            wifiVerified: false,
                             punchOutTime: null,
                             punchOutMs: null,
                             punchOutLat: null,
@@ -3125,9 +3107,7 @@ router.post('/attendance/punch-in', async (req, res) => {
                     officePunchConfig,
                     sessions: meta.sessions,
                     totalOfficeMinutes: meta.totalOfficeMinutes,
-                    isCurrentlyPunchedIn: true,
-                    clientIp,
-                    isOnOfficeWifi: true
+                    isCurrentlyPunchedIn: true
                 });
             }
 
@@ -3146,8 +3126,6 @@ router.post('/attendance/punch-in', async (req, res) => {
                 punchInMs: nowMs,
                 punchInLat: finalLat,
                 punchInLng: finalLng,
-                punchInIp: clientIp,
-                wifiVerified: false,
                 punchOutTime: null,
                 punchOutMs: null,
                 punchOutLat: null,
@@ -3177,9 +3155,7 @@ router.post('/attendance/punch-in', async (req, res) => {
                 officePunchConfig,
                 sessions: meta.sessions,
                 totalOfficeMinutes: meta.totalOfficeMinutes,
-                isCurrentlyPunchedIn: true,
-                clientIp,
-                isOnOfficeWifi: true
+                isCurrentlyPunchedIn: true
             });
         }
 
@@ -3203,7 +3179,6 @@ router.post('/attendance/punch-out', async (req, res) => {
     try {
         const { employeeId, date, punchOutTime, punchOutLat, punchOutLng, autoPunchOut, autoReason } = req.body;
         const { user, officePunchConfig } = await getOfficePunchConfigForEmployee(employeeId);
-        const clientIp = getClientPublicIp(req);
         const { Op } = require('sequelize');
         const idCandidates = [employeeId, user?.employeeId, user?.email, user?.uid].filter(Boolean);
 
@@ -3266,9 +3241,7 @@ router.post('/attendance/punch-out', async (req, res) => {
                 officePunchConfig,
                 sessions: meta.sessions,
                 totalOfficeMinutes: meta.totalOfficeMinutes,
-                isCurrentlyPunchedIn: false,
-                clientIp,
-                isOnOfficeWifi: true
+                isCurrentlyPunchedIn: false
             });
         }
 
@@ -3291,7 +3264,6 @@ router.post('/attendance/office-heartbeat', async (req, res) => {
     try {
         const { employeeId, date } = req.body;
         const { user, officePunchConfig } = await getOfficePunchConfigForEmployee(employeeId);
-        const clientIp = getClientPublicIp(req);
 
         if (!officePunchConfig.enabled) {
             return res.json({ success: true, enabled: false });
@@ -3315,8 +3287,6 @@ router.post('/attendance/office-heartbeat', async (req, res) => {
             isCurrentlyPunchedIn,
             sessionCount: meta.sessions.length,
             totalOfficeMinutes: meta.totalOfficeMinutes,
-            clientIp,
-            isOnOfficeWifi: true,
             officePunchConfig
         });
     } catch (e) {
@@ -3412,17 +3382,13 @@ router.get('/attendance/my', async (req, res) => {
         const isCurrentlyPunchedIn = officePunchConfig.enabled
             ? Boolean(hasExplicitOfficeMeta(att) && hasOpenOfficeSession && att && !att.punchOutTime)
             : Boolean(att && att.punchInTime && !att.punchOutTime);
-        const clientIp = getClientPublicIp(req);
-
         res.json({
             success: true,
             data: att,
             officePunchConfig,
             sessions: meta.sessions,
             totalOfficeMinutes: meta.totalOfficeMinutes,
-            isCurrentlyPunchedIn,
-            clientIp,
-            isOnOfficeWifi: true
+            isCurrentlyPunchedIn
         });
     } catch (e) {
         console.error('[GET /attendance/my Error]', e);
@@ -9882,8 +9848,6 @@ router.get('/reports/office-geo-analysis', async (req, res) => {
                 punchOutLat: s.punchOutLat != null ? Number(s.punchOutLat) : null,
                 punchOutLng: s.punchOutLng != null ? Number(s.punchOutLng) : null,
                 distanceFromOfficeMeters: distFromOfficeMeters,
-                punchInIp: s.punchInIp || 'Recorded',
-                wifiVerified: Boolean(s.wifiVerified),
                 outType: s.outType || (isOpen ? 'Active Inside Office' : 'Manual')
             };
         });
@@ -9896,8 +9860,7 @@ router.get('/reports/office-geo-analysis', async (req, res) => {
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
                 designation: user.designation || 'Office / Admin Staff',
                 hq: user.hq || 'Office',
-                isPunchingCurrentlyEnabled: Boolean(ctrls.PUNCHING === true),
-                wifiCredentialsActive: Boolean(ctrls.PUNCHING && ctrls.officeWifiIp)
+                isPunchingCurrentlyEnabled: Boolean(ctrls.PUNCHING === true)
             },
             date,
             officePremises: {
