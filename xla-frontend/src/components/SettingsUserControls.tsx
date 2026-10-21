@@ -240,27 +240,11 @@ export default function SettingsUserControls() {
                       type="button"
                       onClick={handleCalibrate480SqftOffice}
                       disabled={locatingGps}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
                     >
-                      <Navigation size={13} className={locatingGps ? 'animate-spin' : ''} />
-                      <span>{locatingGps ? (calibrationStep || 'Capturing...') : 'Capture Current Office Location (GPS)'}</span>
+                      <Navigation size={14} className={locatingGps ? 'animate-spin' : ''} />
+                      <span>{locatingGps ? (calibrationStep || 'Capturing...') : 'Auto-Capture Office Location (1-Click GPS)'}</span>
                     </button>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                      Quick Link: Paste Google Maps Link or &quot;Lat, Lng&quot; Coordinates
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Paste Google Maps URL or e.g. 20.462521, 85.882989 to auto-fill below"
-                      onChange={(e) => {
-                        if (e.target.value.includes(',')) {
-                          handlePasteCoordinates(e.target.value);
-                        }
-                      }}
-                      className="w-full bg-[#25283c] border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
