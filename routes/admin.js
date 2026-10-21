@@ -6696,17 +6696,12 @@ router.get('/targets/yearly', async (req, res) => {
                 { year: null },
                 { year: '' }
             ];
-            const num = Number(yrStr);
-            if (!isNaN(num)) {
-                orConditions.push({ year: num });
-            }
             const parts = yrStr.split(/[-/]/);
             for (const p of parts) {
                 const cleanP = p.trim();
                 if (cleanP) {
+                    orConditions.push({ year: cleanP });
                     orConditions.push({ year: { [Op.like]: `%${cleanP}%` } });
-                    const pNum = Number(cleanP);
-                    if (!isNaN(pNum)) orConditions.push({ year: pNum });
                 }
             }
             where[Op.or] = orConditions;
