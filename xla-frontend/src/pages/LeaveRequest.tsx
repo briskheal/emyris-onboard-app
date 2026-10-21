@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { ArrowLeft, Trash2, ChevronLeft, ChevronRight, Download, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -136,6 +136,17 @@ export default function LeaveRequest() {
     return (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || fallbackName || 'Unknown User';
   };
 
+  const selectedUser = users.find((u: any) => {
+    if (!formData.employeeId) return false;
+    const str = String(formData.employeeId).trim().toLowerCase();
+    return (
+      (u.uid && String(u.uid).trim().toLowerCase() === str) ||
+      (u.employeeId && String(u.employeeId).trim().toLowerCase() === str) ||
+      (u._id && String(u._id).trim().toLowerCase() === str) ||
+      (u.email && String(u.email).trim().toLowerCase() === str)
+    );
+  });
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
@@ -229,113 +240,209 @@ export default function LeaveRequest() {
           <h2 className="text-base font-bold text-white uppercase tracking-wider">Leave Request</h2>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 mb-3">
+        {/* TOP 3-COLUMN ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-3">
           
-          {/* Visual Calendar Block */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex-1 max-w-lg">
-            <div className="flex items-center justify-between mb-2.5">
-              <button 
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
-                <ChevronLeft size={16} className="text-slate-400" />
-              </button>
-              <span className="font-bold text-xs text-white">
-                {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
-              </span>
-              <button 
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
-                <ChevronRight size={16} className="text-slate-400" />
-              </button>
+          {/* Column 1: Visual Calendar Block */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <button 
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                  className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                  <ChevronLeft size={16} className="text-slate-400" />
+                </button>
+                <span className="font-bold text-xs text-white">
+                  {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
+                </span>
+                <button 
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                  className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                  <ChevronRight size={16} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-y-1 text-center">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                  <div key={day} className="text-[10px] font-bold text-slate-400 uppercase py-0.5">{day}</div>
+                ))}
+                
+                {/* Empty Days */}
+                {Array.from({ length: firstDay }).map((_, i) => (
+                  <div key={`empty-${i}`} className="h-6"></div>
+                ))}
+
+                {/* Days */}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const dateNum = i + 1;
+                  const active = isSelected(dateNum);
+                  return (
+                    <div key={dateNum} className="flex items-center justify-center relative h-6">
+                      {active && formData.startDate && formData.endDate && (
+                        <div className="absolute inset-0 bg-sky-500/20 w-full"></div>
+                      )}
+                      <button 
+                        onClick={() => handleDateClick(dateNum)}
+                        className={`relative z-10 w-6 h-6 rounded-full text-[11px] font-semibold flex items-center justify-center transition-all ${
+                          active ? 'bg-sky-500 text-white shadow shadow-sky-500/30 scale-105' : isToday(dateNum) ? 'text-sky-400 border border-sky-500 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
+                        }`}>
+                        {dateNum}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-y-1 text-center">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="text-[10px] font-bold text-slate-400 uppercase py-0.5">{day}</div>
-              ))}
-              
-              {/* Empty Days */}
-              {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`empty-${i}`} className="h-6"></div>
-              ))}
-
-              {/* Days */}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const dateNum = i + 1;
-                const active = isSelected(dateNum);
-                return (
-                  <div key={dateNum} className="flex items-center justify-center relative h-6">
-                    {active && formData.startDate && formData.endDate && (
-                      <div className="absolute inset-0 bg-sky-500/20 w-full"></div>
-                    )}
-                    <button 
-                      onClick={() => handleDateClick(dateNum)}
-                      className={`relative z-10 w-6 h-6 rounded-full text-[11px] font-semibold flex items-center justify-center transition-all ${
-                        active ? 'bg-sky-500 text-white shadow shadow-sky-500/30 scale-105' : isToday(dateNum) ? 'text-sky-400 border border-sky-500 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
-                      }`}>
-                      {dateNum}
-                    </button>
-                  </div>
-                );
-              })}
+            <div className="mt-2 pt-2 border-t border-slate-700/40 flex items-center justify-between text-[10px] text-slate-400">
+              <span className="truncate">
+                {formData.startDate ? (
+                  <>Selected: <strong className="text-sky-400">{formatDate(formData.startDate)}</strong>{formData.endDate && formData.endDate !== formData.startDate ? <> to <strong className="text-sky-400">{formatDate(formData.endDate)}</strong></> : ''}</>
+                ) : (
+                  'Click date on calendar to select'
+                )}
+              </span>
+              {formData.startDate && (
+                <button onClick={() => setFormData({...formData, startDate: '', endDate: ''})} className="text-rose-400 hover:underline shrink-0 ml-1">Clear</button>
+              )}
             </div>
           </div>
 
-          {/* Form Block */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex flex-col gap-2.5 w-full lg:w-[380px]">
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
-              <CustomSelect 
-                options={users.map(u => ({
-                  value: u.employeeId || u.email || u.uid,
-                  label: u.firstName + ' ' + (u.lastName || ''),
-                  subLabel: u.designation || u.designationName,
-                  showDefaultAvatar: true,
-                  avatarUrl: u.profilePic
-                }))}
-                value={formData.employeeId}
-                onChange={(val) => setFormData({...formData, employeeId: val})}
-                placeholder="Select User"
-                compact={true}
-              />
-            </div>
+          {/* Column 2: Form Block */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex flex-col justify-between gap-2.5">
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
+                <CustomSelect 
+                  options={users.map(u => ({
+                    value: u.employeeId || u.email || u.uid,
+                    label: u.firstName + ' ' + (u.lastName || ''),
+                    subLabel: u.designation || u.designationName,
+                    showDefaultAvatar: true,
+                    avatarUrl: u.profilePic
+                  }))}
+                  value={formData.employeeId}
+                  onChange={(val) => setFormData({...formData, employeeId: val})}
+                  placeholder="Select User"
+                  compact={true}
+                />
+              </div>
 
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Select Leave Type *</label>
-              <CustomSelect 
-                options={leaveTypes.filter(t => { const b = balances.find((x:any) => x.leaveType === t.name); const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP'; return isLWP || (b && b.assigned > 0); }).map(t => {
-                  const b = balances.find((x:any) => x.leaveType === t.name);
-                  const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
-                  const remaining = b ? (b.assigned - b.used) : 0;
-                  return {
-                    value: t.name,
-                    label: t.name,
-                    rightBadge: !isLWP ? (
-                      <span className="w-4 h-4 rounded-full bg-sky-500 flex items-center justify-center text-[9px] font-bold text-white shadow shadow-sky-500/20">
-                        {remaining}
-                      </span>
-                    ) : undefined
-                  };
-                })}
-                value={formData.leaveType}
-                onChange={(val) => setFormData({...formData, leaveType: val})}
-                placeholder="Select Leave Type"
-                compact={true}
-              />
-            </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Select Leave Type *</label>
+                <CustomSelect 
+                  options={leaveTypes.filter(t => { const b = balances.find((x:any) => x.leaveType === t.name); const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP'; return isLWP || (b && b.assigned > 0); }).map(t => {
+                    const b = balances.find((x:any) => x.leaveType === t.name);
+                    const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
+                    const remaining = b ? (b.assigned - b.used) : 0;
+                    return {
+                      value: t.name,
+                      label: t.name,
+                      rightBadge: !isLWP ? (
+                        <span className="w-4 h-4 rounded-full bg-sky-500 flex items-center justify-center text-[9px] font-bold text-white shadow shadow-sky-500/20">
+                          {remaining}
+                        </span>
+                      ) : undefined
+                    };
+                  })}
+                  value={formData.leaveType}
+                  onChange={(val) => setFormData({...formData, leaveType: val})}
+                  placeholder="Select Leave Type"
+                  compact={true}
+                />
+              </div>
 
-            <div className="flex flex-col gap-0.5 flex-1">
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Reason for Leave *</label>
-              <textarea 
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none min-h-[50px] h-[55px]"
-                placeholder="Enter Reason for Leave"
-                value={formData.reason} onChange={e=>setFormData({...formData, reason:e.target.value})}
-              />
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Reason for Leave *</label>
+                <textarea 
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none min-h-[48px] h-[52px]"
+                  placeholder="Enter Reason for Leave"
+                  value={formData.reason} onChange={e=>setFormData({...formData, reason:e.target.value})}
+                />
+              </div>
             </div>
 
             <button onClick={handleSubmit} className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3 py-2 text-xs font-bold shadow shadow-sky-500/20 transition-colors flex items-center justify-center">
-              Submit
+              Submit Leave Request
             </button>
+          </div>
+
+          {/* Column 3: Employee Leave Balance & Summary Card */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex flex-col justify-between overflow-hidden">
+            {selectedUser ? (
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  {/* User Profile Header */}
+                  <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-700/60">
+                    <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden">
+                      {selectedUser.profilePic ? (
+                        <img src={selectedUser.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserCheck size={18} className="text-sky-400" />
+                      )}
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-xs font-bold text-white truncate">{selectedUser.firstName} {selectedUser.lastName || ''}</h4>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 font-mono font-bold shrink-0">{selectedUser.employeeId || selectedUser.uid}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 truncate uppercase tracking-wider">{selectedUser.designation || selectedUser.designationName || 'Employee'}{selectedUser.hq ? ` • ${selectedUser.hq}` : ''}</p>
+                    </div>
+                  </div>
+
+                  {/* Leave Balances List */}
+                  <div className="mt-2.5 flex flex-col gap-1.5 max-h-[145px] overflow-y-auto pr-0.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                      <span>Leave Type</span>
+                      <span>Assigned / Used / Remaining</span>
+                    </div>
+
+                    {balances.length > 0 ? (
+                      balances.map((b: any, idx: number) => {
+                        const isLWP = b.leaveType === 'Leave Without Pay' || b.leaveType === 'LWP';
+                        const remaining = isLWP ? 0 : Math.max(0, b.assigned - b.used);
+                        return (
+                          <div key={idx} className="bg-slate-900/60 border border-slate-700/40 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-slate-200 truncate">{b.leaveType}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[10px] text-slate-400 font-mono" title="Assigned">{b.assigned}A</span>
+                              <span className="text-[10px] text-amber-400 font-mono" title="Used">{b.used}U</span>
+                              {!isLWP && (
+                                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30" title="Remaining">
+                                  {remaining} Rem
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="bg-slate-900/40 border border-dashed border-slate-700/60 rounded-lg p-3 text-center text-[11px] text-slate-400">
+                        No assigned quota found for this year.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-700/40 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Year: <strong className="text-slate-300">2026-2027</strong></span>
+                  <span className="text-emerald-400 font-semibold">Active Quota</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center h-full py-4 px-2">
+                <div className="w-10 h-10 rounded-full bg-slate-700/40 border border-slate-600/50 flex items-center justify-center text-sky-400 mb-2">
+                  <UserCheck size={20} />
+                </div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">Leave Balance & Quota</h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed max-w-[240px]">
+                  Select an employee from the form to view their live available balance, used days, and remaining leaves.
+                </p>
+                <div className="mt-3 px-2.5 py-1 rounded bg-slate-900/60 border border-slate-700/50 text-[10px] text-slate-300">
+                  Financial Year <span className="text-sky-400 font-bold">2026-2027</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
