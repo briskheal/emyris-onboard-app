@@ -29,12 +29,18 @@ export default function ProfitAnalysis() {
         {/* 3 Main Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto w-full">
           
-          <button className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-indigo-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden">
+          <button 
+            onClick={() => navigate('/extras/profit/cost-center')}
+            className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-indigo-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden text-left"
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="w-20 h-20 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Banknote size={36} className="text-indigo-400" />
             </div>
-            <span className="text-lg font-black text-white tracking-widest uppercase relative z-10">Cost Center</span>
+            <div className="flex flex-col items-center text-center relative z-10">
+              <span className="text-lg font-black text-white tracking-widest uppercase">Cost Center</span>
+              <span className="text-xs text-slate-400 font-medium mt-1">Employee, Doctor, Stockist & Misc Expenses</span>
+            </div>
           </button>
 
           <button className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden">

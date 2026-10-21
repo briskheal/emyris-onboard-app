@@ -28,6 +28,7 @@ import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
 import CRM from './pages/CRM';
 import ProfitAnalysis from './pages/ProfitAnalysis';
+import CostCenterManagement from './pages/CostCenterManagement';
 import SampleManagement from './pages/SampleManagement';
 import ManageLocations from './pages/ManageLocations';
 import ManageUsers from './pages/ManageUsers';
@@ -111,6 +112,8 @@ function App() {
           <Route path="extras/reminders" element={<Reminders />} />
           <Route path="extras/crm" element={<CRM />} />
           <Route path="extras/profit" element={<ProfitAnalysis />} />
+          <Route path="extras/profit/cost-center" element={<CostCenterManagement />} />
+          <Route path="extras/profit/cost-center/:tab" element={<CostCenterManagement />} />
           <Route path="extras/samples" element={<SampleManagement />} />
           <Route path="extras/gifts" element={<Navigate to="/extras/samples" replace />} />
           

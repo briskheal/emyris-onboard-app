@@ -686,7 +686,23 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     XlSecondarySales.hasMany(XlSecondarySalesItem, { foreignKey: 'saleId', as: 'items', onDelete: 'CASCADE' });
     XlSecondarySalesItem.belongsTo(XlSecondarySales, { foreignKey: 'saleId' });
 
+    const XlCostCenter = sequelize.define('xl_cost_center', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        type: { type: DataTypes.STRING, allowNull: false }, // EMPLOYEE, DOCTOR, STOCKIST, CHEMIST, MISCELLANEOUS
+        month: { type: DataTypes.STRING, allowNull: false }, // e.g. 'Oct, 2026' or 'Oct'
+        year: { type: DataTypes.STRING, allowNull: false }, // '2026'
+        hq: { type: DataTypes.STRING },
+        entityId: { type: DataTypes.STRING },
+        entityName: { type: DataTypes.STRING, allowNull: false },
+        amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+        breakdown: { type: DataTypes.TEXT }, // JSON string with details like { salary, da, ta, hotel, misc }
+        remarks: { type: DataTypes.TEXT },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
+        XlCostCenter,
         XlHoliday,
         XlDoctor,
         XlChemist,

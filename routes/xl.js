@@ -12067,6 +12067,234 @@ router.delete('/gifts/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// COST CENTER MANAGEMENT (Profit Analysis)
+// ==========================================
+router.get('/cost-center', async (req, res) => {
+    try {
+        const { XlCostCenter } = require('../db');
+        const { type, month, year, hq } = req.query;
+        const where = {};
+        if (type && type !== 'ALL') where.type = type.toUpperCase();
+        if (month) where.month = month;
+        if (year) where.year = year;
+        if (hq && hq !== 'ALL') where.hq = hq;
+
+        const rows = await XlCostCenter.findAll({
+            where,
+            order: [['createdAt', 'DESC']],
+            raw: true
+        });
+
+        const totalCost = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+        res.json({
+            success: true,
+            data: rows,
+            summary: {
+                count: rows.length,
+                totalCost,
+                type: type || 'ALL',
+                month: month || '',
+                year: year || ''
+            }
+        });
+    } catch (e) {
+        console.error('Error in GET /cost-center:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/cost-center', async (req, res) => {
+    try {
+        const { XlCostCenter } = require('../db');
+        const { type, month, year, hq, entityId, entityName, amount, breakdown, remarks } = req.body;
+        if (!type || !entityName) {
+            return res.status(400).json({ success: false, message: 'type and entityName are required' });
+        }
+
+        let existing = null;
+        if (entityId) {
+            existing = await XlCostCenter.findOne({
+                where: { type: type.toUpperCase(), month: month || '', year: year || '', entityId }
+            });
+        }
+        if (!existing) {
+            existing = await XlCostCenter.findOne({
+                where: { type: type.toUpperCase(), month: month || '', year: year || '', entityName }
+            });
+        }
+
+        let record;
+        if (existing) {
+            existing.amount = Number(amount || 0);
+            if (hq) existing.hq = hq;
+            if (breakdown) existing.breakdown = typeof breakdown === 'string' ? breakdown : JSON.stringify(breakdown);
+            if (remarks !== undefined) existing.remarks = remarks;
+            await existing.save();
+            record = existing;
+        } else {
+            record = await XlCostCenter.create({
+                type: type.toUpperCase(),
+                month: month || '',
+                year: year || '',
+                hq: hq || '',
+                entityId: entityId || '',
+                entityName,
+                amount: Number(amount || 0),
+                breakdown: typeof breakdown === 'string' ? breakdown : JSON.stringify(breakdown || {}),
+                remarks: remarks || '',
+                status: 'Active'
+            });
+        }
+
+        res.json({ success: true, data: record });
+    } catch (e) {
+        console.error('Error in POST /cost-center:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/cost-center/:id', async (req, res) => {
+    try {
+        const { XlCostCenter } = require('../db');
+        await XlCostCenter.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Auto-sync approved expenses into Employee Cost Center
+router.post('/cost-center/auto-sync', async (req, res) => {
+    try {
+        const { XlCostCenter, XlExpense, XlUser } = require('../db');
+        const { month, year, hq } = req.body;
+        const shortMonth = month ? month.split(',')[0].trim().substring(0, 3) : '';
+        const yr = year || (month && month.includes(',') ? month.split(',')[1].trim() : String(new Date().getFullYear()));
+
+        const users = await XlUser.findAll({ raw: true });
+        const allExpenses = await XlExpense.findAll({
+            where: { status: 'Approved' },
+            raw: true
+        });
+
+        let syncedCount = 0;
+        for (const u of users) {
+            const empId = u.employeeId || u.uid || u._id;
+            const empHq = u.hq || u.headquarter || '';
+            if (hq && hq !== 'ALL' && empHq !== hq) continue;
+
+            const userExpenses = allExpenses.filter(exp => {
+                if (exp.employeeId !== empId) return false;
+                if (!exp.date) return false;
+                const dStr = String(exp.date);
+                if (shortMonth) {
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    const mIdx = months.findIndex(m => m.toLowerCase() === shortMonth.toLowerCase());
+                    if (mIdx !== -1) {
+                        const mNum = String(mIdx + 1).padStart(2, '0');
+                        if (!dStr.includes(`-${mNum}-`) && !dStr.includes(`/${mNum}/`)) return false;
+                    }
+                }
+                if (yr && !dStr.includes(yr)) return false;
+                return true;
+            });
+
+            const travelTotal = userExpenses.filter(e => (e.category || '').toLowerCase().includes('travel') || (e.category || '').toLowerCase().includes('ta')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const daTotal = userExpenses.filter(e => (e.category || '').toLowerCase().includes('da') || (e.category || '').toLowerCase().includes('allowance')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const hotelTotal = userExpenses.filter(e => (e.category || '').toLowerCase().includes('hotel')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const otherTotal = userExpenses.filter(e => !(e.category || '').toLowerCase().includes('travel') && !(e.category || '').toLowerCase().includes('da') && !(e.category || '').toLowerCase().includes('hotel')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const totalExp = travelTotal + daTotal + hotelTotal + otherTotal;
+
+            if (totalExp > 0 || u.salary) {
+                const salary = Number(u.salary || 0);
+                const grandTotal = totalExp + salary;
+                const empName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId;
+
+                const breakdown = {
+                    salary,
+                    travel: travelTotal,
+                    dailyAllowance: daTotal,
+                    hotel: hotelTotal,
+                    otherExpenses: otherTotal,
+                    autoSynced: true
+                };
+
+                let existing = await XlCostCenter.findOne({
+                    where: { type: 'EMPLOYEE', month: month || shortMonth, year: yr, entityId: empId }
+                });
+
+                if (existing) {
+                    existing.amount = grandTotal;
+                    existing.hq = empHq;
+                    existing.breakdown = JSON.stringify(breakdown);
+                    existing.remarks = 'Auto-synced from Approved Expenses & Payroll';
+                    await existing.save();
+                } else {
+                    await XlCostCenter.create({
+                        type: 'EMPLOYEE',
+                        month: month || shortMonth,
+                        year: yr,
+                        hq: empHq,
+                        entityId: empId,
+                        entityName: empName,
+                        amount: grandTotal,
+                        breakdown: JSON.stringify(breakdown),
+                        remarks: 'Auto-synced from Approved Expenses & Payroll',
+                        status: 'Active'
+                    });
+                }
+                syncedCount++;
+            }
+        }
+
+        res.json({ success: true, message: `Synced ${syncedCount} employee cost records`, syncedCount });
+    } catch (e) {
+        console.error('Error in /cost-center/auto-sync:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.get('/cost-center/total-expenses', async (req, res) => {
+    try {
+        const { XlCostCenter } = require('../db');
+        const { month, year, hq } = req.query;
+        const where = {};
+        if (month) where.month = month;
+        if (year) where.year = year;
+        if (hq && hq !== 'ALL') where.hq = hq;
+
+        const allRows = await XlCostCenter.findAll({ where, raw: true });
+
+        const categories = ['EMPLOYEE', 'DOCTOR', 'STOCKIST', 'CHEMIST', 'MISCELLANEOUS'];
+        const summaryByType = categories.map(cat => {
+            const items = allRows.filter(r => r.type === cat);
+            const total = items.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+            return {
+                category: cat,
+                count: items.length,
+                totalAmount: total,
+                items
+            };
+        });
+
+        const grandTotal = summaryByType.reduce((s, c) => s + c.totalAmount, 0);
+        summaryByType.forEach(c => {
+            c.percentage = grandTotal > 0 ? Number(((c.totalAmount / grandTotal) * 100).toFixed(1)) : 0;
+        });
+
+        res.json({
+            success: true,
+            grandTotal,
+            totalEntries: allRows.length,
+            breakdown: summaryByType,
+            rows: allRows
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9 & XLA Reminders)
 router.get('/admin/users', async (req, res) => {
     try {
