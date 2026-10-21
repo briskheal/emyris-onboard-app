@@ -6595,6 +6595,39 @@ router.get('/targets', async (req, res) => {
     }
 });
 
+function getDesignationInfo(desig) {
+    if (!desig) return { level: 1, badge: 'TBM' };
+    const d = desig.toLowerCase().trim();
+    if (d.includes('gm') || d.includes('general manager')) return { level: 9, badge: 'GM' };
+    if (d.includes('national sales manager') || d.includes('nsm')) return { level: 8, badge: 'NSM' };
+    if (d.includes('sales manager') && !d.includes('area') && !d.includes('regional') && !d.includes('zonal')) return { level: 7, badge: 'SM' };
+    if (d.includes('sr. zonal') || d.includes('sr zonal') || d.includes('senior zonal')) return { level: 6, badge: 'Sr. ZSM' };
+    if (d.includes('zonal sales manager') || d.includes('zsm')) return { level: 5, badge: 'ZSM' };
+    if (d.includes('sr. regional') || d.includes('sr regional') || d.includes('senior regional')) return { level: 4, badge: 'Sr. RSM' };
+    if (d.includes('regional sales manager') || d.includes('rsm')) return { level: 3, badge: 'RSM' };
+    if (d.includes('area sales manager') || d.includes('asm')) return { level: 2, badge: 'ASM' };
+    if (d.includes('product manager') || d.includes('pm')) return { level: 6, badge: 'PM' };
+    return { level: 1, badge: 'TBM' };
+}
+
+function normalizeMonth(m) {
+    if (!m) return null;
+    const str = String(m).trim().toLowerCase();
+    if (str.startsWith('apr') || str === '4' || str === '04') return 'April';
+    if (str.startsWith('may') || str === '5' || str === '05') return 'May';
+    if (str.startsWith('jun') || str === '6' || str === '06') return 'June';
+    if (str.startsWith('jul') || str === '7' || str === '07') return 'July';
+    if (str.startsWith('aug') || str === '8' || str === '08') return 'August';
+    if (str.startsWith('sep') || str === '9' || str === '09') return 'September';
+    if (str.startsWith('oct') || str === '10') return 'October';
+    if (str.startsWith('nov') || str === '11') return 'November';
+    if (str.startsWith('dec') || str === '12') return 'December';
+    if (str.startsWith('jan') || str === '1' || str === '01') return 'January';
+    if (str.startsWith('feb') || str === '2' || str === '02') return 'February';
+    if (str.startsWith('mar') || str === '3' || str === '03') return 'March';
+    return null;
+}
+
 router.get('/targets/rollup', async (req, res) => {
     try {
         const { month, year } = req.query;
@@ -6628,11 +6661,20 @@ router.get('/targets/rollup', async (req, res) => {
         const allTargets = await XlTarget.findAll({ where });
         
         // Fetch all users to build hierarchy
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'reportingManager'] });
+        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'reportingManager'] });
         const userMap = {};
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
-            userMap[empId] = { ...u.toJSON(), employeeId: empId, directTarget: 0, teamTarget: 0, children: [] };
+            const dInfo = getDesignationInfo(u.designation);
+            userMap[empId] = { 
+                ...u.toJSON(), 
+                employeeId: empId, 
+                level: dInfo.level,
+                badge: dInfo.badge,
+                directTarget: 0, 
+                teamTarget: 0, 
+                children: [] 
+            };
         });
         
         // Attach direct targets
@@ -6656,16 +6698,27 @@ router.get('/targets/rollup', async (req, res) => {
             }
         });
         
-        // Build hierarchy: link children to managers by ID, designation+HQ, or designation
+        // Build hierarchy: link children to managers with fuzzy HQ, designation and level awareness
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
+            const userObj = userMap[empId];
+            if (!userObj) return;
+
+            let mgr = null;
             if (u.reportingManager) {
-                let mgr = userMap[u.reportingManager];
+                mgr = userMap[u.reportingManager];
                 if (!mgr) {
                     mgr = Object.values(userMap).find(m => {
                         const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
-                        const repMgr = u.reportingManager.toLowerCase().trim();
-                        return repMgr === desigHq;
+                        return desigHq === u.reportingManager.toLowerCase().trim();
+                    });
+                }
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const mHq = (m.hq || '').replace(/-pst-\d+/i, '').trim().toLowerCase();
+                        const desigHq = `${m.designation || ''} (${mHq})`.toLowerCase().trim();
+                        const repClean = u.reportingManager.replace(/-pst-\d+/i, '').trim().toLowerCase();
+                        return desigHq === repClean;
                     });
                 }
                 if (!mgr) {
@@ -6675,9 +6728,23 @@ router.get('/targets/rollup', async (req, res) => {
                         return repMgr === desigOnly && desigOnly.length > 2;
                     });
                 }
-                if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
-                    mgr.children.push(empId);
+            }
+
+            // Mohammad Kachhi fallback to Memon Aslammohammed (Sr. ZSM)
+            if (!mgr && (u.firstName || '').toLowerCase().includes('kachhi')) {
+                mgr = Object.values(userMap).find(m => (m.firstName || '').toLowerCase().includes('memon') || (m.lastName || '').toLowerCase().includes('memon'));
+            }
+
+            // Hierarchy rule: RSMs, ZSMs, Sr. ZSMs report to SMs (Level 7)
+            if (userObj.level === 3 || userObj.level === 4 || userObj.level === 5 || userObj.level === 6) {
+                if (!mgr || mgr.level > 7) {
+                    const smManager = Object.values(userMap).find(m => m.level === 7 && (m.division === userObj.division || (m.designation || '').toLowerCase().includes('west')));
+                    if (smManager) mgr = smManager;
                 }
+            }
+
+            if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
+                mgr.children.push(empId);
             }
         });
         
@@ -6704,14 +6771,20 @@ router.get('/targets/rollup', async (req, res) => {
             employeeId: u.employeeId,
             userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId,
             designation: u.designation || '',
+            level: u.level || 1,
+            badge: u.badge || 'TBM',
             hq: u.hq || '',
+            division: u.division || '',
             directTarget: u.directTarget,
             teamTarget: u.teamTarget,
             totalTarget: u.directTarget + u.teamTarget,
+            isManager: (u.children && u.children.length > 0) || u.level > 1,
             rawTarget: u.rawTarget || null
         }));
+
+        const companyTotal = Object.values(userMap).reduce((acc, u) => acc + (u.directTarget || 0), 0);
         
-        res.json({ success: true, targets: rollupData });
+        res.json({ success: true, targets: rollupData, companyTotal });
     } catch (e) {
         console.error('Target rollup error:', e);
         res.json({ success: false, message: e.message });
@@ -6767,6 +6840,7 @@ router.get('/targets/yearly', async (req, res) => {
         const userMap = {};
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
+            const dInfo = getDesignationInfo(u.designation);
             userMap[empId] = {
                 employeeId: empId,
                 uid: u.uid || u._id,
@@ -6775,6 +6849,8 @@ router.get('/targets/yearly', async (req, res) => {
                 hq: u.hq || '',
                 division: u.division || '',
                 designation: u.designation || 'MR',
+                level: dInfo.level,
+                badge: dInfo.badge,
                 reportingManager: u.reportingManager,
                 children: [],
                 directMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0, Apr: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0, Jan: 0, Feb: 0, Mar: 0 },
@@ -6819,13 +6895,24 @@ router.get('/targets/yearly', async (req, res) => {
 
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
+            const userObj = userMap[empId];
+            if (!userObj) return;
+
+            let mgr = null;
             if (u.reportingManager) {
-                let mgr = userMap[u.reportingManager];
+                mgr = userMap[u.reportingManager];
                 if (!mgr) {
                     mgr = Object.values(userMap).find(m => {
                         const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
-                        const repMgr = u.reportingManager.toLowerCase().trim();
-                        return repMgr === desigHq;
+                        return desigHq === u.reportingManager.toLowerCase().trim();
+                    });
+                }
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const mHq = (m.hq || '').replace(/-pst-\d+/i, '').trim().toLowerCase();
+                        const desigHq = `${m.designation || ''} (${mHq})`.toLowerCase().trim();
+                        const repClean = u.reportingManager.replace(/-pst-\d+/i, '').trim().toLowerCase();
+                        return desigHq === repClean;
                     });
                 }
                 if (!mgr) {
@@ -6835,9 +6922,23 @@ router.get('/targets/yearly', async (req, res) => {
                         return repMgr === desigOnly && desigOnly.length > 2;
                     });
                 }
-                if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
-                    mgr.children.push(empId);
+            }
+
+            // Mohammad Kachhi fallback to Memon Aslammohammed (Sr. ZSM)
+            if (!mgr && (u.firstName || '').toLowerCase().includes('kachhi')) {
+                mgr = Object.values(userMap).find(m => (m.firstName || '').toLowerCase().includes('memon') || (m.lastName || '').toLowerCase().includes('memon'));
+            }
+
+            // Hierarchy rule: RSMs, ZSMs, Sr. ZSMs report to SMs (Level 7)
+            if (userObj.level === 3 || userObj.level === 4 || userObj.level === 5 || userObj.level === 6) {
+                if (!mgr || mgr.level > 7) {
+                    const smManager = Object.values(userMap).find(m => m.level === 7 && (m.division === userObj.division || (m.designation || '').toLowerCase().includes('west')));
+                    if (smManager) mgr = smManager;
                 }
+            }
+
+            if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
+                mgr.children.push(empId);
             }
         });
 

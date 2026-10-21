@@ -2797,6 +2797,24 @@ function SetTargetTab() {
     return months[new Date().getMonth()];
   });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [monthlyRoleFilter, setMonthlyRoleFilter] = useState<'all' | 'field' | 'management'>('all');
+  const [companyTotal, setCompanyTotal] = useState(0);
+
+  const getRoleBadge = (badge?: string) => {
+    const b = badge || 'TBM';
+    switch (b) {
+      case 'GM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">GM</span>;
+      case 'NSM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm">NSM</span>;
+      case 'SM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-sm">SM</span>;
+      case 'Sr. ZSM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm">Sr. ZSM</span>;
+      case 'ZSM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-violet-500/20 text-violet-300 border border-violet-500/40 shadow-sm">ZSM</span>;
+      case 'Sr. RSM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm">Sr. RSM</span>;
+      case 'RSM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm">RSM</span>;
+      case 'ASM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm">ASM</span>;
+      case 'PM': return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-sm">PM</span>;
+      default: return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">TBM</span>;
+    }
+  };
   
   // Add Target Form State
   const [targetType, setTargetType] = useState('Select...');
@@ -2998,7 +3016,8 @@ function SetTargetTab() {
     try {
       const res = await axios.get(`/api/admin/targets/rollup?month=${selectedMonth}&year=${selectedYear}`);
       if (res.data.success) {
-        setTargets(res.data.targets);
+        setTargets(res.data.targets || []);
+        setCompanyTotal(res.data.companyTotal || 0);
       }
     } catch (e) { console.error(e); }
   };
@@ -3025,30 +3044,31 @@ function SetTargetTab() {
     total: 0
   };
   filteredYearlyTargets.forEach(t => {
-    const m = t.months || {};
-    yearlyTotals.April += (m.April || m.Apr || 0);
-    yearlyTotals.May += (m.May || 0);
-    yearlyTotals.June += (m.June || m.Jun || 0);
-    yearlyTotals.July += (m.July || m.Jul || 0);
-    yearlyTotals.August += (m.August || m.Aug || 0);
-    yearlyTotals.September += (m.September || m.Sep || 0);
-    yearlyTotals.October += (m.October || m.Oct || 0);
-    yearlyTotals.November += (m.November || m.Nov || 0);
-    yearlyTotals.December += (m.December || m.Dec || 0);
-    yearlyTotals.January += (m.January || m.Jan || 0);
-    yearlyTotals.February += (m.February || m.Feb || 0);
-    yearlyTotals.March += (m.March || m.Mar || 0);
-    yearlyTotals.total += (t.total || 0);
+    // When calculating corporate yearly budget, sum only unique direct targets to avoid double counting manager rollups
+    const dm = t.directMonths || t.months || {};
+    yearlyTotals.April += (dm.April || dm.Apr || 0);
+    yearlyTotals.May += (dm.May || 0);
+    yearlyTotals.June += (dm.June || dm.Jun || 0);
+    yearlyTotals.July += (dm.July || dm.Jul || 0);
+    yearlyTotals.August += (dm.August || dm.Aug || 0);
+    yearlyTotals.September += (dm.September || dm.Sep || 0);
+    yearlyTotals.October += (dm.October || dm.Oct || 0);
+    yearlyTotals.November += (dm.November || dm.Nov || 0);
+    yearlyTotals.December += (dm.December || dm.Dec || 0);
+    yearlyTotals.January += (dm.January || dm.Jan || 0);
+    yearlyTotals.February += (dm.February || dm.Feb || 0);
+    yearlyTotals.March += (dm.March || dm.Mar || 0);
+    yearlyTotals.total += (t.directTotal !== undefined ? t.directTotal : (t.total || 0));
   });
 
   const handleDownloadYearly = () => {
     let wsData = [
-      ['Sr No', 'User', 'HQ', 'Division', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Total']
+      ['Sr No', 'Role', 'User', 'HQ', 'Division', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Total']
     ];
     filteredYearlyTargets.forEach((t, i) => {
       const m = t.months || {};
       wsData.push([
-        i + 1, t.userName, t.hq || '', t.division || '',
+        i + 1, t.badge || 'TBM', t.userName, t.hq || '', t.division || '',
         Math.round(m.April || m.Apr || 0), Math.round(m.May || 0), Math.round(m.June || m.Jun || 0), Math.round(m.July || m.Jul || 0), Math.round(m.August || m.Aug || 0), Math.round(m.September || m.Sep || 0), 
         Math.round(m.October || m.Oct || 0), Math.round(m.November || m.Nov || 0), Math.round(m.December || m.Dec || 0), 
         Math.round(m.January || m.Jan || 0), Math.round(m.February || m.Feb || 0), Math.round(m.March || m.Mar || 0),
@@ -3336,34 +3356,139 @@ function SetTargetTab() {
 
           
 
-          <div className="overflow-x-auto rounded-xl border border-slate-700">
+          {/* Corporate Summary KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-emerald-900/40 to-slate-800/80 p-5 rounded-2xl border border-emerald-500/30 shadow-lg">
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Corporate Sales Budget ({selectedMonth} {selectedYear})</span>
+              <div className="text-3xl font-extrabold text-white">₹{(companyTotal || targets.reduce((sum, t) => sum + (t.directTarget || 0), 0)).toLocaleString('en-IN')}</div>
+              <p className="text-xs text-slate-400 mt-1 font-light">Pure Direct Target (Zero Duplicate Rollup Multi-Counting)</p>
+            </div>
+            
+            <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 shadow-lg">
+              <span className="text-xs font-bold text-sky-400 uppercase tracking-wider block mb-1">Direct Allocations</span>
+              <div className="text-3xl font-extrabold text-white">
+                {targets.filter(t => (t.directTarget || 0) > 0).length} <span className="text-sm font-normal text-slate-400">Employees</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 font-light">Individual field targets allocated directly</p>
+            </div>
+
+            <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 shadow-lg">
+              <span className="text-xs font-bold text-purple-400 uppercase tracking-wider block mb-1">Management Hierarchy</span>
+              <div className="text-3xl font-extrabold text-white">
+                {targets.filter(t => (t.teamTarget || 0) > 0).length} <span className="text-sm font-normal text-slate-400">Managers</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 font-light">ASM, RSM, ZSM, SM, NSM & GM with team rollups</p>
+            </div>
+          </div>
+
+          {/* Role Filter Tabs */}
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center bg-slate-900 p-1.5 rounded-xl border border-slate-700">
+              <button 
+                type="button"
+                onClick={() => setMonthlyRoleFilter('all')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  monthlyRoleFilter === 'all' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Roles ({targets.filter(t => (t.totalTarget || 0) > 0 || (t.directTarget || 0) > 0).length})
+              </button>
+              <button 
+                type="button"
+                onClick={() => setMonthlyRoleFilter('field')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  monthlyRoleFilter === 'field' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Field Force (TBM / ASM) ({targets.filter(t => ((t.totalTarget || 0) > 0 || (t.directTarget || 0) > 0) && (t.level || 1) <= 2).length})
+              </button>
+              <button 
+                type="button"
+                onClick={() => setMonthlyRoleFilter('management')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  monthlyRoleFilter === 'management' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Management (SM / ZSM / NSM / GM) ({targets.filter(t => ((t.totalTarget || 0) > 0 || (t.teamTarget || 0) > 0) && (t.level || 1) > 2).length})
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-700 shadow-xl bg-slate-800/80">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-900 text-slate-300">
                 <tr>
-                  <th className="p-4 border-r border-slate-700">Sr no.</th>
+                  <th className="p-4 border-r border-slate-700 w-16 text-center">Sr no.</th>
+                  <th className="p-4 border-r border-slate-700 w-24 text-center">Role</th>
                   <th className="p-4 border-r border-slate-700">Employee</th>
-                  <th className="p-4 border-r border-slate-700">Direct Target</th>
-                  <th className="p-4 border-r border-slate-700">Team Target</th>
-                  <th className="p-4 border-r border-slate-700">Total Assigned Target</th>
-                  <th className="p-4 text-center">Delete</th>
+                  <th className="p-4 border-r border-slate-700 text-right">Direct Target (₹)</th>
+                  <th className="p-4 border-r border-slate-700 text-right">Team Target (₹)</th>
+                  <th className="p-4 border-r border-slate-700 text-right">Total Assigned Target (₹)</th>
+                  <th className="p-4 text-center w-20">Delete</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {targets.filter(t => t.totalTarget > 0).map((t, i) => (
-                  <tr key={t.employeeId} className="hover:bg-slate-700/30">
-                    <td className="p-4 text-slate-300 border-r border-slate-700">{i + 1}</td>
-                    <td className="p-4 text-white font-bold border-r border-slate-700">{t.userName || t.userEmail}</td>
-                    <td className="p-4 text-slate-300 border-r border-slate-700 text-right">{t.directTarget || 0}</td>
-                    <td className="p-4 text-slate-300 border-r border-slate-700 text-right">{t.teamTarget || 0}</td>
-                    <td className="p-4 text-emerald-400 font-bold border-r border-slate-700 text-right">{t.totalTarget || 0}</td>
+                {targets
+                  .filter(t => {
+                    const hasTgt = (t.totalTarget || 0) > 0 || (t.directTarget || 0) > 0 || (t.teamTarget || 0) > 0;
+                    if (!hasTgt) return false;
+                    if (monthlyRoleFilter === 'field') return (t.level || 1) <= 2;
+                    if (monthlyRoleFilter === 'management') return (t.level || 1) > 2;
+                    return true;
+                  })
+                  .map((t, i) => (
+                  <tr key={t.employeeId} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="p-4 text-slate-400 border-r border-slate-700 text-center font-mono">{i + 1}</td>
+                    <td className="p-4 border-r border-slate-700 text-center">
+                      {getRoleBadge(t.badge)}
+                    </td>
+                    <td className="p-4 border-r border-slate-700">
+                      <div className="text-white font-bold">{t.userName || t.userEmail}</div>
+                      <div className="text-xs text-slate-400 font-light mt-0.5">{t.designation || 'MR'}{t.hq ? ` • ${t.hq}` : ''}</div>
+                    </td>
+                    <td className="p-4 text-slate-200 border-r border-slate-700 text-right font-medium">
+                      {(t.directTarget || 0) > 0 ? Math.round(t.directTarget).toLocaleString('en-IN') : '-'}
+                    </td>
+                    <td className="p-4 text-sky-300 border-r border-slate-700 text-right font-medium">
+                      {(t.teamTarget || 0) > 0 ? Math.round(t.teamTarget).toLocaleString('en-IN') : '-'}
+                    </td>
+                    <td className="p-4 text-emerald-400 font-bold border-r border-slate-700 text-right text-base">
+                      {(t.totalTarget || 0) > 0 ? Math.round(t.totalTarget).toLocaleString('en-IN') : '-'}
+                    </td>
                     <td className="p-4 text-center">
                       {t.rawTarget && (
-                        <button onClick={() => handleDeleteTarget(t.rawTarget._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={16}/></button>
+                        <button onClick={() => handleDeleteTarget(t.rawTarget._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg transition-colors">
+                          <Trash2 size={16}/>
+                        </button>
                       )}
                     </td>
                   </tr>
                 ))}
+                {targets.filter(t => (t.totalTarget || 0) > 0 || (t.directTarget || 0) > 0).length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-400">
+                      No targets found for {selectedMonth} {selectedYear}.
+                    </td>
+                  </tr>
+                )}
               </tbody>
+              <tfoot className="bg-slate-900 font-bold border-t-2 border-emerald-500/50">
+                <tr>
+                  <td colSpan={3} className="p-4 text-right uppercase tracking-wider text-emerald-400 border-r border-slate-700">
+                    Grand Total (Direct Corporate Target)
+                  </td>
+                  <td className="p-4 text-right text-emerald-400 border-r border-slate-700 font-mono text-base">
+                    ₹{(companyTotal || targets.reduce((sum, t) => sum + (t.directTarget || 0), 0)).toLocaleString('en-IN')}
+                  </td>
+                  <td className="p-4 text-right text-slate-500 border-r border-slate-700 text-xs italic">
+                    (Team targets are rollups)
+                  </td>
+                  <td className="p-4 text-right text-emerald-400 font-mono text-lg">
+                    ₹{(companyTotal || targets.reduce((sum, t) => sum + (t.directTarget || 0), 0)).toLocaleString('en-IN')}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -3415,7 +3540,8 @@ function SetTargetTab() {
               <table className="w-full text-left border-collapse relative min-w-[1200px]">
                 <thead className="bg-slate-800 z-10 shadow-md">
                   <tr className="border-b border-slate-700/50 text-slate-300">
-                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr no.</th>
+                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center w-16">Sr no.</th>
+                    <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center w-24">Role</th>
                     <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800">User</th>
                     {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map(m => (
                       <th key={m} className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">{m}</th>
@@ -3426,39 +3552,42 @@ function SetTargetTab() {
                 <tbody className="divide-y divide-slate-700/50">
                   {filteredYearlyTargets.map((t, i) => (
                     <tr key={t.uid} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                      <td className="border-r border-slate-700 p-4 text-slate-300">{i + 1}</td>
-                      <td className="border-r border-slate-700 p-4">
-                        <div className="text-slate-200 text-sm">{t.userName}</div>
-                        {t.designation && <div className="text-xs text-slate-400 font-light mt-1">{t.designation}</div>}
+                      <td className="border-r border-slate-700 p-4 text-slate-300 text-center font-mono">{i + 1}</td>
+                      <td className="border-r border-slate-700 p-4 text-center">
+                        {getRoleBadge(t.badge)}
                       </td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.May || 0) > 0 ? Math.round(t.months?.May) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.June || t.months?.Jun || 0) > 0 ? Math.round(t.months?.June || t.months?.Jun) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.July || t.months?.Jul || 0) > 0 ? Math.round(t.months?.July || t.months?.Jul) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.August || t.months?.Aug || 0) > 0 ? Math.round(t.months?.August || t.months?.Aug) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.September || t.months?.Sep || 0) > 0 ? Math.round(t.months?.September || t.months?.Sep) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.October || t.months?.Oct || 0) > 0 ? Math.round(t.months?.October || t.months?.Oct) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.November || t.months?.Nov || 0) > 0 ? Math.round(t.months?.November || t.months?.Nov) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.December || t.months?.Dec || 0) > 0 ? Math.round(t.months?.December || t.months?.Dec) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.January || t.months?.Jan || 0) > 0 ? Math.round(t.months?.January || t.months?.Jan) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.February || t.months?.Feb || 0) > 0 ? Math.round(t.months?.February || t.months?.Feb) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.March || t.months?.Mar || 0) > 0 ? Math.round(t.months?.March || t.months?.Mar) : ''}</td>
-                      <td className="p-4 text-center text-emerald-400 font-bold">{t.total > 0 ? Math.round(t.total) : ''}</td>
+                      <td className="border-r border-slate-700 p-4">
+                        <div className="text-slate-200 text-sm font-bold">{t.userName}</div>
+                        {t.designation && <div className="text-xs text-slate-400 font-light mt-0.5">{t.designation}{t.hq ? ` • ${t.hq}` : ''}</div>}
+                      </td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.May || 0) > 0 ? Math.round(t.months?.May).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.June || t.months?.Jun || 0) > 0 ? Math.round(t.months?.June || t.months?.Jun).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.July || t.months?.Jul || 0) > 0 ? Math.round(t.months?.July || t.months?.Jul).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.August || t.months?.Aug || 0) > 0 ? Math.round(t.months?.August || t.months?.Aug).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.September || t.months?.Sep || 0) > 0 ? Math.round(t.months?.September || t.months?.Sep).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.October || t.months?.Oct || 0) > 0 ? Math.round(t.months?.October || t.months?.Oct).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.November || t.months?.Nov || 0) > 0 ? Math.round(t.months?.November || t.months?.Nov).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.December || t.months?.Dec || 0) > 0 ? Math.round(t.months?.December || t.months?.Dec).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.January || t.months?.Jan || 0) > 0 ? Math.round(t.months?.January || t.months?.Jan).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.February || t.months?.Feb || 0) > 0 ? Math.round(t.months?.February || t.months?.Feb).toLocaleString('en-IN') : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.March || t.months?.Mar || 0) > 0 ? Math.round(t.months?.March || t.months?.Mar).toLocaleString('en-IN') : ''}</td>
+                      <td className="p-4 text-center text-emerald-400 font-bold">{t.total > 0 ? Math.round(t.total).toLocaleString('en-IN') : ''}</td>
                     </tr>
                   ))}
                   {filteredYearlyTargets.length === 0 && (
                     <tr>
-                      <td colSpan={15} className="p-8 text-center text-slate-400">No targets found for this criteria.</td>
+                      <td colSpan={16} className="p-8 text-center text-slate-400">No targets found for this criteria.</td>
                     </tr>
                   )}
                 </tbody>
                 <tfoot className="sticky bottom-0 bg-slate-900 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                    <tr className="border-t-2 border-sky-500/50">
-                      <td colSpan={2} className="border-r border-slate-700 p-4 text-sky-400 font-bold text-right uppercase tracking-wider text-sm">Grand Total</td>
+                    <tr className="border-t-2 border-emerald-500/50">
+                      <td colSpan={3} className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-right uppercase tracking-wider text-sm">Grand Total (Corporate Direct Target)</td>
                       {['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'].map(m => (
-                        <td key={m} className="border-r border-slate-700 p-4 text-center text-sky-400 font-bold text-sm">{yearlyTotals[m] > 0 ? Math.round(yearlyTotals[m]) : ''}</td>
+                        <td key={m} className="border-r border-slate-700 p-4 text-center text-emerald-400 font-bold text-sm font-mono">{yearlyTotals[m] > 0 ? Math.round(yearlyTotals[m]).toLocaleString('en-IN') : ''}</td>
                       ))}
-                      <td className="p-4 text-center text-emerald-400 font-bold text-lg">{Math.round(yearlyTotals.total) > 0 ? Math.round(yearlyTotals.total) : ''}</td>
+                      <td className="p-4 text-center text-emerald-400 font-bold text-lg font-mono">{Math.round(yearlyTotals.total) > 0 ? Math.round(yearlyTotals.total).toLocaleString('en-IN') : ''}</td>
                     </tr>
                 </tfoot>
               </table>
