@@ -43,12 +43,18 @@ export default function ProfitAnalysis() {
             </div>
           </button>
 
-          <button className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden">
+          <button 
+            onClick={() => navigate('/extras/profit/profit-center')}
+            className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden text-left"
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="w-20 h-20 rounded-2xl bg-sky-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
               <PieChart size={36} className="text-sky-400" />
             </div>
-            <span className="text-lg font-black text-white tracking-widest uppercase relative z-10">Profit Center</span>
+            <div className="flex flex-col items-center text-center relative z-10">
+              <span className="text-lg font-black text-white tracking-widest uppercase">Profit Center</span>
+              <span className="text-xs text-slate-400 font-medium mt-1">Products (PTS/PTR/MRP) &amp; Territory ROI</span>
+            </div>
           </button>
 
           <button className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all group shadow-2xl relative overflow-hidden">

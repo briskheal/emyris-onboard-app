@@ -701,8 +701,25 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlProfitCenter = sequelize.define('xl_profit_center', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        type: { type: DataTypes.STRING, defaultValue: 'PRODUCT' }, // PRODUCT, ROI
+        month: { type: DataTypes.STRING, allowNull: false },
+        year: { type: DataTypes.STRING, allowNull: false },
+        hq: { type: DataTypes.STRING },
+        productId: { type: DataTypes.STRING },
+        productName: { type: DataTypes.STRING, allowNull: false },
+        priceType: { type: DataTypes.STRING, defaultValue: 'PTS' }, // PTS, PTR, MRP
+        unitPrice: { type: DataTypes.FLOAT, defaultValue: 0 },
+        quantity: { type: DataTypes.FLOAT, defaultValue: 0 },
+        totalValue: { type: DataTypes.FLOAT, defaultValue: 0 },
+        remarks: { type: DataTypes.TEXT },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlCostCenter,
+        XlProfitCenter,
         XlHoliday,
         XlDoctor,
         XlChemist,

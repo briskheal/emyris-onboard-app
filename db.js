@@ -28,6 +28,7 @@ const initXlModels = require('./models/xlModels');
 
 const {
     XlCostCenter,
+    XlProfitCenter,
     XlDoctor,
     XlChemist,
     XlStockist, XlDoctorControl,
@@ -84,7 +85,8 @@ async function syncDatabase() {
     try {
         // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
         await sequelize.sync();
-        try { await XlCostCenter.sync({ alter: true }); } catch(e) {}
+        try { await XlCostCenter.sync({ alter: true });
+        try { await XlProfitCenter.sync({ alter: true }); } catch(e) {} } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_doctors DROP COLUMN IF EXISTS "doctorCode";'); console.log('Dropped legacy doctorCode column.'); } catch(e) {}
 await XlTarget.sync({ alter: true });
         try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"targetDoctorCalls\" INTEGER DEFAULT 0;"); } catch(e) {}
@@ -700,6 +702,7 @@ module.exports = {
     AssignedLoan,
     AssignedAdvance,
     XlCostCenter,
+    XlProfitCenter,
     XlDoctor,
     XlChemist,
     XlStockist, XlDoctorControl,

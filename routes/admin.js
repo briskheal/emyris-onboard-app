@@ -6606,24 +6606,28 @@ router.get('/targets/rollup', async (req, res) => {
         const allTargets = await XlTarget.findAll({ where });
         
         // Fetch all users to build hierarchy
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'firstName', 'lastName', 'reportingManager'] });
+        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'reportingManager'] });
         const userMap = {};
-        allUsers.forEach(u => userMap[u.employeeId] = { ...u.toJSON(), directTarget: 0, teamTarget: 0, children: [] });
+        allUsers.forEach(u => {
+            const empId = u.employeeId || u.uid || u._id;
+            userMap[empId] = { ...u.toJSON(), employeeId: empId, directTarget: 0, teamTarget: 0, children: [] };
+        });
         
         // Attach direct targets
         allTargets.forEach(t => {
-            if (userMap[t.employeeId]) {
+            const tId = t.employeeId;
+            if (userMap[tId]) {
                 const amount = t.allocationType === 'Lump-Sum' ? t.lumpSumAmount : t.totalProductAmount;
-                userMap[t.employeeId].directTarget = amount;
-                // Also store the raw target for easy display
-                userMap[t.employeeId].rawTarget = t;
+                userMap[tId].directTarget = amount;
+                userMap[tId].rawTarget = t;
             }
         });
         
         // Build hierarchy
         allUsers.forEach(u => {
+            const empId = u.employeeId || u.uid || u._id;
             if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(u.employeeId);
+                userMap[u.reportingManager].children.push(empId);
             }
         });
         
@@ -6668,16 +6672,17 @@ router.get('/targets/yearly', async (req, res) => {
         if (year) where.year = year;
 
         const allTargets = await XlTarget.findAll({ where });
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'firstName', 'lastName', 'hq', 'division', 'designation', 'reportingManager'] });
+        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'hq', 'division', 'designation', 'reportingManager'] });
         
         const userMap = {};
         allUsers.forEach(u => {
-            userMap[u.employeeId] = {
-                employeeId: u.employeeId,
-                userName: u.firstName + ' ' + (u.lastName || ''),
-                hq: u.hq,
-                division: u.division,
-                designation: u.designation,
+            const empId = u.employeeId || u.uid || u._id;
+            userMap[empId] = {
+                employeeId: empId,
+                userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId,
+                hq: u.hq || '',
+                division: u.division || '',
+                designation: u.designation || 'MR',
                 reportingManager: u.reportingManager,
                 children: [],
                 directMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0 },
@@ -6690,19 +6695,21 @@ router.get('/targets/yearly', async (req, res) => {
         });
 
         allTargets.forEach(t => {
-            if (userMap[t.employeeId] && userMap[t.employeeId].directMonths[t.month] !== undefined) {
-                const amount = t.allocationType === 'Lump-Sum' ? (t.lumpSumAmount || 0) : (t.totalProductAmount || 0);
-                userMap[t.employeeId].directMonths[t.month] += amount;
-                userMap[t.employeeId].directTotal += amount;
+            const targetId = t.employeeId;
+            if (userMap[targetId] && userMap[targetId].directMonths[t.month] !== undefined) {
+                const amount = t.allocationType === 'Lump-Sum' ? (Number(t.lumpSumAmount) || 0) : (Number(t.totalProductAmount) || 0);
+                userMap[targetId].directMonths[t.month] += amount;
+                userMap[targetId].directTotal += amount;
                 
-                userMap[t.employeeId].months[t.month] += amount;
-                userMap[t.employeeId].total += amount;
+                userMap[targetId].months[t.month] += amount;
+                userMap[targetId].total += amount;
             }
         });
 
         allUsers.forEach(u => {
+            const empId = u.employeeId || u.uid || u._id;
             if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(u.employeeId);
+                userMap[u.reportingManager].children.push(empId);
             }
         });
 
@@ -6715,14 +6722,15 @@ router.get('/targets/yearly', async (req, res) => {
             
             user.children.forEach(childId => {
                 const child = userMap[childId];
+                if (!child) return;
                 const childTeam = calculateTeamYearlyTarget(childId);
                 
                 Object.keys(teamSum).forEach(m => {
                     if (m !== 'total') {
-                        teamSum[m] += child.directMonths[m] + childTeam.months[m];
+                        teamSum[m] += (child.directMonths[m] || 0) + (childTeam.months[m] || 0);
                     }
                 });
-                teamSum.total += child.directTotal + childTeam.total;
+                teamSum.total += (child.directTotal || 0) + (childTeam.total || 0);
             });
             
             user.teamMonths = { ...teamSum };
@@ -6740,7 +6748,8 @@ router.get('/targets/yearly', async (req, res) => {
         
         Object.keys(userMap).forEach(k => calculateTeamYearlyTarget(k));
 
-        const result = Object.values(userMap).filter(u => u.total > 0);
+        // Return all active users so that admin can view and manage targets
+        const result = Object.values(userMap);
         
         res.json({ success: true, data: result });
     } catch (e) {

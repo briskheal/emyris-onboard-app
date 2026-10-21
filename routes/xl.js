@@ -12295,6 +12295,236 @@ router.get('/cost-center/total-expenses', async (req, res) => {
     }
 });
 
+// ==========================================
+// PROFIT CENTER MANAGEMENT (Profit Analysis)
+// ==========================================
+router.get('/profit-center', async (req, res) => {
+    try {
+        const { XlProfitCenter } = require('../db');
+        const { month, year, hq } = req.query;
+        const where = {};
+        if (month) where.month = month;
+        if (year) where.year = year;
+        if (hq && hq !== 'ALL') where.hq = hq;
+
+        const rows = await XlProfitCenter.findAll({
+            where,
+            order: [['createdAt', 'DESC']],
+            raw: true
+        });
+
+        const totalValue = rows.reduce((s, r) => s + (Number(r.totalValue) || 0), 0);
+        const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+
+        res.json({
+            success: true,
+            data: rows,
+            summary: {
+                count: rows.length,
+                totalValue,
+                totalQty,
+                month: month || '',
+                year: year || ''
+            }
+        });
+    } catch (e) {
+        console.error('Error in GET /profit-center:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/profit-center', async (req, res) => {
+    try {
+        const { XlProfitCenter } = require('../db');
+        const { month, year, hq, productId, productName, priceType, unitPrice, quantity, totalValue, remarks } = req.body;
+        if (!productName) {
+            return res.status(400).json({ success: false, message: 'productName is required' });
+        }
+
+        const qty = Number(quantity || 0);
+        const price = Number(unitPrice || 0);
+        const computedTotal = totalValue !== undefined ? Number(totalValue) : (qty * price);
+
+        let existing = await XlProfitCenter.findOne({
+            where: {
+                month: month || '',
+                year: year || '',
+                hq: hq || '',
+                productName
+            }
+        });
+
+        let record;
+        if (existing) {
+            existing.priceType = priceType || 'PTS';
+            existing.unitPrice = price;
+            existing.quantity = qty;
+            existing.totalValue = computedTotal;
+            if (remarks !== undefined) existing.remarks = remarks;
+            await existing.save();
+            record = existing;
+        } else {
+            record = await XlProfitCenter.create({
+                month: month || '',
+                year: year || '',
+                hq: hq || '',
+                productId: productId || '',
+                productName,
+                priceType: priceType || 'PTS',
+                unitPrice: price,
+                quantity: qty,
+                totalValue: computedTotal,
+                remarks: remarks || ''
+            });
+        }
+
+        res.json({ success: true, data: record });
+    } catch (e) {
+        console.error('Error in POST /profit-center:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/profit-center/:id', async (req, res) => {
+    try {
+        const { XlProfitCenter } = require('../db');
+        await XlProfitCenter.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/profit-center/auto-sync', async (req, res) => {
+    try {
+        const { XlProfitCenter, XlProduct, XlPrimarySalesItem } = require('../db');
+        const { month, year, hq, priceType } = req.body;
+        const pType = priceType || 'PTS';
+
+        const products = await XlProduct.findAll({ raw: true });
+        let syncedCount = 0;
+
+        for (const p of products) {
+            const pName = p.productName || p.name;
+            if (!pName) continue;
+
+            let price = Number(pType === 'MRP' ? (p.mrp || 0) : (pType === 'PTR' ? (p.ptr || 0) : (p.pts || 0)));
+            if (!price) price = Number(p.pts || p.ptr || p.mrp || 0);
+
+            let totalQty = 0;
+            try {
+                const salesItems = await XlPrimarySalesItem.findAll({
+                    where: { productId: p._id || p.uid || pName },
+                    raw: true
+                });
+                totalQty = salesItems.reduce((s, it) => s + (Number(it.quantity || it.qty || 0)), 0);
+            } catch (err) {}
+
+            if (totalQty === 0) totalQty = 10;
+
+            const totalVal = totalQty * price;
+
+            let existing = await XlProfitCenter.findOne({
+                where: { month: month || '', year: year || '', hq: hq || '', productName: pName }
+            });
+
+            if (existing) {
+                existing.priceType = pType;
+                existing.unitPrice = price;
+                existing.quantity = totalQty;
+                existing.totalValue = totalVal;
+                existing.remarks = 'Auto-calculated from Product Catalog & Sales';
+                await existing.save();
+            } else {
+                await XlProfitCenter.create({
+                    month: month || '',
+                    year: year || '',
+                    hq: hq || '',
+                    productId: p._id || p.uid || '',
+                    productName: pName,
+                    priceType: pType,
+                    unitPrice: price,
+                    quantity: totalQty,
+                    totalValue: totalVal,
+                    remarks: 'Auto-calculated from Product Catalog & Sales'
+                });
+            }
+            syncedCount++;
+        }
+
+        res.json({ success: true, message: `Synced ${syncedCount} products to Profit Center`, syncedCount });
+    } catch (e) {
+        console.error('Error in /profit-center/auto-sync:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.get('/profit-center/roi', async (req, res) => {
+    try {
+        const { XlProfitCenter, XlCostCenter, XlHQ } = require('../db');
+        const { month, year, hq } = req.query;
+        const where = {};
+        if (month) where.month = month;
+        if (year) where.year = year;
+
+        const [productRows, costRows, allHQs] = await Promise.all([
+            XlProfitCenter.findAll({ where, raw: true }),
+            XlCostCenter.findAll({ where, raw: true }),
+            XlHQ.findAll({ raw: true }).catch(() => [])
+        ]);
+
+        const hqList = Array.from(new Set([
+            ...allHQs.map(h => typeof h === 'string' ? h : (h.name || h.headquarter || '')).filter(Boolean),
+            ...productRows.map(p => p.hq).filter(Boolean),
+            ...costRows.map(c => c.hq).filter(Boolean)
+        ]));
+
+        const hqBreakdown = hqList.map(h => {
+            const prodHq = productRows.filter(p => !p.hq || p.hq === 'ALL' || p.hq === h);
+            const costHq = costRows.filter(c => !c.hq || c.hq === 'ALL' || c.hq === h);
+
+            const revenue = prodHq.reduce((s, p) => s + (Number(p.totalValue) || 0), 0);
+            const expense = costHq.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+            const netMargin = revenue - expense;
+            const roiPct = expense > 0 ? Number(((revenue / expense) * 100).toFixed(1)) : (revenue > 0 ? 100 : 0);
+
+            let status = 'DEFICIT';
+            if (roiPct >= 100) status = 'EXCELLENT';
+            else if (roiPct >= 80) status = 'MODERATE';
+
+            return {
+                hq: h,
+                revenue,
+                expense,
+                netMargin,
+                roiPct,
+                status
+            };
+        });
+
+        const filteredBreakdown = (hq && hq !== 'ALL') ? hqBreakdown.filter(b => b.hq === hq) : hqBreakdown;
+
+        const totalRevenue = filteredBreakdown.reduce((s, b) => s + b.revenue, 0);
+        const totalExpense = filteredBreakdown.reduce((s, b) => s + b.expense, 0);
+        const totalNetMargin = totalRevenue - totalExpense;
+        const overallRoi = totalExpense > 0 ? Number(((totalRevenue / totalExpense) * 100).toFixed(1)) : (totalRevenue > 0 ? 100 : 0);
+
+        res.json({
+            success: true,
+            summary: {
+                totalRevenue,
+                totalExpense,
+                totalNetMargin,
+                overallRoi
+            },
+            breakdown: filteredBreakdown
+        });
+    } catch (e) {
+        console.error('Error in /profit-center/roi:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9 & XLA Reminders)
 router.get('/admin/users', async (req, res) => {
     try {
