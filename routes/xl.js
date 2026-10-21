@@ -11962,6 +11962,72 @@ router.get('/reports/gifts-management', async (req, res) => {
     }
 });
 
+router.get('/gifts/catalog', async (req, res) => {
+    try {
+        const { XlGift } = require('../db');
+        const allGifts = await XlGift.findAll({ order: [['createdAt', 'DESC']], raw: true });
+        const giftSet = new Set([
+            'Doctor Diary',
+            'Pen Stand',
+            'Doctor Apron',
+            'Executive Pen',
+            'Wall Clock',
+            'Table Calendar',
+            'Prescription Pad Holder',
+            'Medical Bag',
+            'Key Chain',
+            'Paper Weight',
+            'Leather Folder',
+            'Digital Thermometer'
+        ]);
+        allGifts.forEach(g => {
+            try {
+                const p = JSON.parse(g.details || '{}');
+                const name = p.giftName || p.name || p.item;
+                if (name && typeof name === 'string' && name.trim()) {
+                    giftSet.add(name.trim());
+                }
+            } catch (e) {
+                if (g.details && typeof g.details === 'string' && g.details.trim()) {
+                    giftSet.add(g.details.trim());
+                }
+            }
+        });
+        res.json({ success: true, catalog: Array.from(giftSet).sort((a, b) => a.localeCompare(b)) });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/gifts/catalog', async (req, res) => {
+    try {
+        const { giftName } = req.body;
+        if (!giftName || !giftName.trim()) {
+            return res.status(400).json({ success: false, message: 'giftName is required' });
+        }
+        const { XlGift } = require('../db');
+        const now = new Date();
+        const details = JSON.stringify({
+            giftName: giftName.trim(),
+            allottedQty: 0,
+            restoredQty: 0,
+            deAllottedQty: 0,
+            remarks: 'Added to catalog'
+        });
+        await XlGift.create({
+            employeeId: 'SYSTEM',
+            month: now.toLocaleString('en-US', { month: 'short' }),
+            year: String(now.getFullYear()),
+            details,
+            status: 'Catalog',
+            adminRemarks: 'Catalog Gift Master Item'
+        });
+        res.json({ success: true, message: 'Gift added to catalog' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.post('/gifts/allot', async (req, res) => {
     try {
         const { employeeId, giftName, allottedQty, restoredQty, deAllottedQty, month, year, remarks } = req.body;

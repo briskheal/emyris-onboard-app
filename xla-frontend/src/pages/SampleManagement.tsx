@@ -32,6 +32,8 @@ export default function SampleManagement() {
   // Allotment Modal State
   const [showAllotModal, setShowAllotModal] = useState(false);
   const [allotType, setAllotType] = useState<'Samples' | 'Gifts'>('Samples');
+  const [giftCatalog, setGiftCatalog] = useState<string[]>(COMMON_GIFTS);
+  const [giftMode, setGiftMode] = useState<'pick' | 'new'>('pick');
   const [allotForm, setAllotForm] = useState({
     employeeId: '',
     itemName: '',
@@ -48,9 +50,10 @@ export default function SampleManagement() {
   useEffect(() => {
     const loadInitial = async () => {
       try {
-        const [uRes, pRes] = await Promise.allSettled([
+        const [uRes, pRes, gRes] = await Promise.allSettled([
           axios.get('/api/admin/users').catch(() => axios.get('/api/xl/admin/users')),
-          axios.get('/api/xl/products').catch(() => axios.get('/api/xl/reports/products'))
+          axios.get('/api/xl/products').catch(() => axios.get('/api/xl/reports/products')),
+          axios.get('/api/xl/gifts/catalog')
         ]);
 
         let userList: any[] = [];
@@ -72,6 +75,13 @@ export default function SampleManagement() {
           prodList = Array.isArray(pd) ? pd : (pd?.products || pd?.data || []);
         }
         setProducts(prodList);
+
+        if (gRes.status === 'fulfilled' && gRes.value?.data?.catalog) {
+          const cat = gRes.value.data.catalog;
+          if (Array.isArray(cat) && cat.length > 0) {
+            setGiftCatalog(cat);
+          }
+        }
       } catch (e) {
         console.error('Initial load error in SampleManagement:', e);
       }
@@ -124,10 +134,14 @@ export default function SampleManagement() {
         await axios.post('/api/xl/gifts/allot', {
           employeeId: allotForm.employeeId,
           employeeName: empName,
-          giftName: allotForm.itemName,
+          giftName: allotForm.itemName.trim(),
           allottedQty: Number(allotForm.allottedQty),
           remarks: allotForm.remarks
         });
+        const cleanName = allotForm.itemName.trim();
+        if (cleanName && !giftCatalog.includes(cleanName)) {
+          setGiftCatalog(prev => [...prev, cleanName].sort((a, b) => a.localeCompare(b)));
+        }
         if (reportType !== 'Gifts') setReportType('Gifts');
       }
       setShowAllotModal(false);
@@ -219,7 +233,9 @@ export default function SampleManagement() {
           <button
             onClick={() => {
               setAllotType('Gifts');
-              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId, itemName: '', allottedQty: '', batchNo: '', remarks: '' }));
+              setGiftMode('pick');
+              const defaultGift = giftCatalog.length > 0 ? giftCatalog[0] : '';
+              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId, itemName: defaultGift, allottedQty: '', batchNo: '', remarks: '' }));
               setShowAllotModal(true);
             }}
             className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow shadow-purple-600/20 transition-colors h-[34px] shrink-0"
@@ -430,7 +446,9 @@ export default function SampleManagement() {
                     type="button"
                     onClick={() => {
                       setAllotType('Gifts');
-                      setAllotForm(prev => ({ ...prev, itemName: '', productId: '' }));
+                      setGiftMode('pick');
+                      const defaultGift = giftCatalog.length > 0 ? giftCatalog[0] : '';
+                      setAllotForm(prev => ({ ...prev, itemName: defaultGift, productId: '' }));
                     }}
                     className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${allotType === 'Gifts' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                   >
@@ -487,24 +505,104 @@ export default function SampleManagement() {
                 </div>
               ) : (
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase block mb-1">Gift / Promotional Input Name *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Doctor Diary, Pen Stand, Apron..."
-                    value={allotForm.itemName}
-                    onChange={e => setAllotForm({ ...allotForm, itemName: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-purple-500"
-                    required
-                  />
-                  {/* Quick Gift Suggestions */}
-                  <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase">
+                      {giftMode === 'pick' ? 'Select Available Gift *' : 'Enter New Gift Name *'}
+                    </label>
+                    <div className="flex items-center bg-slate-900 rounded-md p-0.5 border border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGiftMode('pick');
+                          if (!allotForm.itemName && giftCatalog.length > 0) {
+                            setAllotForm(prev => ({ ...prev, itemName: giftCatalog[0] }));
+                          }
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all ${
+                          giftMode === 'pick'
+                            ? 'bg-purple-600 text-white shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Pick Available
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGiftMode('new');
+                          setAllotForm(prev => ({ ...prev, itemName: '' }));
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all ${
+                          giftMode === 'new'
+                            ? 'bg-emerald-600 text-white shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        + Add New
+                      </button>
+                    </div>
+                  </div>
+
+                  {giftMode === 'pick' ? (
+                    <div>
+                      <CustomSelect
+                        options={giftCatalog.map(g => ({
+                          value: g,
+                          label: g,
+                          subLabel: 'Available Promotional Gift'
+                        }))}
+                        value={allotForm.itemName}
+                        onChange={(val) => setAllotForm(prev => ({ ...prev, itemName: val }))}
+                        placeholder="Choose Gift from Database"
+                        compact={true}
+                      />
+                      <div className="mt-1.5 flex items-center justify-between text-[10px] px-0.5">
+                        <span className="text-slate-400">Can't find your gift?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGiftMode('new');
+                            setAllotForm(prev => ({ ...prev, itemName: '' }));
+                          }}
+                          className="text-emerald-400 hover:text-emerald-300 font-bold underline underline-offset-2"
+                        >
+                          + Add new gift to database
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Type new gift name (e.g., Doctor Stethoscope, Special Diary, etc.)"
+                        value={allotForm.itemName}
+                        onChange={e => setAllotForm({ ...allotForm, itemName: e.target.value })}
+                        className="w-full bg-slate-900 border border-emerald-500 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 placeholder-slate-500"
+                        required
+                        autoFocus
+                      />
+                      <p className="mt-1.5 text-[10px] text-emerald-400/90 flex items-center gap-1 font-medium">
+                        ✓ This gift will be saved to the database and added to the catalog for future use.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Quick Gift Suggestions / Common Database Gifts */}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 items-center">
                     <span className="text-[10px] text-slate-400 font-semibold">Quick Suggestions:</span>
-                    {COMMON_GIFTS.map((g, i) => (
+                    {giftCatalog.slice(0, 8).map((g, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => setAllotForm({ ...allotForm, itemName: g })}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${allotForm.itemName === g ? 'bg-purple-600 text-white border-purple-500' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500'}`}
+                        onClick={() => {
+                          setGiftMode('pick');
+                          setAllotForm(prev => ({ ...prev, itemName: g }));
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                          allotForm.itemName === g
+                            ? 'bg-purple-600 text-white border-purple-500'
+                            : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500'
+                        }`}
                       >
                         {g}
                       </button>
