@@ -6689,14 +6689,27 @@ router.get('/targets/yearly', async (req, res) => {
         let where = {};
         if (year) {
             const { Op } = require('sequelize');
-            const yrStr = String(year);
-            where[Op.or] = [
+            const yrStr = String(year).trim();
+            const orConditions = [
                 { year: yrStr },
-                { year: Number(year) },
                 { year: { [Op.like]: `%${yrStr}%` } },
                 { year: null },
                 { year: '' }
             ];
+            const num = Number(yrStr);
+            if (!isNaN(num)) {
+                orConditions.push({ year: num });
+            }
+            const parts = yrStr.split(/[-/]/);
+            for (const p of parts) {
+                const cleanP = p.trim();
+                if (cleanP) {
+                    orConditions.push({ year: { [Op.like]: `%${cleanP}%` } });
+                    const pNum = Number(cleanP);
+                    if (!isNaN(pNum)) orConditions.push({ year: pNum });
+                }
+            }
+            where[Op.or] = orConditions;
         }
 
         const allTargets = await XlTarget.findAll({ where });
