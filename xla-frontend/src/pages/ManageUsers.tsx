@@ -2792,7 +2792,10 @@ function SetTargetTab() {
   const [selectedState, setSelectedState] = useState('');
   const [selectedHq, setSelectedHq] = useState('');
   
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[new Date().getMonth()];
+  });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   
   // Add Target Form State
@@ -3098,27 +3101,47 @@ function SetTargetTab() {
           <ArrowLeft size={16} /> SET TARGET FOR {targetUser.firstName} {targetUser.lastName}
         </button>
 
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="flex flex-col gap-6 mb-8">
           <div>
-            <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Month</label>
-            <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-              <option value="">Select Month</option>
-              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <label className="text-xs text-slate-400 font-bold mb-2.5 block uppercase tracking-wider">
+              Select Month {selectedMonth && <span className="text-sky-400 ml-2">({selectedMonth})</span>}
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => {
+                const isSelected = selectedMonth === m;
+                return (
+                  <button
+                    type="button"
+                    key={m}
+                    onClick={() => setSelectedMonth(m)}
+                    className={`h-11 flex items-center justify-center rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                      isSelected
+                        ? 'bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/30 ring-2 ring-sky-400/50 scale-105'
+                        : 'bg-slate-900 text-slate-400 border-slate-700 hover:bg-slate-700/60 hover:text-white'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div>
-            <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Year</label>
-            <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-              {[2024,2025,2026,2027,2028].map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Target Type</label>
-            <select value={targetType} onChange={e => setTargetType(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-              <option value="Select...">Select...</option>
-              <option value="Qty * Amount">Qty * Amount</option>
-              <option value="Lump-Sum">Lump-Sum</option>
-            </select>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Select Year</label>
+              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
+                {[2024,2025,2026,2027,2028].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Select Target Type</label>
+              <select value={targetType} onChange={e => setTargetType(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
+                <option value="Select...">Select...</option>
+                <option value="Qty * Amount">Qty * Amount</option>
+                <option value="Lump-Sum">Lump-Sum</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -3268,19 +3291,46 @@ function SetTargetTab() {
             <ArrowLeft size={16} /> Monthly Targets
           </button>
           
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Month</label>
-              <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-                <option value="">Select Month</option>
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+          <div className="bg-slate-800/80 rounded-2xl border border-slate-700 p-6 mb-6 shadow-xl flex flex-col gap-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Year:</label>
+                <select 
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(e.target.value)} 
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-bold text-sm focus:outline-none focus:border-sky-500 shadow-inner"
+                >
+                  {[2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              {selectedMonth && (
+                <div className="text-xs text-slate-400 font-medium">
+                  Showing targets for: <span className="text-sky-400 font-bold uppercase tracking-wider">{selectedMonth} {selectedYear}</span>
+                </div>
+              )}
             </div>
+
             <div>
-              <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Year</label>
-              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-                {[2024,2025,2026,2027,2028].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+              <label className="text-xs text-slate-400 font-bold mb-2.5 block uppercase tracking-wider">Select Month</label>
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2.5">
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => {
+                  const isSelected = selectedMonth === m;
+                  return (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() => setSelectedMonth(m)}
+                      className={`h-12 flex items-center justify-center rounded-xl border font-bold text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                        isSelected
+                          ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-500/30 ring-2 ring-sky-400/50 scale-105'
+                          : 'bg-slate-900 text-slate-400 border-slate-700 hover:bg-slate-700/60 hover:text-white hover:border-slate-500'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

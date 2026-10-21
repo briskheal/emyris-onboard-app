@@ -6598,15 +6598,37 @@ router.get('/targets', async (req, res) => {
 router.get('/targets/rollup', async (req, res) => {
     try {
         const { month, year } = req.query;
+        const { Op } = require('sequelize');
         let where = {};
-        if (month) where.month = month;
-        if (year) where.year = year;
+        if (month) {
+            const normM = normalizeMonth(month);
+            const shortM = normM ? normM.substring(0, 3) : month;
+            where[Op.or] = [
+                { month: month },
+                { month: normM },
+                { month: shortM },
+                { month: { [Op.like]: `%${shortM}%` } }
+            ].filter(Boolean);
+        }
+        if (year) {
+            const yrStr = String(year).trim();
+            where[Op.and] = [
+                {
+                    [Op.or]: [
+                        { year: yrStr },
+                        { year: { [Op.like]: `%${yrStr}%` } },
+                        { year: null },
+                        { year: '' }
+                    ]
+                }
+            ];
+        }
 
         // Fetch all targets for the period
         const allTargets = await XlTarget.findAll({ where });
         
         // Fetch all users to build hierarchy
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'reportingManager'] });
+        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'reportingManager'] });
         const userMap = {};
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
@@ -6615,19 +6637,47 @@ router.get('/targets/rollup', async (req, res) => {
         
         // Attach direct targets
         allTargets.forEach(t => {
-            const tId = t.employeeId;
-            if (userMap[tId]) {
-                const amount = t.allocationType === 'Lump-Sum' ? t.lumpSumAmount : t.totalProductAmount;
-                userMap[tId].directTarget = amount;
-                userMap[tId].rawTarget = t;
+            const targetId = t.employeeId;
+            let user = userMap[targetId];
+            if (!user) {
+                user = Object.values(userMap).find(u => 
+                    u.employeeId === targetId || 
+                    u.uid === targetId || 
+                    u._id === targetId || 
+                    (t.userName && `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase() === t.userName.toLowerCase())
+                );
+            }
+            if (user) {
+                const lump = Number(t.lumpSumAmount) || 0;
+                const prod = Number(t.totalProductAmount) || 0;
+                const amount = lump > 0 ? lump : (prod > 0 ? prod : 0);
+                user.directTarget = (user.directTarget || 0) + amount;
+                user.rawTarget = t;
             }
         });
         
-        // Build hierarchy
+        // Build hierarchy: link children to managers by ID, designation+HQ, or designation
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
-            if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(empId);
+            if (u.reportingManager) {
+                let mgr = userMap[u.reportingManager];
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
+                        const repMgr = u.reportingManager.toLowerCase().trim();
+                        return repMgr === desigHq;
+                    });
+                }
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const desigOnly = (m.designation || '').toLowerCase().trim();
+                        const repMgr = u.reportingManager.toLowerCase().trim();
+                        return repMgr === desigOnly && desigOnly.length > 2;
+                    });
+                }
+                if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
+                    mgr.children.push(empId);
+                }
             }
         });
         
@@ -6638,7 +6688,9 @@ router.get('/targets/rollup', async (req, res) => {
             let teamSum = 0;
             user.children.forEach(childId => {
                 const child = userMap[childId];
-                teamSum += child.directTarget + calculateTeamTarget(childId);
+                if (child) {
+                    teamSum += (child.directTarget || 0) + calculateTeamTarget(childId);
+                }
             });
             user.teamTarget = teamSum;
             return teamSum;
@@ -6650,7 +6702,9 @@ router.get('/targets/rollup', async (req, res) => {
         // Format the final response
         const rollupData = Object.values(userMap).map(u => ({
             employeeId: u.employeeId,
-            userName: `${u.firstName} ${u.lastName}`,
+            userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId,
+            designation: u.designation || '',
+            hq: u.hq || '',
             directTarget: u.directTarget,
             teamTarget: u.teamTarget,
             totalTarget: u.directTarget + u.teamTarget,
@@ -6765,8 +6819,25 @@ router.get('/targets/yearly', async (req, res) => {
 
         allUsers.forEach(u => {
             const empId = u.employeeId || u.uid || u._id;
-            if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(empId);
+            if (u.reportingManager) {
+                let mgr = userMap[u.reportingManager];
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
+                        const repMgr = u.reportingManager.toLowerCase().trim();
+                        return repMgr === desigHq;
+                    });
+                }
+                if (!mgr) {
+                    mgr = Object.values(userMap).find(m => {
+                        const desigOnly = (m.designation || '').toLowerCase().trim();
+                        const repMgr = u.reportingManager.toLowerCase().trim();
+                        return repMgr === desigOnly && desigOnly.length > 2;
+                    });
+                }
+                if (mgr && mgr.employeeId !== empId && !mgr.children.includes(empId)) {
+                    mgr.children.push(empId);
+                }
             }
         });
 
@@ -6794,8 +6865,10 @@ router.get('/targets/yearly', async (req, res) => {
             delete user.teamMonths.total;
             user.teamTotal = teamSum.total;
             
-            Object.keys(user.months).forEach(m => {
-                 user.months[m] += user.teamMonths[m];
+            Object.keys(user.teamMonths).forEach(m => {
+                 user.months[m] = (user.months[m] || 0) + (user.teamMonths[m] || 0);
+                 const shortM = m.substring(0, 3);
+                 user.months[shortM] = user.months[m];
             });
             user.total += user.teamTotal;
             
