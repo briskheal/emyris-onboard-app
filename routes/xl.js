@@ -1966,6 +1966,15 @@ router.get('/reports/stockists', async (req, res) => {
 });
 
 // Reports Route for Products List
+router.get('/products', async (req, res) => {
+    try {
+        const records = await XlProduct.findAll({ order: [['productName', 'ASC']] });
+        res.json({ success: true, products: records, data: records });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch products', details: e.message });
+    }
+});
+
 router.get('/reports/products', async (req, res) => {
     try {
         const records = await XlProduct.findAll({ order: [['productName', 'ASC']] });

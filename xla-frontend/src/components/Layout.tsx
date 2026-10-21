@@ -22,7 +22,7 @@ const navItems = [
   { path: '/extras/attendance', icon: Clock, label: 'Attendance' },
   { path: '/extras/reminders', icon: Bell, label: 'Reminders' },
   { path: '/extras/leave', icon: CheckSquare, label: 'Leave Request' },
-  { path: '/extras/samples', icon: Gift, label: 'Sample Management' },
+  { path: '/extras/samples', icon: Gift, label: 'Samples' },
   { path: '/extras/gifts', icon: Gift, label: 'Gift Management' },
   { path: '/extras/profit', icon: PieChart, label: 'Profit Analysis' },
   { path: '/extras/crm', icon: Users, label: 'CRM' },
