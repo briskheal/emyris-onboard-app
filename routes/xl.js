@@ -3503,11 +3503,63 @@ router.get('/attendance/monthly/all', async (req, res) => {
 // --- LEAVE ADMIN FETCH ROUTES ---
 router.get('/leave', async (req, res) => {
     try {
-        const { XlLeave } = require('../db');
+        const { XlLeave, XlUser } = require('../db');
+        const { Op } = require('sequelize');
         let where = {};
-        if (req.query.employeeId) where.employeeId = req.query.employeeId;
+        if (req.query.employeeId) {
+            let empIds = [String(req.query.employeeId).trim()];
+            const user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { uid: req.query.employeeId },
+                        { employeeId: req.query.employeeId },
+                        { email: req.query.employeeId }
+                    ]
+                }
+            });
+            if (user) {
+                if (user.uid) empIds.push(String(user.uid).trim());
+                if (user.employeeId) empIds.push(String(user.employeeId).trim());
+                if (user.email) empIds.push(String(user.email).trim());
+                if (user._id) empIds.push(String(user._id).trim());
+            }
+            where.employeeId = { [Op.in]: Array.from(new Set(empIds)) };
+        }
         const leaves = await XlLeave.findAll({ where, order: [['createdAt', 'DESC']] });
-        res.json({ success: true, data: leaves });
+
+        const allUsers = await XlUser.findAll({
+            attributes: ['_id', 'uid', 'employeeId', 'email', 'firstName', 'lastName', 'designation', 'hq']
+        });
+        const userMap = new Map();
+        for (const u of allUsers) {
+            const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+            const uObj = {
+                _id: u._id,
+                uid: u.uid,
+                employeeId: u.employeeId,
+                email: u.email,
+                name: fullName,
+                designation: u.designation || '',
+                hq: u.hq || ''
+            };
+            if (u._id) userMap.set(String(u._id), uObj);
+            if (u.uid) userMap.set(String(u.uid), uObj);
+            if (u.employeeId) userMap.set(String(u.employeeId), uObj);
+            if (u.email) userMap.set(String(u.email).toLowerCase(), uObj);
+        }
+
+        const data = leaves.map(item => {
+            const plain = item.toJSON ? item.toJSON() : item;
+            const empKey = String(plain.employeeId || '').trim();
+            const matched = userMap.get(empKey) || userMap.get(empKey.toLowerCase());
+            return {
+                ...plain,
+                employeeName: matched?.name || 'Unknown User',
+                employeeCode: matched?.employeeId || matched?.uid || empKey
+            };
+        });
+
+        res.json({ success: true, data });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch leaves' });
     }

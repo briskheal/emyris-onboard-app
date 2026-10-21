@@ -110,7 +110,7 @@ export default function LeaveRequest() {
         alert("Leave Request Approved & Submitted!");
         setFormData({ employeeId: '', leaveType: '', startDate: '', endDate: '', reason: '' });
         fetchLeaves();
-        fetchBalances(formData.employeeId); // Refresh balance badges immediately
+        fetchBalances(formData.employeeId);
       } catch (e) {
         alert("Error submitting leave request.");
       }
@@ -124,19 +124,35 @@ export default function LeaveRequest() {
     } catch(e) {}
   };
 
-  const getUserName = (id: string) => {
-    const u = users.find(x => x.uid === id);
-    return u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown User';
+  const getUserName = (id: string, fallbackName?: string) => {
+    if (!id && !fallbackName) return 'Unknown User';
+    const str = String(id || '').trim().toLowerCase();
+    const u = users.find(x => 
+      (x.uid && String(x.uid).trim().toLowerCase() === str) ||
+      (x.employeeId && String(x.employeeId).trim().toLowerCase() === str) ||
+      (x._id && String(x._id).trim().toLowerCase() === str) ||
+      (x.email && String(x.email).trim().toLowerCase() === str)
+    );
+    return (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || fallbackName || 'Unknown User';
   };
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = clean.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+    }
+    return dateStr;
+  };
 
   const exportToCSV = () => {
     const headers = ['Sr no.', 'Employee', 'Start Date', 'End Date', 'Leave Type', 'Reason for Leave', 'Status'];
     const rows = leaves.map((l, i) => [
       i + 1,
-      getUserName(l.employeeId),
-      l.startDate,
-      l.endDate,
+      getUserName(l.employeeId, l.employeeName),
+      formatDate(l.startDate),
+      formatDate(l.endDate),
       l.leaveType,
       (l.reason || '').replace(/,/g, ' '),
       l.status || 'Pending'
@@ -154,7 +170,6 @@ export default function LeaveRequest() {
   };
 
   // Calendar Logic
-
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
 
@@ -193,55 +208,55 @@ export default function LeaveRequest() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col text-slate-100 font-sans pb-24 md:pb-8 relative">
+    <div className="min-h-screen bg-slate-900 flex flex-col text-slate-100 font-sans pb-16 md:pb-6 relative">
       
       {/* Mobile Sticky Header */}
-      <div className="md:hidden flex items-center gap-4 px-5 pt-12 pb-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+      <div className="md:hidden flex items-center gap-3 px-4 pt-8 pb-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-white active:scale-95 transition-transform flex items-center gap-1">
-          <ArrowLeft size={22} />
+          <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-lg font-black text-white tracking-tight leading-none">EMYRIS</h1>
+          <h1 className="text-base font-black text-white tracking-tight leading-none">EMYRIS</h1>
           <p className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
         </div>
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col px-5 py-6 md:p-8">
+      <div className="flex-1 flex flex-col px-4 py-3 md:px-6 md:py-4 max-w-7xl mx-auto w-full">
         
         {/* DESKTOP HEADER */}
-        <div className="hidden md:flex items-center justify-between mb-8">
-          <h2 className="text-xl font-black text-white uppercase tracking-wider">Leave Request</h2>
+        <div className="hidden md:flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-white uppercase tracking-wider">Leave Request</h2>
         </div>
 
-        <div className="flex flex-col xl:flex-row gap-8 mb-8">
+        <div className="flex flex-col lg:flex-row gap-4 mb-3">
           
           {/* Visual Calendar Block */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 shadow-2xl flex-1 max-w-xl">
-            <div className="flex items-center justify-between mb-8">
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex-1 max-w-lg">
+            <div className="flex items-center justify-between mb-2.5">
               <button 
                 onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                className="w-8 h-8 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
-                <ChevronLeft size={18} className="text-slate-400" />
+                className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <ChevronLeft size={16} className="text-slate-400" />
               </button>
-              <span className="font-bold text-lg text-white">
+              <span className="font-bold text-xs text-white">
                 {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
               </span>
               <button 
                 onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                className="w-8 h-8 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
-                <ChevronRight size={18} className="text-slate-400" />
+                className="w-7 h-7 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <ChevronRight size={16} className="text-slate-400" />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-y-6 text-center">
+            <div className="grid grid-cols-7 gap-y-1 text-center">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="text-xs font-bold text-slate-500 uppercase">{day}</div>
+                <div key={day} className="text-[10px] font-bold text-slate-400 uppercase py-0.5">{day}</div>
               ))}
               
               {/* Empty Days */}
               {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`empty-${i}`}></div>
+                <div key={`empty-${i}`} className="h-6"></div>
               ))}
 
               {/* Days */}
@@ -249,14 +264,14 @@ export default function LeaveRequest() {
                 const dateNum = i + 1;
                 const active = isSelected(dateNum);
                 return (
-                  <div key={dateNum} className="flex items-center justify-center relative">
+                  <div key={dateNum} className="flex items-center justify-center relative h-6">
                     {active && formData.startDate && formData.endDate && (
                       <div className="absolute inset-0 bg-sky-500/20 w-full"></div>
                     )}
                     <button 
                       onClick={() => handleDateClick(dateNum)}
-                      className={`relative z-10 w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center transition-all ${
-                        active ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-110' : isToday(dateNum) ? 'text-sky-400 border-2 border-sky-500 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
+                      className={`relative z-10 w-6 h-6 rounded-full text-[11px] font-semibold flex items-center justify-center transition-all ${
+                        active ? 'bg-sky-500 text-white shadow shadow-sky-500/30 scale-105' : isToday(dateNum) ? 'text-sky-400 border border-sky-500 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
                       }`}>
                       {dateNum}
                     </button>
@@ -267,9 +282,9 @@ export default function LeaveRequest() {
           </div>
 
           {/* Form Block */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 w-full xl:w-[450px]">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User *</label>
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 md:p-4 shadow-lg flex flex-col gap-2.5 w-full lg:w-[380px]">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
               <CustomSelect 
                 options={users.map(u => ({
                   value: u.employeeId || u.email || u.uid,
@@ -281,11 +296,12 @@ export default function LeaveRequest() {
                 value={formData.employeeId}
                 onChange={(val) => setFormData({...formData, employeeId: val})}
                 placeholder="Select User"
+                compact={true}
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Leave Type *</label>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Select Leave Type *</label>
               <CustomSelect 
                 options={leaveTypes.filter(t => { const b = balances.find((x:any) => x.leaveType === t.name); const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP'; return isLWP || (b && b.assigned > 0); }).map(t => {
                   const b = balances.find((x:any) => x.leaveType === t.name);
@@ -295,7 +311,7 @@ export default function LeaveRequest() {
                     value: t.name,
                     label: t.name,
                     rightBadge: !isLWP ? (
-                      <span className="w-6 h-6 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-sky-500/20">
+                      <span className="w-4 h-4 rounded-full bg-sky-500 flex items-center justify-center text-[9px] font-bold text-white shadow shadow-sky-500/20">
                         {remaining}
                       </span>
                     ) : undefined
@@ -304,93 +320,97 @@ export default function LeaveRequest() {
                 value={formData.leaveType}
                 onChange={(val) => setFormData({...formData, leaveType: val})}
                 placeholder="Select Leave Type"
+                compact={true}
               />
             </div>
 
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Reason for Leave *</label>
+            <div className="flex flex-col gap-0.5 flex-1">
+              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider pl-0.5">Reason for Leave *</label>
               <textarea 
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-sm font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none min-h-[120px]"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none min-h-[50px] h-[55px]"
                 placeholder="Enter Reason for Leave"
                 value={formData.reason} onChange={e=>setFormData({...formData, reason:e.target.value})}
               />
             </div>
 
-            <button onClick={handleSubmit} className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-xl px-4 py-4 font-bold shadow-lg shadow-sky-500/20 transition-colors flex items-center justify-center">
+            <button onClick={handleSubmit} className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3 py-2 text-xs font-bold shadow shadow-sky-500/20 transition-colors flex items-center justify-center">
               Submit
             </button>
           </div>
         </div>
 
         {/* BOTTOM TABLE */}
-        <div className="flex flex-col bg-slate-800/50 border border-slate-700/50 rounded-2xl shadow-2xl relative mt-4">
+        <div className="flex flex-col bg-slate-800/60 border border-slate-700/60 rounded-xl shadow-lg relative mt-2 overflow-hidden">
           
-          <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
-                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest whitespace-nowrap">Showing ({leaves.length}) Entries</h3>
-                
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <button onClick={exportToCSV} className="hidden md:flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors h-[42px]"><Download size={16} /> Export</button>
-                  <div className="flex flex-col gap-1 w-full sm:w-40">
-                    <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">Select Month</label>
-                    <input type="month" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors w-full h-[42px]"
-                      value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} />
-                  </div>
-                </div>
+          <div className="px-3.5 py-2 bg-slate-800/90 border-b border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest whitespace-nowrap">Showing ({leaves.length}) Entries</h3>
+                <button onClick={exportToCSV} className="hidden sm:flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded text-xs font-bold transition-colors h-[30px]"><Download size={13} /> Export</button>
               </div>
               
-              <div className="flex flex-col gap-1 w-full lg:w-80 relative z-40">
-                <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User</label>
-                <div className="w-full"><CustomSelect 
-                options={users.map((u:any) => ({
-                  value: u.employeeId || u.email || u.uid,
-                  label: `${u.firstName} ${u.lastName || ''}`,
-                  subLabel: u.designation || u.designationName || u.employeeId,
-                  avatarUrl: u.profilePic,
-                  showDefaultAvatar: true
-                }))}
-                value={filterUser}
-                onChange={(val) => setFilterUser(val)}
-                placeholder="Select User"
-              /></div></div></div>
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <div className="flex flex-col gap-0.5 w-full sm:w-36">
+                  <label className="text-[9px] font-bold text-sky-400 uppercase tracking-wider pl-0.5">Select Month</label>
+                  <input type="month" className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-white text-xs focus:outline-none focus:border-sky-500 transition-colors w-full h-[30px]"
+                    value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} />
+                </div>
+                
+                <div className="flex flex-col gap-0.5 w-full sm:w-60 relative z-30">
+                  <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User</label>
+                  <CustomSelect 
+                    options={users.map((u:any) => ({
+                      value: u.employeeId || u.email || u.uid,
+                      label: `${u.firstName} ${u.lastName || ''}`,
+                      subLabel: u.designation || u.designationName || u.employeeId,
+                      avatarUrl: u.profilePic,
+                      showDefaultAvatar: true
+                    }))}
+                    value={filterUser}
+                    onChange={(val) => setFilterUser(val)}
+                    placeholder="Select User"
+                    compact={true}
+                  />
+                </div>
+              </div>
+          </div>
 
-          <div className="overflow-x-auto pb-4">
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr className="bg-slate-900/50 border-b border-slate-700/50">
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Sr no.</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Start Date</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">End Date</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-xs">Reason for Leave</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Leave Type</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Delete</th>
+                <tr className="bg-slate-900/60 border-b border-slate-700/50">
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-12">Sr no.</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Start Date</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">End Date</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-xs">Reason for Leave</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Leave Type</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-14">Delete</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {leaves.map((l, i) => (
-                  <tr key={l._id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="p-4 text-sm font-semibold text-slate-300 text-center bg-slate-900/20">{i+1}</td>
-                    <td className="p-4 text-sm font-bold text-white">{getUserName(l.employeeId)}</td>
-                    <td className="p-4 text-sm font-bold text-sky-400">{l.startDate}</td>
-                    <td className="p-4 text-sm font-bold text-sky-400">{l.endDate}</td>
-                    <td className="p-4 text-sm font-semibold text-slate-300 text-wrap max-w-xs leading-relaxed">{l.reason}</td>
-                    <td className="p-4 text-sm font-semibold text-slate-300">{l.leaveType}</td>
-                    <td className="p-4 text-sm font-semibold text-slate-300">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-400' : l.status === 'Revoked' ? 'bg-amber-500/20 text-amber-400' : 'bg-sky-500/20 text-sky-400'}`}>
+                  <tr key={l._id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="py-1.5 px-3 text-xs font-semibold text-slate-300 text-center bg-slate-900/20">{i+1}</td>
+                    <td className="py-1.5 px-3 text-xs font-bold text-white">{getUserName(l.employeeId, l.employeeName)}</td>
+                    <td className="py-1.5 px-3 text-xs font-bold text-sky-400">{formatDate(l.startDate)}</td>
+                    <td className="py-1.5 px-3 text-xs font-bold text-sky-400">{formatDate(l.endDate)}</td>
+                    <td className="py-1.5 px-3 text-xs font-semibold text-slate-300 text-wrap max-w-xs leading-normal">{l.reason}</td>
+                    <td className="py-1.5 px-3 text-xs font-semibold text-slate-300">{l.leaveType}</td>
+                    <td className="py-1.5 px-3 text-xs font-semibold text-slate-300">
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-400' : l.status === 'Revoked' ? 'bg-amber-500/20 text-amber-400' : 'bg-sky-500/20 text-sky-400'}`}>
                         {l.status || 'Pending'}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => handleDelete(l._id)} className="text-rose-400/50 hover:text-rose-400 transition-colors p-1.5" title="Delete">
-                        <Trash2 size={18} />
+                    <td className="py-1.5 px-3 text-center">
+                      <button onClick={() => handleDelete(l._id)} className="text-rose-400/50 hover:text-rose-400 transition-colors p-1" title="Delete">
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
                 ))}
                 {leaves.length === 0 && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-500 font-bold">No Leaves Found</td></tr>
+                  <tr><td colSpan={8} className="p-5 text-center text-slate-500 text-xs font-bold">No Leaves Found</td></tr>
                 )}
               </tbody>
             </table>
@@ -401,10 +421,3 @@ export default function LeaveRequest() {
     </div>
   );
 }
-
-
-
-
-
-
-
