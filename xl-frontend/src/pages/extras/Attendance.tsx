@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, UserCheck, Clock, Navigation, MapPin, ShieldCheck, AlertTriangle, RotateCcw, Wifi } from 'lucide-react';
+import { ChevronLeft, UserCheck, Clock, Navigation, MapPin, ShieldCheck, AlertTriangle, RotateCcw } from 'lucide-react';
 import axios from 'axios';
 
 const getUserId = () => {
@@ -66,8 +66,6 @@ export default function Attendance() {
   const [isCurrentlyPunchedIn, setIsCurrentlyPunchedIn] = useState<boolean>(false);
   const [liveDistanceMeters, setLiveDistanceMeters] = useState<number | null>(null);
   const [liveSessionMinutes, setLiveSessionMinutes] = useState<number>(0);
-  const [isOnOfficeWifi, setIsOnOfficeWifi] = useState<boolean>(true);
-  const [clientIp, setClientIp] = useState<string>('');
 
   const autoPunchLockRef = useRef(false);
   const outsideStrikeCountRef = useRef(0);
@@ -92,12 +90,6 @@ export default function Attendance() {
       }
       if (typeof res.data.totalOfficeMinutes === 'number') {
         setTotalOfficeMinutes(res.data.totalOfficeMinutes);
-      }
-      if (typeof res.data.isOnOfficeWifi === 'boolean') {
-        setIsOnOfficeWifi(res.data.isOnOfficeWifi);
-      }
-      if (res.data.clientIp) {
-        setClientIp(res.data.clientIp);
       }
       setIsCurrentlyPunchedIn(Boolean(res.data.isCurrentlyPunchedIn));
     } catch (e) {
@@ -125,89 +117,70 @@ export default function Attendance() {
     return () => clearInterval(interval);
   }, [officeConfig.enabled, isCurrentlyPunchedIn, sessions]);
 
-  // Lock #2: 25-second Office Wi-Fi Heartbeat (detects walking out of 480 sq.ft room / Wi-Fi disconnect)
-  useEffect(() => {
-    if (!officeConfig.enabled) return;
-    const runHeartbeat = async () => {
-      try {
-        const res = await axios.post('/api/xl/attendance/office-heartbeat', {
-          employeeId: getUserId(),
-          date: dateStr
-        });
-        if (typeof res.data?.isOnOfficeWifi === 'boolean') {
-          setIsOnOfficeWifi(res.data.isOnOfficeWifi);
-        }
-        if (res.data?.clientIp) {
-          setClientIp(res.data.clientIp);
-        }
-        if (res.data?.autoPunchedOut) {
-          setInfoMessage(res.data.message || 'Auto Punched Out: Disconnected from Office Wi-Fi.');
-          await fetchAttendance();
-        }
-      } catch {}
-    };
-    const interval = setInterval(runHeartbeat, 25000);
-    return () => clearInterval(interval);
-  }, [officeConfig.enabled, isCurrentlyPunchedIn]);
-
-  // Lock #1: Live Micro-GPS Distance + 3-Strike Anti-Jitter Auto Punch-Out Watcher (for 480 sq.ft office)
+  // Live Office Geo-Location Distance + 3-Strike Anti-Jitter Auto Punch-Out Watcher
   useEffect(() => {
     if (!officeConfig.enabled || !navigator.geolocation) return;
 
-    const watchId = navigator.geolocation.watchPosition(
-      async (pos) => {
-        if (officeConfig.officeLat !== null && officeConfig.officeLng !== null) {
-          const rawDist = getDistanceMeters(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            officeConfig.officeLat,
-            officeConfig.officeLng
-          );
-          // Compensate up to 10m of indoor concrete ceiling GPS bounce for a 480 sq.ft (15m) room
-          const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.4, 10);
-          const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
-          setLiveDistanceMeters(effectiveDist);
+    const handlePosUpdate = async (pos: GeolocationPosition) => {
+      if (officeConfig.officeLat !== null && officeConfig.officeLng !== null) {
+        const rawDist = getDistanceMeters(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          officeConfig.officeLat,
+          officeConfig.officeLng
+        );
+        const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0), 250);
+        const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+        setLiveDistanceMeters(effectiveDist);
+        const allowedRadius = Math.max(Number(officeConfig.officeRadius) || 50, 35);
 
-          if (isCurrentlyPunchedIn) {
-            if (officeConfig.officeWifiIp && isOnOfficeWifi) {
-              outsideStrikeCountRef.current = 0;
-            } else if (effectiveDist > officeConfig.officeRadius) {
-              outsideStrikeCountRef.current += 1;
-            } else {
-              outsideStrikeCountRef.current = 0;
-            }
+        if (isCurrentlyPunchedIn) {
+          if (effectiveDist > allowedRadius) {
+            outsideStrikeCountRef.current += 1;
+          } else {
+            outsideStrikeCountRef.current = 0;
+          }
 
-            // Require 3 consecutive outside readings to prevent false indoor GPS drift while sitting at desk
-            if (outsideStrikeCountRef.current >= 3 && !autoPunchLockRef.current) {
-              autoPunchLockRef.current = true;
-              outsideStrikeCountRef.current = 0;
-              try {
-                const payload = {
-                  employeeId: getUserId(),
-                  date: dateStr,
-                  punchOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                  punchOutLat: pos.coords.latitude,
-                  punchOutLng: pos.coords.longitude,
-                  autoPunchOut: true,
-                  autoReason: `Auto (Left ${officeConfig.officeRadius}m Office Zone)`
-                };
-                const res = await axios.post('/api/xl/attendance/punch-out', payload);
-                setInfoMessage(
-                  res.data?.message ||
-                    `Auto Punched Out: You left ${officeConfig.officeName}. Please Re-Punch In when you return.`
-                );
-                await fetchAttendance();
-              } catch {
-                // ignore transient network error
-              } finally {
-                autoPunchLockRef.current = false;
-              }
+          // Require 3 consecutive outside readings to prevent false indoor GPS drift while sitting at desk
+          if (outsideStrikeCountRef.current >= 3 && !autoPunchLockRef.current) {
+            autoPunchLockRef.current = true;
+            outsideStrikeCountRef.current = 0;
+            try {
+              const payload = {
+                employeeId: getUserId(),
+                date: dateStr,
+                punchOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                punchOutLat: pos.coords.latitude,
+                punchOutLng: pos.coords.longitude,
+                autoPunchOut: true,
+                autoReason: `Auto (Left ${officeConfig.officeName || 'Office'} Geo-Location)`
+              };
+              const res = await axios.post('/api/xl/attendance/punch-out', payload);
+              setInfoMessage(
+                res.data?.message ||
+                  `Auto Punched Out: You left ${officeConfig.officeName}. Please Re-Punch In when you return.`
+              );
+              await fetchAttendance();
+            } catch {
+              // ignore transient network error
+            } finally {
+              autoPunchLockRef.current = false;
             }
           }
         }
+      }
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      handlePosUpdate,
+      () => {
+        navigator.geolocation.getCurrentPosition(
+          handlePosUpdate,
+          () => {},
+          { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 }
+        );
       },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 6000 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
@@ -222,63 +195,71 @@ export default function Attendance() {
     setError('');
     setInfoMessage('');
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          if (officeConfig.enabled && officeConfig.officeLat !== null && officeConfig.officeLng !== null) {
-            const rawDist = getDistanceMeters(
-              pos.coords.latitude,
-              pos.coords.longitude,
-              officeConfig.officeLat,
-              officeConfig.officeLng
+    const executePunchWithPos = async (pos: GeolocationPosition) => {
+      try {
+        if (officeConfig.enabled && officeConfig.officeLat !== null && officeConfig.officeLng !== null) {
+          const rawDist = getDistanceMeters(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            officeConfig.officeLat,
+            officeConfig.officeLng
+          );
+          const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0), 300);
+          const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+          setLiveDistanceMeters(effectiveDist);
+          const allowedRadius = Math.max(Number(officeConfig.officeRadius) || 50, 35);
+
+          if (type === 'in' && effectiveDist > allowedRadius) {
+            setError(
+              `Outside ${officeConfig.officeName} (${effectiveDist}m away; allowed ${officeConfig.officeRadius}m). Please step inside the office location to Punch In.`
             );
-            const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.85, 80);
-            const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
-            setLiveDistanceMeters(effectiveDist);
-
-            const hasWifiMatch = Boolean(officeConfig.officeWifiIp && isOnOfficeWifi);
-            if (type === 'in' && !hasWifiMatch && effectiveDist > officeConfig.officeRadius) {
-              setError(
-                `Outside ${officeConfig.officeName} (${effectiveDist}m away; allowed ${officeConfig.officeRadius}m for 480 sq.ft office). Please step inside the office to Punch In.`
-              );
-              setActionLoading(false);
-              return;
-            }
+            setActionLoading(false);
+            return;
           }
-
-          const payload = {
-            employeeId: getUserId(),
-            date: dateStr,
-            gpsAccuracy: pos.coords.accuracy,
-            [type === 'in' ? 'punchInTime' : 'punchOutTime']: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            [type === 'in' ? 'punchInLat' : 'punchOutLat']: pos.coords.latitude,
-            [type === 'in' ? 'punchInLng' : 'punchOutLng']: pos.coords.longitude,
-          };
-          const res = await axios.post(`/api/xl/attendance/punch-${type}`, payload);
-          if (res.data?.message) {
-            setInfoMessage(res.data.message);
-          }
-          outsideStrikeCountRef.current = 0;
-          await fetchAttendance();
-        } catch (e: any) {
-          setError(e?.response?.data?.error || `Failed to punch ${type}.`);
-        } finally {
-          setActionLoading(false);
         }
-      },
-      (err) => {
+
+        const payload = {
+          employeeId: getUserId(),
+          date: dateStr,
+          gpsAccuracy: pos.coords.accuracy,
+          [type === 'in' ? 'punchInTime' : 'punchOutTime']: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          [type === 'in' ? 'punchInLat' : 'punchOutLat']: pos.coords.latitude,
+          [type === 'in' ? 'punchInLng' : 'punchOutLng']: pos.coords.longitude,
+        };
+        const res = await axios.post(`/api/xl/attendance/punch-${type}`, payload);
+        if (res.data?.message) {
+          setInfoMessage(res.data.message);
+        }
+        outsideStrikeCountRef.current = 0;
+        await fetchAttendance();
+      } catch (e: any) {
+        setError(e?.response?.data?.error || `Failed to punch ${type}.`);
+      } finally {
         setActionLoading(false);
-        setError(err.code === 1 ? 'Location access denied. Please enable GPS.' : 'Could not get location. Try again.');
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      executePunchWithPos,
+      () => {
+        // Fallback to network/indoor location if hardware GPS satellite fix times out indoors
+        navigator.geolocation.getCurrentPosition(
+          executePunchWithPos,
+          (err) => {
+            setActionLoading(false);
+            setError(err.code === 1 ? 'Location access denied. Please enable GPS.' : 'Could not get location. Try again.');
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
     );
   };
 
   const isInsideOffice =
-    Boolean(officeConfig.officeWifiIp && isOnOfficeWifi) ||
     officeConfig.officeLat === null ||
     officeConfig.officeLng === null ||
-    (liveDistanceMeters !== null && liveDistanceMeters <= officeConfig.officeRadius);
+    (liveDistanceMeters !== null && liveDistanceMeters <= Math.max(Number(officeConfig.officeRadius) || 50, 35));
 
   const combinedTotalMinutes = totalOfficeMinutes + (isCurrentlyPunchedIn ? liveSessionMinutes : 0);
 
@@ -293,7 +274,7 @@ export default function Attendance() {
           <div>
             <h1 className="text-lg font-bold text-white leading-tight">Attendance</h1>
             <p className="text-xs text-slate-200">
-              {officeConfig.enabled ? '480 sq.ft Office Dual-Lock Attendance' : 'Daily punch-in / punch-out'}
+              {officeConfig.enabled ? 'Office Geo-Location Attendance' : 'Daily punch-in / punch-out'}
             </p>
           </div>
         </div>
@@ -314,11 +295,11 @@ export default function Attendance() {
           </div>
         ) : officeConfig.enabled ? (
           /* ═══════════════════════════════════════════════════════════════════════
-             EXCLUSIVE 480 SQ.FT OFFICE STAFF DUAL-LOCK ATTENDANCE + TIME LOG VIEW
+             EXCLUSIVE OFFICE STAFF GEO-LOCATION ATTENDANCE + TIME LOG VIEW
              (Only shown for users where Admin ticked PUNCHING in User Controls)
              ═══════════════════════════════════════════════════════════════════════ */
           <div className="flex flex-col items-center w-full max-w-sm">
-            {/* Dual-Lock (15m Micro-GPS + Office Wi-Fi Lock) Status Card */}
+            {/* Pure Office Geo-Location Match Status Card */}
             <div className="w-full bg-slate-700/60 rounded-2xl p-3.5 border border-slate-600/80 mb-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
@@ -328,7 +309,7 @@ export default function Attendance() {
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white truncate">{officeConfig.officeName}</p>
                     <p className="text-[11px] text-slate-300">
-                      480 sq.ft Micro-Fence: <span className="font-semibold text-sky-400">{officeConfig.officeRadius}m</span>
+                      Linked Office Zone: <span className="font-semibold text-sky-400">{officeConfig.officeRadius}m</span>
                     </p>
                   </div>
                 </div>
@@ -343,7 +324,7 @@ export default function Attendance() {
                     {liveDistanceMeters === null
                       ? 'GPS Locating...'
                       : isInsideOffice
-                      ? `Inside (${liveDistanceMeters}m)`
+                      ? `Matched (${liveDistanceMeters}m)`
                       : `Outside (${liveDistanceMeters}m)`}
                   </span>
                 ) : (
@@ -353,24 +334,8 @@ export default function Attendance() {
                 )}
               </div>
 
-              {officeConfig.requireWifiLock && (
-                <div className="flex items-center justify-between pt-2 border-t border-slate-600/60 text-[11px]">
-                  <span className="flex items-center gap-1.5 text-slate-300 font-medium">
-                    <Wifi size={13} className={isOnOfficeWifi ? 'text-emerald-400' : 'text-rose-400'} />
-                    Office Wi-Fi Lock ({clientIp || 'Checking'})
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    isOnOfficeWifi
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                  }`}>
-                    {isOnOfficeWifi ? 'Connected' : 'Not on Office Wi-Fi'}
-                  </span>
-                </div>
-              )}
-
               <p className="text-[10px] text-slate-300 leading-relaxed">
-                Leaving the {officeConfig.officeRadius}m 480 sq.ft office zone{officeConfig.requireWifiLock ? ' or disconnecting from Office Wi-Fi' : ''} triggers <span className="text-amber-300 font-semibold">Auto Punch-Out</span>. Re-Punch In when back inside to log your office hours.
+                Leaving the linked {officeConfig.officeRadius}m office geo-location triggers <span className="text-amber-300 font-semibold">Auto Punch-Out</span>. Re-Punch In when back inside to log your office hours.
               </p>
             </div>
 
@@ -393,7 +358,7 @@ export default function Attendance() {
             </div>
 
             {/* Automatic Office Arrival Prompt Banner */}
-            {!isCurrentlyPunchedIn && isInsideOffice && (!officeConfig.requireWifiLock || isOnOfficeWifi) && (
+            {!isCurrentlyPunchedIn && isInsideOffice && (
               <div className="w-full mb-4 bg-emerald-500/20 border-2 border-emerald-400/60 rounded-2xl px-4 py-3 text-center shadow-lg animate-pulse">
                 <p className="text-sm font-extrabold text-emerald-200 tracking-wide">
                   {sessions.length > 0

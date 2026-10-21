@@ -2945,10 +2945,10 @@ router.get('/office-network-info', (req, res) => {
 async function getOfficePunchConfigForEmployee(identifier) {
     const defaultCfg = {
         enabled: false,
-        officeName: 'Office Premises (480 sq.ft)',
+        officeName: 'Corporate Office',
         officeLat: null,
         officeLng: null,
-        officeRadius: 15,
+        officeRadius: 50,
         officeWifiIp: '',
         requireWifiLock: false
     };
@@ -2974,22 +2974,31 @@ async function getOfficePunchConfigForEmployee(identifier) {
         const enabled = Boolean(controls && controls.PUNCHING === true);
         const hasLat = controls.officeLat !== undefined && controls.officeLat !== null && String(controls.officeLat).trim() !== '' && !isNaN(Number(controls.officeLat));
         const hasLng = controls.officeLng !== undefined && controls.officeLng !== null && String(controls.officeLng).trim() !== '' && !isNaN(Number(controls.officeLng));
-        const officeWifiIp = (controls.officeWifiIp && String(controls.officeWifiIp).trim()) || '';
         return {
             user,
             officePunchConfig: {
                 enabled,
-                officeName: (controls.officeName && String(controls.officeName).trim()) || 'Office Premises (480 sq.ft)',
+                officeName: (controls.officeName && String(controls.officeName).trim()) || 'Corporate Office',
                 officeLat: hasLat ? Number(controls.officeLat) : null,
                 officeLng: hasLng ? Number(controls.officeLng) : null,
-                officeRadius: Number(controls.officeRadius) > 0 ? Number(controls.officeRadius) : 15,
-                officeWifiIp,
-                requireWifiLock: Boolean(controls.requireWifiLock && officeWifiIp)
+                officeRadius: Number(controls.officeRadius) > 0 ? Number(controls.officeRadius) : 50,
+                officeWifiIp: '',
+                requireWifiLock: false
             }
         };
     } catch (e) {
         console.error('[getOfficePunchConfigForEmployee Error]', e.message);
         return { user: null, officePunchConfig: defaultCfg };
+    }
+}
+
+function hasExplicitOfficeMeta(att) {
+    if (!att || !att.dayRemarks) return false;
+    try {
+        const parsed = typeof att.dayRemarks === 'string' ? JSON.parse(att.dayRemarks) : att.dayRemarks;
+        return Boolean(parsed && parsed.isOfficePunchMeta && Array.isArray(parsed.sessions));
+    } catch (e) {
+        return false;
     }
 }
 
@@ -3013,27 +3022,11 @@ function parseOfficePunchMeta(att) {
             // Plain text dayRemarks
         }
     }
-    // Fallback if an older record exists from before meta was saved
-    const fallbackSessions = [];
-    if (att.punchInTime) {
-        fallbackSessions.push({
-            sessionNo: 1,
-            punchInTime: att.punchInTime,
-            punchInMs: att.createdAt ? new Date(att.createdAt).getTime() : Date.now(),
-            punchInLat: att.punchInLat,
-            punchInLng: att.punchInLng,
-            punchOutTime: att.punchOutTime || null,
-            punchOutMs: att.punchOutTime && att.updatedAt ? new Date(att.updatedAt).getTime() : null,
-            punchOutLat: att.punchOutLat || null,
-            punchOutLng: att.punchOutLng || null,
-            outType: att.punchOutTime ? 'Manual' : null,
-            durationMinutes: 0
-        });
-    }
+    // If record was created before Office Punching was enabled, do NOT treat it as an active office session
     return {
         isOfficePunchMeta: true,
         officeSnapshot: null,
-        sessions: fallbackSessions,
+        sessions: [],
         totalOfficeMinutes: 0,
         userRemarks: typeof att.dayRemarks === 'string' ? att.dayRemarks : ''
     };
@@ -3050,23 +3043,8 @@ router.post('/attendance/punch-in', async (req, res) => {
 
         // ── EXCLUSIVE OFFICE GEO-PUNCHING FLOW (Only when Admin ticked PUNCHING in User Controls) ──
         if (officePunchConfig.enabled) {
-            const wifiMatched = doesClientIpMatchOfficeWifi(clientIp, officePunchConfig.officeWifiIp);
-            const hasVerifiedWifiMatch = Boolean(officePunchConfig.officeWifiIp && wifiMatched);
-
-            // Lock #1: Office Wi-Fi Router IP Lock (480 sq.ft exact room check)
-            if (officePunchConfig.requireWifiLock && officePunchConfig.officeWifiIp && !wifiMatched) {
-                return res.status(400).json({
-                    error: `Not connected to ${officePunchConfig.officeName} Wi-Fi (Your IP: ${clientIp || 'Unknown'}). Please connect to the Office Wi-Fi inside the 480 sq.ft office to Punch In.`,
-                    wifiMismatch: true,
-                    clientIp
-                });
-            }
-
-            // Lock #2: Calibrated Micro-GPS Fence (15m default + indoor GPS jitter / Wi-Fi verified tolerance)
-            if (officePunchConfig.officeLat !== null && officePunchConfig.officeLng !== null && !hasVerifiedWifiMatch) {
-                if (punchInLat === undefined || punchInLng === undefined || punchInLat === null || punchInLng === null) {
-                    return res.status(400).json({ error: 'GPS location is required to verify you are inside the 480 sq.ft office premises.' });
-                }
+            // Pure Admin-Linked Office Geo-Location Match (with indoor GPS accuracy circle overlap tolerance)
+            if (officePunchConfig.officeLat !== null && officePunchConfig.officeLng !== null && punchInLat !== undefined && punchInLng !== undefined && punchInLat !== null && punchInLng !== null) {
                 const rawDistMeters = Math.round(
                     getOfficeDistanceMeters(
                         Number(punchInLat),
@@ -3075,13 +3053,14 @@ router.post('/attendance/punch-in', async (req, res) => {
                         officePunchConfig.officeLng
                     )
                 );
-                const indoorTolerance = Math.min(Math.max(0, Number(gpsAccuracy) || 0) * 0.85, 80);
+                const indoorTolerance = Math.min(Math.max(0, Number(gpsAccuracy) || 0), 300);
                 const effectiveDist = Math.max(0, Math.round(rawDistMeters - indoorTolerance));
+                const allowedRadius = Math.max(Number(officePunchConfig.officeRadius) || 50, 35);
 
-                if (effectiveDist > officePunchConfig.officeRadius) {
+                if (effectiveDist > allowedRadius) {
                     return res.status(400).json({
-                        error: `Outside ${officePunchConfig.officeName} (${rawDistMeters}m away; allowed ${officePunchConfig.officeRadius}m for 480 sq.ft office). You can only Punch In while inside the office.`,
-                        distanceMeters: rawDistMeters,
+                        error: `Outside ${officePunchConfig.officeName} (${effectiveDist}m away; allowed ${officePunchConfig.officeRadius}m). You can only Punch In when your location matches the office.`,
+                        distanceMeters: effectiveDist,
                         officeRadius: officePunchConfig.officeRadius
                     });
                 }
@@ -3097,11 +3076,11 @@ router.post('/attendance/punch-in', async (req, res) => {
             const finalLat = (punchInLat !== undefined && punchInLat !== null) ? punchInLat : officePunchConfig.officeLat;
             const finalLng = (punchInLng !== undefined && punchInLng !== null) ? punchInLng : officePunchConfig.officeLng;
             const officeSnapshot = {
-                officeName: officePunchConfig.officeName || 'Corporate Office (480 sq.ft)',
+                officeName: officePunchConfig.officeName || 'Corporate Office',
                 officeLat: officePunchConfig.officeLat,
                 officeLng: officePunchConfig.officeLng,
-                officeRadius: officePunchConfig.officeRadius || 15,
-                requireWifiLock: Boolean(officePunchConfig.requireWifiLock)
+                officeRadius: officePunchConfig.officeRadius || 50,
+                requireWifiLock: false
             };
 
             if (!existing) {
@@ -3117,7 +3096,7 @@ router.post('/attendance/punch-in', async (req, res) => {
                             punchInLat: finalLat,
                             punchInLng: finalLng,
                             punchInIp: clientIp,
-                            wifiVerified: Boolean(hasVerifiedWifiMatch),
+                            wifiVerified: false,
                             punchOutTime: null,
                             punchOutMs: null,
                             punchOutLat: null,
@@ -3148,14 +3127,14 @@ router.post('/attendance/punch-in', async (req, res) => {
                     totalOfficeMinutes: meta.totalOfficeMinutes,
                     isCurrentlyPunchedIn: true,
                     clientIp,
-                    isOnOfficeWifi: wifiMatched
+                    isOnOfficeWifi: true
                 });
             }
 
             const meta = parseOfficePunchMeta(existing);
             meta.officeSnapshot = meta.officeSnapshot || officeSnapshot;
             const lastSession = meta.sessions.length > 0 ? meta.sessions[meta.sessions.length - 1] : null;
-            if ((lastSession && !lastSession.punchOutTime) || !existing.punchOutTime) {
+            if (lastSession && !lastSession.punchOutTime && !existing.punchOutTime) {
                 return res.status(400).json({ error: 'You are already Punched In inside the office.' });
             }
 
@@ -3168,7 +3147,7 @@ router.post('/attendance/punch-in', async (req, res) => {
                 punchInLat: finalLat,
                 punchInLng: finalLng,
                 punchInIp: clientIp,
-                wifiVerified: Boolean(hasVerifiedWifiMatch),
+                wifiVerified: false,
                 punchOutTime: null,
                 punchOutMs: null,
                 punchOutLat: null,
@@ -3191,14 +3170,16 @@ router.post('/attendance/punch-in', async (req, res) => {
             const updatedAtt = await XlAttendance.findOne({ where: { _id: existing._id } });
             return res.json({
                 success: true,
-                message: `Re-Punched In inside ${officePunchConfig.officeName} (Session #${nextSessionNo})!`,
+                message: nextSessionNo === 1
+                    ? `Punched In inside ${officePunchConfig.officeName} (Session #1)!`
+                    : `Re-Punched In inside ${officePunchConfig.officeName} (Session #${nextSessionNo})!`,
                 data: updatedAtt,
                 officePunchConfig,
                 sessions: meta.sessions,
                 totalOfficeMinutes: meta.totalOfficeMinutes,
                 isCurrentlyPunchedIn: true,
                 clientIp,
-                isOnOfficeWifi: doesClientIpMatchOfficeWifi(clientIp, officePunchConfig.officeWifiIp)
+                isOnOfficeWifi: true
             });
         }
 
@@ -3256,7 +3237,7 @@ router.post('/attendance/punch-out', async (req, res) => {
                 openSession.punchOutMs = nowMs;
                 openSession.punchOutLat = punchOutLat;
                 openSession.punchOutLng = punchOutLng;
-                openSession.outType = autoPunchOut ? (autoReason || 'Auto (Left 480 sq.ft Office)') : 'Manual';
+                openSession.outType = autoPunchOut ? (autoReason || 'Auto (Left Office Location)') : 'Manual';
                 const elapsedMin = openSession.punchInMs
                     ? Math.max(1, Math.round((nowMs - Number(openSession.punchInMs)) / 60000))
                     : 1;
@@ -3279,7 +3260,7 @@ router.post('/attendance/punch-out', async (req, res) => {
             return res.json({
                 success: true,
                 message: autoPunchOut
-                    ? `Auto Punched Out (${autoReason || 'Left Office Premises'}). Please Re-Punch In when you return inside the office.`
+                    ? `Auto Punched Out (${autoReason || 'Left Office Location'}). Please Re-Punch In when you return inside the office.`
                     : 'Punched Out!',
                 data: updatedAtt,
                 officePunchConfig,
@@ -3287,7 +3268,7 @@ router.post('/attendance/punch-out', async (req, res) => {
                 totalOfficeMinutes: meta.totalOfficeMinutes,
                 isCurrentlyPunchedIn: false,
                 clientIp,
-                isOnOfficeWifi: doesClientIpMatchOfficeWifi(clientIp, officePunchConfig.officeWifiIp)
+                isOnOfficeWifi: true
             });
         }
 
@@ -3305,13 +3286,12 @@ router.post('/attendance/punch-out', async (req, res) => {
     }
 });
 
-// 480 sq.ft Office Presence Heartbeat Check (verifies Office Wi-Fi IP + GPS while Punched In)
+// Office Geo-Location Presence Heartbeat Check
 router.post('/attendance/office-heartbeat', async (req, res) => {
     try {
         const { employeeId, date } = req.body;
         const { user, officePunchConfig } = await getOfficePunchConfigForEmployee(employeeId);
         const clientIp = getClientPublicIp(req);
-        const isOnOfficeWifi = doesClientIpMatchOfficeWifi(clientIp, officePunchConfig.officeWifiIp);
 
         if (!officePunchConfig.enabled) {
             return res.json({ success: true, enabled: false });
@@ -3325,44 +3305,10 @@ router.post('/attendance/office-heartbeat', async (req, res) => {
                 date
             }
         });
-        const isCurrentlyPunchedIn = Boolean(att && att.punchInTime && !att.punchOutTime);
-
-        // If Wi-Fi Lock is active and user disconnected from the 480 sq.ft Office Wi-Fi while Punched In -> Auto Punch-Out!
-        if (isCurrentlyPunchedIn && officePunchConfig.requireWifiLock && officePunchConfig.officeWifiIp && !isOnOfficeWifi) {
-            const meta = parseOfficePunchMeta(att);
-            const openSession = [...meta.sessions].reverse().find(s => !s.punchOutTime);
-            const nowMs = Date.now();
-            const punchOutTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            if (openSession) {
-                openSession.punchOutTime = punchOutTime;
-                openSession.punchOutMs = nowMs;
-                openSession.outType = 'Auto (Disconnected Office Wi-Fi)';
-                openSession.durationMinutes = openSession.punchInMs
-                    ? Math.max(1, Math.round((nowMs - Number(openSession.punchInMs)) / 60000))
-                    : 1;
-            }
-            meta.totalOfficeMinutes = meta.sessions.reduce((sum, s) => sum + (Number(s.durationMinutes) || 0), 0);
-            await XlAttendance.update(
-                { punchOutTime, dayRemarks: JSON.stringify(meta) },
-                { where: { _id: att._id } }
-            );
-            const updatedAtt = await XlAttendance.findOne({ where: { _id: att._id } });
-            return res.json({
-                success: true,
-                autoPunchedOut: true,
-                reason: 'Auto (Disconnected Office Wi-Fi)',
-                message: `Auto Punched Out: Disconnected from ${officePunchConfig.officeName} Wi-Fi. Re-Punch In when back inside the 480 sq.ft office.`,
-                data: updatedAtt,
-                officePunchConfig,
-                sessions: meta.sessions,
-                totalOfficeMinutes: meta.totalOfficeMinutes,
-                isCurrentlyPunchedIn: false,
-                clientIp,
-                isOnOfficeWifi: false
-            });
-        }
-
         const meta = parseOfficePunchMeta(att);
+        const hasOpenOfficeSession = meta.sessions.some(s => !s.punchOutTime);
+        const isCurrentlyPunchedIn = Boolean(hasExplicitOfficeMeta(att) && hasOpenOfficeSession && att && !att.punchOutTime);
+
         return res.json({
             success: true,
             autoPunchedOut: false,
@@ -3370,7 +3316,7 @@ router.post('/attendance/office-heartbeat', async (req, res) => {
             sessionCount: meta.sessions.length,
             totalOfficeMinutes: meta.totalOfficeMinutes,
             clientIp,
-            isOnOfficeWifi,
+            isOnOfficeWifi: true,
             officePunchConfig
         });
     } catch (e) {
@@ -3462,9 +3408,11 @@ router.get('/attendance/my', async (req, res) => {
             }
         });
         const meta = officePunchConfig.enabled ? parseOfficePunchMeta(att) : { sessions: [], totalOfficeMinutes: 0 };
-        const isCurrentlyPunchedIn = Boolean(att && att.punchInTime && !att.punchOutTime);
+        const hasOpenOfficeSession = meta.sessions.some(s => !s.punchOutTime);
+        const isCurrentlyPunchedIn = officePunchConfig.enabled
+            ? Boolean(hasExplicitOfficeMeta(att) && hasOpenOfficeSession && att && !att.punchOutTime)
+            : Boolean(att && att.punchInTime && !att.punchOutTime);
         const clientIp = getClientPublicIp(req);
-        const isOnOfficeWifi = doesClientIpMatchOfficeWifi(clientIp, officePunchConfig.officeWifiIp);
 
         res.json({
             success: true,
@@ -3474,7 +3422,7 @@ router.get('/attendance/my', async (req, res) => {
             totalOfficeMinutes: meta.totalOfficeMinutes,
             isCurrentlyPunchedIn,
             clientIp,
-            isOnOfficeWifi
+            isOnOfficeWifi: true
         });
     } catch (e) {
         console.error('[GET /attendance/my Error]', e);

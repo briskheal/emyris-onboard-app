@@ -1673,8 +1673,20 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
     return fullName.includes(q) || empId.includes(q) || email.includes(q) || hq.includes(q) || desig.includes(q);
   });
 
+  const infoFilteredProfiles = profiles.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fullName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+    const empId = (p.employeeId || p.uid || '').toLowerCase();
+    const email = (p.email || '').toLowerCase();
+    const phone = (p.phone || '').toLowerCase();
+    const hq = (p.hq || '').toLowerCase();
+    const desig = (p.designation || '').toLowerCase();
+    return fullName.includes(q) || empId.includes(q) || email.includes(q) || phone.includes(q) || hq.includes(q) || desig.includes(q);
+  });
+
   const activationPaginated = filteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const infoPaginated = profiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const infoPaginated = infoFilteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (viewUser) {
     return (
@@ -2113,12 +2125,35 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="max-w-full">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-bold text-white tracking-wide uppercase">&lt; {isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
         <button onClick={() => setActivationMode(true)} className="text-sky-400 hover:text-white font-bold text-sm tracking-wide transition-colors">User Activation Control ?</button>
       </div>
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
-      <div className="w-full flex flex-col mt-4 bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">
+          SHOWING ({infoFilteredProfiles.length}) ENTRIES
+        </h3>
+        <div className="relative w-full sm:w-72">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            placeholder="Search name, ID, email, phone, HQ..."
+            className="w-full bg-slate-800 border border-slate-700 focus:border-sky-500 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 outline-none transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="w-full flex flex-col mt-2 bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
@@ -2185,11 +2220,11 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
                     </td>
                   </tr>
                 ))}
-                {profiles.length === 0 && <tr><td colSpan={18} className="p-8 text-center text-slate-500 font-bold text-sm">No records found.</td></tr>}
+                {infoFilteredProfiles.length === 0 && <tr><td colSpan={18} className="p-8 text-center text-slate-500 font-bold text-sm">No records found.</td></tr>}
               </tbody>
           </table>
         </div>
-        <TableFooter data={profiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={infoFilteredProfiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
       {renderResetPassModal()}
     </div>

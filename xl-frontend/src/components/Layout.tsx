@@ -112,7 +112,7 @@ export default function Layout() {
       .catch(err => console.error("Failed to check lockout status", err));
   }, [location.pathname, user]);
 
-  // Background 480 sq.ft Office Presence Watcher (ONLY runs for users with PUNCHING enabled in User Controls)
+  // Background Office Geo-Location Presence Watcher (ONLY runs for users with PUNCHING enabled in User Controls)
   useEffect(() => {
     if (!user) return;
     const empId = user.employeeId || user.email || user.uid;
@@ -120,6 +120,38 @@ export default function Layout() {
 
     const todayStr = new Date().toISOString().split('T')[0];
     let strikeCount = 0;
+
+    const getResilientPosition = (): Promise<GeolocationPosition> =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation unsupported'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          () => {
+            // Fallback to network/indoor location if hardware GPS satellite fix times out indoors/on desktop
+            navigator.geolocation.getCurrentPosition(
+              (pos2) => resolve(pos2),
+              (err2) => reject(err2),
+              { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            );
+          },
+          { enableHighAccuracy: true, timeout: 4500, maximumAge: 15000 }
+        );
+      });
+
+    const getHaversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371000;
+      const toRad = (deg: number) => (deg * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    };
 
     const checkOfficePresence = async () => {
       try {
@@ -136,130 +168,90 @@ export default function Layout() {
         const cfg = hb.data.officePunchConfig;
         const isPunchedIn = Boolean(hb.data.isCurrentlyPunchedIn);
         const sessionCount = Number(hb.data.sessionCount) || 0;
-        const isOnOfficeWifi = Boolean(hb.data.isOnOfficeWifi);
 
-        // CASE A: User is NOT Punched In and has reached the Office Wi-Fi / 480 sq.ft Zone -> Ask to Punch In / Re-Punch In!
+        // CASE A: User is NOT Punched In -> Check if user's live location matches Admin-linked Office Geo-Location
         if (!isPunchedIn) {
           strikeCount = 0;
 
-          // If Wi-Fi Lock is configured and user is not on Office Wi-Fi, do not prompt
-          if (cfg.requireWifiLock && !isOnOfficeWifi) {
-            setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
-            return;
-          }
-
-          // If user is connected to the bound Office Wi-Fi router, immediately prompt without waiting for indoor GPS
-          if (cfg.officeWifiIp && isOnOfficeWifi) {
-            setOfficeArrivalPrompt({
-              show: true,
-              isRePunch: sessionCount > 0,
-              officeName: cfg.officeName || 'Office',
-              sessionCount
-            });
-            return;
-          }
-
           if (cfg.officeLat !== null && cfg.officeLng !== null && navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const R = 6371000;
-                const toRad = (deg: number) => (deg * Math.PI) / 180;
-                const dLat = toRad(cfg.officeLat - pos.coords.latitude);
-                const dLng = toRad(cfg.officeLng - pos.coords.longitude);
-                const a =
-                  Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(toRad(pos.coords.latitude)) * Math.cos(toRad(cfg.officeLat)) *
-                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
-                const rawDist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-                const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.85, 80);
-                const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+            try {
+              const pos = await getResilientPosition();
+              const rawDist = getHaversineMeters(
+                pos.coords.latitude,
+                pos.coords.longitude,
+                Number(cfg.officeLat),
+                Number(cfg.officeLng)
+              );
+              const indoorAccuracyOverlap = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0), 300);
+              const effectiveDist = Math.max(0, Math.round(rawDist - indoorAccuracyOverlap));
+              const allowedRadius = Math.max(Number(cfg.officeRadius) || 50, 50);
 
-                if (effectiveDist <= (cfg.officeRadius || 15)) {
-                  setOfficeArrivalPrompt({
-                    show: true,
-                    isRePunch: sessionCount > 0,
-                    officeName: cfg.officeName || 'Office',
-                    sessionCount
-                  });
-                } else {
-                  setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
-                }
-              },
-              () => {
-                if (isOnOfficeWifi) {
-                  setOfficeArrivalPrompt({
-                    show: true,
-                    isRePunch: sessionCount > 0,
-                    officeName: cfg.officeName || 'Office',
-                    sessionCount
-                  });
-                }
-              },
-              { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 }
-            );
-          } else if (isOnOfficeWifi) {
+              if (effectiveDist <= allowedRadius) {
+                setOfficeArrivalPrompt({
+                  show: true,
+                  isRePunch: sessionCount > 0,
+                  officeName: cfg.officeName || 'Corporate Office',
+                  sessionCount
+                });
+              } else {
+                setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
+              }
+            } catch {
+              // If browser blocked GPS or still locating, keep current state
+            }
+          } else {
+            // Admin enabled PUNCHING without specific coordinates -> prompt immediately
             setOfficeArrivalPrompt({
               show: true,
               isRePunch: sessionCount > 0,
-              officeName: cfg.officeName || 'Office',
+              officeName: cfg.officeName || 'Corporate Office',
               sessionCount
             });
           }
           return;
         }
 
-        // CASE B: User IS Punched In -> hide arrival prompt & watch for leaving the 480 sq.ft Office Zone
+        // CASE B: User IS Punched In -> hide arrival prompt & watch for leaving the Admin-linked Office Geo-Location
         setOfficeArrivalPrompt((prev) => (prev.show ? { ...prev, show: false } : prev));
         if (location.pathname.includes('/extras/attendance')) return;
 
-        // If user is verified on the bound Office Wi-Fi, do not kick them out from indoor desk GPS bounce
-        if (cfg.officeWifiIp && isOnOfficeWifi) {
-          strikeCount = 0;
-          return;
-        }
-
         if (cfg.officeLat !== null && cfg.officeLng !== null && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-              const R = 6371000;
-              const toRad = (deg: number) => (deg * Math.PI) / 180;
-              const dLat = toRad(cfg.officeLat - pos.coords.latitude);
-              const dLng = toRad(cfg.officeLng - pos.coords.longitude);
-              const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(toRad(pos.coords.latitude)) * Math.cos(toRad(cfg.officeLat)) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-              const rawDist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-              const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.4, 10);
-              const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+          try {
+            const pos = await getResilientPosition();
+            const rawDist = getHaversineMeters(
+              pos.coords.latitude,
+              pos.coords.longitude,
+              Number(cfg.officeLat),
+              Number(cfg.officeLng)
+            );
+            const indoorAccuracyOverlap = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0), 150);
+            const effectiveDist = Math.max(0, Math.round(rawDist - indoorAccuracyOverlap));
+            const allowedRadius = Math.max(Number(cfg.officeRadius) || 50, 50);
 
-              if (effectiveDist > (cfg.officeRadius || 15)) {
-                strikeCount += 1;
-                if (strikeCount >= 2) {
-                  strikeCount = 0;
-                  await axios.post('/api/xl/attendance/punch-out', {
-                    employeeId: empId,
-                    date: todayStr,
-                    punchOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    punchOutLat: pos.coords.latitude,
-                    punchOutLng: pos.coords.longitude,
-                    autoPunchOut: true,
-                    autoReason: `Auto (Left ${cfg.officeRadius || 15}m Office Zone)`
-                  });
-                }
-              } else {
+            if (effectiveDist > allowedRadius) {
+              strikeCount += 1;
+              if (strikeCount >= 3) {
                 strikeCount = 0;
+                await axios.post('/api/xl/attendance/punch-out', {
+                  employeeId: empId,
+                  date: todayStr,
+                  punchOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                  punchOutLat: pos.coords.latitude,
+                  punchOutLng: pos.coords.longitude,
+                  autoPunchOut: true,
+                  autoReason: `Auto (Left ${cfg.officeName || 'Office'} Geo-Location)`
+                });
               }
-            },
-            () => {},
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-          );
+            } else {
+              strikeCount = 0;
+            }
+          } catch {}
         }
       } catch {}
     };
 
     checkOfficePresence();
-    const timer = setInterval(checkOfficePresence, 20000);
+    const timer = setInterval(checkOfficePresence, 15000);
     return () => clearInterval(timer);
   }, [user, location.pathname]);
 
@@ -300,8 +292,14 @@ export default function Layout() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => submitPunch(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
-      () => submitPunch(null, null, null),
-      { enableHighAccuracy: true, timeout: 4000, maximumAge: 5000 }
+      () => {
+        navigator.geolocation.getCurrentPosition(
+          (pos2) => submitPunch(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.accuracy),
+          () => submitPunch(null, null, null),
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 3500, maximumAge: 15000 }
     );
   };
 
