@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Eye, ArrowLeft, ArrowUp, MapPin, Navigation, CheckCircle2, Wifi } from 'lucide-react';
+import { Eye, ArrowLeft, ArrowUp, MapPin, Navigation, CheckCircle2, Wifi, Search, X } from 'lucide-react';
 
 const USER_CONTROLS_LIST = [
   {
@@ -36,6 +36,7 @@ export default function SettingsUserControls() {
   const [locatingGps, setLocatingGps] = useState(false);
   const [calibrationStep, setCalibrationStep] = useState<string>('');
   const [detectingWifi, setDetectingWifi] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
@@ -421,6 +422,16 @@ export default function SettingsUserControls() {
     );
   }
 
+  const filteredUsers = users.filter((u) => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    const fullName = `${u.firstName || ''} ${u.lastName || ''} ${u.name || ''}`.toLowerCase();
+    const desig = String(u.designation || '').toLowerCase();
+    const hq = String(u.hq || '').toLowerCase();
+    const empId = String(u.employeeId || u.uid || '').toLowerCase();
+    return fullName.includes(q) || desig.includes(q) || hq.includes(q) || empId.includes(q);
+  });
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#1e1e2d]">
       <div className="p-8 pb-4 border-b border-[#3b3b5a] shrink-0">
@@ -429,10 +440,30 @@ export default function SettingsUserControls() {
         </h2>
       </div>
 
-      <div className="p-8 shrink-0 flex items-center justify-between">
+      <div className="p-8 shrink-0 flex flex-wrap items-center justify-between gap-4">
         <span className="text-slate-400 text-xs font-bold uppercase tracking-wider bg-slate-800/50 py-1.5 px-3 rounded">
-          SHOWING ({users.length}) ENTRIES
+          SHOWING ({filteredUsers.length}) ENTRIES
         </span>
+
+        <div className="relative w-full sm:w-72">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search employee name, HQ, designation..."
+            className="w-full bg-[#252538] border border-[#3b3b5a] focus:border-sky-500 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 outline-none transition-colors"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto px-8 pb-8">
@@ -449,10 +480,10 @@ export default function SettingsUserControls() {
           <tbody className="divide-y divide-[#3b3b5a]/40 text-xs">
             {loading ? (
               <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading...</td></tr>
-            ) : users.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <tr><td colSpan={5} className="p-8 text-center text-slate-500">No entries found</td></tr>
             ) : (
-              users.map((u, i) => (
+              filteredUsers.map((u, i) => (
                 <tr key={u._id} className="hover:bg-[#252538]/80 transition-colors">
                   <td className="p-4 text-slate-400">{i + 1}</td>
                   <td className="p-4 text-white font-medium">
