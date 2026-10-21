@@ -106,6 +106,20 @@ function SquareMonthPicker({ value, onChange, label }: { value: string, onChange
 }
 
 
+
+// Budget vs Actual Variance Coloring: >100% Green, 80-90% Yellow, <80% Red
+const getVarianceColor = (pct: number) => {
+    if (pct > 100) return 'text-emerald-400 font-bold';
+    if (pct >= 80) return 'text-yellow-400 font-bold';
+    return 'text-rose-400 font-bold';
+};
+
+const getVarianceBadge = (pct: number) => {
+    if (pct > 100) return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full text-xs font-bold';
+    if (pct >= 80) return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 px-2.5 py-0.5 rounded-full text-xs font-bold';
+    return 'bg-rose-500/20 text-rose-400 border border-rose-500/40 px-2.5 py-0.5 rounded-full text-xs font-bold';
+};
+
 function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: any, selectedMonth: string, onBack: () => void, onViewKpi: (k: string) => void }) {
     const kpis = [
         'Customer ROI Analysis',
@@ -154,7 +168,7 @@ function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: 
                                     <tr key={kpiName} className="even:bg-[#181f38] odd:bg-[#14192d] hover:bg-[#20294a] transition-colors">
                                         <td className="border-r border-b border-[#363e63] px-4 py-3 text-center font-medium">{idx + 1}</td>
                                         <td className="border-r border-b border-[#363e63] px-4 py-3 text-left font-semibold text-white">{kpiName}</td>
-                                        <td className="border-r border-b border-[#363e63] px-4 py-3 text-center font-semibold text-emerald-400">{(kpiData.percentage || 0).toFixed(2)} %</td>
+                                        <td className="border-r border-b border-[#363e63] px-4 py-3 text-center"><span className={`inline-block ${getVarianceBadge(Number(kpiData.percentage || 0))}`}>{(kpiData.percentage || 0).toFixed(2)} %</span></td>
                                         <td className="border-r border-b border-[#363e63] px-4 py-3 text-center font-medium text-slate-300">{(kpiData.max || 0).toFixed(2)}</td>
                                         <td className="border-r border-b border-[#363e63] px-4 py-3 text-center font-bold text-sky-300">{(kpiData.points || 0).toFixed(2)}</td>
                                         <td className="border-r border-b border-[#363e63] px-4 py-3 text-center">
@@ -310,7 +324,7 @@ function KpiDetailsView({ userRow, kpiName, selectedMonth, onBack }: { userRow: 
                 </div>
                 <div className="p-4 flex flex-col items-center justify-center text-center">
                     <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-1">Percentage Achieved</span>
-                    <span className="text-lg font-bold text-emerald-400">{(kpiData.percentage || 0).toFixed(2)} %</span>
+                    <span className={`text-lg font-bold ${getVarianceColor(Number(kpiData.percentage || 0))}`}>{(kpiData.percentage || 0).toFixed(2)} %</span>
                 </div>
                 <div className="p-4 flex flex-col items-center justify-center text-center">
                     <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-1">Total Points Achieved</span>

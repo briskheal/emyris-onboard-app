@@ -467,6 +467,29 @@ export default function CostCenterManagement() {
             </button>
           </div>
 
+          
+          {/* BUDGET VS ACTUAL VARIANCE STATUS BAR */}
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 border border-slate-700/70 px-4 py-2 rounded-xl mb-3 text-xs">
+            <span className="font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+              Budget vs Actual Variance Rule:
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                &gt; 100% (Green: Target Exceeded)
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                80% - 90% (Yellow: Moderate)
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                &lt; 80% (Red: Critical Shortfall)
+              </span>
+            </div>
+          </div>
+
           {/* CONTROLS BAR & KPI SUMMARY CARD ROW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4 items-stretch">
             
