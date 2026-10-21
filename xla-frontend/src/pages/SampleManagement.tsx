@@ -138,6 +138,12 @@ export default function SampleManagement() {
     XLSX.writeFile(wb, `${reportType}_Management_${selectedUserId}.xlsx`);
   };
 
+  const totalAllotted = rows.reduce((s, r) => s + (Number(r.allotted) || 0), 0);
+  const totalDistributed = rows.reduce((s, r) => s + (Number(r.distributed) || 0), 0);
+  const totalRestored = rows.reduce((s, r) => s + (Number(r.restored) || 0), 0);
+  const totalDeAllotted = rows.reduce((s, r) => s + (Number(r.deAllotted) || 0), 0);
+  const totalAvailable = rows.reduce((s, r) => s + (Number(r.available) || 0), 0);
+
   return (
     <div className="min-h-screen md:h-dvh bg-slate-900 flex flex-col text-slate-100 font-sans pb-16 md:pb-0 relative overflow-hidden">
       {/* Mobile Sticky Header */}
@@ -154,48 +160,41 @@ export default function SampleManagement() {
       {/* Main Container */}
       <div className="flex-1 flex flex-col px-4 py-3 md:px-6 md:py-4 overflow-y-auto max-w-7xl mx-auto w-full">
         {/* DESKTOP HEADER & BANNER */}
-        <div className="mb-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
-            <div className="flex items-center gap-2.5">
-              <button onClick={() => navigate('/dashboard')} className="hidden md:flex p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
-                <ArrowLeft size={16} />
-              </button>
-              <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                {reportType === 'Samples' ? <Package size={18} className="text-emerald-400" /> : <GiftIcon size={18} className="text-purple-400" />}
-                {reportType === 'Samples' ? 'Samples Management' : 'Gift & Promotional Inputs Management'}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setAllotForm(prev => ({ ...prev, employeeId: selectedUserId }));
-                  setShowAllotModal(true);
-                }}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow shadow-emerald-500/20 transition-colors"
-              >
-                <Plus size={14} /> Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}
-              </button>
-              <button
-                onClick={handleExport}
-                className="bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/20 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-              >
-                <Download size={14} /> Export Excel
-              </button>
-            </div>
+        <div className="mb-2.5">
+          <div className="flex items-center gap-2.5 mb-2">
+            <button onClick={() => navigate('/dashboard')} className="hidden md:flex p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
+              <ArrowLeft size={16} />
+            </button>
+            <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              {reportType === 'Samples' ? <Package size={18} className="text-emerald-400" /> : <GiftIcon size={18} className="text-purple-400" />}
+              {reportType === 'Samples' ? 'Samples Management' : 'Gift & Promotional Inputs Management'}
+            </h2>
           </div>
 
-          <div className="bg-slate-800/60 border-l-4 border-emerald-500 rounded-r-xl p-3 shadow-sm flex items-start gap-2.5">
-            <Info className="text-emerald-400 shrink-0 mt-0.5" size={16} />
+          <div className="bg-slate-800/60 border-l-4 border-emerald-500 rounded-r-xl p-2.5 shadow-sm flex items-start gap-2.5">
+            <Info className="text-emerald-400 shrink-0 mt-0.5" size={15} />
             <p className="text-xs text-slate-300 leading-relaxed">
               Samples and Promotional Gifts allotted here directly synchronize with the Field User's mobile XL Portal (<strong className="text-white">Utilities → Sample / Gift Management</strong>) and automatically reconcile against their Daily Call Reports (DCR).
             </p>
           </div>
         </div>
 
-        {/* CONTROLS */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3 bg-slate-800/60 border border-slate-700/60 p-3.5 rounded-xl shadow-lg items-end">
-          <div className="md:col-span-4 flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-0.5">Select Report Type</label>
+        {/* ONE-LINE CONTROLS BAR: Allot Sample, Report Type, Select User, See Reports, Export Excel */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-2.5 mb-3 bg-slate-800/60 border border-slate-700/60 p-3 rounded-xl shadow-lg">
+          {/* 1. Allot Button */}
+          <button
+            onClick={() => {
+              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId }));
+              setShowAllotModal(true);
+            }}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow shadow-emerald-500/20 transition-colors h-[34px] shrink-0"
+          >
+            <Plus size={14} /> Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}
+          </button>
+
+          {/* 2. Select Report Type */}
+          <div className="flex flex-col gap-0.5 w-full lg:w-56 shrink-0">
+            <label className="text-[9px] font-bold text-sky-400 uppercase tracking-wider pl-0.5">Select Report Type</label>
             <CustomSelect
               options={[
                 { value: 'Samples', label: 'Products Sample Report' },
@@ -208,8 +207,9 @@ export default function SampleManagement() {
             />
           </div>
 
-          <div className="md:col-span-6 flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
+          {/* 3. Select User */}
+          <div className="flex flex-col gap-0.5 flex-1 min-w-[240px]">
+            <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
             <CustomSelect
               options={users.map((u: any) => {
                 const empId = u.employeeId || u.uid || u._id;
@@ -232,70 +232,138 @@ export default function SampleManagement() {
             />
           </div>
 
-          <div className="md:col-span-2">
-            <button
-              onClick={fetchReport}
-              className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-4 py-1.5 font-bold shadow shadow-sky-500/20 transition-colors h-[34px] flex items-center justify-center gap-1.5 text-xs"
-            >
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> See Reports
-            </button>
-          </div>
+          {/* 4. See Reports Button */}
+          <button
+            onClick={fetchReport}
+            className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-4 py-1.5 font-bold shadow shadow-sky-500/20 transition-colors h-[34px] flex items-center justify-center gap-1.5 text-xs shrink-0"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> See Reports
+          </button>
+
+          {/* 5. Export Excel Button */}
+          <button
+            onClick={handleExport}
+            className="bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/20 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors h-[34px] shrink-0"
+          >
+            <Download size={13} /> Export Excel
+          </button>
         </div>
 
-        {/* DATA TABLE */}
-        <div className="flex flex-col flex-1 bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg relative min-h-[300px]">
-          <div className="px-3.5 py-2 bg-slate-800/90 border-b border-slate-700/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Showing ({rows.length}) Entries</h3>
+        {/* EXCEL-LIKE GRID TABLE */}
+        <div className="flex flex-col flex-1 bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg relative min-h-[320px]">
+          <div className="px-3.5 py-2 bg-slate-800/90 border-b border-slate-700/60 flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Showing ({rows.length}) Entries
+            </h3>
+            <span className="text-[11px] text-slate-400 font-mono">
+              Live Reconciled Stock
+            </span>
           </div>
 
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-center border-collapse whitespace-nowrap">
+            <table className="w-full text-center border-collapse border border-slate-600 text-xs whitespace-nowrap">
               <thead>
-                <tr className="bg-slate-900/60 border-b border-slate-700/50">
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-14">Sr no.</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
+                <tr className="bg-slate-800 text-slate-200 font-bold border-b border-slate-600">
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-14 bg-slate-800/90">
+                    Sr no.
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider text-left bg-slate-800/90">
                     {reportType === 'Samples' ? 'Sample Product' : 'Gift / Input Name'}
                   </th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Allotted Qty</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Distributed Qty</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Restored Qty</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">De-Allotted Qty</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Available Qty</th>
-                  <th className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-16">View</th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-24 bg-slate-800/90">
+                    Allotted Qty
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-24 bg-slate-800/90">
+                    Distributed Qty
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-24 bg-slate-800/90">
+                    Restored Qty
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-24 bg-slate-800/90">
+                    De-Allotted Qty
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-24 bg-slate-800/90">
+                    Available Qty
+                  </th>
+                  <th className="border border-slate-600 py-2.5 px-3 text-[11px] uppercase tracking-wider w-16 bg-slate-800/90">
+                    View
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-xs text-slate-400 font-semibold">Loading inventory records...</td>
+                    <td colSpan={8} className="border border-slate-700 p-8 text-xs text-slate-400 font-semibold bg-slate-900/40">
+                      Loading inventory records...
+                    </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-xs text-slate-400 font-semibold">
+                    <td colSpan={8} className="border border-slate-700 p-8 text-xs text-slate-400 font-semibold bg-slate-900/40">
                       No allotments or distributions found for this user. Click "Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}" to assign stock.
                     </td>
                   </tr>
                 ) : (
-                  rows.map((r, idx) => (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2 px-3 text-xs font-semibold text-slate-300 bg-slate-900/20">{idx + 1}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-white text-left">{r.productName || r.giftName}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-sky-400">{r.allotted || 0}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-amber-400">{r.distributed || 0}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-indigo-400">{r.restored || 0}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-rose-400">{r.deAllotted || 0}</td>
-                      <td className="py-2 px-3 text-xs font-bold text-emerald-400">{r.available || 0}</td>
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          onClick={() => setDetailRow(r)}
-                          className="text-slate-400 hover:text-sky-400 transition-colors p-1 rounded hover:bg-sky-500/10 inline-flex items-center justify-center"
-                          title="View distributions"
-                        >
-                          <Eye size={16} />
-                        </button>
+                  <>
+                    {rows.map((r, idx) => (
+                      <tr key={idx} className="even:bg-slate-800/40 odd:bg-slate-900/40 hover:bg-sky-500/10 transition-colors">
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-semibold text-slate-400 bg-slate-900/30">
+                          {idx + 1}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-bold text-white text-left">
+                          {r.productName || r.giftName}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-bold text-sky-400">
+                          {r.allotted || 0}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-bold text-amber-400">
+                          {r.distributed || 0}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-bold text-indigo-400">
+                          {r.restored || 0}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-bold text-rose-400">
+                          {r.deAllotted || 0}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-xs font-mono font-black text-emerald-400 bg-emerald-500/5">
+                          {r.available || 0}
+                        </td>
+                        <td className="border border-slate-700 py-2 px-3 text-center">
+                          <button
+                            onClick={() => setDetailRow(r)}
+                            className="text-slate-400 hover:text-sky-400 transition-colors p-1 rounded hover:bg-sky-500/10 inline-flex items-center justify-center"
+                            title="View distribution details"
+                          >
+                            <Eye size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Excel Summary Row */}
+                    <tr className="bg-slate-800 font-bold border-t-2 border-slate-500 text-xs">
+                      <td className="border border-slate-600 py-2 px-3 text-center bg-slate-800 text-slate-300 font-bold" colSpan={2}>
+                        TOTAL ({rows.length} Items)
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center text-sky-300 font-mono font-black">
+                        {totalAllotted}
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center text-amber-300 font-mono font-black">
+                        {totalDistributed}
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center text-indigo-300 font-mono font-black">
+                        {totalRestored}
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center text-rose-300 font-mono font-black">
+                        {totalDeAllotted}
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center text-emerald-300 font-mono font-black bg-emerald-500/10">
+                        {totalAvailable}
+                      </td>
+                      <td className="border border-slate-600 py-2 px-3 text-center bg-slate-800 text-slate-500">
+                        -
                       </td>
                     </tr>
-                  ))
+                  </>
                 )}
               </tbody>
             </table>
