@@ -5,6 +5,21 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import CustomSelect from '../components/CustomSelect';
 
+const COMMON_GIFTS = [
+  'Doctor Diary',
+  'Pen Stand',
+  'Doctor Apron',
+  'Executive Pen',
+  'Wall Clock',
+  'Table Calendar',
+  'Prescription Pad Holder',
+  'Medical Bag',
+  'Key Chain',
+  'Paper Weight',
+  'Leather Folder',
+  'Digital Thermometer'
+];
+
 export default function SampleManagement() {
   const navigate = useNavigate();
   const [reportType, setReportType] = useState<'Samples' | 'Gifts'>('Samples');
@@ -16,6 +31,7 @@ export default function SampleManagement() {
 
   // Allotment Modal State
   const [showAllotModal, setShowAllotModal] = useState(false);
+  const [allotType, setAllotType] = useState<'Samples' | 'Gifts'>('Samples');
   const [allotForm, setAllotForm] = useState({
     employeeId: '',
     itemName: '',
@@ -93,7 +109,7 @@ export default function SampleManagement() {
       const u = users.find(x => (x.employeeId || x.uid || x._id) === allotForm.employeeId);
       const empName = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : allotForm.employeeId;
 
-      if (reportType === 'Samples') {
+      if (allotType === 'Samples') {
         await axios.post('/api/xl/samples/allot', {
           employeeId: allotForm.employeeId,
           employeeName: empName,
@@ -103,6 +119,7 @@ export default function SampleManagement() {
           allottedQty: Number(allotForm.allottedQty),
           remarks: allotForm.remarks
         });
+        if (reportType !== 'Samples') setReportType('Samples');
       } else {
         await axios.post('/api/xl/gifts/allot', {
           employeeId: allotForm.employeeId,
@@ -111,6 +128,7 @@ export default function SampleManagement() {
           allottedQty: Number(allotForm.allottedQty),
           remarks: allotForm.remarks
         });
+        if (reportType !== 'Gifts') setReportType('Gifts');
       }
       setShowAllotModal(false);
       setAllotForm(prev => ({ ...prev, itemName: '', allottedQty: '', batchNo: '', remarks: '' }));
@@ -182,22 +200,37 @@ export default function SampleManagement() {
           </div>
         </div>
 
-        {/* ONE-LINE CONTROLS BAR: Allot Sample, Report Type, Select User, See Reports, Export Excel */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-2.5 mb-3 bg-slate-800/60 border border-slate-700/60 p-3 rounded-xl shadow-lg">
-          {/* 1. Allot Button */}
+        {/* ONE-LINE CONTROLS BAR: Allot Sample, Allot Gift, Report View, Select User, See Reports, Export Excel */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-2 mb-3 bg-slate-800/60 border border-slate-700/60 p-2.5 rounded-xl shadow-lg">
+          {/* 1. Allot Sample Button */}
           <button
             onClick={() => {
-              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId }));
+              setAllotType('Samples');
+              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId, itemName: '', allottedQty: '', batchNo: '', remarks: '' }));
               setShowAllotModal(true);
             }}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow shadow-emerald-500/20 transition-colors h-[34px] shrink-0"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow shadow-emerald-500/20 transition-colors h-[34px] shrink-0"
+            title="Allot drug sample stock to field user"
           >
-            <Plus size={14} /> Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}
+            <Plus size={14} /> Allot Sample
           </button>
 
-          {/* 2. Select Report Type */}
-          <div className="flex flex-col gap-0.5 w-full lg:w-56 shrink-0">
-            <label className="text-[9px] font-bold text-sky-400 uppercase tracking-wider pl-0.5">Select Report Type</label>
+          {/* 2. Allot Gift Button */}
+          <button
+            onClick={() => {
+              setAllotType('Gifts');
+              setAllotForm(prev => ({ ...prev, employeeId: selectedUserId, itemName: '', allottedQty: '', batchNo: '', remarks: '' }));
+              setShowAllotModal(true);
+            }}
+            className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow shadow-purple-600/20 transition-colors h-[34px] shrink-0"
+            title="Allot promotional gift/inputs to field user"
+          >
+            <Plus size={14} /> Allot Gift
+          </button>
+
+          {/* 3. Select Report Type */}
+          <div className="flex flex-col gap-0.5 w-full lg:w-52 shrink-0">
+            <label className="text-[9px] font-bold text-sky-400 uppercase tracking-wider pl-0.5">Report View</label>
             <CustomSelect
               options={[
                 { value: 'Samples', label: 'Products Sample Report' },
@@ -210,8 +243,8 @@ export default function SampleManagement() {
             />
           </div>
 
-          {/* 3. Select User */}
-          <div className="flex flex-col gap-0.5 flex-1 min-w-[240px]">
+          {/* 4. Select User */}
+          <div className="flex flex-col gap-0.5 flex-1 min-w-[220px]">
             <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider pl-0.5">Select User *</label>
             <CustomSelect
               options={users.map((u: any) => {
@@ -235,15 +268,15 @@ export default function SampleManagement() {
             />
           </div>
 
-          {/* 4. See Reports Button */}
+          {/* 5. See Reports Button */}
           <button
             onClick={fetchReport}
-            className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-4 py-1.5 font-bold shadow shadow-sky-500/20 transition-colors h-[34px] flex items-center justify-center gap-1.5 text-xs shrink-0"
+            className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3.5 py-1.5 font-bold shadow shadow-sky-500/20 transition-colors h-[34px] flex items-center justify-center gap-1.5 text-xs shrink-0"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> See Reports
           </button>
 
-          {/* 5. Export Excel Button */}
+          {/* 6. Export Excel Button */}
           <button
             onClick={handleExport}
             className="bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/20 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors h-[34px] shrink-0"
@@ -303,7 +336,7 @@ export default function SampleManagement() {
                 ) : rows.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="border border-slate-700 p-8 text-xs text-slate-400 font-semibold bg-slate-900/40">
-                      No allotments or distributions found for this user. Click "Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}" to assign stock.
+                      No allotments or distributions found for this user. Click &quot;Allot {reportType === 'Samples' ? 'Sample' : 'Gift'}&quot; to assign stock.
                     </td>
                   </tr>
                 ) : (
@@ -378,12 +411,38 @@ export default function SampleManagement() {
       {showAllotModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+            {/* Modal Header with Type Toggle */}
             <div className="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white uppercase">Allot {reportType === 'Samples' ? 'Product Sample' : 'Promotional Gift'}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase">Allot:</span>
+                <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAllotType('Samples');
+                      setAllotForm(prev => ({ ...prev, itemName: '', productId: '' }));
+                    }}
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${allotType === 'Samples' ? 'bg-emerald-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Product Sample
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAllotType('Gifts');
+                      setAllotForm(prev => ({ ...prev, itemName: '', productId: '' }));
+                    }}
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${allotType === 'Gifts' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Promotional Gift
+                  </button>
+                </div>
+              </div>
               <button onClick={() => setShowAllotModal(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
               </button>
             </div>
+
             <form onSubmit={handleAllotSubmit} className="p-5 space-y-3">
               <div>
                 <label className="text-[11px] font-bold text-slate-400 uppercase block mb-1">Employee *</label>
@@ -405,7 +464,7 @@ export default function SampleManagement() {
                 />
               </div>
 
-              {reportType === 'Samples' ? (
+              {allotType === 'Samples' ? (
                 <div>
                   <label className="text-[11px] font-bold text-slate-400 uppercase block mb-1">Select Sample Product *</label>
                   <CustomSelect
@@ -434,9 +493,23 @@ export default function SampleManagement() {
                     placeholder="e.g., Doctor Diary, Pen Stand, Apron..."
                     value={allotForm.itemName}
                     onChange={e => setAllotForm({ ...allotForm, itemName: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-purple-500"
                     required
                   />
+                  {/* Quick Gift Suggestions */}
+                  <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                    <span className="text-[10px] text-slate-400 font-semibold">Quick Suggestions:</span>
+                    {COMMON_GIFTS.map((g, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setAllotForm({ ...allotForm, itemName: g })}
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${allotForm.itemName === g ? 'bg-purple-600 text-white border-purple-500' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500'}`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -480,8 +553,12 @@ export default function SampleManagement() {
                 <button type="button" onClick={() => setShowAllotModal(false)} className="px-3.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={submitting} className="px-5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors shadow shadow-emerald-500/20">
-                  {submitting ? 'Saving...' : 'Save Allotment'}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`px-5 py-1.5 rounded-lg text-white text-xs font-bold transition-colors shadow ${allotType === 'Samples' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'}`}
+                >
+                  {submitting ? 'Saving...' : `Save ${allotType === 'Samples' ? 'Sample' : 'Gift'} Allotment`}
                 </button>
               </div>
             </form>
