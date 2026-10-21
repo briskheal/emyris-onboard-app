@@ -167,7 +167,10 @@ export default function SampleManagement() {
             </button>
             <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
               {reportType === 'Samples' ? <Package size={18} className="text-emerald-400" /> : <GiftIcon size={18} className="text-purple-400" />}
-              {reportType === 'Samples' ? 'Samples Management' : 'Gift & Promotional Inputs Management'}
+              <span>Samples & Gifts Management</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700 font-semibold normal-case">
+                {reportType === 'Samples' ? 'Products Sample Report' : 'Promotional Gifts Report'}
+              </span>
             </h2>
           </div>
 

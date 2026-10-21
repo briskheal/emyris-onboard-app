@@ -112,6 +112,7 @@ function App() {
           <Route path="extras/crm" element={<CRM />} />
           <Route path="extras/profit" element={<ProfitAnalysis />} />
           <Route path="extras/samples" element={<SampleManagement />} />
+          <Route path="extras/gifts" element={<Navigate to="/extras/samples" replace />} />
           
           <Route path="extras/primary-sales" element={<PrimarySales />} />
           <Route path="extras/primary-sales/edit/:id" element={<PrimarySales />} />
