@@ -103,6 +103,70 @@ export default function Layout() {
       .catch(err => console.error("Failed to check lockout status", err));
   }, [location.pathname, user]);
 
+  // Background 480 sq.ft Office Presence Watcher (ONLY runs for users with PUNCHING enabled in User Controls)
+  useEffect(() => {
+    if (!user || location.pathname.includes('/extras/attendance')) return;
+    const empId = user.employeeId || user.email || user.uid;
+    if (!empId) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    let strikeCount = 0;
+
+    const checkOfficePresence = async () => {
+      try {
+        const hb = await axios.post('/api/xl/attendance/office-heartbeat', {
+          employeeId: empId,
+          date: todayStr
+        });
+        if (!hb.data?.officePunchConfig?.enabled || !hb.data?.isCurrentlyPunchedIn) {
+          strikeCount = 0;
+          return;
+        }
+        const cfg = hb.data.officePunchConfig;
+        if (cfg.officeLat !== null && cfg.officeLng !== null && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const R = 6371000;
+              const toRad = (deg: number) => (deg * Math.PI) / 180;
+              const dLat = toRad(cfg.officeLat - pos.coords.latitude);
+              const dLng = toRad(cfg.officeLng - pos.coords.longitude);
+              const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(pos.coords.latitude)) * Math.cos(toRad(cfg.officeLat)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+              const rawDist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+              const indoorTolerance = Math.min(Math.max(0, Number(pos.coords.accuracy) || 0) * 0.4, 10);
+              const effectiveDist = Math.max(0, Math.round(rawDist - indoorTolerance));
+
+              if (effectiveDist > (cfg.officeRadius || 15)) {
+                strikeCount += 1;
+                if (strikeCount >= 2) {
+                  strikeCount = 0;
+                  await axios.post('/api/xl/attendance/punch-out', {
+                    employeeId: empId,
+                    date: todayStr,
+                    punchOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                    punchOutLat: pos.coords.latitude,
+                    punchOutLng: pos.coords.longitude,
+                    autoPunchOut: true,
+                    autoReason: `Auto (Left ${cfg.officeRadius || 15}m Office Zone)`
+                  });
+                }
+              } else {
+                strikeCount = 0;
+              }
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+          );
+        }
+      } catch {}
+    };
+
+    const timer = setInterval(checkOfficePresence, 30000);
+    return () => clearInterval(timer);
+  }, [user, location.pathname]);
+
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 

@@ -189,12 +189,31 @@ export default function Attendance() {
               else if (isPast) status = 'A';
           }
           
+          let officeSessions: any[] = [];
+          let totalOfficeMinutes = 0;
+          if (att && att.dayRemarks) {
+              try {
+                  const parsed = typeof att.dayRemarks === 'string' ? JSON.parse(att.dayRemarks) : att.dayRemarks;
+                  if (parsed && parsed.isOfficePunchMeta && Array.isArray(parsed.sessions)) {
+                      officeSessions = parsed.sessions;
+                      totalOfficeMinutes = Number(parsed.totalOfficeMinutes) || 0;
+                  }
+              } catch (e) {}
+          }
+          const h = Math.floor(totalOfficeMinutes / 60);
+          const m = totalOfficeMinutes % 60;
+          const officeTimeFormatted = officeSessions.length > 0
+              ? `${h > 0 ? `${h}h ` : ''}${m}m (${officeSessions.length} session${officeSessions.length > 1 ? 's' : ''})`
+              : (user.controls?.PUNCHING ? '0m (Office Mode)' : '-');
+
           return {
               ...user,
               fullName: fullName.trim(),
               status,
               punchInTime: att ? (att.punchInTime || '-') : '-',
-              punchOutTime: att ? (att.punchOutTime || '-') : '-'
+              punchOutTime: att ? (att.punchOutTime || (att.punchInTime ? 'Inside Office (Active)' : '-')) : '-',
+              officeTimeFormatted,
+              officeSessions
           };
       });
   }, [users, attendances, selectedDate, attendanceType]);
@@ -230,7 +249,8 @@ export default function Attendance() {
             'Employee Name': row.fullName,
             'Status': row.status === 'P' ? 'Present' : row.status === 'A' ? 'Absent' : row.status === 'L' ? 'Leave' : row.status === 'H' ? 'Holiday' : '',
             'Punch In': row.punchInTime,
-            'Punch Out': row.punchOutTime
+            'Punch Out': row.punchOutTime,
+            'Inside Office Time Log': row.officeTimeFormatted || '-'
         }));
     }
 
@@ -444,6 +464,9 @@ export default function Attendance() {
                       <th className="p-4 border-r border-[#3b3b5a] text-[13px] font-bold text-slate-300">
                         <div className="flex items-center justify-center gap-1"><span>Punch Out</span></div>
                       </th>
+                      <th className="p-4 text-[13px] font-bold text-slate-300">
+                        <div className="flex items-center justify-center gap-1"><span>Inside Office Time Log</span></div>
+                      </th>
                       </>
                   )}
                 </tr>
@@ -491,6 +514,9 @@ export default function Attendance() {
                           </td>
                           <td className="p-4 text-sm font-semibold text-slate-300 border-r border-[#3b3b5a]">{row.punchInTime}</td>
                           <td className="p-4 text-sm font-semibold text-slate-300 border-r border-[#3b3b5a]">{row.punchOutTime}</td>
+                          <td className="p-4 text-xs font-bold text-sky-400">
+                            {row.officeTimeFormatted || '-'}
+                          </td>
                           </>
                       )}
                     </tr>
