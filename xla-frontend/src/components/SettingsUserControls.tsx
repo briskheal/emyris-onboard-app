@@ -175,16 +175,40 @@ export default function SettingsUserControls() {
     }
     setSaving(true);
     try {
-      const normalizedControls = {
-        ...controls,
-        officeLat: controls.officeLat !== '' ? Number(controls.officeLat) : null,
-        officeLng: controls.officeLng !== '' ? Number(controls.officeLng) : null,
-        officeRadius: Number(controls.officeRadius || 15),
-        officeWifiIp: (controls.officeWifiIp || '').trim(),
-        requireWifiLock: Boolean(controls.requireWifiLock && (controls.officeWifiIp || '').trim())
-      };
+      let normalizedControls: Record<string, any>;
+      if (controls.PUNCHING) {
+        normalizedControls = {
+          ...controls,
+          PUNCHING: true,
+          everHadOfficePunching: true,
+          officeLat: controls.officeLat !== '' ? Number(controls.officeLat) : null,
+          officeLng: controls.officeLng !== '' ? Number(controls.officeLng) : null,
+          officeRadius: Number(controls.officeRadius || 15),
+          officeWifiIp: (controls.officeWifiIp || '').trim(),
+          requireWifiLock: Boolean(controls.requireWifiLock && (controls.officeWifiIp || '').trim())
+        };
+      } else {
+        // Admin toggled OFF PUNCHING -> remove all Wi-Fi credentials & office geo-lock from active user controls
+        const copy = { ...controls };
+        delete copy.officeWifiIp;
+        delete copy.requireWifiLock;
+        delete copy.officeLat;
+        delete copy.officeLng;
+        delete copy.officeRadius;
+        delete copy.officeName;
+        normalizedControls = {
+          ...copy,
+          PUNCHING: false,
+          everHadOfficePunching: Boolean(selectedUser.controls?.PUNCHING || selectedUser.controls?.everHadOfficePunching)
+        };
+      }
       await axios.put(`/api/admin/users/${selectedUser._id}`, { controls: normalizedControls });
-      showToast(`Preferences saved for ${selectedUser.firstName} ${selectedUser.lastName}!`, 'success');
+      showToast(
+        controls.PUNCHING
+          ? `Office Punching & Wi-Fi Lock saved for ${selectedUser.firstName} ${selectedUser.lastName}!`
+          : `Office Punching disabled & Wi-Fi credentials removed for ${selectedUser.firstName} ${selectedUser.lastName} (login & geo logs preserved in DB).`,
+        'success'
+      );
       await fetchUsers();
       setTimeout(() => setSelectedUser(null), 600);
     } catch (e) {

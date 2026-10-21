@@ -2970,7 +2970,7 @@ async function getOfficePunchConfigForEmployee(identifier) {
 
 function parseOfficePunchMeta(att) {
     if (!att) {
-        return { isOfficePunchMeta: true, sessions: [], totalOfficeMinutes: 0, userRemarks: '' };
+        return { isOfficePunchMeta: true, officeSnapshot: null, sessions: [], totalOfficeMinutes: 0, userRemarks: '' };
     }
     if (att.dayRemarks) {
         try {
@@ -2978,6 +2978,7 @@ function parseOfficePunchMeta(att) {
             if (parsed && parsed.isOfficePunchMeta && Array.isArray(parsed.sessions)) {
                 return {
                     isOfficePunchMeta: true,
+                    officeSnapshot: parsed.officeSnapshot || null,
                     sessions: parsed.sessions,
                     totalOfficeMinutes: Number(parsed.totalOfficeMinutes) || 0,
                     userRemarks: parsed.userRemarks || ''
@@ -3006,6 +3007,7 @@ function parseOfficePunchMeta(att) {
     }
     return {
         isOfficePunchMeta: true,
+        officeSnapshot: null,
         sessions: fallbackSessions,
         totalOfficeMinutes: 0,
         userRemarks: typeof att.dayRemarks === 'string' ? att.dayRemarks : ''
@@ -3061,18 +3063,28 @@ router.post('/attendance/punch-in', async (req, res) => {
 
             const existing = await XlAttendance.findOne({ where: { employeeId, date } });
             const nowMs = Date.now();
+            const officeSnapshot = {
+                officeName: officePunchConfig.officeName || 'Corporate Office (480 sq.ft)',
+                officeLat: officePunchConfig.officeLat,
+                officeLng: officePunchConfig.officeLng,
+                officeRadius: officePunchConfig.officeRadius || 15,
+                requireWifiLock: Boolean(officePunchConfig.requireWifiLock)
+            };
 
             if (!existing) {
                 const meta = {
                     isOfficePunchMeta: true,
+                    officeSnapshot,
                     sessions: [
                         {
                             sessionNo: 1,
+                            officeName: officeSnapshot.officeName,
                             punchInTime,
                             punchInMs: nowMs,
                             punchInLat,
                             punchInLng,
                             punchInIp: clientIp,
+                            wifiVerified: Boolean(officePunchConfig.requireWifiLock && officePunchConfig.officeWifiIp),
                             punchOutTime: null,
                             punchOutMs: null,
                             punchOutLat: null,
@@ -3108,6 +3120,7 @@ router.post('/attendance/punch-in', async (req, res) => {
             }
 
             const meta = parseOfficePunchMeta(existing);
+            meta.officeSnapshot = meta.officeSnapshot || officeSnapshot;
             const lastSession = meta.sessions.length > 0 ? meta.sessions[meta.sessions.length - 1] : null;
             if ((lastSession && !lastSession.punchOutTime) || !existing.punchOutTime) {
                 return res.status(400).json({ error: 'You are already Punched In inside the office.' });
@@ -3116,11 +3129,13 @@ router.post('/attendance/punch-in', async (req, res) => {
             const nextSessionNo = meta.sessions.length + 1;
             meta.sessions.push({
                 sessionNo: nextSessionNo,
+                officeName: officeSnapshot.officeName,
                 punchInTime,
                 punchInMs: nowMs,
                 punchInLat,
                 punchInLng,
                 punchInIp: clientIp,
+                wifiVerified: Boolean(officePunchConfig.requireWifiLock && officePunchConfig.officeWifiIp),
                 punchOutTime: null,
                 punchOutMs: null,
                 punchOutLat: null,
@@ -9659,6 +9674,258 @@ router.post('/controls', async (req, res) => {
         res.json({ success: true, control: c });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Dedicated Office Staff Geo-Presence & Time Log Analysis Endpoint
+// Completely separate from Field Staff /reports/geo-location-analysis
+router.get('/reports/office-geo-analysis', async (req, res) => {
+    try {
+        const { mode, employeeId, userId, email, date } = req.query;
+        const { XlUser, XlAttendance } = require('../db');
+        const { Op } = require('sequelize');
+
+        // Mode 1: List all users who either currently have PUNCHING enabled OR have historical office session logs in DB
+        if (mode === 'users') {
+            const [allUsers, officeAtts] = await Promise.all([
+                XlUser.findAll(),
+                XlAttendance.findAll({
+                    where: {
+                        dayRemarks: { [Op.like]: '%isOfficePunchMeta%' }
+                    },
+                    attributes: ['employeeId']
+                })
+            ]);
+            const empIdsWithOfficeHistory = new Set(officeAtts.map(a => String(a.employeeId || '').trim()).filter(Boolean));
+
+            const eligibleUsers = allUsers
+                .map(u => {
+                    const plain = u.toJSON ? u.toJSON() : u;
+                    let ctrls = plain.controls || {};
+                    if (typeof ctrls === 'string') {
+                        try { ctrls = JSON.parse(ctrls); } catch (e) { ctrls = {}; }
+                    }
+                    const currentlyEnabled = Boolean(ctrls.PUNCHING === true);
+                    const hadHistorical =
+                        Boolean(ctrls.everHadOfficePunching) ||
+                        empIdsWithOfficeHistory.has(String(plain.employeeId || '').trim()) ||
+                        empIdsWithOfficeHistory.has(String(plain.email || '').trim()) ||
+                        empIdsWithOfficeHistory.has(String(plain.uid || '').trim()) ||
+                        empIdsWithOfficeHistory.has(String(plain._id || '').trim());
+
+                    return {
+                        _id: plain._id,
+                        employeeId: plain.employeeId || plain.email || plain._id,
+                        firstName: plain.firstName || '',
+                        lastName: plain.lastName || '',
+                        name: `${plain.firstName || ''} ${plain.lastName || ''}`.trim() || plain.name || plain.email,
+                        designation: plain.designation || 'Office / Admin Staff',
+                        hq: plain.hq || 'Office',
+                        isPunchingCurrentlyEnabled: currentlyEnabled,
+                        hasHistoricalOfficeLogs: hadHistorical,
+                        officeName: ctrls.officeName || 'Corporate Office (480 sq.ft)',
+                        officeRadius: Number(ctrls.officeRadius) || 15,
+                        requireWifiLock: Boolean(ctrls.requireWifiLock && ctrls.officeWifiIp)
+                    };
+                })
+                .filter(u => u.isPunchingCurrentlyEnabled || u.hasHistoricalOfficeLogs);
+
+            return res.json({
+                success: true,
+                users: eligibleUsers
+            });
+        }
+
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'Date parameter is required (YYYY-MM-DD)' });
+        }
+
+        const target = employeeId || userId || email;
+        if (!target) {
+            return res.status(400).json({ success: false, message: 'Employee identifier is required' });
+        }
+
+        const user = await XlUser.findOne({
+            where: {
+                [Op.or]: [
+                    { employeeId: target },
+                    { email: target },
+                    { _id: target },
+                    { uid: target }
+                ]
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        let ctrls = user.controls || {};
+        if (typeof ctrls === 'string') {
+            try { ctrls = JSON.parse(ctrls); } catch (e) { ctrls = {}; }
+        }
+
+        const userIds = [user.employeeId, user.email, user._id, user.uid].filter(Boolean);
+        const attendance = await XlAttendance.findOne({
+            where: {
+                employeeId: { [Op.in]: userIds },
+                date
+            }
+        });
+
+        const parseTimeToMinutes = (tStr) => {
+            if (!tStr) return null;
+            const clean = String(tStr).trim().toUpperCase();
+            const m = clean.match(/(\d+):(\d+)(?:\s*(AM|PM))?/);
+            if (!m) return null;
+            let hrs = parseInt(m[1], 10);
+            const mins = parseInt(m[2], 10);
+            const meridiem = m[3];
+            if (meridiem === 'PM' && hrs < 12) hrs += 12;
+            if (meridiem === 'AM' && hrs === 12) hrs = 0;
+            return hrs * 60 + mins;
+        };
+
+        const formatMins = (mins) => {
+            const safe = Math.max(0, Math.round(Number(mins) || 0));
+            const h = Math.floor(safe / 60);
+            const m = safe % 60;
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        };
+
+        const meta = parseOfficePunchMeta(attendance);
+        const savedSnapshot = meta.officeSnapshot || {};
+
+        // Resolve office coordinates from either active user.controls OR preserved historical DB snapshot
+        const resolvedOfficeName =
+            ctrls.officeName ||
+            savedSnapshot.officeName ||
+            (meta.sessions[0] && meta.sessions[0].officeName) ||
+            'Corporate Office (480 sq.ft)';
+        const resolvedOfficeLat =
+            ctrls.officeLat != null && ctrls.officeLat !== ''
+                ? Number(ctrls.officeLat)
+                : savedSnapshot.officeLat != null
+                ? Number(savedSnapshot.officeLat)
+                : attendance && attendance.punchInLat != null
+                ? Number(attendance.punchInLat)
+                : null;
+        const resolvedOfficeLng =
+            ctrls.officeLng != null && ctrls.officeLng !== ''
+                ? Number(ctrls.officeLng)
+                : savedSnapshot.officeLng != null
+                ? Number(savedSnapshot.officeLng)
+                : attendance && attendance.punchInLng != null
+                ? Number(attendance.punchInLng)
+                : null;
+        const resolvedOfficeRadius =
+            Number(ctrls.officeRadius) || Number(savedSnapshot.officeRadius) || 15;
+
+        let totalInsideMins = 0;
+        let totalBreakOutsideMins = 0;
+        let autoPunchOutCount = 0;
+
+        const enrichedSessions = meta.sessions.map((s, idx) => {
+            const prev = idx > 0 ? meta.sessions[idx - 1] : null;
+            let breakMins = 0;
+            if (prev && prev.punchOutTime && s.punchInTime) {
+                if (prev.punchOutMs && s.punchInMs && Number(s.punchInMs) > Number(prev.punchOutMs)) {
+                    breakMins = Math.max(0, Math.round((Number(s.punchInMs) - Number(prev.punchOutMs)) / 60000));
+                } else {
+                    const pOutM = parseTimeToMinutes(prev.punchOutTime);
+                    const pInM = parseTimeToMinutes(s.punchInTime);
+                    if (pOutM != null && pInM != null && pInM >= pOutM) {
+                        breakMins = pInM - pOutM;
+                    }
+                }
+            }
+            totalBreakOutsideMins += breakMins;
+
+            const isOpen = !s.punchOutTime;
+            let durMins = Number(s.durationMinutes) || 0;
+            if (isOpen && s.punchInMs) {
+                durMins = Math.max(1, Math.round((Date.now() - Number(s.punchInMs)) / 60000));
+            }
+            totalInsideMins += durMins;
+
+            if (s.outType && String(s.outType).toLowerCase().includes('auto')) {
+                autoPunchOutCount += 1;
+            }
+
+            let distFromOfficeMeters = 0;
+            if (
+                s.punchInLat != null &&
+                s.punchInLng != null &&
+                resolvedOfficeLat != null &&
+                resolvedOfficeLng != null
+            ) {
+                distFromOfficeMeters = Math.round(
+                    getOfficeDistanceMeters(
+                        Number(s.punchInLat),
+                        Number(s.punchInLng),
+                        resolvedOfficeLat,
+                        resolvedOfficeLng
+                    )
+                );
+            }
+
+            return {
+                sessionNo: s.sessionNo || idx + 1,
+                officeName: s.officeName || resolvedOfficeName,
+                punchInTime: s.punchInTime || '--',
+                punchOutTime: s.punchOutTime || 'Active Inside Office',
+                isActive: isOpen,
+                durationMinutes: durMins,
+                durationFormatted: formatMins(durMins),
+                breakBeforeMinutes: breakMins,
+                breakBeforeFormatted: idx === 0 ? 'First Login' : formatMins(breakMins),
+                punchInLat: s.punchInLat != null ? Number(s.punchInLat) : null,
+                punchInLng: s.punchInLng != null ? Number(s.punchInLng) : null,
+                punchOutLat: s.punchOutLat != null ? Number(s.punchOutLat) : null,
+                punchOutLng: s.punchOutLng != null ? Number(s.punchOutLng) : null,
+                distanceFromOfficeMeters: distFromOfficeMeters,
+                punchInIp: s.punchInIp || 'Recorded',
+                wifiVerified: Boolean(s.wifiVerified),
+                outType: s.outType || (isOpen ? 'Active Inside Office' : 'Manual')
+            };
+        });
+
+        res.json({
+            success: true,
+            user: {
+                _id: user._id,
+                employeeId: user.employeeId || user.email,
+                name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
+                designation: user.designation || 'Office / Admin Staff',
+                hq: user.hq || 'Office',
+                isPunchingCurrentlyEnabled: Boolean(ctrls.PUNCHING === true),
+                wifiCredentialsActive: Boolean(ctrls.PUNCHING && ctrls.officeWifiIp)
+            },
+            date,
+            officePremises: {
+                officeName: resolvedOfficeName,
+                officeLat: resolvedOfficeLat,
+                officeLng: resolvedOfficeLng,
+                officeRadius: resolvedOfficeRadius
+            },
+            summary: {
+                firstPunchIn: attendance?.punchInTime || (enrichedSessions[0]?.punchInTime ?? '--'),
+                lastPunchOut:
+                    enrichedSessions.length > 0 && enrichedSessions[enrichedSessions.length - 1].isActive
+                        ? 'Active Inside Office'
+                        : attendance?.punchOutTime || '--',
+                totalSessions: enrichedSessions.length,
+                totalInsideMinutes: totalInsideMins,
+                totalInsideFormatted: formatMins(totalInsideMins),
+                totalBreakOutsideMinutes: totalBreakOutsideMins,
+                totalBreakOutsideFormatted: formatMins(totalBreakOutsideMins),
+                autoPunchOutCount
+            },
+            sessions: enrichedSessions
+        });
+    } catch (err) {
+        console.error('Error in /reports/office-geo-analysis:', err);
+        res.status(500).json({ success: false, message: 'Internal server error calculating office geo-presence report' });
     }
 });
 

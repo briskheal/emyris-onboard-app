@@ -861,6 +861,15 @@ export default function GeoLocationAnalysisReport() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => navigate('/reports/office-geo-analysis')}
+            className="h-10 px-3.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 rounded-xl text-emerald-300 font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-xs md:text-sm cursor-pointer"
+            title="Separate Geo-Presence & Time Log Report for Office Punching Users"
+          >
+            <MapPin size={16} className="text-emerald-400" />
+            <span className="hidden sm:inline">Office Staff Geo-Presence</span>
+          </button>
+
+          <button
             onClick={() => setIsArchiveModalOpen(true)}
             className="h-10 px-3.5 bg-[#1e243d] hover:bg-[#283152] border border-[#363e63] rounded-xl text-white font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-xs md:text-sm cursor-pointer"
             title="Monthly Archiving & 60-Day Retention"

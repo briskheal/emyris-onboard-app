@@ -5078,8 +5078,71 @@ router.post('/users', async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
     try {
-        const { XlUser } = require('../db');
+        const { XlUser, XlAttendance } = require('../db');
+        const { Op } = require('sequelize');
         const oldUser = await XlUser.findOne({ where: { _id: req.params.id } });
+
+        // Handle PUNCHING toggle-off: wipe Wi-Fi & active geo-fence credentials from user.controls
+        // while preserving all login/attendance session history in XlAttendance for Geo-Location Analysis
+        if (req.body && req.body.controls && typeof req.body.controls === 'object') {
+            const oldControls = (oldUser && oldUser.controls && typeof oldUser.controls === 'object') ? oldUser.controls : {};
+            const wasPunchingOn = Boolean(oldControls.PUNCHING);
+            const isPunchingNowOn = Boolean(req.body.controls.PUNCHING);
+
+            if (isPunchingNowOn) {
+                req.body.controls.everHadOfficePunching = true;
+            } else {
+                // Admin toggled OFF PUNCHING -> remove all Wi-Fi credentials & active office lock
+                delete req.body.controls.officeWifiIp;
+                delete req.body.controls.requireWifiLock;
+                delete req.body.controls.officeLat;
+                delete req.body.controls.officeLng;
+                delete req.body.controls.officeRadius;
+                delete req.body.controls.officeName;
+                req.body.controls.PUNCHING = false;
+                if (wasPunchingOn || oldControls.everHadOfficePunching) {
+                    req.body.controls.everHadOfficePunching = true;
+                }
+
+                // If user had an open office session today when Admin toggled PUNCHING off, close & preserve it in DB
+                if (oldUser) {
+                    const userIds = [oldUser.employeeId, oldUser.email, oldUser.uid, oldUser._id].filter(Boolean);
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const openAtt = await XlAttendance.findOne({
+                        where: {
+                            employeeId: { [Op.in]: userIds },
+                            date: todayStr
+                        }
+                    });
+                    if (openAtt && openAtt.punchInTime && !openAtt.punchOutTime) {
+                        const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        const nowMs = Date.now();
+                        let nextRemarks = openAtt.dayRemarks;
+                        try {
+                            const parsed = typeof openAtt.dayRemarks === 'string' ? JSON.parse(openAtt.dayRemarks) : openAtt.dayRemarks;
+                            if (parsed && parsed.isOfficePunchMeta && Array.isArray(parsed.sessions)) {
+                                const openSess = [...parsed.sessions].reverse().find(s => !s.punchOutTime);
+                                if (openSess) {
+                                    openSess.punchOutTime = nowTime;
+                                    openSess.punchOutMs = nowMs;
+                                    openSess.outType = 'Auto (Admin Disabled Office Punching)';
+                                    openSess.durationMinutes = openSess.punchInMs
+                                        ? Math.max(1, Math.round((nowMs - Number(openSess.punchInMs)) / 60000))
+                                        : 1;
+                                }
+                                parsed.totalOfficeMinutes = parsed.sessions.reduce((sum, s) => sum + (Number(s.durationMinutes) || 0), 0);
+                                nextRemarks = JSON.stringify(parsed);
+                            }
+                        } catch (err) {}
+                        await XlAttendance.update(
+                            { punchOutTime: nowTime, dayRemarks: nextRemarks },
+                            { where: { _id: openAtt._id } }
+                        );
+                    }
+                }
+            }
+        }
+
         await XlUser.update(req.body, { where: { _id: req.params.id } });
         const newUser = await XlUser.findOne({ where: { _id: req.params.id } });
         
