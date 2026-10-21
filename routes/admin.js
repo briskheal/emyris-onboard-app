@@ -6665,11 +6665,39 @@ router.get('/targets/rollup', async (req, res) => {
 });
 
 
+function normalizeMonth(m) {
+    if (!m) return null;
+    const str = String(m).trim().toLowerCase();
+    if (str.startsWith('apr') || str === '4' || str === '04') return 'April';
+    if (str.startsWith('may') || str === '5' || str === '05') return 'May';
+    if (str.startsWith('jun') || str === '6' || str === '06') return 'June';
+    if (str.startsWith('jul') || str === '7' || str === '07') return 'July';
+    if (str.startsWith('aug') || str === '8' || str === '08') return 'August';
+    if (str.startsWith('sep') || str === '9' || str === '09') return 'September';
+    if (str.startsWith('oct') || str === '10') return 'October';
+    if (str.startsWith('nov') || str === '11') return 'November';
+    if (str.startsWith('dec') || str === '12') return 'December';
+    if (str.startsWith('jan') || str === '1' || str === '01') return 'January';
+    if (str.startsWith('feb') || str === '2' || str === '02') return 'February';
+    if (str.startsWith('mar') || str === '3' || str === '03') return 'March';
+    return null;
+}
+
 router.get('/targets/yearly', async (req, res) => {
     try {
         const { year } = req.query;
         let where = {};
-        if (year) where.year = year;
+        if (year) {
+            const { Op } = require('sequelize');
+            const yrStr = String(year);
+            where[Op.or] = [
+                { year: yrStr },
+                { year: Number(year) },
+                { year: { [Op.like]: `%${yrStr}%` } },
+                { year: null },
+                { year: '' }
+            ];
+        }
 
         const allTargets = await XlTarget.findAll({ where });
         const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'hq', 'division', 'designation', 'reportingManager'] });
@@ -6679,30 +6707,51 @@ router.get('/targets/yearly', async (req, res) => {
             const empId = u.employeeId || u.uid || u._id;
             userMap[empId] = {
                 employeeId: empId,
+                uid: u.uid || u._id,
+                _id: u._id,
                 userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId,
                 hq: u.hq || '',
                 division: u.division || '',
                 designation: u.designation || 'MR',
                 reportingManager: u.reportingManager,
                 children: [],
-                directMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0 },
+                directMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0, Apr: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0, Jan: 0, Feb: 0, Mar: 0 },
                 directTotal: 0,
-                teamMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0 },
+                teamMonths: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0, Apr: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0, Jan: 0, Feb: 0, Mar: 0 },
                 teamTotal: 0,
-                months: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0 },
+                months: { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0, Apr: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0, Jan: 0, Feb: 0, Mar: 0 },
                 total: 0
             };
         });
 
         allTargets.forEach(t => {
+            const normM = normalizeMonth(t.month);
+            if (!normM) return;
+
             const targetId = t.employeeId;
-            if (userMap[targetId] && userMap[targetId].directMonths[t.month] !== undefined) {
-                const amount = t.allocationType === 'Lump-Sum' ? (Number(t.lumpSumAmount) || 0) : (Number(t.totalProductAmount) || 0);
-                userMap[targetId].directMonths[t.month] += amount;
-                userMap[targetId].directTotal += amount;
+            let user = userMap[targetId];
+            if (!user) {
+                user = Object.values(userMap).find(u => 
+                    u.employeeId === targetId || 
+                    u.uid === targetId || 
+                    u._id === targetId || 
+                    (t.userName && u.userName && u.userName.toLowerCase() === t.userName.toLowerCase())
+                );
+            }
+
+            if (user) {
+                const lump = Number(t.lumpSumAmount) || 0;
+                const prod = Number(t.totalProductAmount) || 0;
+                const amount = lump > 0 ? lump : (prod > 0 ? prod : 0);
+                const shortM = normM.substring(0, 3);
                 
-                userMap[targetId].months[t.month] += amount;
-                userMap[targetId].total += amount;
+                user.directMonths[normM] = (user.directMonths[normM] || 0) + amount;
+                user.directMonths[shortM] = user.directMonths[normM];
+                user.directTotal += amount;
+                
+                user.months[normM] = (user.months[normM] || 0) + amount;
+                user.months[shortM] = user.months[normM];
+                user.total += amount;
             }
         });
 

@@ -3022,9 +3022,19 @@ function SetTargetTab() {
     total: 0
   };
   filteredYearlyTargets.forEach(t => {
-    Object.keys(t.months).forEach(m => {
-      yearlyTotals[m] += (t.months[m] || 0);
-    });
+    const m = t.months || {};
+    yearlyTotals.April += (m.April || m.Apr || 0);
+    yearlyTotals.May += (m.May || 0);
+    yearlyTotals.June += (m.June || m.Jun || 0);
+    yearlyTotals.July += (m.July || m.Jul || 0);
+    yearlyTotals.August += (m.August || m.Aug || 0);
+    yearlyTotals.September += (m.September || m.Sep || 0);
+    yearlyTotals.October += (m.October || m.Oct || 0);
+    yearlyTotals.November += (m.November || m.Nov || 0);
+    yearlyTotals.December += (m.December || m.Dec || 0);
+    yearlyTotals.January += (m.January || m.Jan || 0);
+    yearlyTotals.February += (m.February || m.Feb || 0);
+    yearlyTotals.March += (m.March || m.Mar || 0);
     yearlyTotals.total += (t.total || 0);
   });
 
@@ -3033,11 +3043,13 @@ function SetTargetTab() {
       ['Sr No', 'User', 'HQ', 'Division', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Total']
     ];
     filteredYearlyTargets.forEach((t, i) => {
+      const m = t.months || {};
       wsData.push([
         i + 1, t.userName, t.hq || '', t.division || '',
-        Math.round(t.months.April), Math.round(t.months.May), Math.round(t.months.June), Math.round(t.months.July), Math.round(t.months.August), Math.round(t.months.September), 
-        Math.round(t.months.October), Math.round(t.months.November), Math.round(t.months.December), Math.round(t.months.January), Math.round(t.months.February), Math.round(t.months.March),
-        Math.round(t.total)
+        Math.round(m.April || m.Apr || 0), Math.round(m.May || 0), Math.round(m.June || m.Jun || 0), Math.round(m.July || m.Jul || 0), Math.round(m.August || m.Aug || 0), Math.round(m.September || m.Sep || 0), 
+        Math.round(m.October || m.Oct || 0), Math.round(m.November || m.Nov || 0), Math.round(m.December || m.Dec || 0), 
+        Math.round(m.January || m.Jan || 0), Math.round(m.February || m.Feb || 0), Math.round(m.March || m.Mar || 0),
+        Math.round(t.total || 0)
       ]);
     });
     wsData.push([
@@ -3349,9 +3361,9 @@ function SetTargetTab() {
           <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredYearlyTargets.length}) ENTRIES</h3>
           
           <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
-            <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse relative min-w-[1200px]">
-                <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+                <thead className="bg-slate-800 z-10 shadow-md">
                   <tr className="border-b border-slate-700/50 text-slate-300">
                     <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr no.</th>
                     <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800">User</th>
@@ -3369,18 +3381,18 @@ function SetTargetTab() {
                         <div className="text-slate-200 text-sm">{t.userName}</div>
                         {t.designation && <div className="text-xs text-slate-400 font-light mt-1">{t.designation}</div>}
                       </td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.April > 0 ? Math.round(t.months.April) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.May > 0 ? Math.round(t.months.May) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.June > 0 ? Math.round(t.months.June) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.July > 0 ? Math.round(t.months.July) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.August > 0 ? Math.round(t.months.August) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.September > 0 ? Math.round(t.months.September) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.October > 0 ? Math.round(t.months.October) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.November > 0 ? Math.round(t.months.November) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.December > 0 ? Math.round(t.months.December) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.January > 0 ? Math.round(t.months.January) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.February > 0 ? Math.round(t.months.February) : ''}</td>
-                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.March > 0 ? Math.round(t.months.March) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.April || t.months?.Apr || 0) > 0 ? Math.round(t.months?.April || t.months?.Apr) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.May || 0) > 0 ? Math.round(t.months?.May) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.June || t.months?.Jun || 0) > 0 ? Math.round(t.months?.June || t.months?.Jun) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.July || t.months?.Jul || 0) > 0 ? Math.round(t.months?.July || t.months?.Jul) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.August || t.months?.Aug || 0) > 0 ? Math.round(t.months?.August || t.months?.Aug) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.September || t.months?.Sep || 0) > 0 ? Math.round(t.months?.September || t.months?.Sep) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.October || t.months?.Oct || 0) > 0 ? Math.round(t.months?.October || t.months?.Oct) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.November || t.months?.Nov || 0) > 0 ? Math.round(t.months?.November || t.months?.Nov) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.December || t.months?.Dec || 0) > 0 ? Math.round(t.months?.December || t.months?.Dec) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.January || t.months?.Jan || 0) > 0 ? Math.round(t.months?.January || t.months?.Jan) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.February || t.months?.Feb || 0) > 0 ? Math.round(t.months?.February || t.months?.Feb) : ''}</td>
+                      <td className="border-r border-slate-700 p-4 text-center text-slate-300">{(t.months?.March || t.months?.Mar || 0) > 0 ? Math.round(t.months?.March || t.months?.Mar) : ''}</td>
                       <td className="p-4 text-center text-emerald-400 font-bold">{t.total > 0 ? Math.round(t.total) : ''}</td>
                     </tr>
                   ))}
