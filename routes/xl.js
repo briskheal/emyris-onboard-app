@@ -6032,19 +6032,80 @@ router.delete('/leave-types/:id', async (req, res) => {
 
 router.get('/assigned-leaves', async (req, res) => {
     try {
-        const { XlAssignedLeave } = require('../db');
+        const { XlAssignedLeave, XlUser } = require('../db');
         const { year } = req.query;
         let where = {};
         if (year) where.year = year;
-        const data = await XlAssignedLeave.findAll({ where });
+        const rawData = await XlAssignedLeave.findAll({ where });
+
+        const allUsers = await XlUser.findAll({
+            attributes: ['_id', 'uid', 'employeeId', 'email', 'firstName', 'lastName', 'name', 'designation', 'hq']
+        });
+
+        const userMap = new Map();
+        for (const u of allUsers) {
+            const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || '';
+            const uObj = {
+                _id: u._id,
+                uid: u.uid,
+                employeeId: u.employeeId,
+                email: u.email,
+                name: fullName,
+                designation: u.designation || '',
+                hq: u.hq || ''
+            };
+            if (u._id) userMap.set(String(u._id), uObj);
+            if (u.uid) userMap.set(String(u.uid), uObj);
+            if (u.employeeId) userMap.set(String(u.employeeId), uObj);
+            if (u.email) userMap.set(String(u.email).toLowerCase(), uObj);
+        }
+
+        const data = rawData.map(item => {
+            const plain = item.toJSON ? item.toJSON() : item;
+            const empKey = String(plain.employeeId || '').trim();
+            const matched = userMap.get(empKey) || userMap.get(empKey.toLowerCase());
+            return {
+                ...plain,
+                employeeName: matched?.name || plain.employeeName || 'Unknown',
+                employeeCode: matched?.employeeId || matched?.uid || empKey,
+                canonicalEmpId: matched?.uid || matched?.employeeId || empKey,
+                designation: matched?.designation || '',
+                hq: matched?.hq || ''
+            };
+        });
+
         res.json({ success: true, data });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 router.get('/assigned-leaves/my', async (req, res) => {
     try {
-        const { XlAssignedLeave } = require('../db');
+        const { XlAssignedLeave, XlUser } = require('../db');
+        const { Op } = require('sequelize');
         const { employeeId, year } = req.query;
-        const data = await XlAssignedLeave.findAll({ where: { employeeId, year } });
+        if (!employeeId) return res.json({ success: true, data: [] });
+
+        let empIds = [String(employeeId).trim()];
+        const user = await XlUser.findOne({
+            where: {
+                [Op.or]: [
+                    { uid: employeeId },
+                    { employeeId: employeeId },
+                    { email: employeeId }
+                ]
+            }
+        });
+        if (user) {
+            if (user.uid) empIds.push(String(user.uid).trim());
+            if (user.employeeId) empIds.push(String(user.employeeId).trim());
+            if (user.email) empIds.push(String(user.email).trim());
+            if (user._id) empIds.push(String(user._id).trim());
+        }
+        empIds = Array.from(new Set(empIds));
+
+        let where = { employeeId: { [Op.in]: empIds } };
+        if (year) where.year = year;
+
+        const data = await XlAssignedLeave.findAll({ where });
         res.json({ success: true, data });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

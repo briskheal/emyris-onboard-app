@@ -282,6 +282,17 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
   const [editUsedValue, setEditUsedValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const getUserByIdentifier = (empId: any) => {
+    if (!empId) return null;
+    const str = String(empId).trim().toLowerCase();
+    return users.find((u: any) =>
+      (u.uid && String(u.uid).trim().toLowerCase() === str) ||
+      (u.employeeId && String(u.employeeId).trim().toLowerCase() === str) ||
+      (u._id && String(u._id).trim().toLowerCase() === str) ||
+      (u.email && String(u.email).trim().toLowerCase() === str)
+    );
+  };
+
   const fetchData = async () => {
     const res = await axios.get('/api/xl/assigned-leaves?year=' + year);
     setData(res.data.data || []);
@@ -291,19 +302,22 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
     fetchData();
   }, [year]);
 
-  // Group data by employeeId
-  const grouped = data.reduce((acc:any, curr:any) => {
-    if (!acc[curr.employeeId]) acc[curr.employeeId] = [];
-    acc[curr.employeeId].push(curr);
+  // Group data by canonical employee identifier
+  const grouped = data.reduce((acc: any, curr: any) => {
+    const u = getUserByIdentifier(curr.employeeId);
+    const groupKey = u?.uid || u?.employeeId || curr.canonicalEmpId || curr.employeeId;
+    if (!acc[groupKey]) acc[groupKey] = [];
+    acc[groupKey].push(curr);
     return acc;
-    }, {});
+  }, {});
     
-    const filteredGroupKeys = Object.keys(grouped).filter((empId:any) => {
-      if (!searchQuery) return true;
-      const user = users.find((u:any) => u.uid === empId);
-      const name = user ? `${user.firstName} ${user.lastName || ''}` : 'Unknown';
-      return name.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+  const filteredGroupKeys = Object.keys(grouped).filter((groupKey: any) => {
+    if (!searchQuery) return true;
+    const items = grouped[groupKey];
+    const user = getUserByIdentifier(groupKey) || (items[0] && getUserByIdentifier(items[0].employeeId));
+    const name = (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || items[0]?.employeeName || 'Unknown';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleEditSave = async () => {
     if(!editItem) return;
@@ -322,9 +336,9 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
     
     const rows: string[] = [];
     data.forEach((d:any) => {
-      const u = users.find((usr:any) => usr.uid === d.employeeId);
-      const empId = u?.employeeId || d.employeeId;
-      const empName = u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown';
+      const u = getUserByIdentifier(d.employeeId);
+      const empId = u?.employeeId || u?.uid || d.employeeCode || d.employeeId;
+      const empName = (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || d.employeeName || 'Unknown';
       const remaining = (d.leaveType === 'Leave Without Pay' || d.leaveType === 'LWP') ? 0 : (d.assigned - d.used);
       
       const row = [
@@ -393,8 +407,8 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
           <tbody>
             {filteredGroupKeys.map((empId, index) => {
               const items = grouped[empId];
-              const user = users.find(u => u.uid === empId);
-              const name = user ? `${user.firstName} ${user.lastName || ''}` : 'Unknown';
+              const user = getUserByIdentifier(empId) || (items[0] && getUserByIdentifier(items[0].employeeId));
+              const name = (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || items[0]?.employeeName || 'Unknown';
               
               // Calculate totals (excluding Leave Without Pay for standard totals, matching legacy video logic if needed, but for now we just sum)
               let assignedTotal = 0;
