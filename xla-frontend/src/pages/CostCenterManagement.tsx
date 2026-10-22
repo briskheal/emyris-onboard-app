@@ -494,26 +494,65 @@ export default function CostCenterManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4 items-stretch">
             
             {/* Filter Controls (Cols 8) */}
-            <div className="lg:col-span-8 bg-slate-800/50 border border-slate-700/60 p-3 rounded-xl shadow-lg flex flex-col justify-between gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Select Month */}
-                <div>
-                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block mb-1">
-                    Select Month *
+            <div className="lg:col-span-8 bg-slate-800/50 border border-slate-700/60 p-3.5 rounded-xl shadow-lg flex flex-col justify-between gap-3">
+              {/* Year & Month Selection with Square Month Boxes */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                    Select Month (Square Box) *
                   </label>
-                  <div className="flex gap-1.5">
-                    <select
-                      value={selectedMonth}
-                      onChange={e => setSelectedMonth(e.target.value)}
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-500"
+                  {/* Year Switcher */}
+                  <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 px-2 py-0.5 rounded-lg shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newYear = String(Number(yearVal) - 1);
+                        setSelectedMonth(`${monthName}, ${newYear}`);
+                      }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-black transition-colors"
+                      title="Previous Year"
                     >
-                      {['Oct, 2026', 'Sep, 2026', 'Aug, 2026', 'Jul, 2026', 'Jun, 2026', 'May, 2026', 'Apr, 2026', 'Mar, 2026'].map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
+                      &lt;
+                    </button>
+                    <span className="text-xs font-bold text-white px-1 font-mono tracking-wider">{yearVal}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newYear = String(Number(yearVal) + 1);
+                        setSelectedMonth(`${monthName}, ${newYear}`);
+                      }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-black transition-colors"
+                      title="Next Year"
+                    >
+                      &gt;
+                    </button>
                   </div>
                 </div>
 
+                {/* 12 Square Month Buttons */}
+                <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m) => {
+                    const isSelected = monthName.toLowerCase().startsWith(m.toLowerCase());
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSelectedMonth(`${m}, ${yearVal}`)}
+                        className={`h-9 flex items-center justify-center rounded-lg text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-sky-500 text-white font-black shadow-md shadow-sky-500/30 border-sky-400 scale-105 z-10'
+                            : 'bg-slate-900/90 text-slate-300 border-slate-700/70 hover:bg-slate-800 hover:text-white hover:border-slate-600'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* HQ, Entity Picker & Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
                 {/* Select HQ */}
                 <div>
                   <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
@@ -530,12 +569,10 @@ export default function CostCenterManagement() {
                     compact={true}
                   />
                 </div>
-              </div>
 
-              {/* Entity Picker & Action Buttons */}
-              {activeTab !== 'TOTAL EXPENSES' && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 pt-1 border-t border-slate-700/50">
-                  <div className="flex-1">
+                {/* Select Entity to quick add */}
+                {activeTab !== 'TOTAL EXPENSES' && (
+                  <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                       Select {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} *
                     </label>
@@ -543,17 +580,22 @@ export default function CostCenterManagement() {
                       options={entityOptions}
                       value={selectedEntityId}
                       onChange={(val) => handleSelectEntityForAdd(val)}
-                      placeholder={`Choose ${activeTab.toLowerCase()} to add cost...`}
+                      placeholder={`Choose ${activeTab.toLowerCase()}...`}
                       compact={true}
                     />
                   </div>
+                )}
+              </div>
 
+              {/* Action Buttons Row */}
+              {activeTab !== 'TOTAL EXPENSES' && (
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-slate-700/40">
                   <button
                     onClick={() => {
                       resetForm();
                       setShowAddModal(true);
                     }}
-                    className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-sky-500/20 h-[34px] shrink-0"
+                    className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-sky-500/20 h-[32px]"
                   >
                     <Plus size={14} /> Add {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
                   </button>
@@ -562,7 +604,7 @@ export default function CostCenterManagement() {
                     <button
                       onClick={handleAutoSync}
                       disabled={syncing}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-emerald-600/20 h-[34px] shrink-0"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-emerald-600/20 h-[32px]"
                       title="Auto-calculate and import approved expenses & salaries"
                     >
                       <Zap size={14} className={syncing ? 'animate-spin' : ''} />
@@ -967,41 +1009,48 @@ export default function CostCenterManagement() {
         </div>
       )}
 
-      {/* DETAIL VIEW MODAL */}
+      {/* DETAIL VIEW MODAL - WIDE HORIZONTAL BOX WITH PROPER PLACEMENT */}
       {detailItem && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl my-8">
-            <div className="px-5 py-3.5 border-b border-slate-700 flex items-center justify-between bg-slate-900">
-              <h3 className="text-xs font-black uppercase text-white tracking-wider">
-                Cost Breakdown: {detailItem.entityName}
-              </h3>
-              <button onClick={() => setDetailItem(null)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Category</span>
-                  <span className="font-bold text-sky-400">{detailItem.type}</span>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+          <div className="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-700/80 flex items-center justify-between bg-slate-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-black border border-sky-500/30">
+                  {detailItem.type === 'EMPLOYEE' ? <Users size={20} /> : <FileText size={20} />}
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Headquarter</span>
-                  <span className="font-bold text-slate-200">{detailItem.hq || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Period</span>
-                  <span className="font-bold text-slate-200">{detailItem.month} {detailItem.year}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Cost to Company</span>
-                  <span className="font-bold text-emerald-400 font-mono text-sm">
-                    ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm md:text-base font-black uppercase text-white tracking-wide">
+                      {detailItem.entityName}
+                    </h3>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 uppercase tracking-wider">
+                      {detailItem.type}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2.5 mt-0.5">
+                    <span>HQ: <strong className="text-slate-200">{detailItem.hq || 'N/A'}</strong></span>
+                    <span>•</span>
+                    <span>Period: <strong className="text-slate-200">{detailItem.month} {detailItem.year}</strong></span>
+                    {detailItem.entityId && (
+                      <>
+                        <span>•</span>
+                        <span>Employee Code: <strong className="text-slate-200">{detailItem.entityId}</strong></span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
+              <button 
+                onClick={() => setDetailItem(null)} 
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              {/* Parsed Breakdown */}
+            {/* Modal Body */}
+            <div className="p-5 md:p-6 space-y-4 max-h-[82vh] overflow-y-auto">
               {(() => {
                 try {
                   const b = typeof detailItem.breakdown === 'string' ? JSON.parse(detailItem.breakdown) : detailItem.breakdown;
@@ -1014,145 +1063,221 @@ export default function CostCenterManagement() {
                     const exp = b.fieldExpenses || {};
                     const att = b.attendance || null;
                     const employerPf = contrib.employerPf ?? ded.employeePf ?? 0;
+                    const fieldExpTotal = Number(exp.total || ((exp.dailyAllowance || b.dailyAllowance || 0) + (exp.travel || b.travel || 0) + (exp.hotel || b.hotel || 0) + (exp.otherExpenses || b.otherExpenses || 0)));
 
                     return (
-                      <div className="space-y-3">
-                        {/* Attendance Banner */}
-                        {att && (
-                          <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
-                            <span className="text-sky-300 font-bold uppercase tracking-wider">Attendance:</span>
-                            <span className="text-slate-200 font-mono">
-                              <strong className="text-emerald-400">{att.present}</strong> Present • <strong className="text-sky-400">{att.holiday}</strong> Off • <strong className="text-amber-400">{att.leave}</strong> Leave • <strong className="text-rose-400">{att.absent}</strong> Absent
-                              <span className="ml-2 text-slate-400">({att.payableDays}/{att.totalMonthDays} Payable Days)</span>
+                      <div className="space-y-4">
+                        {/* 1. TOP HORIZONTAL EXECUTIVE KPI STRIP (4 Side-by-side KPI boxes) */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 shadow-sm">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gross Salary Earned</span>
+                            <span className="text-base font-black text-white font-mono mt-0.5 block">
+                              ₹ {(sal?.gross || 0).toLocaleString('en-IN')}
                             </span>
+                            <span className="text-[10px] text-slate-500">Payable Days: {att ? `${att.payableDays}/${att.totalMonthDays}` : 'Full Month'}</span>
                           </div>
-                        )}
 
-                        {/* 1. Salary Earnings */}
-                        {sal && (
-                          <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
-                            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-700/60">
-                              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                                💵 Salary Earnings Breakdown
-                              </span>
-                              <span className="text-xs font-mono font-bold text-emerald-400">
-                                Gross: ₹ {(sal.gross || 0).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>Basic Salary:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.basic || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>HRA:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.hra || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>Conveyance:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.conveyance || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>Medical Allowance:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.medical || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>LTA:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.lta || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>Special Allowance:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.special || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400">
-                                <span>Education Allowance:</span>
-                                <span className="font-mono text-slate-200">₹ {(sal.edu || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center font-bold text-emerald-300 pt-0.5 border-t border-slate-800">
-                                <span>Gross Salary Earned:</span>
-                                <span className="font-mono">₹ {(sal.gross || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                            </div>
+                          <div className="bg-purple-950/20 p-3 rounded-xl border border-purple-500/30 shadow-sm">
+                            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Employer Matching PF</span>
+                            <span className="text-base font-black text-purple-300 font-mono mt-0.5 block">
+                              + ₹ {Number(employerPf).toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-[10px] text-purple-400/80">Company's Contribution (100%)</span>
                           </div>
-                        )}
 
-                        {/* 2. Company Contributions & Deductions Group */}
-                        <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
-                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block mb-2 pb-1.5 border-b border-slate-700/60">
-                            🏛️ Company Contributions & Deductions
-                          </span>
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex justify-between items-center bg-purple-500/10 px-2.5 py-1.5 rounded-lg border border-purple-500/20">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-purple-300">Employer PF Contribution (Company's Expense):</span>
-                                <span className="text-[10px] text-slate-400 font-light">Matches exact 100% employee PF deduction</span>
+                          <div className="bg-amber-950/20 p-3 rounded-xl border border-amber-500/30 shadow-sm">
+                            <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">Approved Field Expenses</span>
+                            <span className="text-base font-black text-amber-300 font-mono mt-0.5 block">
+                              + ₹ {fieldExpTotal.toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-[10px] text-amber-400/80">DA + TA/Fuel + Hotel + Other</span>
+                          </div>
+
+                          <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/30 p-3 rounded-xl border border-emerald-500/40 shadow-sm">
+                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">Total Cost to Company</span>
+                            <span className="text-lg font-black text-emerald-400 font-mono mt-0.5 block">
+                              ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-[10px] text-emerald-400/80">Gross + Employer PF + Expenses</span>
+                          </div>
+                        </div>
+
+                        {/* 2. MAIN HORIZONTAL 2-COLUMN BALANCED LAYOUT */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                          
+                          {/* LEFT COLUMN: Attendance & Salary Earnings */}
+                          <div className="space-y-4">
+                            {/* Attendance Breakdown Card */}
+                            {att && (
+                              <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
+                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800">
+                                  <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    🗓️ Attendance Summary
+                                  </span>
+                                  <span className="text-xs font-mono font-bold text-white bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                                    {att.payableDays} / {att.totalMonthDays} Payable Days
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                  <div className="bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-lg">
+                                    <span className="text-emerald-400 font-black text-sm block font-mono">{att.present}</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Present</span>
+                                  </div>
+                                  <div className="bg-sky-500/10 border border-sky-500/20 py-2 rounded-lg">
+                                    <span className="text-sky-400 font-black text-sm block font-mono">{att.holiday}</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Off / Hol</span>
+                                  </div>
+                                  <div className="bg-amber-500/10 border border-amber-500/20 py-2 rounded-lg">
+                                    <span className="text-amber-400 font-black text-sm block font-mono">{att.leave}</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Leave</span>
+                                  </div>
+                                  <div className="bg-rose-500/10 border border-rose-500/20 py-2 rounded-lg">
+                                    <span className="text-rose-400 font-black text-sm block font-mono">{att.absent}</span>
+                                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Absent</span>
+                                  </div>
+                                </div>
                               </div>
-                              <span className="font-mono font-bold text-purple-300 text-sm">
-                                + ₹ {Number(employerPf).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-400 px-1 pt-1">
-                              <span>Employee PF Deduction:</span>
-                              <span className="font-mono text-rose-300">- ₹ {Number(ded.employeePf || 0).toLocaleString('en-IN')}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-400 px-1">
-                              <span>Professional Tax (PT):</span>
-                              <span className="font-mono text-rose-300">- ₹ {Number(ded.pt || 0).toLocaleString('en-IN')}</span>
-                            </div>
-                            {ded.netSalary > 0 && (
-                              <div className="flex justify-between items-center text-slate-300 px-1 pt-1 border-t border-slate-800 font-medium">
-                                <span>Net Take-Home Salary:</span>
-                                <span className="font-mono font-bold text-sky-400">₹ {Number(ded.netSalary).toLocaleString('en-IN')}</span>
+                            )}
+
+                            {/* Salary Earnings Breakdown Card */}
+                            {sal && (
+                              <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
+                                <div className="flex justify-between items-center pb-2 mb-2.5 border-b border-slate-800">
+                                  <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    💵 Salary Earnings Breakdown
+                                  </span>
+                                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                                    Gross: ₹ {(sal.gross || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="space-y-2 text-xs">
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Basic Salary:</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.basic || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>House Rent Allowance (HRA):</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.hra || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Conveyance Allowance:</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.conveyance || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Medical Allowance:</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.medical || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Leave Travel Allowance (LTA):</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.lta || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Special Allowance:</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.special || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span>Education Allowance:</span>
+                                    <span className="font-mono font-medium text-white">₹ {(sal.edu || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center font-bold text-emerald-400 pt-2 border-t border-slate-800 text-xs">
+                                    <span>Total Gross Salary Earned:</span>
+                                    <span className="font-mono text-sm">₹ {(sal.gross || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
-                        </div>
 
-                        {/* 3. Approved Field Expenses */}
-                        <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
-                          <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-700/60">
-                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                              🚗 Approved Field Expenses
-                            </span>
-                            <span className="text-xs font-mono font-bold text-amber-300">
-                              Total: ₹ {Number(exp.total || ((exp.dailyAllowance || b.dailyAllowance || 0) + (exp.travel || b.travel || 0) + (exp.hotel || b.hotel || 0) + (exp.otherExpenses || b.otherExpenses || 0))).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                            <div className="flex justify-between items-center text-slate-400">
-                              <span>Daily Allowance (DA):</span>
-                              <span className="font-mono text-slate-200">₹ {Number(exp.dailyAllowance ?? b.dailyAllowance ?? 0).toLocaleString('en-IN')}</span>
+                          {/* RIGHT COLUMN: Contributions/Deductions, Field Expenses, & Total CTC */}
+                          <div className="space-y-4">
+                            {/* Company Contributions & Deductions */}
+                            <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
+                              <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider block pb-2 mb-2.5 border-b border-slate-800">
+                                🏛️ Company Contributions & Deductions
+                              </span>
+                              <div className="space-y-2 text-xs">
+                                <div className="flex justify-between items-center bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/25">
+                                  <div>
+                                    <span className="font-bold text-purple-300 block">Employer PF Contribution (Company Expense):</span>
+                                    <span className="text-[10px] text-slate-400 font-light">Matches 100% of employee PF deduction (up to ₹1,800)</span>
+                                  </div>
+                                  <span className="font-mono font-bold text-purple-300 text-sm">
+                                    + ₹ {Number(employerPf).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-slate-400 px-1 pt-0.5">
+                                  <span>Employee PF Deduction:</span>
+                                  <span className="font-mono text-rose-300">- ₹ {Number(ded.employeePf || 0).toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-slate-400 px-1">
+                                  <span>Professional Tax (PT):</span>
+                                  <span className="font-mono text-rose-300">- ₹ {Number(ded.pt || 0).toLocaleString('en-IN')}</span>
+                                </div>
+                                {ded.netSalary > 0 && (
+                                  <div className="flex justify-between items-center text-slate-200 px-1 pt-1.5 border-t border-slate-800 font-semibold">
+                                    <span>Net Take-Home Salary:</span>
+                                    <span className="font-mono font-bold text-sky-400">₹ {Number(ded.netSalary).toLocaleString('en-IN')}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center text-slate-400">
-                              <span>Travel / Fuel (TA):</span>
-                              <span className="font-mono text-slate-200">₹ {Number(exp.travel ?? b.travel ?? 0).toLocaleString('en-IN')}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-400">
-                              <span>Hotel & Boarding:</span>
-                              <span className="font-mono text-slate-200">₹ {Number(exp.hotel ?? b.hotel ?? 0).toLocaleString('en-IN')}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-400">
-                              <span>Other Local Expenses:</span>
-                              <span className="font-mono text-slate-200">₹ {Number(exp.otherExpenses ?? b.otherExpenses ?? 0).toLocaleString('en-IN')}</span>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* 4. Total Cost to Company Formula Card */}
-                        <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-sky-950/40 p-3 rounded-xl border border-emerald-500/40 flex items-center justify-between shadow-lg">
-                          <div>
-                            <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">
-                              Total Employee Cost to Company (CTC + Field Expenses)
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-light">
-                              Gross Salary + Employer PF + Approved Field Expenses
-                            </span>
+                            {/* Approved Field Expenses Card */}
+                            <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
+                              <div className="flex justify-between items-center pb-2 mb-2.5 border-b border-slate-800">
+                                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                                  🚗 Approved Field Expenses
+                                </span>
+                                <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                                  Total: ₹ {fieldExpTotal.toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-slate-800/60 p-2 rounded-lg border border-slate-700/40">
+                                  <span className="text-[10px] text-slate-400 block">Daily Allowance (DA)</span>
+                                  <span className="font-mono font-bold text-white text-xs mt-0.5 block">
+                                    ₹ {Number(exp.dailyAllowance ?? b.dailyAllowance ?? 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="bg-slate-800/60 p-2 rounded-lg border border-slate-700/40">
+                                  <span className="text-[10px] text-slate-400 block">Travel / Fuel (TA)</span>
+                                  <span className="font-mono font-bold text-white text-xs mt-0.5 block">
+                                    ₹ {Number(exp.travel ?? b.travel ?? 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="bg-slate-800/60 p-2 rounded-lg border border-slate-700/40">
+                                  <span className="text-[10px] text-slate-400 block">Hotel & Boarding</span>
+                                  <span className="font-mono font-bold text-white text-xs mt-0.5 block">
+                                    ₹ {Number(exp.hotel ?? b.hotel ?? 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="bg-slate-800/60 p-2 rounded-lg border border-slate-700/40">
+                                  <span className="text-[10px] text-slate-400 block">Other Expenses</span>
+                                  <span className="font-mono font-bold text-white text-xs mt-0.5 block">
+                                    ₹ {Number(exp.otherExpenses ?? b.otherExpenses ?? 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Total Cost to Company Formula Card */}
+                            <div className="bg-gradient-to-r from-emerald-950/50 via-slate-900 to-sky-950/40 p-3.5 rounded-xl border border-emerald-500/40 shadow-lg flex items-center justify-between">
+                              <div>
+                                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">
+                                  Cost Center Formula (Total CTC + Field Expenses)
+                                </span>
+                                <span className="text-[11px] text-slate-300 font-mono mt-0.5 block">
+                                  Gross ({Number(sal?.gross || 0).toLocaleString('en-IN')}) + PF ({Number(employerPf).toLocaleString('en-IN')}) + Expenses ({fieldExpTotal.toLocaleString('en-IN')})
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xl font-mono font-black text-emerald-400">
+                                  ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <span className="text-lg font-mono font-extrabold text-emerald-400">
-                              ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
-                            </span>
-                          </div>
+
                         </div>
                       </div>
                     );
@@ -1160,22 +1285,45 @@ export default function CostCenterManagement() {
 
                   // Fallback for Doctor / Stockist / Chemist / Misc / Legacy
                   return (
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Component Breakdown
-                      </span>
-                      <div className="bg-slate-900 rounded-lg p-3 border border-slate-700 space-y-2">
-                        {Object.entries(b).map(([k, v]) => {
-                          if (typeof v === 'boolean' || typeof v === 'object') return null;
-                          return (
-                            <div key={k} className="flex justify-between items-center text-xs border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
-                              <span className="capitalize text-slate-400">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                              <span className="font-mono font-bold text-slate-200">
-                                ₹ {Number(v).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                          );
-                        })}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block">Category</span>
+                          <span className="font-bold text-sky-400">{detailItem.type}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block">Headquarter</span>
+                          <span className="font-bold text-slate-200">{detailItem.hq || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block">Period</span>
+                          <span className="font-bold text-slate-200">{detailItem.month} {detailItem.year}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block">Total Cost</span>
+                          <span className="font-bold text-emerald-400 font-mono text-sm">
+                            ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Component Breakdown
+                        </span>
+                        <div className="bg-slate-900 rounded-lg p-3 border border-slate-700 space-y-2">
+                          {Object.entries(b).map(([k, v]) => {
+                            if (typeof v === 'boolean' || typeof v === 'object') return null;
+                            return (
+                              <div key={k} className="flex justify-between items-center text-xs border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
+                                <span className="capitalize text-slate-400">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                                <span className="font-mono font-bold text-slate-200">
+                                  ₹ {Number(v).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1193,10 +1341,12 @@ export default function CostCenterManagement() {
                 </div>
               )}
             </div>
-            <div className="px-5 py-3 bg-slate-900 border-t border-slate-700 flex justify-end">
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-slate-900 border-t border-slate-700/80 flex justify-end">
               <button
                 onClick={() => setDetailItem(null)}
-                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold"
+                className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition-colors"
               >
                 Close
               </button>
