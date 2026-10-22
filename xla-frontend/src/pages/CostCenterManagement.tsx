@@ -14,7 +14,6 @@ import {
   ShoppingBag, 
   FileText, 
   PieChart, 
-  Zap, 
   X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -94,7 +93,6 @@ export default function CostCenterManagement() {
   const [formHotel, setFormHotel] = useState<string>('0');
   const [formOther, setFormOther] = useState<string>('0');
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [syncing, setSyncing] = useState<boolean>(false);
 
   // Parse Month & Year
   const [monthName, yearVal] = useMemo(() => {
@@ -259,8 +257,9 @@ export default function CostCenterManagement() {
     return [];
   }, [activeTab, selectedHq, users, doctors, stockists, chemists]);
 
-  // Handle Quick Add Entity Selection
+  // Handle Quick Add Entity Selection (For Doctor, Stockist, Chemist, Misc only)
   const handleSelectEntityForAdd = (val: string) => {
+    if (activeTab === 'EMPLOYEE') return;
     setSelectedEntityId(val);
     const opt = entityOptions.find(o => o.value === val) as any;
     if (opt) {
@@ -268,13 +267,7 @@ export default function CostCenterManagement() {
       setFormEntityName(opt.label);
       if (opt.raw?.hq) setFormHq(opt.raw.hq);
       else if (selectedHq !== 'ALL') setFormHq(selectedHq);
-      // Auto-populate salary if employee
-      if (activeTab === 'EMPLOYEE' && opt.raw?.salary) {
-        setFormSalary(String(opt.raw.salary));
-        setFormAmount(String(opt.raw.salary));
-      } else {
-        setFormAmount('');
-      }
+      setFormAmount('');
       setShowAddModal(true);
     }
   };
@@ -355,28 +348,6 @@ export default function CostCenterManagement() {
     } catch (err) {
       console.error(err);
       alert('Failed to delete record');
-    }
-  };
-
-  // One-click Auto Sync from System Expenses
-  const handleAutoSync = async () => {
-    if (!confirm(`Auto-sync approved field expenses and salaries for ${selectedMonth}? This will calculate TA/DA/Hotel and add them to Employee Cost Center.`)) return;
-    setSyncing(true);
-    try {
-      const res = await axios.post('/api/xl/cost-center/auto-sync', {
-        month: selectedMonth,
-        year: yearVal,
-        hq: selectedHq
-      });
-      if (res.data?.success) {
-        alert(res.data.message || 'Auto-sync completed!');
-        fetchRecords();
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error during auto-sync');
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -551,68 +522,80 @@ export default function CostCenterManagement() {
                 </div>
               </div>
 
-              {/* HQ, Entity Picker & Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
-                {/* Select HQ */}
-                <div>
-                  <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
-                    Select Headquarter *
-                  </label>
-                  <CustomSelect
-                    options={[
-                      { value: 'ALL', label: 'All Headquarters' },
-                      ...hqs.map(hq => ({ value: hq, label: hq }))
-                    ]}
-                    value={selectedHq}
-                    onChange={(val) => setSelectedHq(val)}
-                    placeholder="Select HQ"
-                    compact={true}
-                  />
-                </div>
-
-                {/* Select Entity to quick add */}
-                {activeTab !== 'TOTAL EXPENSES' && (
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Select {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} *
+              {/* For EMPLOYEE tab: Only Month selector + Clean HQ Filter (Everything is automated from DB) */}
+              {activeTab === 'EMPLOYEE' ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-700/50">
+                  <div className="w-full sm:w-64">
+                    <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                      Filter by Headquarter
                     </label>
                     <CustomSelect
-                      options={entityOptions}
-                      value={selectedEntityId}
-                      onChange={(val) => handleSelectEntityForAdd(val)}
-                      placeholder={`Choose ${activeTab.toLowerCase()}...`}
+                      options={[
+                        { value: 'ALL', label: 'All Headquarters' },
+                        ...hqs.map(hq => ({ value: hq, label: hq }))
+                      ]}
+                      value={selectedHq}
+                      onChange={(val) => setSelectedHq(val)}
+                      placeholder="All Headquarters"
                       compact={true}
                     />
                   </div>
-                )}
-              </div>
-
-              {/* Action Buttons Row */}
-              {activeTab !== 'TOTAL EXPENSES' && (
-                <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-slate-700/40">
-                  <button
-                    onClick={() => {
-                      resetForm();
-                      setShowAddModal(true);
-                    }}
-                    className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-sky-500/20 h-[32px]"
-                  >
-                    <Plus size={14} /> Add {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
-                  </button>
-
-                  {activeTab === 'EMPLOYEE' && (
-                    <button
-                      onClick={handleAutoSync}
-                      disabled={syncing}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-emerald-600/20 h-[32px]"
-                      title="Auto-calculate and import approved expenses & salaries"
-                    >
-                      <Zap size={14} className={syncing ? 'animate-spin' : ''} />
-                      {syncing ? 'Syncing...' : 'Auto-Sync Expenses'}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2 self-end text-xs text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span className="font-semibold text-slate-300">Live Payroll & Expense Linked:</span>
+                    <span className="text-slate-400">All {records.length} active employees auto-computed from database</span>
+                  </div>
                 </div>
-              )}
+              ) : activeTab !== 'TOTAL EXPENSES' ? (
+                <>
+                  {/* For DOCTOR / STOCKIST / CHEMIST / MISC tabs: Keep manual entry & filters */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
+                    {/* Select HQ */}
+                    <div>
+                      <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                        Select Headquarter *
+                      </label>
+                      <CustomSelect
+                        options={[
+                          { value: 'ALL', label: 'All Headquarters' },
+                          ...hqs.map(hq => ({ value: hq, label: hq }))
+                        ]}
+                        value={selectedHq}
+                        onChange={(val) => setSelectedHq(val)}
+                        placeholder="Select HQ"
+                        compact={true}
+                      />
+                    </div>
+
+                    {/* Select Entity to quick add */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Select {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} *
+                      </label>
+                      <CustomSelect
+                        options={entityOptions}
+                        value={selectedEntityId}
+                        onChange={(val) => handleSelectEntityForAdd(val)}
+                        placeholder={`Choose ${activeTab.toLowerCase()}...`}
+                        compact={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons Row */}
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-slate-700/40">
+                    <button
+                      onClick={() => {
+                        resetForm();
+                        setShowAddModal(true);
+                      }}
+                      className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow shadow-sky-500/20 h-[32px]"
+                    >
+                      <Plus size={14} /> Add {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
+                    </button>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             {/* SUMMARY CARD (Top Right, Cols 4 - Faithful reproduction of Medom card) */}
@@ -853,8 +836,8 @@ export default function CostCenterManagement() {
         </main>
       </div>
 
-      {/* ADD / EDIT COST MODAL */}
-      {showAddModal && (
+      {/* ADD / EDIT COST MODAL (For Doctor, Stockist, Chemist, Misc) */}
+      {showAddModal && activeTab !== 'EMPLOYEE' && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="px-5 py-3.5 border-b border-slate-700 flex items-center justify-between">
@@ -907,57 +890,6 @@ export default function CostCenterManagement() {
                   />
                 </div>
               </div>
-
-              {/* Detailed Breakdown for Employee */}
-              {activeTab === 'EMPLOYEE' ? (
-                <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-700/60 space-y-2">
-                  <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
-                    Employee Cost Breakdown (₹)
-                  </span>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <label className="text-[9px] text-slate-400 block">Basic / Gross Salary</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formSalary}
-                        onChange={e => setFormSalary(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] text-slate-400 block">Daily Allowance (DA)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formDa}
-                        onChange={e => setFormDa(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] text-slate-400 block">Travel Allowance (TA / Fuel)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formTa}
-                        onChange={e => setFormTa(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] text-slate-400 block">Hotel & Boarding</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formHotel}
-                        onChange={e => setFormHotel(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
 
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
