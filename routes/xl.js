@@ -12602,6 +12602,40 @@ router.get('/cost-center/total-expenses', async (req, res) => {
 // ==========================================
 // PROFIT CENTER MANAGEMENT (Profit Analysis)
 // ==========================================
+
+// Get All Linked Headquarters (across Master, Users, Sales & Costs)
+router.get(['/locations/hqs', '/hqs'], async (req, res) => {
+    try {
+        const { XlHQ, XlUser, XlSecondarySales, XlCostCenter } = require('../db');
+        const [hqsFromMaster, users, salesHqs, costHqs] = await Promise.all([
+            XlHQ.findAll({ raw: true }).catch(() => []),
+            XlUser.findAll({ attributes: ['hq'], raw: true }).catch(() => []),
+            XlSecondarySales.findAll({ attributes: ['headquarter'], raw: true }).catch(() => []),
+            XlCostCenter.findAll({ attributes: ['hq'], raw: true }).catch(() => [])
+        ]);
+
+        const allNames = new Set();
+        hqsFromMaster.forEach(h => {
+            const name = h.hqName || h.name || h.headquarter || '';
+            if (name.trim()) allNames.add(name.trim());
+        });
+        users.forEach(u => {
+            if (u.hq && u.hq.trim()) allNames.add(u.hq.trim());
+        });
+        salesHqs.forEach(s => {
+            if (s.headquarter && s.headquarter.trim()) allNames.add(s.headquarter.trim());
+        });
+        costHqs.forEach(c => {
+            if (c.hq && c.hq.trim()) allNames.add(c.hq.trim());
+        });
+
+        const list = Array.from(allNames).sort();
+        res.json({ success: true, hqs: list, data: list });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.get('/profit-center', async (req, res) => {
     try {
         const { XlProduct, XlSecondarySales, XlSecondarySalesItem, XlCostCenter } = require('../db');
@@ -12664,29 +12698,45 @@ router.get('/profit-center', async (req, res) => {
             let soldPrice = ptr; // Default to PTR if not sold
             let priceType = 'PTR';
             let cus = 0;
+            let productSellingValue = 0;
 
             if (matchingItems.length > 0) {
                 quantity = matchingItems.reduce((s, it) => s + (Number(it.salesQty || it.qty || 0)), 0);
 
-                // Determine sold price and price type
-                const cusItem = matchingItems.find(it => 
-                    (it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice))
-                );
+                // Compute total value across items/HQs to derive exact average selling price
+                const uniquePrices = new Set();
+                matchingItems.forEach(it => {
+                    const q = Number(it.salesQty || it.qty || 0);
+                    let rate = ptr;
+                    if (it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice)) {
+                        rate = Number(it.customPrice || ptr);
+                        cus = rate;
+                    } else if (it.selectedPriceType === 'PTS' || it.priceType === 'PTS') {
+                        rate = pts || Number(it.basePrice || pts);
+                    } else {
+                        rate = ptr || Number(it.basePrice || ptr);
+                    }
+                    uniquePrices.add(rate);
+                    productSellingValue += (q * rate);
+                });
 
-                if (cusItem && cusItem.customPrice) {
-                    priceType = 'CUS';
-                    soldPrice = Number(cusItem.customPrice);
-                    cus = soldPrice;
+                if (quantity > 0) {
+                    soldPrice = Number((productSellingValue / quantity).toFixed(2));
+                    if (uniquePrices.size > 1) {
+                        priceType = 'AVG';
+                    } else {
+                        const firstType = matchingItems[0].selectedPriceType || matchingItems[0].priceType || 'PTR';
+                        priceType = firstType;
+                    }
                 } else {
-                    const firstItem = matchingItems[0];
-                    priceType = firstItem.selectedPriceType || firstItem.priceType || 'PTR';
-                    if (priceType === 'PTS') soldPrice = pts || Number(firstItem.basePrice || pts);
-                    else soldPrice = ptr || Number(firstItem.basePrice || ptr);
-                    if (firstItem.customPrice && firstItem.customPrice !== soldPrice) cus = Number(firstItem.customPrice);
+                    soldPrice = ptr;
+                    productSellingValue = 0;
                 }
+            } else {
+                productSellingValue = 0;
             }
 
-            const sellingPrice = quantity * soldPrice;
+            const sellingPrice = productSellingValue;
             const costOfProduct = quantity * totalUnitCost;
             const actualProfit = sellingPrice - costOfProduct;
 

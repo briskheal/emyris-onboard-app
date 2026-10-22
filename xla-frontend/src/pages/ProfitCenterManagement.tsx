@@ -90,6 +90,97 @@ export default function ProfitCenterManagement() {
   const [editTransportCost, setEditTransportCost] = useState<string>('0');
   const [savingCost, setSavingCost] = useState<boolean>(false);
 
+  // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, saving, saved }
+  const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; saving?: boolean; saved?: boolean }>>({});
+
+  // Sync inlineCosts when records load
+  useEffect(() => {
+    if (records.length > 0) {
+      setInlineCosts(prev => {
+        const next = { ...prev };
+        records.forEach(r => {
+          const id = r.productId || r._id;
+          if (!next[id]) {
+            next[id] = {
+              purchaseCost: r.purchaseCost || 0,
+              transportCost: r.transportCost || 0
+            };
+          }
+        });
+        return next;
+      });
+    }
+  }, [records]);
+
+  const handleInlineCostChange = (productId: string, field: 'purchaseCost' | 'transportCost', value: string) => {
+    setInlineCosts(prev => ({
+      ...prev,
+      [productId]: {
+        ...(prev[productId] || { purchaseCost: 0, transportCost: 0 }),
+        [field]: value,
+        saved: false
+      }
+    }));
+  };
+
+  const handleSaveInlineCost = async (productId: string) => {
+    const costData = inlineCosts[productId];
+    if (!costData) return;
+
+    setInlineCosts(prev => ({
+      ...prev,
+      [productId]: { ...prev[productId], saving: true }
+    }));
+
+    try {
+      const purc = Number(costData.purchaseCost) || 0;
+      const trans = Number(costData.transportCost) || 0;
+
+      const res = await axios.put('/api/xl/profit-center/product-costs', {
+        productId,
+        purchaseCost: purc,
+        transportCost: trans
+      });
+
+      if (res.data?.success) {
+        setInlineCosts(prev => ({
+          ...prev,
+          [productId]: { ...prev[productId], saving: false, saved: true }
+        }));
+
+        setRecords(prev => prev.map(r => {
+          if ((r.productId || r._id) === productId) {
+            const totalUnitCost = purc + trans;
+            const costOfProduct = r.quantity * totalUnitCost;
+            const actualProfit = r.sellingPrice - costOfProduct;
+            return {
+              ...r,
+              purchaseCost: purc,
+              transportCost: trans,
+              totalUnitCost,
+              costOfProduct,
+              actualProfit
+            };
+          }
+          return r;
+        }));
+
+        setTimeout(() => {
+          setInlineCosts(prev => ({
+            ...prev,
+            [productId]: { ...prev[productId], saved: false }
+          }));
+        }, 2500);
+      }
+    } catch (e) {
+      console.error('Error saving inline product cost:', e);
+      setInlineCosts(prev => ({
+        ...prev,
+        [productId]: { ...prev[productId], saving: false }
+      }));
+    }
+  };
+
   // Parse Month & Year
   const [monthName, yearVal] = useMemo(() => {
     if (selectedMonth.includes(',')) {
@@ -103,11 +194,13 @@ export default function ProfitCenterManagement() {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const hRes = await axios.get('/api/xl/locations/hqs').catch(() => axios.get('/api/xl/hqs'));
+        const hRes = await axios.get('/api/xl/locations/hqs')
+          .catch(() => axios.get('/api/xl/hqs'))
+          .catch(() => axios.get('/api/admin/locations/hqs'));
         if (hRes.data) {
           const raw = hRes.data;
           const hList = Array.isArray(raw) ? raw : (raw.hqs || raw.data || []);
-          const names = hList.map((h: any) => typeof h === 'string' ? h : (h.name || h.headquarter || '')).filter(Boolean);
+          const names = hList.map((h: any) => typeof h === 'string' ? h : (h.hqName || h.name || h.headquarter || '')).filter(Boolean);
           setHqs(Array.from(new Set(names)) as string[]);
         }
       } catch (e) {
@@ -116,6 +209,18 @@ export default function ProfitCenterManagement() {
     };
     fetchMasters();
   }, []);
+
+  // Augment HQs from ROI or Analytics if any found
+  useEffect(() => {
+    if (roiData?.breakdown?.length > 0) {
+      const extraHqs = roiData.breakdown.map((b: any) => b.hq).filter(Boolean);
+      setHqs(prev => Array.from(new Set([...prev, ...extraHqs])));
+    }
+    if (analyticsData?.territoryComparison?.length > 0) {
+      const extraHqs = analyticsData.territoryComparison.map((t: any) => t.hq).filter(Boolean);
+      setHqs(prev => Array.from(new Set([...prev, ...extraHqs])));
+    }
+  }, [roiData, analyticsData]);
 
   // Fetch Data
   const fetchData = async () => {
@@ -198,6 +303,37 @@ export default function ProfitCenterManagement() {
     );
   }, [records, searchQuery]);
 
+  // Dynamic live totals reflecting inline edits immediately
+  const liveTotals = useMemo(() => {
+    let totalQty = 0;
+    let totalSellingValue = 0;
+    let totalCostOfProduct = 0;
+
+    filteredRecords.forEach(r => {
+      const id = r.productId || r._id;
+      const inline = inlineCosts[id];
+      const purc = inline ? (Number(inline.purchaseCost) || 0) : (r.purchaseCost || 0);
+      const trans = inline ? (Number(inline.transportCost) || 0) : (r.transportCost || 0);
+      const unitCost = purc + trans;
+
+      totalQty += Number(r.quantity || 0);
+      totalSellingValue += Number(r.sellingPrice || 0);
+      totalCostOfProduct += Number(r.quantity || 0) * unitCost;
+    });
+
+    const totalGrossProfit = totalSellingValue - totalCostOfProduct;
+    const costCenterExp = summary?.totalCostCenterExpenses || 0;
+    const actualHQNetProfit = totalGrossProfit - costCenterExp;
+
+    return {
+      totalQty,
+      totalSellingValue,
+      totalCostOfProduct,
+      totalGrossProfit,
+      actualHQNetProfit
+    };
+  }, [filteredRecords, inlineCosts, summary]);
+
   // Export to Excel
   const handleExport = () => {
     const wb = XLSX.utils.book_new();
@@ -255,7 +391,7 @@ export default function ProfitCenterManagement() {
   };
 
   return (
-    <div className="min-h-screen md:h-dvh bg-slate-900 flex flex-col text-slate-100 font-sans pb-16 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-900 flex flex-col text-slate-100 font-sans pb-24 relative">
       
       {/* Mobile Sticky Header */}
       <div className="md:hidden flex items-center justify-between px-4 pt-8 pb-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
@@ -265,8 +401,8 @@ export default function ProfitCenterManagement() {
         <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">{activeTab}</span>
       </div>
 
-      {/* Main Full-Width Content Area (Side-by-side Menus Header, No Middle Sidebar) */}
-      <main className="flex-1 flex flex-col overflow-y-auto px-3 py-3 md:px-6 md:py-4 w-full">
+      {/* Main Full-Width Content Area (Free flow page layout, no double scrollbars) */}
+      <main className="flex-1 flex flex-col px-3 py-3 md:px-6 md:py-4 w-full">
         
         {/* TOP HEADER: BREADCRUMB, SIDE-BY-SIDE TABS & HELP */}
         <div className="flex flex-wrap items-center justify-between pb-3 mb-3 border-b border-slate-800 gap-3">
@@ -1448,15 +1584,15 @@ export default function ProfitCenterManagement() {
                 <div className="space-y-1.5 text-xs pt-1 border-t border-slate-700/60 font-mono">
                   <div className="flex justify-between items-center text-slate-300">
                     <span>Secondary Selling Value:</span>
-                    <span className="font-bold text-white">₹ {(summary?.totalSellingValue || 0).toLocaleString('en-IN')}</span>
+                    <span className="font-bold text-white">₹ {liveTotals.totalSellingValue.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center text-slate-400">
                     <span>Total Product Costs (COGS):</span>
-                    <span>- ₹ {(summary?.totalCostOfProduct || 0).toLocaleString('en-IN')}</span>
+                    <span>- ₹ {liveTotals.totalCostOfProduct.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center text-sky-400 font-bold border-t border-slate-800 pt-1">
                     <span>HQ Gross Product Profit:</span>
-                    <span>₹ {(summary?.totalHQGrossProfit || 0).toLocaleString('en-IN')}</span>
+                    <span>₹ {liveTotals.totalGrossProfit.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center text-rose-400">
                     <span>Cost Center Expenses:</span>
@@ -1473,9 +1609,9 @@ export default function ProfitCenterManagement() {
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-sm font-bold text-slate-400">Rs</span>
                     <span className={`text-xl font-black ${
-                      (summary?.actualHQNetProfit || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      liveTotals.actualHQNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
                     }`}>
-                      {(summary?.actualHQNetProfit || 0).toLocaleString('en-IN')}
+                      {liveTotals.actualHQNetProfit.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
@@ -1484,16 +1620,19 @@ export default function ProfitCenterManagement() {
 
           </div>
 
-          {/* MAIN VIEW: PRODUCTS TABLE OR ROI VIEW */}
+          {/* MAIN VIEW: PRODUCTS TABLE OR ROI VIEW (Free flow layout, no double scrollbars) */}
           {activeTab === 'PRODUCTS' ? (
-            <div className="flex-1 bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[300px]">
-              <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            <div className="w-full bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col mb-8">
+              <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
                     Product Master Profit Center ({filteredRecords.length} Products Linked)
                   </span>
-                  <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-0.5 rounded-full font-bold">
                     Qty from Secondary Sales
+                  </span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full font-bold">
+                    Purc. &amp; Transport Editable by Admin
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1512,131 +1651,210 @@ export default function ProfitCenterManagement() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto">
+              {/* Free Flow Table Container (no vertical scroll constraint, no double scrollbar) */}
+              <div className="overflow-x-auto w-full">
                 <table className="w-full text-center border-collapse border border-slate-700 text-xs whitespace-nowrap">
                   <thead>
-                    <tr className="bg-slate-900/95 text-slate-300 font-bold text-[10px] uppercase tracking-wider">
-                      <th className="border border-slate-700 px-2.5 py-2 w-10">#</th>
-                      <th className="border border-slate-700 px-3 py-2 text-left min-w-[200px]">Product Name</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right">MRP (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right">PTR (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right">PTS (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right">CUS (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-amber-950/20 text-amber-300">Purc. Cost</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-amber-950/20 text-amber-300">Transport</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-purple-950/20 text-purple-300 font-bold">Total Unit Cost</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-sky-950/20 text-sky-300">Sold Price</th>
-                      <th className="border border-slate-700 px-2 py-2 text-center bg-sky-950/20 text-sky-300">Qty Sold</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right text-white">Selling Value (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 text-right text-slate-400">Total Cost (₹)</th>
-                      <th className="border border-slate-700 px-3 py-2 text-right font-black text-emerald-400 bg-emerald-950/20">Actual Profit (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2 w-16">Cost Edit</th>
+                    <tr className="bg-slate-900/95 text-slate-300 font-bold text-[10px] uppercase tracking-wider sticky top-0 z-10 shadow-md">
+                      <th className="border border-slate-700 px-2.5 py-2.5 w-10">#</th>
+                      <th className="border border-slate-700 px-3 py-2.5 text-left min-w-[200px]">Product Name</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">MRP (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTR (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTS (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">CUS (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[105px]">
+                        Purc. Cost (₹) ✎
+                      </th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[105px]">
+                        Transport (₹) ✎
+                      </th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right bg-purple-950/30 text-purple-300 font-bold">
+                        Total Unit Cost (₹)
+                      </th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right bg-sky-950/20 text-sky-300">Sold Price</th>
+                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-sky-950/20 text-sky-300">Qty Sold</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right text-white">Selling Value (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2.5 text-right text-slate-400">Total Cost (₹)</th>
+                      <th className="border border-slate-700 px-3 py-2.5 text-right font-black text-emerald-400 bg-emerald-950/20">
+                        Actual Profit (₹)
+                      </th>
+                      <th className="border border-slate-700 px-2 py-2.5 w-16">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={15} className="py-12 text-center text-slate-400">
-                          <RefreshCw size={20} className="animate-spin mx-auto mb-2 text-sky-400" />
+                        <td colSpan={15} className="py-16 text-center text-slate-400">
+                          <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-sky-400" />
                           Loading all master products &amp; secondary sales...
                         </td>
                       </tr>
                     ) : filteredRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={15} className="py-10 text-center text-slate-500 font-medium">
+                        <td colSpan={15} className="py-12 text-center text-slate-500 font-medium">
                           No products found matching query.
                         </td>
                       </tr>
                     ) : (
-                      filteredRecords.map((r, i) => (
-                        <tr key={r._id || i} className="hover:bg-slate-700/40 transition-colors">
-                          <td className="border border-slate-700 px-2 py-2 text-slate-500 font-mono text-[11px]">{i + 1}</td>
-                          <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
-                            <div>{r.productName}</div>
-                            {r.composition && (
-                              <div className="text-[10px] text-slate-400 font-normal truncate max-w-xs">{r.composition}</div>
-                            )}
-                          </td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.mrp || 0}</td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.ptr || 0}</td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.pts || 0}</td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
-                          
-                          {/* Purc. Cost & Transport */}
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-amber-300 bg-amber-950/10">
-                            {r.purchaseCost || 0}
-                          </td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-amber-300 bg-amber-950/10">
-                            {r.transportCost || 0}
-                          </td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-purple-300 bg-purple-950/10">
-                            {r.totalUnitCost || 0}
-                          </td>
+                      filteredRecords.map((r, i) => {
+                        const id = r.productId || r._id;
+                        const inline = inlineCosts[id];
+                        const purc = inline?.purchaseCost !== undefined ? inline.purchaseCost : (r.purchaseCost || 0);
+                        const trans = inline?.transportCost !== undefined ? inline.transportCost : (r.transportCost || 0);
+                        const unitCost = (Number(purc) || 0) + (Number(trans) || 0);
+                        const costOfProd = r.quantity * unitCost;
+                        const profit = r.sellingPrice - costOfProd;
 
-                          {/* Sold Price & Qty */}
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-semibold text-sky-300 bg-sky-950/10">
-                            ₹ {r.soldPrice.toLocaleString('en-IN')}
-                            <span className="text-[9px] text-slate-400 ml-1">({r.priceType})</span>
-                          </td>
-                          <td className="border border-slate-700 px-2 py-2 text-center font-mono font-bold text-white bg-sky-950/10">
-                            {r.quantity > 0 ? (
-                              <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                                {r.quantity}
+                        return (
+                          <tr key={id || i} className="hover:bg-slate-700/40 transition-colors">
+                            <td className="border border-slate-700 px-2 py-2 text-slate-500 font-mono text-[11px]">{i + 1}</td>
+                            <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
+                              <div>{r.productName}</div>
+                              {r.composition && (
+                                <div className="text-[10px] text-slate-400 font-normal truncate max-w-xs">{r.composition}</div>
+                              )}
+                            </td>
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.mrp || 0}</td>
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.ptr || 0}</td>
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.pts || 0}</td>
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
+                            
+                            {/* Editable Purchase Cost Field */}
+                            <td className="border border-slate-700 px-1.5 py-1 text-center bg-amber-950/20">
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="text-[10px] text-amber-400 font-bold">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={purc}
+                                  onChange={(e) => handleInlineCostChange(id, 'purchaseCost', e.target.value)}
+                                  onBlur={() => handleSaveInlineCost(id)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInlineCost(id)}
+                                  placeholder="0"
+                                  className="w-18 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
+                                  title="Admin: Click to edit Purchase Cost (press Enter or click away to save)"
+                                />
+                              </div>
+                            </td>
+
+                            {/* Editable Transport Cost Field */}
+                            <td className="border border-slate-700 px-1.5 py-1 text-center bg-amber-950/20">
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="text-[10px] text-amber-400 font-bold">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={trans}
+                                  onChange={(e) => handleInlineCostChange(id, 'transportCost', e.target.value)}
+                                  onBlur={() => handleSaveInlineCost(id)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInlineCost(id)}
+                                  placeholder="0"
+                                  className="w-18 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
+                                  title="Admin: Click to edit Transport Cost (press Enter or click away to save)"
+                                />
+                              </div>
+                            </td>
+
+                            {/* Derived Total Unit Cost */}
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-black text-purple-300 bg-purple-950/20">
+                              ₹ {unitCost.toLocaleString('en-IN')}
+                            </td>
+
+                            {/* Sold Price (with Avg indicator if multi-HQ) */}
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-semibold text-sky-300 bg-sky-950/10">
+                              ₹ {Number(r.soldPrice || 0).toLocaleString('en-IN')}
+                              <span className={`text-[9px] ml-1.5 px-1 py-0.2 rounded font-bold ${
+                                r.priceType === 'AVG'
+                                  ? 'bg-purple-500/30 text-purple-200 border border-purple-400/40'
+                                  : 'text-slate-400'
+                              }`}>
+                                ({r.priceType === 'AVG' ? 'Avg' : r.priceType})
                               </span>
-                            ) : (
-                              <span className="text-slate-500">0</span>
-                            )}
-                          </td>
+                            </td>
 
-                          {/* Selling Value, Total Cost, Actual Profit */}
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-white">
-                            ₹ {r.sellingPrice.toLocaleString('en-IN')}
-                          </td>
-                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">
-                            ₹ {r.costOfProduct.toLocaleString('en-IN')}
-                          </td>
-                          <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-black bg-emerald-950/15 ${
-                            r.actualProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
-                            ₹ {r.actualProfit.toLocaleString('en-IN')}
-                          </td>
+                            {/* Qty Sold */}
+                            <td className="border border-slate-700 px-2 py-2 text-center font-mono font-bold text-white bg-sky-950/10">
+                              {r.quantity > 0 ? (
+                                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                                  {r.quantity}
+                                </span>
+                              ) : (
+                                <span className="text-slate-500">0</span>
+                              )}
+                            </td>
 
-                          {/* Edit Costs Action */}
-                          <td className="border border-slate-700 px-2 py-2">
-                            <button
-                              onClick={() => handleOpenCostEdit(r)}
-                              className="text-amber-400 hover:text-amber-300 p-1 hover:bg-slate-700 rounded transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
-                              title="Set Purchase & Transport Cost"
-                            >
-                              <Edit3 size={13} /> Edit
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                            {/* Selling Value, Total Cost, Actual Profit */}
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-white">
+                              ₹ {r.sellingPrice.toLocaleString('en-IN')}
+                            </td>
+                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">
+                              ₹ {costOfProd.toLocaleString('en-IN')}
+                            </td>
+                            <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-black bg-emerald-950/15 ${
+                              profit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                            }`}>
+                              ₹ {profit.toLocaleString('en-IN')}
+                            </td>
+
+                            {/* Save Status Indicator */}
+                            <td className="border border-slate-700 px-2 py-1.5 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {inline?.saving ? (
+                                  <span className="text-[10px] text-amber-400 font-bold flex items-center justify-center gap-1 animate-pulse">
+                                    <RefreshCw size={11} className="animate-spin" /> Saving
+                                  </span>
+                                ) : inline?.saved ? (
+                                  <span className="text-[10px] text-emerald-400 font-bold flex items-center justify-center gap-1">
+                                    ✓ Saved
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveInlineCost(id)}
+                                    className="text-amber-400 hover:text-amber-300 px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[10px] font-bold transition-colors"
+                                  >
+                                    Save
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCostEdit(r)}
+                                  className="text-slate-400 hover:text-amber-400 p-1 hover:bg-slate-700/60 rounded transition-colors"
+                                  title="Open cost edit modal"
+                                >
+                                  <Edit3 size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
 
-              {/* Table Footer with Aggregate Totals */}
-              <div className="px-4 py-2 bg-slate-900 border-t border-slate-700 text-xs flex flex-wrap items-center justify-between gap-3">
+              {/* STICKY TABLE FOOTER WITH AGGREGATE TOTALS */}
+              <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur border-t-2 border-slate-700 py-3 px-4 text-xs flex flex-wrap items-center justify-between gap-3 shadow-2xl z-20">
                 <div className="flex items-center gap-3 text-slate-400">
                   <span>Total Products: <strong className="text-white">{filteredRecords.length}</strong></span>
                   <span>•</span>
-                  <span>Total Qty Sold: <strong className="text-sky-400 font-mono">{summary?.totalQty || 0}</strong></span>
+                  <span>Total Qty Sold: <strong className="text-sky-400 font-mono">{liveTotals.totalQty}</strong></span>
                 </div>
-                <div className="flex items-center gap-4 font-mono text-xs">
+                <div className="flex flex-wrap items-center gap-4 font-mono text-xs">
                   <div>
                     <span className="text-slate-400">Selling Value: </span>
-                    <strong className="text-white">₹ {(summary?.totalSellingValue || 0).toLocaleString('en-IN')}</strong>
+                    <strong className="text-white">₹ {liveTotals.totalSellingValue.toLocaleString('en-IN')}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">COGS: </span>
-                    <strong className="text-slate-300">₹ {(summary?.totalCostOfProduct || 0).toLocaleString('en-IN')}</strong>
+                    <span className="text-slate-400">COGS (Total Cost): </span>
+                    <strong className="text-slate-300">₹ {liveTotals.totalCostOfProduct.toLocaleString('en-IN')}</strong>
                   </div>
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg shadow-sm">
                     <span className="text-emerald-300 font-bold">Gross Product Profit: </span>
-                    <strong className="text-emerald-400 font-black">₹ {(summary?.totalHQGrossProfit || 0).toLocaleString('en-IN')}</strong>
+                    <strong className="text-emerald-400 font-black">₹ {liveTotals.totalGrossProfit.toLocaleString('en-IN')}</strong>
                   </div>
                 </div>
               </div>
