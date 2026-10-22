@@ -90,8 +90,10 @@ async function syncDatabase() {
                 try { await sequelize.query('ALTER TABLE xl_doctors DROP COLUMN IF EXISTS "doctorCode";'); console.log('Dropped legacy doctorCode column.'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_products ADD COLUMN IF NOT EXISTS "purchaseCost" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_products ADD COLUMN IF NOT EXISTS "transportCost" FLOAT DEFAULT 0;'); } catch(e) {}
+                try { await sequelize.query('ALTER TABLE xl_products ADD COLUMN IF NOT EXISTS "marginPercent" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "purchaseCost" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "transportCost" FLOAT DEFAULT 0;'); } catch(e) {}
+                try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "marginPercent" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "mrp" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "ptr" FLOAT DEFAULT 0;'); } catch(e) {}
                 try { await sequelize.query('ALTER TABLE xl_profit_centers ADD COLUMN IF NOT EXISTS "pts" FLOAT DEFAULT 0;'); } catch(e) {}

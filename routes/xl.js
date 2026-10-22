@@ -12684,7 +12684,9 @@ router.get('/profit-center', async (req, res) => {
             const pts = Number(p.pts || 0);
             const purchaseCost = Number(p.purchaseCost || 0);
             const transportCost = Number(p.transportCost || 0);
-            const totalUnitCost = purchaseCost + transportCost;
+            const marginPercent = Number(p.marginPercent || 0);
+            const baseCost = purchaseCost + transportCost;
+            const totalUnitCost = Number((baseCost * (1 + marginPercent / 100)).toFixed(2));
 
             // Match Secondary Sales Items
             const matchingItems = secItems.filter(it => {
@@ -12752,6 +12754,7 @@ router.get('/profit-center', async (req, res) => {
                 cus,
                 purchaseCost,
                 transportCost,
+                marginPercent,
                 totalUnitCost,
                 priceType,
                 soldPrice,
@@ -12811,11 +12814,11 @@ router.get('/profit-center', async (req, res) => {
     }
 });
 
-// Update Purchase Cost and Transport Cost for a Product in Master
+// Update Purchase Cost, Transport Cost and Margin % for a Product in Master
 router.put('/profit-center/product-costs', async (req, res) => {
     try {
         const { XlProduct } = require('../db');
-        const { productId, purchaseCost, transportCost } = req.body;
+        const { productId, purchaseCost, transportCost, marginPercent } = req.body;
         if (!productId) return res.status(400).json({ success: false, message: 'productId is required' });
 
         const prod = await XlProduct.findOne({
@@ -12831,17 +12834,23 @@ router.put('/profit-center/product-costs', async (req, res) => {
 
         if (purchaseCost !== undefined) prod.purchaseCost = Number(purchaseCost || 0);
         if (transportCost !== undefined) prod.transportCost = Number(transportCost || 0);
+        if (marginPercent !== undefined) prod.marginPercent = Number(marginPercent || 0);
         await prod.save();
+
+        const baseCost = Number(prod.purchaseCost || 0) + Number(prod.transportCost || 0);
+        const marginPct = Number(prod.marginPercent || 0);
+        const totalUnitCost = Number((baseCost * (1 + marginPct / 100)).toFixed(2));
 
         res.json({
             success: true,
-            message: 'Product purchase & transport costs updated successfully',
+            message: 'Product purchase, transport and margin updated successfully',
             data: {
                 productId: prod._id,
                 productName: prod.productName,
                 purchaseCost: prod.purchaseCost,
                 transportCost: prod.transportCost,
-                totalUnitCost: Number(prod.purchaseCost || 0) + Number(prod.transportCost || 0)
+                marginPercent: prod.marginPercent,
+                totalUnitCost
             }
         });
     } catch (e) {
@@ -12980,7 +12989,7 @@ router.get('/profit-center/roi', async (req, res) => {
             allProducts.forEach(p => {
                 const pId = p._id || p.uid || '';
                 const pName = (p.productName || p.name || '').trim();
-                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+                const totalUnitCost = Number(((Number(p.purchaseCost || 0) + Number(p.transportCost || 0)) * (1 + Number(p.marginPercent || 0) / 100)).toFixed(2));
 
                 const matching = hqItems.filter(it => {
                     const itProdId = String(it.productId || '').trim();
@@ -13132,7 +13141,7 @@ router.get('/profit-center/analytics', async (req, res) => {
             allProducts.forEach(p => {
                 const pId = p._id || p.uid || '';
                 const pName = (p.productName || p.name || '').trim();
-                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+                const totalUnitCost = Number(((Number(p.purchaseCost || 0) + Number(p.transportCost || 0)) * (1 + Number(p.marginPercent || 0) / 100)).toFixed(2));
 
                 const matching = monthItems.filter(it => {
                     const itProdId = String(it.productId || '').trim();
@@ -13206,7 +13215,7 @@ router.get('/profit-center/analytics', async (req, res) => {
             allProducts.forEach(p => {
                 const pId = p._id || p.uid || '';
                 const pName = (p.productName || p.name || '').trim();
-                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+                const totalUnitCost = Number(((Number(p.purchaseCost || 0) + Number(p.transportCost || 0)) * (1 + Number(p.marginPercent || 0) / 100)).toFixed(2));
 
                 const matching = hqItems.filter(it => {
                     const itProdId = String(it.productId || '').trim();
@@ -13251,7 +13260,7 @@ router.get('/profit-center/analytics', async (req, res) => {
                 allProducts.forEach(p => {
                     const pId = p._id || p.uid || '';
                     const pName = (p.productName || p.name || '').trim();
-                    const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+                    const totalUnitCost = Number(((Number(p.purchaseCost || 0) + Number(p.transportCost || 0)) * (1 + Number(p.marginPercent || 0) / 100)).toFixed(2));
                     const matching = mItems.filter(it => {
                         const itProdId = String(it.productId || '').trim();
                         const itProdName = String(it.product || '').trim().toLowerCase();
@@ -13293,7 +13302,7 @@ router.get('/profit-center/analytics', async (req, res) => {
         const productTrends = allProducts.map(p => {
             const pId = p._id || p.uid || '';
             const pName = (p.productName || p.name || '').trim();
-            const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+            const totalUnitCost = Number(((Number(p.purchaseCost || 0) + Number(p.transportCost || 0)) * (1 + Number(p.marginPercent || 0) / 100)).toFixed(2));
 
             let totalAnnualQty = 0;
             let totalAnnualRevenue = 0;

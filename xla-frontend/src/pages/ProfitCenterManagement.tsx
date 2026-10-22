@@ -31,6 +31,7 @@ interface ProfitProductRecord {
   cus: number;
   purchaseCost: number;
   transportCost: number;
+  marginPercent: number;
   totalUnitCost: number;
   priceType: string;
   soldPrice: number;
@@ -88,10 +89,11 @@ export default function ProfitCenterManagement() {
   const [editingProduct, setEditingProduct] = useState<ProfitProductRecord | null>(null);
   const [editPurchaseCost, setEditPurchaseCost] = useState<string>('0');
   const [editTransportCost, setEditTransportCost] = useState<string>('0');
+  const [editMarginPercent, setEditMarginPercent] = useState<string>('0');
   const [savingCost, setSavingCost] = useState<boolean>(false);
 
-  // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, saving, saved }
-  const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; saving?: boolean; saved?: boolean }>>({});
+  // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, marginPercent, saving, saved }
+  const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; marginPercent: number | string; saving?: boolean; saved?: boolean }>>({});
 
   // Sync inlineCosts when records load
   useEffect(() => {
@@ -103,7 +105,8 @@ export default function ProfitCenterManagement() {
           if (!next[id]) {
             next[id] = {
               purchaseCost: r.purchaseCost || 0,
-              transportCost: r.transportCost || 0
+              transportCost: r.transportCost || 0,
+              marginPercent: r.marginPercent || 0
             };
           }
         });
@@ -112,11 +115,11 @@ export default function ProfitCenterManagement() {
     }
   }, [records]);
 
-  const handleInlineCostChange = (productId: string, field: 'purchaseCost' | 'transportCost', value: string) => {
+  const handleInlineCostChange = (productId: string, field: 'purchaseCost' | 'transportCost' | 'marginPercent', value: string) => {
     setInlineCosts(prev => ({
       ...prev,
       [productId]: {
-        ...(prev[productId] || { purchaseCost: 0, transportCost: 0 }),
+        ...(prev[productId] || { purchaseCost: 0, transportCost: 0, marginPercent: 0 }),
         [field]: value,
         saved: false
       }
@@ -135,11 +138,15 @@ export default function ProfitCenterManagement() {
     try {
       const purc = Number(costData.purchaseCost) || 0;
       const trans = Number(costData.transportCost) || 0;
+      const margin = Number(costData.marginPercent) || 0;
+      const base = purc + trans;
+      const totalUnitCost = Number((base * (1 + margin / 100)).toFixed(2));
 
       const res = await axios.put('/api/xl/profit-center/product-costs', {
         productId,
         purchaseCost: purc,
-        transportCost: trans
+        transportCost: trans,
+        marginPercent: margin
       });
 
       if (res.data?.success) {
@@ -150,13 +157,13 @@ export default function ProfitCenterManagement() {
 
         setRecords(prev => prev.map(r => {
           if ((r.productId || r._id) === productId) {
-            const totalUnitCost = purc + trans;
             const costOfProduct = r.quantity * totalUnitCost;
             const actualProfit = r.sellingPrice - costOfProduct;
             return {
               ...r,
               purchaseCost: purc,
               transportCost: trans,
+              marginPercent: margin,
               totalUnitCost,
               costOfProduct,
               actualProfit
@@ -268,6 +275,7 @@ export default function ProfitCenterManagement() {
     setEditingProduct(prod);
     setEditPurchaseCost(String(prod.purchaseCost || 0));
     setEditTransportCost(String(prod.transportCost || 0));
+    setEditMarginPercent(String(prod.marginPercent || 0));
   };
 
   // Save Cost Edit
@@ -279,7 +287,8 @@ export default function ProfitCenterManagement() {
       const res = await axios.put('/api/xl/profit-center/product-costs', {
         productId: editingProduct.productId || editingProduct._id,
         purchaseCost: Number(editPurchaseCost) || 0,
-        transportCost: Number(editTransportCost) || 0
+        transportCost: Number(editTransportCost) || 0,
+        marginPercent: Number(editMarginPercent) || 0
       });
       if (res.data?.success) {
         setEditingProduct(null);
@@ -312,9 +321,11 @@ export default function ProfitCenterManagement() {
     filteredRecords.forEach(r => {
       const id = r.productId || r._id;
       const inline = inlineCosts[id];
-      const purc = inline ? (Number(inline.purchaseCost) || 0) : (r.purchaseCost || 0);
-      const trans = inline ? (Number(inline.transportCost) || 0) : (r.transportCost || 0);
-      const unitCost = purc + trans;
+      const purc = inline?.purchaseCost !== undefined ? (Number(inline.purchaseCost) || 0) : (r.purchaseCost || 0);
+      const trans = inline?.transportCost !== undefined ? (Number(inline.transportCost) || 0) : (r.transportCost || 0);
+      const margin = inline?.marginPercent !== undefined ? (Number(inline.marginPercent) || 0) : (r.marginPercent || 0);
+      const base = purc + trans;
+      const unitCost = Number((base * (1 + margin / 100)).toFixed(2));
 
       totalQty += Number(r.quantity || 0);
       totalSellingValue += Number(r.sellingPrice || 0);
@@ -1662,11 +1673,14 @@ export default function ProfitCenterManagement() {
                       <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTR (₹)</th>
                       <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTS (₹)</th>
                       <th className="border border-slate-700 px-2.5 py-2.5 text-right">CUS (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[105px]">
+                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[95px]">
                         Purc. Cost (₹) ✎
                       </th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[105px]">
+                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[95px]">
                         Transport (₹) ✎
+                      </th>
+                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[85px]">
+                        Margin (%) ✎
                       </th>
                       <th className="border border-slate-700 px-2.5 py-2.5 text-right bg-purple-950/30 text-purple-300 font-bold">
                         Total Unit Cost (₹)
@@ -1684,14 +1698,14 @@ export default function ProfitCenterManagement() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={15} className="py-16 text-center text-slate-400">
+                        <td colSpan={16} className="py-16 text-center text-slate-400">
                           <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-sky-400" />
                           Loading all master products &amp; secondary sales...
                         </td>
                       </tr>
                     ) : filteredRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={15} className="py-12 text-center text-slate-500 font-medium">
+                        <td colSpan={16} className="py-12 text-center text-slate-500 font-medium">
                           No products found matching query.
                         </td>
                       </tr>
@@ -1701,7 +1715,9 @@ export default function ProfitCenterManagement() {
                         const inline = inlineCosts[id];
                         const purc = inline?.purchaseCost !== undefined ? inline.purchaseCost : (r.purchaseCost || 0);
                         const trans = inline?.transportCost !== undefined ? inline.transportCost : (r.transportCost || 0);
-                        const unitCost = (Number(purc) || 0) + (Number(trans) || 0);
+                        const margin = inline?.marginPercent !== undefined ? inline.marginPercent : (r.marginPercent || 0);
+                        const baseCost = (Number(purc) || 0) + (Number(trans) || 0);
+                        const unitCost = Number((baseCost * (1 + (Number(margin) || 0) / 100)).toFixed(2));
                         const costOfProd = r.quantity * unitCost;
                         const profit = r.sellingPrice - costOfProd;
 
@@ -1720,8 +1736,8 @@ export default function ProfitCenterManagement() {
                             <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
                             
                             {/* Editable Purchase Cost Field */}
-                            <td className="border border-slate-700 px-1.5 py-1 text-center bg-amber-950/20">
-                              <div className="flex items-center justify-center gap-1">
+                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                              <div className="flex items-center justify-center gap-0.5">
                                 <span className="text-[10px] text-amber-400 font-bold">₹</span>
                                 <input
                                   type="number"
@@ -1732,15 +1748,15 @@ export default function ProfitCenterManagement() {
                                   onBlur={() => handleSaveInlineCost(id)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveInlineCost(id)}
                                   placeholder="0"
-                                  className="w-18 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
-                                  title="Admin: Click to edit Purchase Cost (press Enter or click away to save)"
+                                  className="w-16 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
+                                  title="Admin: Click to edit Purchase Cost"
                                 />
                               </div>
                             </td>
 
                             {/* Editable Transport Cost Field */}
-                            <td className="border border-slate-700 px-1.5 py-1 text-center bg-amber-950/20">
-                              <div className="flex items-center justify-center gap-1">
+                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                              <div className="flex items-center justify-center gap-0.5">
                                 <span className="text-[10px] text-amber-400 font-bold">₹</span>
                                 <input
                                   type="number"
@@ -1751,13 +1767,32 @@ export default function ProfitCenterManagement() {
                                   onBlur={() => handleSaveInlineCost(id)}
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveInlineCost(id)}
                                   placeholder="0"
-                                  className="w-18 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
-                                  title="Admin: Click to edit Transport Cost (press Enter or click away to save)"
+                                  className="w-16 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
+                                  title="Admin: Click to edit Transport Cost"
                                 />
                               </div>
                             </td>
 
-                            {/* Derived Total Unit Cost */}
+                            {/* Editable Margin % Field (Amber colored) */}
+                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                              <div className="flex items-center justify-center gap-0.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={margin}
+                                  onChange={(e) => handleInlineCostChange(id, 'marginPercent', e.target.value)}
+                                  onBlur={() => handleSaveInlineCost(id)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInlineCost(id)}
+                                  placeholder="0"
+                                  className="w-14 bg-slate-900 border border-amber-500/50 hover:border-amber-400 focus:border-amber-400 rounded px-1.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 text-xs shadow-inner"
+                                  title="Admin: Click to edit Margin % (e.g. 30 for 30%)"
+                                />
+                                <span className="text-[10px] text-amber-400 font-bold">%</span>
+                              </div>
+                            </td>
+
+                            {/* Derived Total Unit Cost = (Purc + Transport) + Margin% */}
                             <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-black text-purple-300 bg-purple-950/20">
                               ₹ {unitCost.toLocaleString('en-IN')}
                             </td>
@@ -2052,20 +2087,46 @@ export default function ProfitCenterManagement() {
                 <span className="text-[10px] text-slate-400 mt-0.5 block">Freight, logistics, and handling charges</span>
               </div>
 
-              {/* Total Unit Cost Preview */}
-              <div className="bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase text-purple-300 tracking-wider block">
-                    Derived Total Unit Cost
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Purc. ({Number(editPurchaseCost || 0)}) + Transport ({Number(editTransportCost || 0)})
-                  </span>
+              <div>
+                <label className="text-[10px] font-bold text-amber-300 uppercase block mb-1">
+                  Margin (%) *
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editMarginPercent}
+                    onChange={e => setEditMarginPercent(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500"
+                    required
+                  />
+                  <span className="text-sm font-bold text-amber-400">%</span>
                 </div>
-                <span className="text-lg font-mono font-black text-purple-300">
-                  ₹ {(Number(editPurchaseCost || 0) + Number(editTransportCost || 0)).toLocaleString('en-IN')}
-                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Profitability buffer added to (Purc. + Transport)</span>
               </div>
+
+              {/* Total Unit Cost Preview */}
+              {(() => {
+                const base = (Number(editPurchaseCost) || 0) + (Number(editTransportCost) || 0);
+                const margin = Number(editMarginPercent) || 0;
+                const total = Number((base * (1 + margin / 100)).toFixed(2));
+                return (
+                  <div className="bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-purple-300 tracking-wider block">
+                        Derived Total Unit Cost
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Base ₹{base} + {margin}% Margin
+                      </span>
+                    </div>
+                    <span className="text-lg font-mono font-black text-purple-300">
+                      ₹ {total.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                );
+              })()}
 
               <div className="pt-2 flex justify-end gap-2 border-t border-slate-700">
                 <button
