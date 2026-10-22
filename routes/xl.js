@@ -12604,35 +12604,198 @@ router.get('/cost-center/total-expenses', async (req, res) => {
 // ==========================================
 router.get('/profit-center', async (req, res) => {
     try {
-        const { XlProfitCenter } = require('../db');
+        const { XlProduct, XlSecondarySales, XlSecondarySalesItem, XlCostCenter } = require('../db');
         const { month, year, hq } = req.query;
-        const where = {};
-        if (month) where.month = month;
-        if (year) where.year = year;
-        if (hq && hq !== 'ALL') where.hq = hq;
+        const { Op } = require('sequelize');
 
-        const rows = await XlProfitCenter.findAll({
-            where,
-            order: [['createdAt', 'DESC']],
+        const shortMonth = month ? month.split(',')[0].trim().substring(0, 3) : '';
+        const yr = year || (month && month.includes(',') ? month.split(',')[1].trim() : String(new Date().getFullYear()));
+
+        // 1. Fetch all products from Product Master
+        const allProducts = await XlProduct.findAll({
+            order: [['productName', 'ASC']],
             raw: true
         });
 
-        const totalValue = rows.reduce((s, r) => s + (Number(r.totalValue) || 0), 0);
+        // 2. Fetch Secondary Sales for the specified month, year, and HQ
+        const secSalesWhere = {};
+        if (month) {
+            secSalesWhere[Op.or] = [
+                { month: month },
+                { month: shortMonth },
+                { month: { [Op.like]: `${shortMonth}%` } }
+            ];
+        }
+        if (yr) secSalesWhere.year = yr;
+        if (hq && hq !== 'ALL') secSalesWhere.headquarter = hq;
+
+        const secSales = await XlSecondarySales.findAll({
+            where: secSalesWhere,
+            raw: true
+        });
+
+        const saleIds = secSales.map(s => s._id);
+        const secItems = saleIds.length > 0 ? await XlSecondarySalesItem.findAll({
+            where: { saleId: { [Op.in]: saleIds } },
+            raw: true
+        }) : [];
+
+        // 3. For each product, compute MRP, PTR, PTS, CUS, Purc. Cost, Transport Cost, Total Unit Cost, Sold Qty, Selling Value, Cost, Actual Profit
+        const rows = allProducts.map((p, idx) => {
+            const pId = p._id || p.uid || '';
+            const pName = (p.productName || p.name || '').trim();
+
+            const mrp = Number(p.mrp || 0);
+            const ptr = Number(p.ptr || 0);
+            const pts = Number(p.pts || 0);
+            const purchaseCost = Number(p.purchaseCost || 0);
+            const transportCost = Number(p.transportCost || 0);
+            const totalUnitCost = purchaseCost + transportCost;
+
+            // Match Secondary Sales Items
+            const matchingItems = secItems.filter(it => {
+                const itProdId = String(it.productId || '').trim();
+                const itProdName = String(it.product || '').trim().toLowerCase();
+                return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                       (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+            });
+
+            let quantity = 0;
+            let soldPrice = ptr; // Default to PTR if not sold
+            let priceType = 'PTR';
+            let cus = 0;
+
+            if (matchingItems.length > 0) {
+                quantity = matchingItems.reduce((s, it) => s + (Number(it.salesQty || it.qty || 0)), 0);
+
+                // Determine sold price and price type
+                const cusItem = matchingItems.find(it => 
+                    (it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice))
+                );
+
+                if (cusItem && cusItem.customPrice) {
+                    priceType = 'CUS';
+                    soldPrice = Number(cusItem.customPrice);
+                    cus = soldPrice;
+                } else {
+                    const firstItem = matchingItems[0];
+                    priceType = firstItem.selectedPriceType || firstItem.priceType || 'PTR';
+                    if (priceType === 'PTS') soldPrice = pts || Number(firstItem.basePrice || pts);
+                    else soldPrice = ptr || Number(firstItem.basePrice || ptr);
+                    if (firstItem.customPrice && firstItem.customPrice !== soldPrice) cus = Number(firstItem.customPrice);
+                }
+            }
+
+            const sellingPrice = quantity * soldPrice;
+            const costOfProduct = quantity * totalUnitCost;
+            const actualProfit = sellingPrice - costOfProduct;
+
+            return {
+                _id: pId || `prod_${idx}`,
+                productId: pId,
+                productName: pName,
+                composition: p.composition || '',
+                category: p.category || '',
+                mrp,
+                ptr,
+                pts,
+                cus,
+                purchaseCost,
+                transportCost,
+                totalUnitCost,
+                priceType,
+                soldPrice,
+                quantity,
+                sellingPrice,
+                costOfProduct,
+                actualProfit,
+                totalValue: sellingPrice,
+                unitPrice: soldPrice,
+                hq: hq && hq !== 'ALL' ? hq : 'ALL'
+            };
+        });
+
+        // 4. HQ Aggregation: Total Selling Value, Total Product Cost, Total Gross Profit
+        const totalSellingValue = rows.reduce((s, r) => s + (Number(r.sellingPrice) || 0), 0);
+        const totalCostOfProduct = rows.reduce((s, r) => s + (Number(r.costOfProduct) || 0), 0);
+        const totalHQGrossProfit = rows.reduce((s, r) => s + (Number(r.actualProfit) || 0), 0);
         const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+
+        // 5. Fetch Cost Center Operating Expenses for that HQ and Period
+        const costWhere = {};
+        if (month) {
+            costWhere[Op.or] = [
+                { month: month },
+                { month: shortMonth },
+                { month: { [Op.like]: `${shortMonth}%` } }
+            ];
+        }
+        if (yr) costWhere.year = yr;
+        if (hq && hq !== 'ALL') costWhere.hq = hq;
+
+        const costRows = await XlCostCenter.findAll({ where: costWhere, raw: true });
+        const totalCostCenterExpenses = costRows.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+
+        // 6. Actual Net Profit of the HQ = Gross Profit from Products - Cost Center Expenses
+        const actualHQNetProfit = totalHQGrossProfit - totalCostCenterExpenses;
 
         res.json({
             success: true,
             data: rows,
             summary: {
                 count: rows.length,
-                totalValue,
                 totalQty,
+                totalSellingValue,
+                totalCostOfProduct,
+                totalHQGrossProfit,
+                totalCostCenterExpenses,
+                actualHQNetProfit,
                 month: month || '',
-                year: year || ''
+                year: yr || '',
+                hq: hq || 'ALL'
             }
         });
     } catch (e) {
         console.error('Error in GET /profit-center:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Update Purchase Cost and Transport Cost for a Product in Master
+router.put('/profit-center/product-costs', async (req, res) => {
+    try {
+        const { XlProduct } = require('../db');
+        const { productId, purchaseCost, transportCost } = req.body;
+        if (!productId) return res.status(400).json({ success: false, message: 'productId is required' });
+
+        const prod = await XlProduct.findOne({
+            where: {
+                [require('sequelize').Op.or]: [
+                    { _id: productId },
+                    { uid: productId }
+                ]
+            }
+        });
+
+        if (!prod) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        if (purchaseCost !== undefined) prod.purchaseCost = Number(purchaseCost || 0);
+        if (transportCost !== undefined) prod.transportCost = Number(transportCost || 0);
+        await prod.save();
+
+        res.json({
+            success: true,
+            message: 'Product purchase & transport costs updated successfully',
+            data: {
+                productId: prod._id,
+                productName: prod.productName,
+                purchaseCost: prod.purchaseCost,
+                transportCost: prod.transportCost,
+                totalUnitCost: Number(prod.purchaseCost || 0) + Number(prod.transportCost || 0)
+            }
+        });
+    } catch (e) {
+        console.error('Error in PUT /profit-center/product-costs:', e);
         res.status(500).json({ success: false, message: e.message });
     }
 });
@@ -12699,115 +12862,132 @@ router.delete('/profit-center/:id', async (req, res) => {
     }
 });
 
-router.post('/profit-center/auto-sync', async (req, res) => {
-    try {
-        const { XlProfitCenter, XlProduct, XlPrimarySalesItem } = require('../db');
-        const { month, year, hq, priceType } = req.body;
-        const pType = priceType || 'PTS';
-
-        const products = await XlProduct.findAll({ raw: true });
-        let syncedCount = 0;
-
-        for (const p of products) {
-            const pName = p.productName || p.name;
-            if (!pName) continue;
-
-            let price = Number(pType === 'MRP' ? (p.mrp || 0) : (pType === 'PTR' ? (p.ptr || 0) : (p.pts || 0)));
-            if (!price) price = Number(p.pts || p.ptr || p.mrp || 0);
-
-            let totalQty = 0;
-            try {
-                const salesItems = await XlPrimarySalesItem.findAll({
-                    where: { productId: p._id || p.uid || pName },
-                    raw: true
-                });
-                totalQty = salesItems.reduce((s, it) => s + (Number(it.quantity || it.qty || 0)), 0);
-            } catch (err) {}
-
-            if (totalQty === 0) totalQty = 10;
-
-            const totalVal = totalQty * price;
-
-            let existing = await XlProfitCenter.findOne({
-                where: { month: month || '', year: year || '', hq: hq || '', productName: pName }
-            });
-
-            if (existing) {
-                existing.priceType = pType;
-                existing.unitPrice = price;
-                existing.quantity = totalQty;
-                existing.totalValue = totalVal;
-                existing.remarks = 'Auto-calculated from Product Catalog & Sales';
-                await existing.save();
-            } else {
-                await XlProfitCenter.create({
-                    month: month || '',
-                    year: year || '',
-                    hq: hq || '',
-                    productId: p._id || p.uid || '',
-                    productName: pName,
-                    priceType: pType,
-                    unitPrice: price,
-                    quantity: totalQty,
-                    totalValue: totalVal,
-                    remarks: 'Auto-calculated from Product Catalog & Sales'
-                });
-            }
-            syncedCount++;
-        }
-
-        res.json({ success: true, message: `Synced ${syncedCount} products to Profit Center`, syncedCount });
-    } catch (e) {
-        console.error('Error in /profit-center/auto-sync:', e);
-        res.status(500).json({ success: false, message: e.message });
-    }
-});
-
 router.get('/profit-center/roi', async (req, res) => {
     try {
-        const { XlProfitCenter, XlCostCenter, XlHQ } = require('../db');
+        const { XlProduct, XlSecondarySales, XlSecondarySalesItem, XlCostCenter, XlHQ } = require('../db');
         const { month, year, hq } = req.query;
-        const where = {};
-        if (month) where.month = month;
-        if (year) where.year = year;
+        const { Op } = require('sequelize');
 
-        const [productRows, costRows, allHQs] = await Promise.all([
-            XlProfitCenter.findAll({ where, raw: true }),
-            XlCostCenter.findAll({ where, raw: true }),
+        const shortMonth = month ? month.split(',')[0].trim().substring(0, 3) : '';
+        const yr = year || (month && month.includes(',') ? month.split(',')[1].trim() : String(new Date().getFullYear()));
+
+        // All Products
+        const allProducts = await XlProduct.findAll({ raw: true });
+
+        // Secondary Sales for Month & Year
+        const secSalesWhere = {};
+        if (month) {
+            secSalesWhere[Op.or] = [
+                { month: month },
+                { month: shortMonth },
+                { month: { [Op.like]: `${shortMonth}%` } }
+            ];
+        }
+        if (yr) secSalesWhere.year = yr;
+
+        const [secSales, allCostRows, allHQs] = await Promise.all([
+            XlSecondarySales.findAll({ where: secSalesWhere, raw: true }),
+            XlCostCenter.findAll({
+                where: {
+                    ...(month ? {
+                        [Op.or]: [
+                            { month: month },
+                            { month: shortMonth },
+                            { month: { [Op.like]: `${shortMonth}%` } }
+                        ]
+                    } : {}),
+                    ...(yr ? { year: yr } : {})
+                },
+                raw: true
+            }),
             XlHQ.findAll({ raw: true }).catch(() => [])
         ]);
 
+        const saleIds = secSales.map(s => s._id);
+        const secItems = saleIds.length > 0 ? await XlSecondarySalesItem.findAll({
+            where: { saleId: { [Op.in]: saleIds } },
+            raw: true
+        }) : [];
+
+        // All unique HQs
         const hqList = Array.from(new Set([
             ...allHQs.map(h => typeof h === 'string' ? h : (h.name || h.headquarter || '')).filter(Boolean),
-            ...productRows.map(p => p.hq).filter(Boolean),
-            ...costRows.map(c => c.hq).filter(Boolean)
+            ...secSales.map(s => s.headquarter).filter(Boolean),
+            ...allCostRows.map(c => c.hq).filter(Boolean)
         ]));
 
         const hqBreakdown = hqList.map(h => {
-            const prodHq = productRows.filter(p => !p.hq || p.hq === 'ALL' || p.hq === h);
-            const costHq = costRows.filter(c => !c.hq || c.hq === 'ALL' || c.hq === h);
+            const hqSales = secSales.filter(s => s.headquarter === h);
+            const hqSaleIds = new Set(hqSales.map(s => s._id));
+            const hqItems = secItems.filter(it => hqSaleIds.has(it.saleId));
 
-            const revenue = prodHq.reduce((s, p) => s + (Number(p.totalValue) || 0), 0);
-            const expense = costHq.reduce((s, c) => s + (Number(c.amount) || 0), 0);
-            const netMargin = revenue - expense;
-            const roiPct = expense > 0 ? Number(((revenue / expense) * 100).toFixed(1)) : (revenue > 0 ? 100 : 0);
+            // Product Profit calculation for this HQ
+            let hqSellingValue = 0;
+            let hqTotalProductCost = 0;
+            let hqGrossProfit = 0;
+            let hqSoldQty = 0;
+
+            allProducts.forEach(p => {
+                const pId = p._id || p.uid || '';
+                const pName = (p.productName || p.name || '').trim();
+                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+
+                const matching = hqItems.filter(it => {
+                    const itProdId = String(it.productId || '').trim();
+                    const itProdName = String(it.product || '').trim().toLowerCase();
+                    return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                           (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+                });
+
+                if (matching.length > 0) {
+                    const qty = matching.reduce((s, it) => s + Number(it.salesQty || it.qty || 0), 0);
+                    const cusItem = matching.find(it => it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice));
+                    let soldRate = Number(p.ptr || 0);
+                    if (cusItem && cusItem.customPrice) soldRate = Number(cusItem.customPrice);
+                    else if (matching[0].selectedPriceType === 'PTS' || matching[0].priceType === 'PTS') soldRate = Number(p.pts || matching[0].basePrice || 0);
+                    else soldRate = Number(p.ptr || matching[0].basePrice || 0);
+
+                    const rev = qty * soldRate;
+                    const cogs = qty * totalUnitCost;
+                    const prof = rev - cogs;
+
+                    hqSoldQty += qty;
+                    hqSellingValue += rev;
+                    hqTotalProductCost += cogs;
+                    hqGrossProfit += prof;
+                }
+            });
+
+            // Operating expenses for this HQ
+            const hqCosts = allCostRows.filter(c => c.hq === h);
+            const expense = hqCosts.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+
+            // Actual Net Profit of this HQ = Gross Profit - Operating Expenses
+            const actualNetProfit = hqGrossProfit - expense;
+            const roiPct = expense > 0 ? Number(((hqGrossProfit / expense) * 100).toFixed(1)) : (hqGrossProfit > 0 ? 100 : 0);
 
             let status = 'DEFICIT';
-            if (roiPct >= 100) status = 'EXCELLENT';
-            else if (roiPct >= 80) status = 'MODERATE';
+            if (actualNetProfit >= 0 && roiPct >= 100) status = 'PROFITABLE';
+            else if (roiPct >= 70) status = 'MODERATE';
 
             return {
                 hq: h,
-                revenue,
-                expense,
-                netMargin,
+                sellingValue: hqSellingValue,
+                productCost: hqTotalProductCost,
+                revenue: hqGrossProfit, // Gross Product Profit
+                expense, // Total Cost Center Expense
+                netMargin: actualNetProfit, // Actual Net Profit
+                actualNetProfit,
                 roiPct,
-                status
+                status,
+                soldQty: hqSoldQty
             };
         });
 
         const filteredBreakdown = (hq && hq !== 'ALL') ? hqBreakdown.filter(b => b.hq === hq) : hqBreakdown;
 
+        const totalSellingValue = filteredBreakdown.reduce((s, b) => s + b.sellingValue, 0);
+        const totalProductCost = filteredBreakdown.reduce((s, b) => s + b.productCost, 0);
         const totalRevenue = filteredBreakdown.reduce((s, b) => s + b.revenue, 0);
         const totalExpense = filteredBreakdown.reduce((s, b) => s + b.expense, 0);
         const totalNetMargin = totalRevenue - totalExpense;
@@ -12816,6 +12996,8 @@ router.get('/profit-center/roi', async (req, res) => {
         res.json({
             success: true,
             summary: {
+                totalSellingValue,
+                totalProductCost,
                 totalRevenue,
                 totalExpense,
                 totalNetMargin,

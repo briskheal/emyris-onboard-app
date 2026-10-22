@@ -559,6 +559,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         mrp: { type: DataTypes.FLOAT },
         pts: { type: DataTypes.FLOAT },
         ptr: { type: DataTypes.FLOAT },
+        purchaseCost: { type: DataTypes.FLOAT, defaultValue: 0 },
+        transportCost: { type: DataTypes.FLOAT, defaultValue: 0 },
         division: { type: DataTypes.STRING },
         gst: { type: DataTypes.FLOAT },
         stock: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -709,10 +711,18 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         hq: { type: DataTypes.STRING },
         productId: { type: DataTypes.STRING },
         productName: { type: DataTypes.STRING, allowNull: false },
-        priceType: { type: DataTypes.STRING, defaultValue: 'PTS' }, // PTS, PTR, MRP
+        priceType: { type: DataTypes.STRING, defaultValue: 'PTS' }, // PTS, PTR, MRP, CUS
         unitPrice: { type: DataTypes.FLOAT, defaultValue: 0 },
         quantity: { type: DataTypes.FLOAT, defaultValue: 0 },
         totalValue: { type: DataTypes.FLOAT, defaultValue: 0 },
+        mrp: { type: DataTypes.FLOAT, defaultValue: 0 },
+        pts: { type: DataTypes.FLOAT, defaultValue: 0 },
+        ptr: { type: DataTypes.FLOAT, defaultValue: 0 },
+        cus: { type: DataTypes.FLOAT, defaultValue: 0 },
+        purchaseCost: { type: DataTypes.FLOAT, defaultValue: 0 },
+        transportCost: { type: DataTypes.FLOAT, defaultValue: 0 },
+        totalUnitCost: { type: DataTypes.FLOAT, defaultValue: 0 },
+        actualProfit: { type: DataTypes.FLOAT, defaultValue: 0 },
         remarks: { type: DataTypes.TEXT },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });

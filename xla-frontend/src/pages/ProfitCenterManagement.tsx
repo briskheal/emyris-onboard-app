@@ -2,14 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ArrowLeft, 
   HelpCircle, 
-  Plus, 
   Download, 
-  Trash2, 
   RefreshCw, 
-  ChevronDown, 
   Package, 
   TrendingUp, 
-  Zap, 
+  Edit3,
   X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,16 +18,37 @@ type ProfitTab = 'PRODUCTS' | 'ROI';
 
 interface ProfitProductRecord {
   _id: string;
+  productId: string;
+  productName: string;
+  composition?: string;
+  category?: string;
+  mrp: number;
+  ptr: number;
+  pts: number;
+  cus: number;
+  purchaseCost: number;
+  transportCost: number;
+  totalUnitCost: number;
+  priceType: string;
+  soldPrice: number;
+  quantity: number;
+  sellingPrice: number;
+  costOfProduct: number;
+  actualProfit: number;
+  hq: string;
+}
+
+interface ProfitSummary {
+  count: number;
+  totalQty: number;
+  totalSellingValue: number;
+  totalCostOfProduct: number;
+  totalHQGrossProfit: number;
+  totalCostCenterExpenses: number;
+  actualHQNetProfit: number;
   month: string;
   year: string;
   hq: string;
-  productId: string;
-  productName: string;
-  priceType: 'PTS' | 'PTR' | 'MRP';
-  unitPrice: number;
-  quantity: number;
-  totalValue: number;
-  remarks?: string;
 }
 
 export default function ProfitCenterManagement() {
@@ -47,27 +65,21 @@ export default function ProfitCenterManagement() {
   const [hqs, setHqs] = useState<string[]>([]);
   const [selectedHq, setSelectedHq] = useState<string>('ALL');
 
-  // Price Type Filter (PTS, PTR, MRP)
-  const [selectedPriceType, setSelectedPriceType] = useState<'PTS' | 'PTR' | 'MRP'>('PTS');
+  // Search Filter
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Product Master
-  const [products, setProducts] = useState<any[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-
-  // Table Data
+  // Table Data & Summary
   const [records, setRecords] = useState<ProfitProductRecord[]>([]);
+  const [summary, setSummary] = useState<ProfitSummary | null>(null);
   const [roiData, setRoiData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Modals & Forms
-  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  // Modals & Cost Editing
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
-  const [formProduct, setFormProduct] = useState<any>(null);
-  const [formQty, setFormQty] = useState<string>('10');
-  const [formPrice, setFormPrice] = useState<string>('');
-  const [formRemarks, setFormRemarks] = useState<string>('');
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [syncing, setSyncing] = useState<boolean>(false);
+  const [editingProduct, setEditingProduct] = useState<ProfitProductRecord | null>(null);
+  const [editPurchaseCost, setEditPurchaseCost] = useState<string>('0');
+  const [editTransportCost, setEditTransportCost] = useState<string>('0');
+  const [savingCost, setSavingCost] = useState<boolean>(false);
 
   // Parse Month & Year
   const [monthName, yearVal] = useMemo(() => {
@@ -78,35 +90,16 @@ export default function ProfitCenterManagement() {
     return [currentMonthStr, currentYearStr];
   }, [selectedMonth, currentMonthStr, currentYearStr]);
 
-  const daysInMonth = useMemo(() => {
-    const monthsMap: Record<string, number> = {
-      jan: 31, feb: 28, mar: 31, apr: 30, may: 31, jun: 30,
-      jul: 31, aug: 31, sep: 30, oct: 31, nov: 30, dec: 31
-    };
-    const key = monthName.toLowerCase().substring(0, 3);
-    const yr = Number(yearVal) || 2026;
-    if (key === 'feb' && ((yr % 4 === 0 && yr % 100 !== 0) || yr % 400 === 0)) return 29;
-    return monthsMap[key] || 30;
-  }, [monthName, yearVal]);
-
-  // Load HQs & Products
+  // Load HQs
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [hRes, pRes] = await Promise.allSettled([
-          axios.get('/api/xl/locations/hqs').catch(() => axios.get('/api/xl/hqs')),
-          axios.get('/api/xl/products').catch(() => axios.get('/api/xl/reports/products'))
-        ]);
-
-        if (hRes.status === 'fulfilled' && hRes.value?.data) {
-          const raw = hRes.value.data;
+        const hRes = await axios.get('/api/xl/locations/hqs').catch(() => axios.get('/api/xl/hqs'));
+        if (hRes.data) {
+          const raw = hRes.data;
           const hList = Array.isArray(raw) ? raw : (raw.hqs || raw.data || []);
           const names = hList.map((h: any) => typeof h === 'string' ? h : (h.name || h.headquarter || '')).filter(Boolean);
           setHqs(Array.from(new Set(names)) as string[]);
-        }
-        if (pRes.status === 'fulfilled' && pRes.value?.data) {
-          const raw = pRes.value.data;
-          setProducts(Array.isArray(raw) ? raw : (raw.products || raw.data || []));
         }
       } catch (e) {
         console.error('Error fetching profit masters:', e);
@@ -125,6 +118,7 @@ export default function ProfitCenterManagement() {
         });
         if (res.data?.success) {
           setRecords(res.data.data || []);
+          setSummary(res.data.summary || null);
         }
       } else {
         const res = await axios.get('/api/xl/profit-center/roi', {
@@ -145,128 +139,86 @@ export default function ProfitCenterManagement() {
     fetchData();
   }, [activeTab, selectedMonth, selectedHq]);
 
-  // Total value for summary card
-  const totalValue = useMemo(() => {
-    return records.reduce((s, r) => s + (Number(r.totalValue) || 0), 0);
-  }, [records]);
-
-  // Handle Select Product to Add
-  const handleSelectProduct = (val: string) => {
-    setSelectedProductId(val);
-    const p = products.find(x => (x.productName || x.name || x._id) === val);
-    if (p) {
-      setFormProduct(p);
-      let pr = Number(selectedPriceType === 'MRP' ? p.mrp : selectedPriceType === 'PTR' ? p.ptr : p.pts) || 0;
-      if (!pr) pr = Number(p.pts || p.ptr || p.mrp || 0);
-      setFormPrice(String(pr));
-      setShowAddModal(true);
-    }
+  // Open Cost Edit Modal
+  const handleOpenCostEdit = (prod: ProfitProductRecord) => {
+    setEditingProduct(prod);
+    setEditPurchaseCost(String(prod.purchaseCost || 0));
+    setEditTransportCost(String(prod.transportCost || 0));
   };
 
-  // Submit Product Add
-  const handleSaveProduct = async (e: React.FormEvent) => {
+  // Save Cost Edit
+  const handleSaveCosts = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formProduct) return;
-    setSubmitting(true);
+    if (!editingProduct) return;
+    setSavingCost(true);
     try {
-      const pName = formProduct.productName || formProduct.name;
-      const q = Number(formQty) || 0;
-      const p = Number(formPrice) || 0;
-      await axios.post('/api/xl/profit-center', {
-        month: selectedMonth,
-        year: yearVal,
-        hq: selectedHq,
-        productId: formProduct._id || formProduct.uid || pName,
-        productName: pName,
-        priceType: selectedPriceType,
-        unitPrice: p,
-        quantity: q,
-        totalValue: q * p,
-        remarks: formRemarks
-      });
-      setShowAddModal(false);
-      setSelectedProductId('');
-      setFormProduct(null);
-      setFormRemarks('');
-      fetchData();
-    } catch (e) {
-      console.error(e);
-      alert('Error saving product profit entry');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Delete product entry
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remove this product from profit center?')) return;
-    try {
-      await axios.delete(`/api/xl/profit-center/${id}`);
-      fetchData();
-    } catch (e) {
-      console.error(e);
-      alert('Error deleting entry');
-    }
-  };
-
-  // Auto-Sync from Sales
-  const handleAutoSync = async () => {
-    if (!confirm(`Auto-sync all products from catalog and calculate values using ${selectedPriceType} price for ${selectedMonth}?`)) return;
-    setSyncing(true);
-    try {
-      const res = await axios.post('/api/xl/profit-center/auto-sync', {
-        month: selectedMonth,
-        year: yearVal,
-        hq: selectedHq,
-        priceType: selectedPriceType
+      const res = await axios.put('/api/xl/profit-center/product-costs', {
+        productId: editingProduct.productId || editingProduct._id,
+        purchaseCost: Number(editPurchaseCost) || 0,
+        transportCost: Number(editTransportCost) || 0
       });
       if (res.data?.success) {
-        alert(res.data.message || 'Auto-sync completed!');
+        setEditingProduct(null);
         fetchData();
       }
-    } catch (e) {
-      console.error(e);
-      alert('Error syncing products');
+    } catch (err) {
+      console.error('Failed to update product costs:', err);
+      alert('Failed to save product costs');
     } finally {
-      setSyncing(false);
+      setSavingCost(false);
     }
   };
 
-  // Excel Export
+  // Filtered Records by Search
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery.trim()) return records;
+    const q = searchQuery.toLowerCase().trim();
+    return records.filter(r => 
+      r.productName.toLowerCase().includes(q) ||
+      (r.composition && r.composition.toLowerCase().includes(q))
+    );
+  }, [records, searchQuery]);
+
+  // Export to Excel
   const handleExport = () => {
     const wb = XLSX.utils.book_new();
     if (activeTab === 'PRODUCTS') {
-      const exportData = records.map((r, i) => ({
+      const exportData = filteredRecords.map((r, i) => ({
         'Sr no.': i + 1,
         'Product Name': r.productName,
-        'Quantity': r.quantity,
-        'Price Type': r.priceType,
-        'Unit Price (Rs)': r.unitPrice,
-        'Total Value (Rs)': r.totalValue,
+        'MRP (₹)': r.mrp,
+        'PTR (₹)': r.ptr,
+        'PTS (₹)': r.pts,
+        'CUS (₹)': r.cus || '-',
+        'Purc. Cost (₹)': r.purchaseCost,
+        'Transport Cost (₹)': r.transportCost,
+        'Total Unit Cost (₹)': r.totalUnitCost,
+        'Sold Price Type': r.priceType,
+        'Actual Sold Price (₹)': r.soldPrice,
+        'Qty Sold (Secondary)': r.quantity,
+        'Total Selling Value (₹)': r.sellingPrice,
+        'Total Product Cost (₹)': r.costOfProduct,
+        'Actual Profit (₹)': r.actualProfit,
         'Headquarter': r.hq || 'All HQs',
-        'Period': `${r.month} ${r.year}`
+        'Period': `${selectedMonth}`
       }));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Profit_Products');
-      XLSX.writeFile(wb, `Profit_Center_Products_${selectedMonth.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Products_Profit');
+      XLSX.writeFile(wb, `Products_Profit_${selectedMonth.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
     } else if (roiData?.breakdown) {
       const exportData = roiData.breakdown.map((b: any, i: number) => ({
         'Sr no.': i + 1,
         'Headquarter': b.hq,
-        'Total Revenue (Rs)': b.revenue,
-        'Cost Center Expenses (Rs)': b.expense,
-        'Net Margin (Rs)': b.netMargin,
+        'Secondary Selling Value (₹)': b.sellingValue || 0,
+        'Total Product Cost (₹)': b.productCost || 0,
+        'HQ Gross Product Profit (₹)': b.revenue || 0,
+        'Cost Center Expenses (₹)': b.expense || 0,
+        'Actual HQ Net Profit (₹)': b.netMargin || 0,
         'ROI Achievement (%)': `${b.roiPct}%`,
         'Status': b.status
       }));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Territory_ROI');
       XLSX.writeFile(wb, `Territory_ROI_${selectedMonth.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
     }
-  };
-
-  const getRoiColorBadge = (pct: number) => {
-    if (pct >= 100) return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
-    if (pct >= 80) return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40';
-    return 'bg-rose-500/20 text-rose-400 border border-rose-500/40';
   };
 
   return (
@@ -280,91 +232,67 @@ export default function ProfitCenterManagement() {
         <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">{activeTab}</span>
       </div>
 
-      {/* Main Layout: Sub-menu Sidebar + Main Content Area */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden w-full">
-
-        {/* LEFT SUB-SIDEBAR: MANAGE PROFIT CENTER (Matches Medom Reference) */}
-        <aside className="w-full md:w-60 bg-slate-900 md:bg-slate-900/90 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col shrink-0">
-          <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
-            <h2 className="text-xs font-black tracking-wider uppercase text-slate-300 flex items-center gap-2">
-              Manage Profit Center
-            </h2>
-            <ChevronDown size={14} className="text-sky-400" />
-          </div>
-
-          <nav className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 md:p-3 gap-1">
-            <button
-              onClick={() => setActiveTab('PRODUCTS')}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-left relative ${
-                activeTab === 'PRODUCTS' 
-                  ? 'bg-sky-500/15 text-sky-400 shadow-sm border border-sky-500/30' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
+      {/* Main Full-Width Content Area (Side-by-side Menus Header, No Middle Sidebar) */}
+      <main className="flex-1 flex flex-col overflow-y-auto px-3 py-3 md:px-6 md:py-4 w-full">
+        
+        {/* TOP HEADER: BREADCRUMB, SIDE-BY-SIDE TABS & HELP */}
+        <div className="flex flex-wrap items-center justify-between pb-3 mb-3 border-b border-slate-800 gap-3">
+          <div className="flex flex-wrap items-center gap-3 md:gap-5">
+            <button 
+              onClick={() => navigate('/extras/profit')}
+              className="text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold group"
             >
-              {activeTab === 'PRODUCTS' && (
-                <div className="hidden md:block absolute left-0 top-1.5 bottom-1.5 w-1 bg-sky-400 rounded-r-full" />
-              )}
-              <Package size={16} className={activeTab === 'PRODUCTS' ? 'text-sky-400' : 'text-slate-400'} />
-              <span>PRODUCTS</span>
+              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span className="uppercase text-sm font-black text-white tracking-wide">Manage Profit Center</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('ROI')}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-left relative ${
-                activeTab === 'ROI' 
-                  ? 'bg-sky-500/15 text-sky-400 shadow-sm border border-sky-500/30' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-            >
-              {activeTab === 'ROI' && (
-                <div className="hidden md:block absolute left-0 top-1.5 bottom-1.5 w-1 bg-sky-400 rounded-r-full" />
-              )}
-              <TrendingUp size={16} className={activeTab === 'ROI' ? 'text-sky-400' : 'text-slate-400'} />
-              <span>ROI</span>
-            </button>
-          </nav>
-        </aside>
-
-        {/* RIGHT MAIN CONTENT AREA */}
-        <main className="flex-1 flex flex-col overflow-y-auto px-4 py-3 md:px-6 md:py-4">
-          
-          {/* TOP BREADCRUMB & HELP HEADER */}
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => navigate('/extras/profit')}
-                className="text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold group"
+            {/* TWO MENUS SIDE-BY-SIDE IN ONE PAGE */}
+            <div className="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setActiveTab('PRODUCTS')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'PRODUCTS'
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
               >
-                <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-                <span className="uppercase text-sm font-black text-white tracking-wide">&lt; {activeTab}</span>
+                <Package size={15} />
+                <span>PRODUCTS</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('ROI')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'ROI'
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <TrendingUp size={15} />
+                <span>ROI</span>
               </button>
             </div>
-            <button 
-              onClick={() => setShowHelpModal(true)}
-              className="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <HelpCircle size={14} /> How does it work?
-            </button>
           </div>
 
-          {/* BUDGET VS ACTUAL VARIANCE STATUS BAR (User Requested Rules) */}
+          <button 
+            onClick={() => setShowHelpModal(true)}
+            className="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1.5 transition-colors ml-auto md:ml-0"
+          >
+            <HelpCircle size={14} /> How does it work?
+          </button>
+        </div>
+
+          {/* VARIANCE STATUS BAR */}
           <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 border border-slate-700/70 px-4 py-2 rounded-xl mb-3 text-xs">
             <span className="font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              Variance Rule:
+              Territory Net Profit Formula:
             </span>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                &gt; 100% (Green: Target Exceeded / Profitable)
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                80% - 90% (Yellow: Moderate)
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                &lt; 80% (Red: Critical Shortfall / Deficit)
+              <span className="text-[11px] text-slate-300 font-mono">
+                Actual HQ Profit = Secondary Gross Profit (Revenue - Unit Costs) - Cost Center Expenses
               </span>
             </div>
           </div>
@@ -373,28 +301,68 @@ export default function ProfitCenterManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4 items-stretch">
             
             {/* Filter Controls (Cols 8) */}
-            <div className="lg:col-span-8 bg-slate-800/50 border border-slate-700/60 p-3 rounded-xl shadow-lg flex flex-col justify-between gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Select Month */}
-                <div>
-                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block mb-1">
-                    Select Month *
+            <div className="lg:col-span-8 bg-slate-800/50 border border-slate-700/60 p-3.5 rounded-xl shadow-lg flex flex-col justify-between gap-3">
+              {/* Year & Month Selection with Square Month Buttons */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                    Select Month (Square Box) *
                   </label>
-                  <select
-                    value={selectedMonth}
-                    onChange={e => setSelectedMonth(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-500"
-                  >
-                    {['Oct, 2026', 'Sep, 2026', 'Aug, 2026', 'Jul, 2026', 'Jun, 2026', 'May, 2026', 'Apr, 2026'].map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                  {/* Year Switcher */}
+                  <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 px-2 py-0.5 rounded-lg shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newYear = String(Number(yearVal) - 1);
+                        setSelectedMonth(`${monthName}, ${newYear}`);
+                      }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-black transition-colors"
+                      title="Previous Year"
+                    >
+                      &lt;
+                    </button>
+                    <span className="text-xs font-bold text-white px-1 font-mono tracking-wider">{yearVal}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newYear = String(Number(yearVal) + 1);
+                        setSelectedMonth(`${monthName}, ${newYear}`);
+                      }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-black transition-colors"
+                      title="Next Year"
+                    >
+                      &gt;
+                    </button>
+                  </div>
                 </div>
 
-                {/* Select HQ */}
+                {/* 12 Square Month Buttons */}
+                <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m) => {
+                    const isSelected = monthName.toLowerCase().startsWith(m.toLowerCase());
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSelectedMonth(`${m}, ${yearVal}`)}
+                        className={`h-9 flex items-center justify-center rounded-lg text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-sky-500 text-white font-black shadow-md shadow-sky-500/30 border-sky-400 scale-105 z-10'
+                            : 'bg-slate-900/90 text-slate-300 border-slate-700/70 hover:bg-slate-800 hover:text-white hover:border-slate-600'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Headquarter Filter & Search */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-slate-700/50">
                 <div>
                   <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
-                    Select Headquarter *
+                    Filter by Headquarter
                   </label>
                   <CustomSelect
                     options={[
@@ -403,104 +371,81 @@ export default function ProfitCenterManagement() {
                     ]}
                     value={selectedHq}
                     onChange={(val) => setSelectedHq(val)}
-                    placeholder="Select HQ"
+                    placeholder="All Headquarters"
                     compact={true}
                   />
                 </div>
-              </div>
 
-              {activeTab === 'PRODUCTS' && (
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-slate-700/50 items-end">
-                  {/* Select Price Type: PTS, PTR, MRP */}
-                  <div className="sm:col-span-3">
-                    <label className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block mb-1">
-                      Select Price *
-                    </label>
-                    <select
-                      value={selectedPriceType}
-                      onChange={e => setSelectedPriceType(e.target.value as any)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
-                    >
-                      <option value="PTS">PTS (Stockist Price)</option>
-                      <option value="PTR">PTR (Retailer Price)</option>
-                      <option value="MRP">MRP (Max Retail Price)</option>
-                    </select>
-                  </div>
-
-                  {/* Select Product */}
-                  <div className="sm:col-span-5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Select Product *
-                    </label>
-                    <CustomSelect
-                      options={products.map(p => {
-                        const pName = p.productName || p.name;
-                        const price = selectedPriceType === 'MRP' ? p.mrp : selectedPriceType === 'PTR' ? p.ptr : p.pts;
-                        return {
-                          value: pName,
-                          label: pName,
-                          subLabel: `${selectedPriceType}: ₹${price || 0}`
-                        };
-                      })}
-                      value={selectedProductId}
-                      onChange={(val) => handleSelectProduct(val)}
-                      placeholder="Choose Product..."
-                      compact={true}
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="sm:col-span-4 flex items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        if (products.length > 0) {
-                          handleSelectProduct(products[0].productName || products[0].name);
-                        } else {
-                          setShowAddModal(true);
-                        }
-                      }}
-                      className="flex-1 bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-2.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1 transition-all shadow shadow-sky-500/20 h-[34px] shrink-0 whitespace-nowrap"
-                    >
-                      <Plus size={13} /> Add Product
-                    </button>
-                    <button
-                      onClick={handleAutoSync}
-                      disabled={syncing}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-2.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1 transition-all shadow shadow-emerald-600/20 h-[34px] shrink-0"
-                      title="Auto-calculate product revenues from sales"
-                    >
-                      <Zap size={13} className={syncing ? 'animate-spin' : ''} />
-                      {syncing ? 'Syncing...' : 'Auto Sync'}
-                    </button>
-                  </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Search Product
+                  </label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search by product name..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* SUMMARY CARD (Top Right - Faithful reproduction of Medom card) */}
-            <div className="lg:col-span-4 bg-gradient-to-br from-sky-500 via-sky-600 to-indigo-700 rounded-2xl p-4 shadow-xl flex flex-col justify-between text-white relative overflow-hidden border border-sky-400/20">
-              <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
-              <div>
-                <span className="text-xs font-black tracking-widest uppercase opacity-90">
-                  {activeTab === 'PRODUCTS' ? `${records.length} PRODUCTS` : 'TERRITORY ROI SCORE'}
-                </span>
-                <p className="text-[11px] font-medium text-sky-100 mt-1">
-                  Period: {monthName} {yearVal} | {daysInMonth} Days
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-white/15">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-bold text-sky-200">Rs</span>
-                  <span className="text-2xl md:text-3xl font-black tracking-tight font-mono">
-                    {activeTab === 'PRODUCTS' 
-                      ? totalValue.toLocaleString('en-IN') 
-                      : (roiData?.summary?.totalRevenue || 0).toLocaleString('en-IN')
-                    }
+            {/* EXECUTIVE SUMMARY CARD (Top Right - Shows Product Gross Profit vs Cost Center Expenses) */}
+            <div className="lg:col-span-4 bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 rounded-2xl p-4 shadow-xl flex flex-col justify-between text-white relative overflow-hidden border border-slate-700/80">
+              <div className="space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-sky-400 tracking-wider">
+                      HQ Profit Analysis ({selectedHq === 'ALL' ? 'All HQs' : selectedHq})
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Period: {monthName} {yearVal} • {records.length} Master Products
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                    (summary?.actualHQNetProfit || 0) >= 0 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
+                      : 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                  }`}>
+                    {(summary?.actualHQNetProfit || 0) >= 0 ? 'PROFITABLE' : 'NET LOSS'}
                   </span>
                 </div>
-                <span className="text-[10px] font-extrabold tracking-widest uppercase text-sky-200/90">
-                  {activeTab === 'PRODUCTS' ? 'TOTAL VALUE' : 'TOTAL REVENUE (SALES)'}
-                </span>
+
+                <div className="space-y-1.5 text-xs pt-1 border-t border-slate-700/60 font-mono">
+                  <div className="flex justify-between items-center text-slate-300">
+                    <span>Secondary Selling Value:</span>
+                    <span className="font-bold text-white">₹ {(summary?.totalSellingValue || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Total Product Costs (COGS):</span>
+                    <span>- ₹ {(summary?.totalCostOfProduct || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sky-400 font-bold border-t border-slate-800 pt-1">
+                    <span>HQ Gross Product Profit:</span>
+                    <span>₹ {(summary?.totalHQGrossProfit || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-rose-400">
+                    <span>Cost Center Expenses:</span>
+                    <span>- ₹ {(summary?.totalCostCenterExpenses || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 pt-2.5 border-t border-slate-700/80">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[10px] font-black tracking-wider uppercase text-slate-300">
+                    ACTUAL HQ NET PROFIT
+                  </span>
+                  <div className="flex items-baseline gap-1 font-mono">
+                    <span className="text-sm font-bold text-slate-400">Rs</span>
+                    <span className={`text-xl font-black ${
+                      (summary?.actualHQNetProfit || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {(summary?.actualHQNetProfit || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -510,13 +455,18 @@ export default function ProfitCenterManagement() {
           {activeTab === 'PRODUCTS' ? (
             <div className="flex-1 bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[300px]">
               <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Showing ({records.length}) Products
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Product Master Profit Center ({filteredRecords.length} Products Linked)
+                  </span>
+                  <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full font-bold">
+                    Qty from Secondary Sales
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={fetchData}
-                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold"
                   >
                     <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
                   </button>
@@ -532,60 +482,100 @@ export default function ProfitCenterManagement() {
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-center border-collapse border border-slate-700 text-xs whitespace-nowrap">
                   <thead>
-                    <tr className="bg-slate-900/90 text-slate-300 font-bold text-[11px] uppercase tracking-wider">
-                      <th className="border border-slate-700 px-3 py-2 w-14">Sr no.</th>
-                      <th className="border border-slate-700 px-3 py-2 text-left">Product Name</th>
-                      <th className="border border-slate-700 px-3 py-2">Price Type</th>
-                      <th className="border border-slate-700 px-3 py-2 text-right">Unit Price (₹)</th>
-                      <th className="border border-slate-700 px-3 py-2 text-center">Quantity</th>
-                      <th className="border border-slate-700 px-3 py-2 text-right">Total Value (₹)</th>
-                      <th className="border border-slate-700 px-3 py-2">Headquarter</th>
-                      <th className="border border-slate-700 px-3 py-2 w-20">Actions</th>
+                    <tr className="bg-slate-900/95 text-slate-300 font-bold text-[10px] uppercase tracking-wider">
+                      <th className="border border-slate-700 px-2.5 py-2 w-10">#</th>
+                      <th className="border border-slate-700 px-3 py-2 text-left min-w-[200px]">Product Name</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right">MRP (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right">PTR (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right">PTS (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right">CUS (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-amber-950/20 text-amber-300">Purc. Cost</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-amber-950/20 text-amber-300">Transport</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-purple-950/20 text-purple-300 font-bold">Total Unit Cost</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right bg-sky-950/20 text-sky-300">Sold Price</th>
+                      <th className="border border-slate-700 px-2 py-2 text-center bg-sky-950/20 text-sky-300">Qty Sold</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right text-white">Selling Value (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 text-right text-slate-400">Total Cost (₹)</th>
+                      <th className="border border-slate-700 px-3 py-2 text-right font-black text-emerald-400 bg-emerald-950/20">Actual Profit (₹)</th>
+                      <th className="border border-slate-700 px-2.5 py-2 w-16">Cost Edit</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-400">
+                        <td colSpan={15} className="py-12 text-center text-slate-400">
                           <RefreshCw size={20} className="animate-spin mx-auto mb-2 text-sky-400" />
-                          Loading Product Profit Data...
+                          Loading all master products &amp; secondary sales...
                         </td>
                       </tr>
-                    ) : records.length === 0 ? (
+                    ) : filteredRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-500 font-semibold">
-                          No product profit data found for this period. Use "Add Product" or "Auto Sync" above.
+                        <td colSpan={15} className="py-10 text-center text-slate-500 font-medium">
+                          No products found matching query.
                         </td>
                       </tr>
                     ) : (
-                      records.map((r, i) => (
-                        <tr key={r._id} className="hover:bg-slate-700/40 transition-colors">
-                          <td className="border border-slate-700 px-3 py-2 text-slate-400 font-mono">{i + 1}</td>
+                      filteredRecords.map((r, i) => (
+                        <tr key={r._id || i} className="hover:bg-slate-700/40 transition-colors">
+                          <td className="border border-slate-700 px-2 py-2 text-slate-500 font-mono text-[11px]">{i + 1}</td>
                           <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
-                            {r.productName}
+                            <div>{r.productName}</div>
+                            {r.composition && (
+                              <div className="text-[10px] text-slate-400 font-normal truncate max-w-xs">{r.composition}</div>
+                            )}
                           </td>
-                          <td className="border border-slate-700 px-3 py-2 font-semibold text-purple-400">
-                            {r.priceType}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.mrp || 0}</td>
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.ptr || 0}</td>
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.pts || 0}</td>
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
+                          
+                          {/* Purc. Cost & Transport */}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-amber-300 bg-amber-950/10">
+                            {r.purchaseCost || 0}
                           </td>
-                          <td className="border border-slate-700 px-3 py-2 text-right font-mono text-slate-300">
-                            ₹ {Number(r.unitPrice).toLocaleString('en-IN')}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-amber-300 bg-amber-950/10">
+                            {r.transportCost || 0}
                           </td>
-                          <td className="border border-slate-700 px-3 py-2 text-center font-mono font-bold text-sky-400">
-                            {r.quantity}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-purple-300 bg-purple-950/10">
+                            {r.totalUnitCost || 0}
                           </td>
-                          <td className="border border-slate-700 px-3 py-2 text-right font-mono font-bold text-emerald-400 text-sm">
-                            ₹ {Number(r.totalValue).toLocaleString('en-IN')}
+
+                          {/* Sold Price & Qty */}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-semibold text-sky-300 bg-sky-950/10">
+                            ₹ {r.soldPrice.toLocaleString('en-IN')}
+                            <span className="text-[9px] text-slate-400 ml-1">({r.priceType})</span>
                           </td>
-                          <td className="border border-slate-700 px-3 py-2 text-slate-300">
-                            {r.hq || 'All HQs'}
+                          <td className="border border-slate-700 px-2 py-2 text-center font-mono font-bold text-white bg-sky-950/10">
+                            {r.quantity > 0 ? (
+                              <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                                {r.quantity}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">0</span>
+                            )}
                           </td>
-                          <td className="border border-slate-700 px-3 py-2">
+
+                          {/* Selling Value, Total Cost, Actual Profit */}
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-white">
+                            ₹ {r.sellingPrice.toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">
+                            ₹ {r.costOfProduct.toLocaleString('en-IN')}
+                          </td>
+                          <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-black bg-emerald-950/15 ${
+                            r.actualProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                          }`}>
+                            ₹ {r.actualProfit.toLocaleString('en-IN')}
+                          </td>
+
+                          {/* Edit Costs Action */}
+                          <td className="border border-slate-700 px-2 py-2">
                             <button
-                              onClick={() => handleDelete(r._id)}
-                              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 p-1.5 rounded transition-colors"
-                              title="Delete entry"
+                              onClick={() => handleOpenCostEdit(r)}
+                              className="text-amber-400 hover:text-amber-300 p-1 hover:bg-slate-700 rounded transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
+                              title="Set Purchase & Transport Cost"
                             >
-                              <Trash2 size={13} />
+                              <Edit3 size={13} /> Edit
                             </button>
                           </td>
                         </tr>
@@ -595,64 +585,74 @@ export default function ProfitCenterManagement() {
                 </table>
               </div>
 
-              {/* Table Footer */}
-              <div className="px-4 py-2 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400">
-                <span className="font-semibold text-slate-300">
-                  Total Quantity: {records.reduce((s, r) => s + (Number(r.quantity) || 0), 0)} Units
-                </span>
-                <span className="font-mono text-emerald-400 font-bold text-sm">
-                  Grand Total Value: ₹ {totalValue.toLocaleString('en-IN')}
-                </span>
+              {/* Table Footer with Aggregate Totals */}
+              <div className="px-4 py-2 bg-slate-900 border-t border-slate-700 text-xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-slate-400">
+                  <span>Total Products: <strong className="text-white">{filteredRecords.length}</strong></span>
+                  <span>•</span>
+                  <span>Total Qty Sold: <strong className="text-sky-400 font-mono">{summary?.totalQty || 0}</strong></span>
+                </div>
+                <div className="flex items-center gap-4 font-mono text-xs">
+                  <div>
+                    <span className="text-slate-400">Selling Value: </span>
+                    <strong className="text-white">₹ {(summary?.totalSellingValue || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">COGS: </span>
+                    <strong className="text-slate-300">₹ {(summary?.totalCostOfProduct || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
+                    <span className="text-emerald-300 font-bold">Gross Product Profit: </span>
+                    <strong className="text-emerald-400 font-black">₹ {(summary?.totalHQGrossProfit || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            /* ROI VIEW: REVENUE VS COST CENTER BY TERRITORY */
+            /* TERRITORY ROI VIEW */
             <div className="flex-1 flex flex-col gap-4">
               {/* ROI KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Total Sales Revenue
+                    Secondary Selling Revenue
                   </span>
-                  <span className="text-xl font-black text-white font-mono mt-1 block">
-                    ₹ {(roiData?.summary?.totalRevenue || 0).toLocaleString('en-IN')}
+                  <span className="text-xl font-black text-sky-400 font-mono mt-1 block">
+                    ₹ {(roiData?.summary?.totalSellingValue || 0).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[10px] text-slate-400">From Primary / Products Sold</span>
+                  <span className="text-[10px] text-slate-400">Total Territory Secondary Sales</span>
                 </div>
 
                 <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Total Cost Center Expenses
+                    HQ Gross Product Profit
+                  </span>
+                  <span className="text-xl font-black text-emerald-400 font-mono mt-1 block">
+                    ₹ {(roiData?.summary?.totalRevenue || 0).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Selling Value minus Unit Costs</span>
+                </div>
+
+                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Cost Center Expenses
                   </span>
                   <span className="text-xl font-black text-rose-400 font-mono mt-1 block">
                     ₹ {(roiData?.summary?.totalExpense || 0).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[10px] text-slate-400">Salaries, TA/DA, Samples, Gifts</span>
+                  <span className="text-[10px] text-slate-400">Salaries, PF, TA/DA, Field Expenses</span>
                 </div>
 
                 <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Net Profit / Margin
+                    Actual HQ Net Profit
                   </span>
                   <span className={`text-xl font-black font-mono mt-1 block ${
                     (roiData?.summary?.totalNetMargin || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
                   }`}>
                     ₹ {(roiData?.summary?.totalNetMargin || 0).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[10px] text-slate-400">Revenue minus Expenses</span>
-                </div>
-
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Overall ROI %
-                  </span>
-                  <span className={`text-xl font-black font-mono mt-1 block ${
-                    (roiData?.summary?.overallRoi || 0) >= 100 ? 'text-emerald-400' : 
-                    (roiData?.summary?.overallRoi || 0) >= 80 ? 'text-yellow-400' : 'text-rose-400'
-                  }`}>
-                    {(roiData?.summary?.overallRoi || 0).toFixed(1)}%
-                  </span>
-                  <span className="text-[10px] text-slate-400">Efficiency Ratio</span>
+                  <span className="text-[10px] text-slate-400">Product Profit minus Cost Center</span>
                 </div>
               </div>
 
@@ -660,7 +660,7 @@ export default function ProfitCenterManagement() {
               <div className="flex-1 bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[300px]">
                 <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    Territory-Wise Profit &amp; ROI Register
+                    Territory-Wise Actual Profit &amp; ROI Register
                   </h3>
                   <button
                     onClick={handleExport}
@@ -675,18 +675,19 @@ export default function ProfitCenterManagement() {
                       <tr className="bg-slate-900/90 text-slate-300 font-bold text-[11px] uppercase tracking-wider">
                         <th className="border border-slate-700 px-3 py-2 w-14">Sr no.</th>
                         <th className="border border-slate-700 px-3 py-2 text-left">Headquarter / Territory</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right">Revenue (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right">Cost Center (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right">Net Contribution (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2">ROI Achievement (%)</th>
+                        <th className="border border-slate-700 px-3 py-2 text-right">Selling Value (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2 text-right">Product Cost (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2 text-right text-sky-400">Gross Product Profit (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2 text-right text-rose-400">Cost Center Expenses (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2 text-right font-black">Actual Net Profit (₹)</th>
                         <th className="border border-slate-700 px-3 py-2">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {!roiData?.breakdown || roiData.breakdown.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-10 text-center text-slate-500 font-medium">
-                            No ROI data found. Please add or sync product sales and cost center expenses.
+                          <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
+                            No ROI data found for selected period.
                           </td>
                         </tr>
                       ) : (
@@ -696,29 +697,32 @@ export default function ProfitCenterManagement() {
                             <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
                               {b.hq}
                             </td>
+                            <td className="border border-slate-700 px-3 py-2 text-right font-mono text-slate-300">
+                              ₹ {Number(b.sellingValue || 0).toLocaleString('en-IN')}
+                            </td>
+                            <td className="border border-slate-700 px-3 py-2 text-right font-mono text-slate-400">
+                              ₹ {Number(b.productCost || 0).toLocaleString('en-IN')}
+                            </td>
                             <td className="border border-slate-700 px-3 py-2 text-right font-mono font-bold text-sky-400">
-                              ₹ {Number(b.revenue).toLocaleString('en-IN')}
+                              ₹ {Number(b.revenue || 0).toLocaleString('en-IN')}
                             </td>
                             <td className="border border-slate-700 px-3 py-2 text-right font-mono font-bold text-rose-400">
-                              ₹ {Number(b.expense).toLocaleString('en-IN')}
+                              ₹ {Number(b.expense || 0).toLocaleString('en-IN')}
                             </td>
-                            <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-bold ${
+                            <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-black ${
                               b.netMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'
                             }`}>
-                              ₹ {Number(b.netMargin).toLocaleString('en-IN')}
+                              ₹ {Number(b.netMargin || 0).toLocaleString('en-IN')}
                             </td>
                             <td className="border border-slate-700 px-3 py-2">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold inline-block ${getRoiColorBadge(b.roiPct)}`}>
-                                {b.roiPct}%
-                              </span>
-                            </td>
-                            <td className="border border-slate-700 px-3 py-2">
-                              {b.status === 'EXCELLENT' ? (
-                                <span className="text-[10px] font-bold text-emerald-400 uppercase">🟢 Profitable</span>
-                              ) : b.status === 'MODERATE' ? (
-                                <span className="text-[10px] font-bold text-yellow-400 uppercase">🟡 Moderate</span>
+                              {b.netMargin >= 0 ? (
+                                <span className="text-[10px] font-bold text-emerald-400 uppercase bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                  🟢 Profitable
+                                </span>
                               ) : (
-                                <span className="text-[10px] font-bold text-rose-400 uppercase">🔴 Deficit Alert</span>
+                                <span className="text-[10px] font-bold text-rose-400 uppercase bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/30">
+                                  🔴 Net Loss
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -732,114 +736,98 @@ export default function ProfitCenterManagement() {
           )}
 
         </main>
-      </div>
 
-      {/* ADD PRODUCT MODAL */}
-      {showAddModal && formProduct && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="px-5 py-3.5 border-b border-slate-700 flex items-center justify-between">
+      {/* EDIT PRODUCT PURCHASE & TRANSPORT COSTS MODAL */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-5 py-3.5 border-b border-slate-700 flex items-center justify-between bg-slate-900">
               <h3 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
-                <Plus size={16} className="text-sky-400" />
-                Add Product to Profit Center
+                <Edit3 size={16} className="text-amber-400" />
+                Set Unit Costs: {editingProduct.productName}
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-white">
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="p-5 space-y-3.5">
+            <form onSubmit={handleSaveCosts} className="p-5 space-y-4 text-xs">
+              <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 grid grid-cols-3 gap-2 text-center font-mono">
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase">MRP</span>
+                  <span className="font-bold text-white">₹ {editingProduct.mrp}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase">PTR</span>
+                  <span className="font-bold text-sky-400">₹ {editingProduct.ptr}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase">PTS</span>
+                  <span className="font-bold text-purple-400">₹ {editingProduct.pts}</span>
+                </div>
+              </div>
+
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                  Product Name
+                <label className="text-[10px] font-bold text-amber-300 uppercase block mb-1">
+                  Purchase Cost of Product (Purc. Cost ₹) *
                 </label>
                 <input
-                  type="text"
-                  disabled
-                  value={formProduct.productName || formProduct.name}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={editPurchaseCost}
+                  onChange={e => setEditPurchaseCost(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500"
+                  required
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    Price Type
-                  </label>
-                  <input
-                    type="text"
-                    disabled
-                    value={selectedPriceType}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-purple-400"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    Unit Price (Rs) *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={formPrice}
-                    onChange={e => setFormPrice(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-sky-500 font-mono"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formQty}
-                    onChange={e => setFormQty(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-sky-400 focus:outline-none focus:border-sky-500 font-mono"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                    Total Value (Rs)
-                  </label>
-                  <div className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 font-mono">
-                    ₹ {((Number(formQty) || 0) * (Number(formPrice) || 0)).toLocaleString('en-IN')}
-                  </div>
-                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Manufacturing or acquisition rate per unit</span>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                  Remarks / Notes
+                <label className="text-[10px] font-bold text-amber-300 uppercase block mb-1">
+                  Transport Cost (₹ per unit) *
                 </label>
-                <textarea
-                  rows={2}
-                  placeholder="Optional remarks"
-                  value={formRemarks}
-                  onChange={e => setFormRemarks(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500"
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={editTransportCost}
+                  onChange={e => setEditTransportCost(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500"
+                  required
                 />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Freight, logistics, and handling charges</span>
+              </div>
+
+              {/* Total Unit Cost Preview */}
+              <div className="bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-purple-300 tracking-wider block">
+                    Derived Total Unit Cost
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Purc. ({Number(editPurchaseCost || 0)}) + Transport ({Number(editTransportCost || 0)})
+                  </span>
+                </div>
+                <span className="text-lg font-mono font-black text-purple-300">
+                  ₹ {(Number(editPurchaseCost || 0) + Number(editTransportCost || 0)).toLocaleString('en-IN')}
+                </span>
               </div>
 
               <div className="pt-2 flex justify-end gap-2 border-t border-slate-700">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setEditingProduct(null)}
                   className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2 rounded-lg text-xs font-bold shadow shadow-sky-500/20"
+                  disabled={savingCost}
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-5 py-2 rounded-lg text-xs font-black shadow shadow-amber-500/20"
                 >
-                  {submitting ? 'Saving...' : 'Save Product'}
+                  {savingCost ? 'Saving...' : 'Save Unit Costs'}
                 </button>
               </div>
             </form>
@@ -862,16 +850,24 @@ export default function ProfitCenterManagement() {
             </div>
             <div className="p-5 space-y-3.5 text-xs text-slate-300">
               <p>
-                A <strong>Profit Center</strong> measures revenue generation and returns on operational spending.
+                A <strong>Profit Center</strong> assesses the real financial performance of your product catalog and field territories by comparing revenue against costs.
               </p>
               <div className="space-y-2">
                 <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-                  <span className="font-bold text-sky-400 block mb-0.5">1. Products Center</span>
-                  <span className="text-[11px] text-slate-400">Calculates product sales values based on PTS (Stockist price), PTR (Retailer price), or MRP. Use <em>Auto Sync</em> to calculate product volumes directly from Primary Sales.</span>
+                  <span className="font-bold text-sky-400 block mb-0.5">1. Total Unit Cost</span>
+                  <span className="text-[11px] text-slate-400">Total Unit Cost = Purchase Cost (Manufacturing) + Transport Cost (Logistics).</span>
                 </div>
                 <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-                  <span className="font-bold text-sky-400 block mb-0.5">2. Return on Investment (ROI)</span>
-                  <span className="text-[11px] text-slate-400">Compares total sales revenue against Cost Center expenses across each Headquarter to give territory profitability and efficiency ratios.</span>
+                  <span className="font-bold text-purple-400 block mb-0.5">2. Secondary Sales &amp; Actual Sold Price</span>
+                  <span className="text-[11px] text-slate-400">Quantity is dynamically fetched from secondary sales. The system detects if the product was sold at PTR, PTS, or custom price (CUS).</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+                  <span className="font-bold text-amber-400 block mb-0.5">3. Product Actual Profit</span>
+                  <span className="text-[11px] text-slate-400">Actual Profit = (Quantity × Actual Price Sold) - (Quantity × Total Unit Cost).</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+                  <span className="font-bold text-emerald-400 block mb-0.5">4. Actual HQ Net Profit</span>
+                  <span className="text-[11px] text-slate-400">Actual HQ Net Profit = Total HQ Gross Product Profit minus Total Cost Center Expenses (salaries, PF, field allowances).</span>
                 </div>
               </div>
             </div>
