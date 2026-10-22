@@ -13011,6 +13011,349 @@ router.get('/profit-center/roi', async (req, res) => {
     }
 });
 
+// ----------------------------------------------------
+// 5c. PROFIT CENTER - MONTH-WISE & PRODUCT-WISE ANALYTICS
+// ----------------------------------------------------
+router.get('/profit-center/analytics', async (req, res) => {
+    try {
+        const { XlProduct, XlSecondarySales, XlSecondarySalesItem, XlCostCenter, XlHQ } = require('../db');
+        const { year, hq } = req.query;
+        const { Op } = require('sequelize');
+
+        const yr = year ? String(year).trim() : String(new Date().getFullYear());
+        const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // 1. Fetch all products
+        const allProducts = await XlProduct.findAll({
+            order: [['productName', 'ASC']],
+            raw: true
+        });
+
+        // 2. Fetch all Secondary Sales for this year (and HQ if specified)
+        const secSalesWhere = { year: yr };
+        if (hq && hq !== 'ALL') secSalesWhere.headquarter = hq;
+
+        const [secSales, allCostRows, allHQs] = await Promise.all([
+            XlSecondarySales.findAll({ where: secSalesWhere, raw: true }),
+            XlCostCenter.findAll({
+                where: {
+                    year: yr,
+                    ...(hq && hq !== 'ALL' ? { hq } : {})
+                },
+                raw: true
+            }),
+            XlHQ.findAll({ raw: true }).catch(() => [])
+        ]);
+
+        const saleIds = secSales.map(s => s._id);
+        const secItems = saleIds.length > 0 ? await XlSecondarySalesItem.findAll({
+            where: { saleId: { [Op.in]: saleIds } },
+            raw: true
+        }) : [];
+
+        // Map sales items to saleId for quick lookup
+        const itemsBySaleId = new Map();
+        secItems.forEach(it => {
+            if (!itemsBySaleId.has(it.saleId)) itemsBySaleId.set(it.saleId, []);
+            itemsBySaleId.get(it.saleId).push(it);
+        });
+
+        // 3. 12-Month Company / Territory Monthly Trend
+        const monthlyTrend = MONTHS.map((m, idx) => {
+            const mLower = m.toLowerCase();
+
+            // Filter sales for this month
+            const monthSales = secSales.filter(s => {
+                const sm = String(s.month || '').trim().toLowerCase();
+                return sm.startsWith(mLower) || sm === String(idx + 1) || sm === `0${idx + 1}`;
+            });
+
+            const monthItems = [];
+            monthSales.forEach(s => {
+                const items = itemsBySaleId.get(s._id) || [];
+                monthItems.push(...items);
+            });
+
+            // Calculate revenue and product costs for this month
+            let monthSellingValue = 0;
+            let monthProductCost = 0;
+            let monthSoldQty = 0;
+
+            allProducts.forEach(p => {
+                const pId = p._id || p.uid || '';
+                const pName = (p.productName || p.name || '').trim();
+                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+
+                const matching = monthItems.filter(it => {
+                    const itProdId = String(it.productId || '').trim();
+                    const itProdName = String(it.product || '').trim().toLowerCase();
+                    return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                           (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+                });
+
+                if (matching.length > 0) {
+                    const qty = matching.reduce((s, it) => s + Number(it.salesQty || it.qty || 0), 0);
+                    const cusItem = matching.find(it => it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice));
+                    let soldRate = Number(p.ptr || 0);
+                    if (cusItem && cusItem.customPrice) soldRate = Number(cusItem.customPrice);
+                    else if (matching[0].selectedPriceType === 'PTS' || matching[0].priceType === 'PTS') soldRate = Number(p.pts || matching[0].basePrice || 0);
+                    else soldRate = Number(p.ptr || matching[0].basePrice || 0);
+
+                    const rev = qty * soldRate;
+                    const cogs = qty * totalUnitCost;
+
+                    monthSoldQty += qty;
+                    monthSellingValue += rev;
+                    monthProductCost += cogs;
+                }
+            });
+
+            const monthGrossProfit = monthSellingValue - monthProductCost;
+
+            // Cost Center Expenses for this month
+            const monthCosts = allCostRows.filter(c => {
+                const cm = String(c.month || '').trim().toLowerCase();
+                return cm.startsWith(mLower) || cm === String(idx + 1) || cm === `0${idx + 1}`;
+            });
+            const monthExpenses = monthCosts.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+
+            // Actual Net Profit
+            const monthNetProfit = monthGrossProfit - monthExpenses;
+            const isProfitable = monthNetProfit >= 0;
+
+            return {
+                month: m,
+                monthIndex: idx + 1,
+                soldQty: monthSoldQty,
+                sellingValue: monthSellingValue,
+                productCost: monthProductCost,
+                grossProfit: monthGrossProfit,
+                costCenterExpenses: monthExpenses,
+                actualNetProfit: monthNetProfit,
+                isProfitable,
+                status: isProfitable ? 'PROFITABLE' : 'DEFICIT',
+                roiPct: monthExpenses > 0 ? Number(((monthGrossProfit / monthExpenses) * 100).toFixed(1)) : (monthGrossProfit > 0 ? 100 : 0)
+            };
+        });
+
+        // 4. Territory Comparison Summary
+        const uniqueHqs = Array.from(new Set([
+            ...allHQs.map(h => typeof h === 'string' ? h : (h.name || h.headquarter || '')).filter(Boolean),
+            ...secSales.map(s => s.headquarter).filter(Boolean),
+            ...allCostRows.map(c => c.hq).filter(Boolean)
+        ]));
+
+        const territoryComparison = uniqueHqs.map(h => {
+            const hqSales = secSales.filter(s => s.headquarter === h);
+            const hqItems = [];
+            hqSales.forEach(s => {
+                const items = itemsBySaleId.get(s._id) || [];
+                hqItems.push(...items);
+            });
+
+            let hqSelling = 0;
+            let hqCost = 0;
+            allProducts.forEach(p => {
+                const pId = p._id || p.uid || '';
+                const pName = (p.productName || p.name || '').trim();
+                const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+
+                const matching = hqItems.filter(it => {
+                    const itProdId = String(it.productId || '').trim();
+                    const itProdName = String(it.product || '').trim().toLowerCase();
+                    return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                           (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+                });
+
+                if (matching.length > 0) {
+                    const qty = matching.reduce((s, it) => s + Number(it.salesQty || it.qty || 0), 0);
+                    const cusItem = matching.find(it => it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice));
+                    let soldRate = Number(p.ptr || 0);
+                    if (cusItem && cusItem.customPrice) soldRate = Number(cusItem.customPrice);
+                    else if (matching[0].selectedPriceType === 'PTS' || matching[0].priceType === 'PTS') soldRate = Number(p.pts || matching[0].basePrice || 0);
+                    else soldRate = Number(p.ptr || matching[0].basePrice || 0);
+
+                    hqSelling += qty * soldRate;
+                    hqCost += qty * totalUnitCost;
+                }
+            });
+
+            const hqGross = hqSelling - hqCost;
+            const hqExpenseRows = allCostRows.filter(c => c.hq === h);
+            const hqExp = hqExpenseRows.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+            const hqNet = hqGross - hqExp;
+
+            // 12-month net profit trend for this HQ
+            const monthlyNet = MONTHS.map((m, idx) => {
+                const mLower = m.toLowerCase();
+                const mSales = hqSales.filter(s => {
+                    const sm = String(s.month || '').trim().toLowerCase();
+                    return sm.startsWith(mLower) || sm === String(idx + 1);
+                });
+                const mItems = [];
+                mSales.forEach(s => {
+                    const items = itemsBySaleId.get(s._id) || [];
+                    mItems.push(...items);
+                });
+
+                let mRev = 0;
+                let mCogs = 0;
+                allProducts.forEach(p => {
+                    const pId = p._id || p.uid || '';
+                    const pName = (p.productName || p.name || '').trim();
+                    const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+                    const matching = mItems.filter(it => {
+                        const itProdId = String(it.productId || '').trim();
+                        const itProdName = String(it.product || '').trim().toLowerCase();
+                        return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                               (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+                    });
+                    if (matching.length > 0) {
+                        const qty = matching.reduce((s, it) => s + Number(it.salesQty || it.qty || 0), 0);
+                        const cusItem = matching.find(it => it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice));
+                        let rate = Number(p.ptr || 0);
+                        if (cusItem && cusItem.customPrice) rate = Number(cusItem.customPrice);
+                        else if (matching[0].selectedPriceType === 'PTS' || matching[0].priceType === 'PTS') rate = Number(p.pts || 0);
+                        mRev += qty * rate;
+                        mCogs += qty * totalUnitCost;
+                    }
+                });
+                const mCostRows = hqExpenseRows.filter(c => {
+                    const cm = String(c.month || '').trim().toLowerCase();
+                    return cm.startsWith(mLower) || cm === String(idx + 1);
+                });
+                const mCost = mCostRows.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+                return (mRev - mCogs) - mCost;
+            });
+
+            return {
+                hq: h,
+                sellingValue: hqSelling,
+                productCost: hqCost,
+                grossProfit: hqGross,
+                costCenterExpenses: hqExp,
+                actualNetProfit: hqNet,
+                isProfitable: hqNet >= 0,
+                status: hqNet >= 0 ? 'PROFITABLE' : 'DEFICIT',
+                monthlyNet
+            };
+        });
+
+        // 5. Product-wise 12-Month Trend Graphs
+        const productTrends = allProducts.map(p => {
+            const pId = p._id || p.uid || '';
+            const pName = (p.productName || p.name || '').trim();
+            const totalUnitCost = Number(p.purchaseCost || 0) + Number(p.transportCost || 0);
+
+            let totalAnnualQty = 0;
+            let totalAnnualRevenue = 0;
+            let totalAnnualCost = 0;
+
+            const monthly = MONTHS.map((m, idx) => {
+                const mLower = m.toLowerCase();
+                const mSales = secSales.filter(s => {
+                    const sm = String(s.month || '').trim().toLowerCase();
+                    return sm.startsWith(mLower) || sm === String(idx + 1);
+                });
+                const mItems = [];
+                mSales.forEach(s => {
+                    const items = itemsBySaleId.get(s._id) || [];
+                    mItems.push(...items);
+                });
+
+                const matching = mItems.filter(it => {
+                    const itProdId = String(it.productId || '').trim();
+                    const itProdName = String(it.product || '').trim().toLowerCase();
+                    return (pId && itProdId && (itProdId === pId || itProdId === p.uid)) ||
+                           (pName && itProdName && (itProdName === pName.toLowerCase() || itProdName === (p.uid || '').toLowerCase()));
+                });
+
+                let qty = 0;
+                let rev = 0;
+                let cost = 0;
+                if (matching.length > 0) {
+                    qty = matching.reduce((s, it) => s + Number(it.salesQty || it.qty || 0), 0);
+                    const cusItem = matching.find(it => it.selectedPriceType === 'CUS' || it.priceType === 'CUS' || (it.customPrice && it.customPrice !== it.basePrice));
+                    let rate = Number(p.ptr || 0);
+                    if (cusItem && cusItem.customPrice) rate = Number(cusItem.customPrice);
+                    else if (matching[0].selectedPriceType === 'PTS' || matching[0].priceType === 'PTS') rate = Number(p.pts || 0);
+
+                    rev = qty * rate;
+                    cost = qty * totalUnitCost;
+                }
+
+                const profit = rev - cost;
+                totalAnnualQty += qty;
+                totalAnnualRevenue += rev;
+                totalAnnualCost += cost;
+
+                return {
+                    month: m,
+                    qty,
+                    revenue: rev,
+                    cost,
+                    profit,
+                    isProfitable: profit >= 0
+                };
+            });
+
+            const totalAnnualProfit = totalAnnualRevenue - totalAnnualCost;
+
+            return {
+                productId: pId,
+                productName: pName,
+                composition: p.composition || '',
+                mrp: Number(p.mrp || 0),
+                ptr: Number(p.ptr || 0),
+                pts: Number(p.pts || 0),
+                purchaseCost: Number(p.purchaseCost || 0),
+                transportCost: Number(p.transportCost || 0),
+                totalUnitCost,
+                totalQty: totalAnnualQty,
+                totalRevenue: totalAnnualRevenue,
+                totalCost: totalAnnualCost,
+                totalProfit: totalAnnualProfit,
+                isProfitable: totalAnnualProfit >= 0,
+                monthly
+            };
+        });
+
+        // Sort products by totalProfit DESC
+        productTrends.sort((a, b) => b.totalProfit - a.totalProfit);
+
+        // Overall Annual Totals
+        const annualSellingValue = monthlyTrend.reduce((s, m) => s + m.sellingValue, 0);
+        const annualProductCost = monthlyTrend.reduce((s, m) => s + m.productCost, 0);
+        const annualGrossProfit = monthlyTrend.reduce((s, m) => s + m.grossProfit, 0);
+        const annualCostCenter = monthlyTrend.reduce((s, m) => s + m.costCenterExpenses, 0);
+        const annualNetProfit = annualGrossProfit - annualCostCenter;
+        const profitableMonths = monthlyTrend.filter(m => m.isProfitable).length;
+        const deficitMonths = 12 - profitableMonths;
+
+        res.json({
+            success: true,
+            year: yr,
+            hq: hq || 'ALL',
+            summary: {
+                annualSellingValue,
+                annualProductCost,
+                annualGrossProfit,
+                annualCostCenter,
+                annualNetProfit,
+                isProfitable: annualNetProfit >= 0,
+                profitableMonths,
+                deficitMonths
+            },
+            monthlyTrend,
+            territoryComparison,
+            productTrends
+        });
+    } catch (e) {
+        console.error('Error in /profit-center/analytics:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // 6. REMINDER CALL REPORTS & SCHEDULING (Menu #9 & XLA Reminders)
 router.get('/admin/users', async (req, res) => {
     try {
