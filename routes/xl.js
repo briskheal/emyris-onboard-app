@@ -12074,9 +12074,17 @@ router.get('/cost-center', async (req, res) => {
     try {
         const { XlCostCenter } = require('../db');
         const { type, month, year, hq } = req.query;
+        const { Op } = require('sequelize');
         const where = {};
         if (type && type !== 'ALL') where.type = type.toUpperCase();
-        if (month) where.month = month;
+        if (month) {
+            const shortM = month.split(',')[0].trim().substring(0, 3);
+            where[Op.or] = [
+                { month: month },
+                { month: shortM },
+                { month: { [Op.like]: `${shortM}%` } }
+            ];
+        }
         if (year) where.year = year;
         if (hq && hq !== 'ALL') where.hq = hq;
 
@@ -12164,19 +12172,89 @@ router.delete('/cost-center/:id', async (req, res) => {
     }
 });
 
-// Auto-sync approved expenses into Employee Cost Center
+// Auto-sync approved expenses & payroll into Employee Cost Center
 router.post('/cost-center/auto-sync', async (req, res) => {
     try {
-        const { XlCostCenter, XlExpense, XlUser } = require('../db');
+        const { 
+            XlCostCenter, 
+            XlExpense, 
+            XlUser, 
+            Applicant, 
+            Payslip, 
+            XlAttendance, 
+            XlDCR, 
+            XlHoliday, 
+            XlGlobalSettings 
+        } = require('../db');
+        const { Op } = require('sequelize');
+
         const { month, year, hq } = req.body;
         const shortMonth = month ? month.split(',')[0].trim().substring(0, 3) : '';
         const yr = year || (month && month.includes(',') ? month.split(',')[1].trim() : String(new Date().getFullYear()));
 
-        const users = await XlUser.findAll({ raw: true });
-        const allExpenses = await XlExpense.findAll({
-            where: { status: 'Approved' },
-            raw: true
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const fullMonths = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        
+        let mIdx = shortMonth ? months.findIndex(m => m.toLowerCase() === shortMonth.toLowerCase()) : new Date().getMonth();
+        if (mIdx === -1) mIdx = new Date().getMonth();
+        
+        const monthNum = mIdx + 1;
+        const monthStrNum = String(monthNum).padStart(2, '0');
+        const normFullMonth = fullMonths[mIdx];
+        const lastDay = new Date(parseInt(yr), monthNum, 0).getDate();
+        const startDate = `${yr}-${monthStrNum}-01`;
+        const endDate = `${yr}-${monthStrNum}-${String(lastDay).padStart(2, '0')}`;
+
+        // 1. Fetch all data needed for payroll & expenses
+        const [users, applicants, savedPayslips, allExpenses, atts, dcrs, holidays, pref] = await Promise.all([
+            XlUser.findAll({ raw: true }),
+            Applicant.find({}).lean ? Applicant.find({}).lean() : Applicant.find({}),
+            Payslip.find ? Payslip.find({
+                month: { $regex: new RegExp(`^${normFullMonth.substring(0, 3)}`, 'i') },
+                year: String(yr)
+            }).lean() : [],
+            XlExpense.findAll({
+                where: { status: 'Approved' },
+                raw: true
+            }),
+            XlAttendance.findAll({
+                where: { date: { [Op.between]: [startDate, endDate] } },
+                raw: true
+            }),
+            XlDCR.findAll({
+                attributes: ['employeeId', 'date'],
+                where: { date: { [Op.between]: [startDate, endDate] } },
+                raw: true
+            }),
+            XlHoliday.findAll({
+                where: { date: { [Op.between]: [startDate, endDate] } },
+                raw: true
+            }),
+            XlGlobalSettings.findOne()
+        ]);
+
+        // Merge attendance and DCRs
+        const attMap = new Set(atts.map(a => `${a.employeeId}_${a.date}`));
+        const mergedData = [...atts];
+        dcrs.forEach(d => {
+            const key = `${d.employeeId}_${d.date}`;
+            if (!attMap.has(key)) {
+                mergedData.push({ employeeId: d.employeeId, date: d.date, status: 'Present' });
+            }
         });
+
+        // Working days pref
+        let workingDaysPref = { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true };
+        if (pref && pref.settings) {
+            let parsedSettings = pref.settings;
+            if (typeof parsedSettings === 'string') {
+                try { parsedSettings = JSON.parse(parsedSettings); } catch(e) {}
+            }
+            if (parsedSettings.set_working_days && parsedSettings.workingDays) {
+                workingDaysPref = parsedSettings.workingDays;
+            }
+        }
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         let syncedCount = 0;
         for (const u of users) {
@@ -12184,18 +12262,158 @@ router.post('/cost-center/auto-sync', async (req, res) => {
             const empHq = u.hq || u.headquarter || '';
             if (hq && hq !== 'ALL' && empHq !== hq) continue;
 
-            const userExpenses = allExpenses.filter(exp => {
-                if (exp.employeeId !== empId) return false;
-                if (!exp.date) return false;
-                const dStr = String(exp.date);
-                if (shortMonth) {
-                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                    const mIdx = months.findIndex(m => m.toLowerCase() === shortMonth.toLowerCase());
-                    if (mIdx !== -1) {
-                        const mNum = String(mIdx + 1).padStart(2, '0');
-                        if (!dStr.includes(`-${mNum}-`) && !dStr.includes(`/${mNum}/`)) return false;
+            const uCode = (u.employeeId || u.uid || '').toLowerCase().trim();
+            const uEmail = (u.email || '').toLowerCase().trim();
+            const uName = `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase().trim();
+
+            // Match applicant
+            const applicant = applicants.find(a => {
+                const aCode = (a.empCode || '').toLowerCase().trim();
+                const aEmail = (a.email || '').toLowerCase().trim();
+                const aName = (a.fullName || '').toLowerCase().trim();
+                return (uCode && aCode && uCode === aCode) ||
+                       (uEmail && aEmail && uEmail === aEmail) ||
+                       (uName && aName && (uName.includes(aName) || aName.includes(uName)));
+            });
+
+            // 2. Compute Payrun for employee
+            let salaryData = {
+                basic: 0,
+                hra: 0,
+                conveyance: 0,
+                medical: 0,
+                lta: 0,
+                edu: 0,
+                special: 0,
+                gross: 0,
+                ptDed: 0,
+                pfDed: 0,
+                employerPf: 0,
+                netSalary: 0,
+                payableDays: 0,
+                totalMonthDays: lastDay,
+                present: 0,
+                absent: 0,
+                leave: 0,
+                holiday: 0
+            };
+
+            const savedPs = savedPayslips.find(ps => 
+                (ps.empCode && uCode && ps.empCode.trim().toLowerCase() === uCode) ||
+                (ps.email && uEmail && ps.email.trim().toLowerCase() === uEmail) ||
+                (ps.empName && uName && ps.empName.trim().toLowerCase() === uName)
+            );
+
+            if (savedPs && (savedPs.grossSalary || savedPs.calculatedSalaryBreakup)) {
+                const cb = savedPs.calculatedSalaryBreakup || {};
+                salaryData.basic = Number(cb.basic || 0);
+                salaryData.hra = Number(cb.hra || 0);
+                salaryData.conveyance = Number(cb.conveyance || 0);
+                salaryData.medical = Number(cb.medical || 0);
+                salaryData.lta = Number(cb.lta || 0);
+                salaryData.edu = Number(cb.edu || 0);
+                salaryData.special = Number(cb.special || 0);
+                salaryData.gross = Number(savedPs.grossSalary || (salaryData.basic + salaryData.hra + salaryData.conveyance + salaryData.medical + salaryData.lta + salaryData.edu + salaryData.special));
+                salaryData.ptDed = Number(cb.ptDed || savedPs.ptDed || 0);
+                salaryData.pfDed = Number(cb.pfDed || savedPs.pfDed || 0);
+                salaryData.employerPf = salaryData.pfDed; // Same amount matching employee PF deduction
+                salaryData.netSalary = Number(savedPs.netSalary || (salaryData.gross - salaryData.ptDed - salaryData.pfDed));
+                salaryData.payableDays = Number(savedPs.payableDays || cb.payableDays || lastDay);
+                salaryData.totalMonthDays = Number(savedPs.totalDays || cb.totalMonthDays || lastDay);
+                salaryData.present = Number(cb.present || 0);
+                salaryData.absent = Number(cb.absent || 0);
+                salaryData.leave = Number(cb.leave || 0);
+                salaryData.holiday = Number(cb.holiday || 0);
+            } else if (applicant && applicant.salaryBreakup) {
+                const sb = applicant.salaryBreakup;
+                let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = lastDay;
+
+                for (let day = 1; day <= lastDay; day++) {
+                    const currentDate = new Date(parseInt(yr), monthNum - 1, day);
+                    const dStr = `${yr}-${monthStrNum}-${String(day).padStart(2, '0')}`;
+                    const dayStr = dayNames[currentDate.getDay()];
+                    
+                    const isWeeklyOff = !workingDaysPref[dayStr];
+                    const isStateHoliday = holidays.some(h => 
+                        h.date === dStr && 
+                        (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === u.state)
+                    );
+                    const isHoliday = isWeeklyOff || isStateHoliday;
+                    
+                    const hasAtt = mergedData.find(a => (a.employeeId === u.employeeId || a.employeeId === u.email) && a.date === dStr);
+                    if (hasAtt) {
+                        const statusStr = (hasAtt.status || '').toLowerCase();
+                        if (statusStr.includes('leave')) leave++;
+                        else if (statusStr.includes('absent')) absent++;
+                        else present++;
+                    } else {
+                        if (isHoliday) holiday++;
+                        else absent++;
                     }
                 }
+
+                if (present === 0 && leave === 0 && absent > 0) {
+                    absent += holiday;
+                    holiday = 0;
+                }
+
+                let payableDays = totalMonthDays - absent;
+                if (payableDays < 0) payableDays = 0;
+                if (payableDays > totalMonthDays) payableDays = totalMonthDays;
+
+                const factor = totalMonthDays > 0 ? (payableDays / totalMonthDays) : 1;
+                const basic = Math.round(parseFloat(sb.v_salBasic || sb.basic || 0) * factor);
+                const hra = Math.round(parseFloat(sb.v_salHra || sb.hra || 0) * factor);
+                const conv = Math.round(parseFloat(sb.v_salConv || sb.conveyance || 0) * factor);
+                const med = Math.round(parseFloat(sb.v_salMed || sb.medical || 0) * factor);
+                const lta = Math.round(parseFloat(sb.v_salLta || sb.lta || 0) * factor);
+                const edu = Math.round(parseFloat(sb.v_salEdu || sb.edu || 0) * factor);
+                const special = Math.round(parseFloat(sb.v_salSpecial || sb.special || 0) * factor);
+                const gross = basic + hra + conv + med + lta + edu + special;
+
+                let ptDed = 0;
+                if (sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
+                    if (gross > 20000) ptDed = 200;
+                    else if (gross > 15000) ptDed = 150;
+                }
+
+                let pfDed = 0;
+                if (sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
+                    const pfVal = Math.round(basic * 0.12);
+                    pfDed = pfVal > 1800 ? 1800 : pfVal;
+                }
+
+                const employerPf = pfDed; // Exact matching employer PF contribution
+                const netSalary = gross - ptDed - pfDed;
+
+                salaryData = {
+                    basic,
+                    hra,
+                    conveyance: conv,
+                    medical: med,
+                    lta,
+                    edu,
+                    special,
+                    gross,
+                    ptDed,
+                    pfDed,
+                    employerPf,
+                    netSalary,
+                    payableDays,
+                    totalMonthDays,
+                    present,
+                    absent,
+                    leave,
+                    holiday
+                };
+            }
+
+            // 3. User Expenses from Approved XlExpense
+            const userExpenses = allExpenses.filter(exp => {
+                if (exp.employeeId !== empId && exp.employeeId !== u.email) return false;
+                if (!exp.date) return false;
+                const dStr = String(exp.date);
+                if (!dStr.includes(`-${monthStrNum}-`) && !dStr.includes(`/${monthStrNum}/`)) return false;
                 if (yr && !dStr.includes(yr)) return false;
                 return true;
             });
@@ -12206,13 +12424,50 @@ router.post('/cost-center/auto-sync', async (req, res) => {
             const otherTotal = userExpenses.filter(e => !(e.category || '').toLowerCase().includes('travel') && !(e.category || '').toLowerCase().includes('da') && !(e.category || '').toLowerCase().includes('hotel')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
             const totalExp = travelTotal + daTotal + hotelTotal + otherTotal;
 
-            if (totalExp > 0 || u.salary) {
-                const salary = Number(u.salary || 0);
-                const grandTotal = totalExp + salary;
+            // Total Cost to Company = Earned Gross Salary + Employer PF Contribution + Approved Field Expenses
+            const grandTotal = (salaryData.gross || 0) + (salaryData.employerPf || 0) + totalExp;
+
+            if (grandTotal > 0) {
                 const empName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId;
 
                 const breakdown = {
-                    salary,
+                    salary: {
+                        basic: salaryData.basic,
+                        hra: salaryData.hra,
+                        conveyance: salaryData.conveyance,
+                        medical: salaryData.medical,
+                        lta: salaryData.lta,
+                        edu: salaryData.edu,
+                        special: salaryData.special,
+                        gross: salaryData.gross
+                    },
+                    companyContributions: {
+                        employerPf: salaryData.employerPf,
+                        total: salaryData.employerPf
+                    },
+                    deductions: {
+                        employeePf: salaryData.pfDed,
+                        pt: salaryData.ptDed,
+                        totalDeductions: salaryData.pfDed + salaryData.ptDed,
+                        netSalary: salaryData.netSalary
+                    },
+                    fieldExpenses: {
+                        dailyAllowance: daTotal,
+                        travel: travelTotal,
+                        hotel: hotelTotal,
+                        otherExpenses: otherTotal,
+                        total: totalExp
+                    },
+                    attendance: {
+                        present: salaryData.present,
+                        absent: salaryData.absent,
+                        leave: salaryData.leave,
+                        holiday: salaryData.holiday,
+                        payableDays: salaryData.payableDays,
+                        totalMonthDays: salaryData.totalMonthDays
+                    },
+                    totalCost: grandTotal,
+                    // Flat legacy compatibility keys
                     travel: travelTotal,
                     dailyAllowance: daTotal,
                     hotel: hotelTotal,
@@ -12221,26 +12476,35 @@ router.post('/cost-center/auto-sync', async (req, res) => {
                 };
 
                 let existing = await XlCostCenter.findOne({
-                    where: { type: 'EMPLOYEE', month: month || shortMonth, year: yr, entityId: empId }
+                    where: { 
+                        type: 'EMPLOYEE', 
+                        year: yr, 
+                        entityId: empId,
+                        [Op.or]: [
+                            { month: month || shortMonth },
+                            { month: shortMonth },
+                            { month: `${shortMonth}, ${yr}` }
+                        ]
+                    }
                 });
 
                 if (existing) {
                     existing.amount = grandTotal;
                     existing.hq = empHq;
                     existing.breakdown = JSON.stringify(breakdown);
-                    existing.remarks = 'Auto-synced from Approved Expenses & Payroll';
+                    existing.remarks = 'Auto-synced from Payrun & Attendance & Approved Expenses';
                     await existing.save();
                 } else {
                     await XlCostCenter.create({
                         type: 'EMPLOYEE',
-                        month: month || shortMonth,
+                        month: month || `${shortMonth}, ${yr}`,
                         year: yr,
                         hq: empHq,
                         entityId: empId,
                         entityName: empName,
                         amount: grandTotal,
                         breakdown: JSON.stringify(breakdown),
-                        remarks: 'Auto-synced from Approved Expenses & Payroll',
+                        remarks: 'Auto-synced from Payrun & Attendance & Approved Expenses',
                         status: 'Active'
                     });
                 }
@@ -12248,7 +12512,7 @@ router.post('/cost-center/auto-sync', async (req, res) => {
             }
         }
 
-        res.json({ success: true, message: `Synced ${syncedCount} employee cost records`, syncedCount });
+        res.json({ success: true, message: `Synced ${syncedCount} employee cost records with exact salary and PF breakdown`, syncedCount });
     } catch (e) {
         console.error('Error in /cost-center/auto-sync:', e);
         res.status(500).json({ success: false, message: e.message });
@@ -12258,9 +12522,17 @@ router.post('/cost-center/auto-sync', async (req, res) => {
 router.get('/cost-center/total-expenses', async (req, res) => {
     try {
         const { XlCostCenter } = require('../db');
+        const { Op } = require('sequelize');
         const { month, year, hq } = req.query;
         const where = {};
-        if (month) where.month = month;
+        if (month) {
+            const shortM = month.split(',')[0].trim().substring(0, 3);
+            where[Op.or] = [
+                { month: month },
+                { month: shortM },
+                { month: { [Op.like]: `${shortM}%` } }
+            ];
+        }
         if (year) where.year = year;
         if (hq && hq !== 'ALL') where.hq = hq;
 

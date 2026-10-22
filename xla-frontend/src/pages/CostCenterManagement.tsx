@@ -969,8 +969,8 @@ export default function CostCenterManagement() {
 
       {/* DETAIL VIEW MODAL */}
       {detailItem && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl my-8">
             <div className="px-5 py-3.5 border-b border-slate-700 flex items-center justify-between bg-slate-900">
               <h3 className="text-xs font-black uppercase text-white tracking-wider">
                 Cost Breakdown: {detailItem.entityName}
@@ -979,7 +979,7 @@ export default function CostCenterManagement() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4 text-xs">
+            <div className="p-5 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase block">Category</span>
@@ -994,7 +994,7 @@ export default function CostCenterManagement() {
                   <span className="font-bold text-slate-200">{detailItem.month} {detailItem.year}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Cost</span>
+                  <span className="text-[10px] text-slate-400 uppercase block">Total Cost to Company</span>
                   <span className="font-bold text-emerald-400 font-mono text-sm">
                     ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
                   </span>
@@ -1005,28 +1005,180 @@ export default function CostCenterManagement() {
               {(() => {
                 try {
                   const b = typeof detailItem.breakdown === 'string' ? JSON.parse(detailItem.breakdown) : detailItem.breakdown;
-                  if (b && Object.keys(b).length > 0) {
+                  if (!b || Object.keys(b).length === 0) return null;
+
+                  if (detailItem.type === 'EMPLOYEE' && (b.salary || b.fieldExpenses || b.companyContributions)) {
+                    const sal = b.salary && typeof b.salary === 'object' ? b.salary : null;
+                    const contrib = b.companyContributions || {};
+                    const ded = b.deductions || {};
+                    const exp = b.fieldExpenses || {};
+                    const att = b.attendance || null;
+                    const employerPf = contrib.employerPf ?? ded.employeePf ?? 0;
+
                     return (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Component Breakdown
-                        </span>
-                        <div className="bg-slate-900 rounded-lg p-3 border border-slate-700 space-y-2">
-                          {Object.entries(b).map(([k, v]) => {
-                            if (typeof v === 'boolean') return null;
-                            return (
-                              <div key={k} className="flex justify-between items-center text-xs border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
-                                <span className="capitalize text-slate-400">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                                <span className="font-mono font-bold text-slate-200">
-                                  ₹ {Number(v).toLocaleString('en-IN')}
-                                </span>
+                      <div className="space-y-3">
+                        {/* Attendance Banner */}
+                        {att && (
+                          <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
+                            <span className="text-sky-300 font-bold uppercase tracking-wider">Attendance:</span>
+                            <span className="text-slate-200 font-mono">
+                              <strong className="text-emerald-400">{att.present}</strong> Present • <strong className="text-sky-400">{att.holiday}</strong> Off • <strong className="text-amber-400">{att.leave}</strong> Leave • <strong className="text-rose-400">{att.absent}</strong> Absent
+                              <span className="ml-2 text-slate-400">({att.payableDays}/{att.totalMonthDays} Payable Days)</span>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 1. Salary Earnings */}
+                        {sal && (
+                          <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
+                            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-700/60">
+                              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                💵 Salary Earnings Breakdown
+                              </span>
+                              <span className="text-xs font-mono font-bold text-emerald-400">
+                                Gross: ₹ {(sal.gross || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Basic Salary:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.basic || 0).toLocaleString('en-IN')}</span>
                               </div>
-                            );
-                          })}
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>HRA:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.hra || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Conveyance:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.conveyance || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Medical Allowance:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.medical || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>LTA:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.lta || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Special Allowance:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.special || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Education Allowance:</span>
+                                <span className="font-mono text-slate-200">₹ {(sal.edu || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center font-bold text-emerald-300 pt-0.5 border-t border-slate-800">
+                                <span>Gross Salary Earned:</span>
+                                <span className="font-mono">₹ {(sal.gross || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 2. Company Contributions & Deductions Group */}
+                        <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
+                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block mb-2 pb-1.5 border-b border-slate-700/60">
+                            🏛️ Company Contributions & Deductions
+                          </span>
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between items-center bg-purple-500/10 px-2.5 py-1.5 rounded-lg border border-purple-500/20">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-purple-300">Employer PF Contribution (Company's Expense):</span>
+                                <span className="text-[10px] text-slate-400 font-light">Matches exact 100% employee PF deduction</span>
+                              </div>
+                              <span className="font-mono font-bold text-purple-300 text-sm">
+                                + ₹ {Number(employerPf).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-400 px-1 pt-1">
+                              <span>Employee PF Deduction:</span>
+                              <span className="font-mono text-rose-300">- ₹ {Number(ded.employeePf || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-400 px-1">
+                              <span>Professional Tax (PT):</span>
+                              <span className="font-mono text-rose-300">- ₹ {Number(ded.pt || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            {ded.netSalary > 0 && (
+                              <div className="flex justify-between items-center text-slate-300 px-1 pt-1 border-t border-slate-800 font-medium">
+                                <span>Net Take-Home Salary:</span>
+                                <span className="font-mono font-bold text-sky-400">₹ {Number(ded.netSalary).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 3. Approved Field Expenses */}
+                        <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/80">
+                          <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-700/60">
+                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                              🚗 Approved Field Expenses
+                            </span>
+                            <span className="text-xs font-mono font-bold text-amber-300">
+                              Total: ₹ {Number(exp.total || ((exp.dailyAllowance || b.dailyAllowance || 0) + (exp.travel || b.travel || 0) + (exp.hotel || b.hotel || 0) + (exp.otherExpenses || b.otherExpenses || 0))).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                            <div className="flex justify-between items-center text-slate-400">
+                              <span>Daily Allowance (DA):</span>
+                              <span className="font-mono text-slate-200">₹ {Number(exp.dailyAllowance ?? b.dailyAllowance ?? 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-400">
+                              <span>Travel / Fuel (TA):</span>
+                              <span className="font-mono text-slate-200">₹ {Number(exp.travel ?? b.travel ?? 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-400">
+                              <span>Hotel & Boarding:</span>
+                              <span className="font-mono text-slate-200">₹ {Number(exp.hotel ?? b.hotel ?? 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-400">
+                              <span>Other Local Expenses:</span>
+                              <span className="font-mono text-slate-200">₹ {Number(exp.otherExpenses ?? b.otherExpenses ?? 0).toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4. Total Cost to Company Formula Card */}
+                        <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-sky-950/40 p-3 rounded-xl border border-emerald-500/40 flex items-center justify-between shadow-lg">
+                          <div>
+                            <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">
+                              Total Employee Cost to Company (CTC + Field Expenses)
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-light">
+                              Gross Salary + Employer PF + Approved Field Expenses
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-mono font-extrabold text-emerald-400">
+                              ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
                   }
+
+                  // Fallback for Doctor / Stockist / Chemist / Misc / Legacy
+                  return (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Component Breakdown
+                      </span>
+                      <div className="bg-slate-900 rounded-lg p-3 border border-slate-700 space-y-2">
+                        {Object.entries(b).map(([k, v]) => {
+                          if (typeof v === 'boolean' || typeof v === 'object') return null;
+                          return (
+                            <div key={k} className="flex justify-between items-center text-xs border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
+                              <span className="capitalize text-slate-400">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                              <span className="font-mono font-bold text-slate-200">
+                                ₹ {Number(v).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
                 } catch (e) {
                   return null;
                 }
