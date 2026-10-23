@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ArrowLeft, 
   HelpCircle, 
@@ -96,6 +96,52 @@ export default function ProfitCenterManagement() {
   const [bulkMarginInput, setBulkMarginInput] = useState<string>('');
   const [bulkMarginSaving, setBulkMarginSaving] = useState<boolean>(false);
   const [bulkMarginApplied, setBulkMarginApplied] = useState<boolean>(false);
+
+  // Table Container Ref & Cursor Hover for Arrow Key Scrolling
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [isMouseInTable, setIsMouseInTable] = useState<boolean>(false);
+
+  // Arrow Key Navigation exclusively within the table when mouse/cursor is inside table
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isMouseInTable || !tableContainerRef.current) return;
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown'].includes(e.key)) {
+        const activeEl = document.activeElement;
+        const isInput = activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA';
+
+        // If editing numbers inside an input, allow Left/Right arrows for text navigation
+        if (isInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+          return;
+        }
+
+        // Prevent the outer browser window from scrolling!
+        e.preventDefault();
+        e.stopPropagation();
+
+        const container = tableContainerRef.current;
+        const rowStep = 44; // scroll by one row
+        const colStep = 120; // scroll by one column
+
+        if (e.key === 'ArrowDown') {
+          container.scrollTop += rowStep;
+        } else if (e.key === 'ArrowUp') {
+          container.scrollTop -= rowStep;
+        } else if (e.key === 'ArrowRight') {
+          container.scrollLeft += colStep;
+        } else if (e.key === 'ArrowLeft') {
+          container.scrollLeft -= colStep;
+        } else if (e.key === 'PageDown') {
+          container.scrollTop += container.clientHeight * 0.75;
+        } else if (e.key === 'PageUp') {
+          container.scrollTop -= container.clientHeight * 0.75;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMouseInTable]);
 
   // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, marginPercent, saving, saved }
   const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; marginPercent: number | string; saving?: boolean; saved?: boolean }>>({});
@@ -1772,7 +1818,13 @@ export default function ProfitCenterManagement() {
               </div>
 
               {/* Table Container: Frozen Table Header (top) and Frozen Product Names (left), rest scrolls smoothly in 2D */}
-              <div className="overflow-auto w-full max-h-[calc(100vh-270px)] min-h-[480px] border border-slate-700/80 rounded-b-none relative">
+              <div 
+                ref={tableContainerRef}
+                tabIndex={0}
+                onMouseEnter={() => setIsMouseInTable(true)}
+                onMouseLeave={() => setIsMouseInTable(false)}
+                className="overflow-auto w-full max-h-[calc(100vh-270px)] min-h-[480px] border border-slate-700/80 rounded-b-none relative focus:outline-none"
+              >
                 <table className="w-full text-center border-separate border-spacing-0 text-xs whitespace-nowrap">
                   <thead>
                     <tr className="bg-slate-950 text-slate-300 font-bold text-[10px] uppercase tracking-wider">

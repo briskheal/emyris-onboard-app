@@ -1076,52 +1076,107 @@ export default function CostCenterManagement() {
                             )}
 
                             {/* Salary Earnings Breakdown Card */}
-                            {sal && (
-                              <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
-                                <div className="flex justify-between items-center pb-2 mb-2.5 border-b border-slate-800">
-                                  <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    💵 Salary Earnings Breakdown
-                                  </span>
-                                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/30">
-                                    Gross: ₹ {(sal.gross || 0).toLocaleString('en-IN')}
-                                  </span>
+                            {sal && (() => {
+                              const base = sal.baseBreakup || {};
+                              const isZeroEarned = (sal.payableDays || 0) === 0 || (sal.gross || 0) === 0;
+                              return (
+                                <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
+                                  <div className="flex justify-between items-center pb-2 mb-2.5 border-b border-slate-800">
+                                    <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                      💵 Salary Earnings Breakdown
+                                    </span>
+                                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                                      isZeroEarned 
+                                        ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' 
+                                        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                                    }`}>
+                                      {isZeroEarned ? 'Earned Gross: ₹ 0' : `Earned Gross: ₹ ${(sal.gross || 0).toLocaleString('en-IN')}`}
+                                    </span>
+                                  </div>
+                                  
+                                  {isZeroEarned && (
+                                    <div className="bg-rose-950/20 border border-rose-500/30 rounded-lg p-2 mb-2.5 text-[11px] text-rose-300">
+                                      ⚠️ Employee was <strong>not present</strong> ({att?.present || 0} days present) in this month. As per company attendance policy, earned salary is <strong>₹ 0</strong>.
+                                    </div>
+                                  )}
+
+                                  <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Basic Salary:</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.basic || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.basic > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.basic).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>House Rent Allowance (HRA):</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.hra || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.hra > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.hra).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Conveyance Allowance:</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.conveyance || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.conveyance > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.conveyance).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Medical Allowance:</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.medical || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.medical > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.medical).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Leave Travel Allowance (LTA):</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.lta || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.lta > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.lta).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Special Allowance:</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.special || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.special > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.special).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-300">
+                                      <span>Education Allowance:</span>
+                                      <span className="font-mono font-medium text-white">
+                                        ₹ {(sal.edu || 0).toLocaleString('en-IN')}
+                                        {isZeroEarned && base.edu > 0 && (
+                                          <span className="text-[10px] text-slate-500 ml-1.5">(Base: ₹{Number(base.edu).toLocaleString('en-IN')})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center font-bold text-emerald-400 pt-2 border-t border-slate-800 text-xs">
+                                      <span>Total Gross Salary Earned:</span>
+                                      <span className="font-mono text-sm">
+                                        ₹ {(sal.gross || 0).toLocaleString('en-IN')}
+                                        <span className="text-[10px] text-slate-400 font-normal ml-1">
+                                          ({sal.payableDays || 0} / {sal.totalMonthDays || 31} Days)
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="space-y-2 text-xs">
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Basic Salary:</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.basic || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>House Rent Allowance (HRA):</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.hra || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Conveyance Allowance:</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.conveyance || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Medical Allowance:</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.medical || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Leave Travel Allowance (LTA):</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.lta || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Special Allowance:</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.special || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span>Education Allowance:</span>
-                                    <span className="font-mono font-medium text-white">₹ {(sal.edu || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center font-bold text-emerald-400 pt-2 border-t border-slate-800 text-xs">
-                                    <span>Total Gross Salary Earned:</span>
-                                    <span className="font-mono text-sm">₹ {(sal.gross || 0).toLocaleString('en-IN')}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
 
                           {/* RIGHT COLUMN: Real Bank Outflow Breakdown & Field Expenses */}

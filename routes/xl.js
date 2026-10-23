@@ -12173,7 +12173,14 @@ async function autoSyncEmployeeCostCenter({ month, year, hq }) {
                    (uName && aName && (uName.includes(aName) || aName.includes(uName)));
         });
 
-        // 2. Compute Payrun for employee
+        const userIdentifiers = new Set([
+            u.employeeId,
+            u.uid,
+            u._id ? String(u._id) : '',
+            u.email
+        ].filter(Boolean).map(x => String(x).toLowerCase().trim()));
+
+        // 2. Compute Payrun for employee based on ACTUAL attendance
         let salaryData = {
             basic: 0,
             hra: 0,
@@ -12187,137 +12194,139 @@ async function autoSyncEmployeeCostCenter({ month, year, hq }) {
             pfDed: 0,
             employerPf: 0,
             netSalary: 0,
-            payableDays: lastDay,
+            payableDays: 0,
             totalMonthDays: lastDay,
-            present: lastDay,
-            absent: 0,
+            present: 0,
+            absent: lastDay,
             leave: 0,
-            holiday: 0
+            holiday: 0,
+            baseGross: 0,
+            baseBreakup: null
         };
 
-        const savedPs = savedPayslips.find(ps => 
-            (ps.empCode && uCode && ps.empCode.trim().toLowerCase() === uCode) ||
-            (ps.email && uEmail && ps.email.trim().toLowerCase() === uEmail) ||
-            (ps.empName && uName && ps.empName.trim().toLowerCase() === uName)
-        );
+        const sb = applicant?.salaryBreakup || {};
+        const baseBasic = parseFloat(sb.v_salBasic || sb.basic || 0);
+        const baseHra = parseFloat(sb.v_salHra || sb.hra || 0);
+        const baseConv = parseFloat(sb.v_salConv || sb.conveyance || 0);
+        const baseMed = parseFloat(sb.v_salMed || sb.medical || 0);
+        const baseLta = parseFloat(sb.v_salLta || sb.lta || 0);
+        const baseEdu = parseFloat(sb.v_salEdu || sb.edu || 0);
+        const baseSpecial = parseFloat(sb.v_salSpecial || sb.special || 0);
+        const baseGross = baseBasic + baseHra + baseConv + baseMed + baseLta + baseEdu + baseSpecial;
 
-        if (savedPs && (savedPs.grossSalary || savedPs.calculatedSalaryBreakup)) {
-            const cb = savedPs.calculatedSalaryBreakup || {};
-            salaryData.basic = Number(cb.basic || 0);
-            salaryData.hra = Number(cb.hra || 0);
-            salaryData.conveyance = Number(cb.conveyance || 0);
-            salaryData.medical = Number(cb.medical || 0);
-            salaryData.lta = Number(cb.lta || 0);
-            salaryData.edu = Number(cb.edu || 0);
-            salaryData.special = Number(cb.special || 0);
-            salaryData.gross = Number(savedPs.grossSalary || (salaryData.basic + salaryData.hra + salaryData.conveyance + salaryData.medical + salaryData.lta + salaryData.edu + salaryData.special));
-            salaryData.ptDed = Number(cb.ptDed || savedPs.ptDed || 0);
-            salaryData.pfDed = Number(cb.pfDed || savedPs.pfDed || 0);
-            salaryData.employerPf = salaryData.pfDed; // Same amount matching employee PF deduction
-            salaryData.netSalary = Number(savedPs.netSalary || (salaryData.gross - salaryData.ptDed - salaryData.pfDed));
-            salaryData.payableDays = Number(savedPs.payableDays || cb.payableDays || lastDay);
-            salaryData.totalMonthDays = Number(savedPs.totalDays || cb.totalMonthDays || lastDay);
-            salaryData.present = Number(cb.present || 0);
-            salaryData.absent = Number(cb.absent || 0);
-            salaryData.leave = Number(cb.leave || 0);
-            salaryData.holiday = Number(cb.holiday || 0);
-        } else if (applicant && applicant.salaryBreakup) {
-            const sb = applicant.salaryBreakup;
-            const userHasAttRecords = mergedData.some(a => (a.employeeId === u.employeeId || a.employeeId === u.email));
+        salaryData.baseGross = baseGross;
+        salaryData.baseBreakup = {
+            basic: baseBasic,
+            hra: baseHra,
+            conveyance: baseConv,
+            medical: baseMed,
+            lta: baseLta,
+            edu: baseEdu,
+            special: baseSpecial,
+            gross: baseGross
+        };
 
-            let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = lastDay;
+        // Calculate actual attendance from merged attendance + DCR punch data
+        let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = lastDay;
 
-            if (userHasAttRecords) {
-                for (let day = 1; day <= lastDay; day++) {
-                    const currentDate = new Date(parseInt(yr), monthNum - 1, day);
-                    const dStr = `${yr}-${monthStrNum}-${String(day).padStart(2, '0')}`;
-                    const dayStr = dayNames[currentDate.getDay()];
-                    
-                    const isWeeklyOff = !workingDaysPref[dayStr];
-                    const isStateHoliday = holidays.some(h => 
-                        h.date === dStr && 
-                        (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === u.state)
-                    );
-                    const isHoliday = isWeeklyOff || isStateHoliday;
-                    
-                    const hasAtt = mergedData.find(a => (a.employeeId === u.employeeId || a.employeeId === u.email) && a.date === dStr);
-                    if (hasAtt) {
-                        const statusStr = (hasAtt.status || '').toLowerCase();
-                        if (statusStr.includes('leave')) leave++;
-                        else if (statusStr.includes('absent')) absent++;
-                        else present++;
-                    } else {
-                        if (isHoliday) holiday++;
-                        else absent++;
-                    }
-                }
+        for (let day = 1; day <= lastDay; day++) {
+            const currentDate = new Date(parseInt(yr), monthNum - 1, day);
+            const dStr = `${yr}-${monthStrNum}-${String(day).padStart(2, '0')}`;
+            const dayStr = dayNames[currentDate.getDay()];
+            
+            const isWeeklyOff = !workingDaysPref[dayStr];
+            const isStateHoliday = holidays.some(h => 
+                h.date === dStr && 
+                (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === u.state)
+            );
+            const isHoliday = isWeeklyOff || isStateHoliday;
+            
+            const hasAtt = mergedData.find(a => 
+                a.employeeId && 
+                userIdentifiers.has(String(a.employeeId).toLowerCase().trim()) && 
+                a.date === dStr
+            );
 
-                if (present === 0 && leave === 0 && absent > 0) {
-                    absent += holiday;
-                    holiday = 0;
-                }
+            if (hasAtt) {
+                const statusStr = (hasAtt.status || '').toLowerCase();
+                if (statusStr.includes('leave')) leave++;
+                else if (statusStr.includes('absent')) absent++;
+                else present++;
             } else {
-                // If no daily punch records exist for this month, default to full standard attendance
-                present = totalMonthDays;
-                absent = 0;
-                leave = 0;
-                holiday = 0;
+                if (isHoliday) holiday++;
+                else absent++;
             }
-
-            let payableDays = totalMonthDays - absent;
-            if (payableDays < 0) payableDays = 0;
-            if (payableDays > totalMonthDays) payableDays = totalMonthDays;
-
-            const factor = totalMonthDays > 0 ? (payableDays / totalMonthDays) : 1;
-            const basic = Math.round(parseFloat(sb.v_salBasic || sb.basic || 0) * factor);
-            const hra = Math.round(parseFloat(sb.v_salHra || sb.hra || 0) * factor);
-            const conv = Math.round(parseFloat(sb.v_salConv || sb.conveyance || 0) * factor);
-            const med = Math.round(parseFloat(sb.v_salMed || sb.medical || 0) * factor);
-            const lta = Math.round(parseFloat(sb.v_salLta || sb.lta || 0) * factor);
-            const edu = Math.round(parseFloat(sb.v_salEdu || sb.edu || 0) * factor);
-            const special = Math.round(parseFloat(sb.v_salSpecial || sb.special || 0) * factor);
-            const gross = basic + hra + conv + med + lta + edu + special;
-
-            let ptDed = 0;
-            if (sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
-                if (gross > 20000) ptDed = 200;
-                else if (gross > 15000) ptDed = 150;
-            }
-
-            let pfDed = 0;
-            if (sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
-                const pfVal = Math.round(basic * 0.12);
-                pfDed = pfVal > 1800 ? 1800 : pfVal;
-            }
-
-            const employerPf = pfDed; // Exact matching employer PF contribution
-            const netSalary = gross - ptDed - pfDed;
-
-            salaryData = {
-                basic,
-                hra,
-                conveyance: conv,
-                medical: med,
-                lta,
-                edu,
-                special,
-                gross,
-                ptDed,
-                pfDed,
-                employerPf,
-                netSalary,
-                payableDays,
-                totalMonthDays,
-                present,
-                absent,
-                leave,
-                holiday
-            };
         }
+
+        // STRICT ACTUAL ATTENDANCE RULE:
+        // If an employee was NEVER present and had NO approved leave in the entire month:
+        // Earned salary is 0! No holiday pay if zero work days!
+        if (present === 0 && leave === 0) {
+            present = 0;
+            leave = 0;
+            holiday = 0;
+            absent = totalMonthDays;
+        }
+
+        let payableDays = present + leave + holiday;
+        if (payableDays < 0) payableDays = 0;
+        if (payableDays > totalMonthDays) payableDays = totalMonthDays;
+
+        if (present === 0 && leave === 0) {
+            payableDays = 0;
+        }
+
+        const factor = totalMonthDays > 0 ? (payableDays / totalMonthDays) : 0;
+        const basic = Math.round(baseBasic * factor);
+        const hra = Math.round(baseHra * factor);
+        const conv = Math.round(baseConv * factor);
+        const med = Math.round(baseMed * factor);
+        const lta = Math.round(baseLta * factor);
+        const edu = Math.round(baseEdu * factor);
+        const special = Math.round(baseSpecial * factor);
+        const gross = basic + hra + conv + med + lta + edu + special;
+
+        let ptDed = 0;
+        if (gross > 0 && sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
+            if (gross > 20000) ptDed = 200;
+            else if (gross > 15000) ptDed = 150;
+        }
+
+        let pfDed = 0;
+        if (gross > 0 && sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
+            const pfVal = Math.round(basic * 0.12);
+            pfDed = pfVal > 1800 ? 1800 : pfVal;
+        }
+
+        const employerPf = pfDed;
+        const netSalary = gross - ptDed - pfDed;
+
+        salaryData = {
+            basic,
+            hra,
+            conveyance: conv,
+            medical: med,
+            lta,
+            edu,
+            special,
+            gross,
+            ptDed,
+            pfDed,
+            employerPf,
+            netSalary,
+            payableDays,
+            totalMonthDays,
+            present,
+            absent,
+            leave,
+            holiday,
+            baseGross,
+            baseBreakup: salaryData.baseBreakup
+        };
 
         // 3. User Expenses from Approved XlExpense
         const userExpenses = allExpenses.filter(exp => {
-            if (exp.employeeId !== empId && exp.employeeId !== u.email) return false;
+            if (!exp.employeeId || !userIdentifiers.has(String(exp.employeeId).toLowerCase().trim())) return false;
             if (!exp.date) return false;
             const dStr = String(exp.date);
             if (!dStr.includes(`-${monthStrNum}-`) && !dStr.includes(`/${monthStrNum}/`)) return false;
