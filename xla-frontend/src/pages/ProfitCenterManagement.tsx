@@ -471,6 +471,7 @@ export default function ProfitCenterManagement() {
         'CUS (₹)': r.cus || '-',
         'Purc. Cost (₹)': r.purchaseCost,
         'Transport Cost (₹)': r.transportCost,
+        'Margin (%)': r.marginPercent || 0,
         'Total Unit Cost (₹)': r.totalUnitCost,
         'Sold Price Type': r.priceType,
         'Actual Sold Price (₹)': r.soldPrice,
@@ -478,6 +479,7 @@ export default function ProfitCenterManagement() {
         'Total Selling Value (₹)': r.sellingPrice,
         'Total Product Cost (₹)': r.costOfProduct,
         'Actual Profit (₹)': r.actualProfit,
+        'Profit (%)': r.sellingPrice > 0 ? `${((r.actualProfit / r.sellingPrice) * 100).toFixed(1)}%` : '0.0%',
         'Headquarter': r.hq || 'All HQs',
         'Period': `${selectedMonth}`
       }));
@@ -1747,22 +1749,19 @@ export default function ProfitCenterManagement() {
           {/* MAIN VIEW: PRODUCTS TABLE OR ROI VIEW (Free flow layout, frozen header & product names) */}
           {activeTab === 'PRODUCTS' ? (
             <div className="w-full bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col mb-8">
-              <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    Product Master Profit Center ({filteredRecords.length} Products Linked)
+              <div className="px-4 py-2 bg-slate-800/95 border-b border-slate-700 flex flex-nowrap items-center justify-between gap-3 overflow-x-auto">
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    Product Profit Analytics
                   </span>
-                  <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-0.5 rounded-full font-bold">
-                    Qty from Secondary Sales
-                  </span>
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full font-bold">
-                    Purc. &amp; Transport Editable by Admin
+                  <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full font-bold whitespace-nowrap border border-sky-500/30">
+                    Qty-&gt;Sec. Sales
                   </span>
 
-                  {/* PROFIT MARGIN % BUTTON & INPUT TO AUTO-POPULATE ALL PRODUCTS */}
-                  <div className="flex items-center gap-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg px-2.5 py-1 shadow-sm">
+                  {/* PROFIT MARGIN % BUTTON & INPUT ON THE EXACT SAME LINE */}
+                  <div className="flex items-center gap-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg px-2 py-0.5 shadow-sm whitespace-nowrap">
                     <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
-                      Profit Margin:
+                      Margin:
                     </span>
                     <div className="flex items-center">
                       <input
@@ -1776,8 +1775,8 @@ export default function ProfitCenterManagement() {
                           if (e.key === 'Enter') handleApplyBulkMargin();
                         }}
                         placeholder="30"
-                        className="w-14 bg-slate-900 border border-amber-500/60 rounded px-1.5 py-0.5 text-right font-mono font-bold text-amber-300 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"
-                        title="Enter profit margin % to auto-populate all product margin boxes"
+                        className="w-12 bg-slate-900 border border-amber-500/60 rounded px-1.5 py-0.5 text-right font-mono font-bold text-amber-300 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"
+                        title="Enter profit margin %"
                       />
                       <span className="text-xs font-bold text-amber-400 ml-1">%</span>
                     </div>
@@ -1785,23 +1784,24 @@ export default function ProfitCenterManagement() {
                       type="button"
                       onClick={handleApplyBulkMargin}
                       disabled={bulkMarginSaving || bulkMarginInput === ''}
-                      className="ml-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 font-black text-[10px] px-2.5 py-1 rounded transition-all shadow-sm disabled:opacity-50 flex items-center gap-1 uppercase tracking-wide cursor-pointer"
-                      title="Click to auto-populate this margin % into all product margin boxes and recalculate profits"
+                      className="ml-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded transition-all shadow-sm disabled:opacity-50 flex items-center gap-1 uppercase tracking-wide cursor-pointer whitespace-nowrap"
+                      title="Apply this margin % to all products"
                     >
                       {bulkMarginSaving ? (
                         <>
-                          <RefreshCw size={11} className="animate-spin text-slate-950" />
+                          <RefreshCw size={10} className="animate-spin text-slate-950" />
                           <span>Applying...</span>
                         </>
                       ) : bulkMarginApplied ? (
-                        <span className="text-emerald-950 font-black">✓ Applied to All</span>
+                        <span className="text-emerald-950 font-black">✓ Applied</span>
                       ) : (
-                        <span>Apply to All Products</span>
+                        <span>Apply to All</span>
                       )}
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
                   <button
                     onClick={fetchData}
                     className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold"
@@ -1862,20 +1862,23 @@ export default function ProfitCenterManagement() {
                       <th className="sticky top-0 z-20 bg-emerald-950/90 border-b-2 border-r border-slate-700 px-3 py-2.5 text-right font-black text-emerald-400">
                         Actual Profit (₹)
                       </th>
+                      <th className="sticky top-0 z-20 bg-emerald-950/90 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right font-black text-emerald-300 min-w-[80px]">
+                        Profit (%)
+                      </th>
                       <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-slate-700 px-2 py-2.5 w-16">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={16} className="py-16 text-center text-slate-400">
+                        <td colSpan={17} className="py-16 text-center text-slate-400">
                           <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-sky-400" />
                           Loading all master products &amp; secondary sales...
                         </td>
                       </tr>
                     ) : filteredRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={16} className="py-12 text-center text-slate-500 font-medium">
+                        <td colSpan={17} className="py-12 text-center text-slate-500 font-medium">
                           No products found matching query.
                         </td>
                       </tr>
@@ -1890,6 +1893,7 @@ export default function ProfitCenterManagement() {
                         const unitCost = Number((baseCost * (1 + (Number(margin) || 0) / 100)).toFixed(2));
                         const costOfProd = r.quantity * unitCost;
                         const profit = r.sellingPrice - costOfProd;
+                        const profitPercent = r.sellingPrice > 0 ? Number(((profit / r.sellingPrice) * 100).toFixed(1)) : 0;
 
                         return (
                           <tr key={id || i} className="group hover:bg-slate-800/80 transition-colors">
@@ -2010,6 +2014,21 @@ export default function ProfitCenterManagement() {
                               ₹ {profit.toLocaleString('en-IN')}
                             </td>
 
+                            {/* NEW: Product Profit (%) */}
+                            <td className={`border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono font-bold bg-emerald-950/10 group-hover:bg-emerald-950/20 ${
+                              profitPercent > 0 
+                                ? 'text-emerald-400' 
+                                : profitPercent < 0 
+                                  ? 'text-rose-400' 
+                                  : 'text-slate-500'
+                            }`}>
+                              {r.sellingPrice > 0 ? (
+                                <span>{profitPercent > 0 ? `+${profitPercent}%` : `${profitPercent}%`}</span>
+                              ) : (
+                                <span className="text-slate-600 font-normal">0.0%</span>
+                              )}
+                            </td>
+
                             {/* Save Status Indicator */}
                             <td className="border-b border-slate-700/80 px-2 py-1.5 text-center">
                               <div className="flex items-center justify-center gap-1.5">
@@ -2048,28 +2067,62 @@ export default function ProfitCenterManagement() {
                 </table>
               </div>
 
-              {/* STICKY TABLE FOOTER WITH AGGREGATE TOTALS */}
-              <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur border-t-2 border-slate-700 py-3 px-4 text-xs flex flex-wrap items-center justify-between gap-3 shadow-2xl z-20">
-                <div className="flex items-center gap-3 text-slate-400">
-                  <span>Total Products: <strong className="text-white">{filteredRecords.length}</strong></span>
-                  <span>•</span>
-                  <span>Total Qty Sold: <strong className="text-sky-400 font-mono">{liveTotals.totalQty}</strong></span>
-                </div>
-                <div className="flex flex-wrap items-center gap-4 font-mono text-xs">
-                  <div>
-                    <span className="text-slate-400">Selling Value: </span>
-                    <strong className="text-white">₹ {liveTotals.totalSellingValue.toLocaleString('en-IN')}</strong>
+              {/* STICKY TABLE FOOTER WITH AGGREGATE TOTALS & TOTAL PROFIT % */}
+              {(() => {
+                const totalGrossProfitPct = liveTotals.totalSellingValue > 0 
+                  ? ((liveTotals.totalGrossProfit / liveTotals.totalSellingValue) * 100).toFixed(1) 
+                  : '0.0';
+                const totalNetProfitPct = liveTotals.totalSellingValue > 0
+                  ? ((liveTotals.actualHQNetProfit / liveTotals.totalSellingValue) * 100).toFixed(1)
+                  : '0.0';
+
+                return (
+                  <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur border-t-2 border-slate-700 py-2.5 px-4 text-xs flex flex-wrap items-center justify-between gap-3 shadow-2xl z-20">
+                    <div className="flex items-center gap-3 text-slate-400">
+                      <span>Total Products: <strong className="text-white">{filteredRecords.length}</strong></span>
+                      <span>•</span>
+                      <span>Total Qty Sold: <strong className="text-sky-400 font-mono">{liveTotals.totalQty}</strong></span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 font-mono text-xs">
+                      <div>
+                        <span className="text-slate-400">Selling Value: </span>
+                        <strong className="text-white">₹ {liveTotals.totalSellingValue.toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">COGS: </span>
+                        <strong className="text-slate-300">₹ {liveTotals.totalCostOfProduct.toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg shadow-sm flex items-center gap-2">
+                        <div>
+                          <span className="text-emerald-300 font-bold">Gross Profit: </span>
+                          <strong className="text-emerald-400 font-black">₹ {liveTotals.totalGrossProfit.toLocaleString('en-IN')}</strong>
+                        </div>
+                        <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${
+                          Number(totalGrossProfitPct) >= 0 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                            : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        }`}>
+                          {Number(totalGrossProfitPct) >= 0 ? `+${totalGrossProfitPct}%` : `${totalGrossProfitPct}%`}
+                        </span>
+                      </div>
+
+                      <div className={`px-2.5 py-1 rounded-lg border font-mono flex items-center gap-1.5 ${
+                        liveTotals.actualHQNetProfit >= 0
+                          ? 'bg-sky-500/10 border-sky-500/30 text-sky-300'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      }`}>
+                        <span className="text-slate-400 font-sans text-[11px] font-semibold">
+                          {selectedHq === 'ALL' ? 'Company Net Profit %:' : 'HQ Net Profit %:'}
+                        </span>
+                        <strong className="font-black text-xs">
+                          {Number(totalNetProfitPct) >= 0 ? `+${totalNetProfitPct}%` : `${totalNetProfitPct}%`}
+                        </strong>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400">COGS (Total Cost): </span>
-                    <strong className="text-slate-300">₹ {liveTotals.totalCostOfProduct.toLocaleString('en-IN')}</strong>
-                  </div>
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg shadow-sm">
-                    <span className="text-emerald-300 font-bold">Gross Product Profit: </span>
-                    <strong className="text-emerald-400 font-black">₹ {liveTotals.totalGrossProfit.toLocaleString('en-IN')}</strong>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           ) : (
             /* TERRITORY ROI VIEW */
