@@ -59,31 +59,48 @@ export default function DoctorsListReport() {
   const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
   const paginatedList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const exportToExcel = () => {
-    const dataToExport = paginatedList.map((d, i) => ({
-      'Sr no.': i + 1,
-      Name: d.name,
-      Degree: d.degree,
-      Specialization: d.specialization,
-      Hospital: d.hospital,
-      Birthday: d.birthday,
-      'Anniversary Email': d.anniversary, // As seen in the video excel
-      Mobile: d.mobile,
-      'Clinic Contact': d.clinicContact,
-            Address: d.address,
-      Category: d.category,
-      UID: d.uid,
-      Contact: d.contact,
-      'Update At': d.updateAt,
-      'Extra Info': d.extraInformation,
-      Headquarter: d.headquarter,
-      'Working Area': d.workingArea
-    }));
+  const exportToExcel = async () => {
+    try {
+      const response = await axios.get(`/api/admin/dcs/export-excel?type=Doctor&hq=${encodeURIComponent(selectedHq || '')}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Doctor_List${selectedHq ? `_${selectedHq}` : ''}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      const dataToExport = filteredList.map((d, i) => ({
+        'Sr no.': i + 1,
+        UID: d.uid || '',
+        Name: d.name,
+        Degree: d.degree,
+        Specialization: d.specialization,
+        Hospital: d.hospital,
+        Category: d.category || '',
+        'Visit Days': d.visitDays || '',
+        Birthday: d.birthday,
+        Anniversary: d.anniversary,
+        Mobile: d.mobile,
+        'Clinic Contact': d.clinicContact,
+        Address: d.address,
+        Contact: d.contact,
+        'Update At': d.updateAt,
+        'Extra Info': d.extraInformation,
+        Headquarter: d.headquarter,
+        'Working Area': d.workingArea,
+        Status: d.status || 'Active'
+      }));
 
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Doctor List");
-    XLSX.writeFile(wb, "Doctor List.xlsx");
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Doctor List");
+      XLSX.writeFile(wb, "Doctor List.xlsx");
+    }
   };
 
   if (viewingDoctor) {
@@ -145,6 +162,8 @@ export default function DoctorsListReport() {
                   <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Specialization</th>
                   <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hospital ↑</th>
                   <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">Visit Days</th>
                   <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ</th>
                   <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
                   <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
@@ -153,11 +172,11 @@ export default function DoctorsListReport() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">Loading...</td>
+                    <td colSpan={11} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">Loading...</td>
                   </tr>
                 ) : filteredList.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Doctors Found</td>
+                    <td colSpan={11} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Doctors Found</td>
                   </tr>
                 ) : (
                   paginatedList.map((d, idx) => (
@@ -168,6 +187,8 @@ export default function DoctorsListReport() {
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.specialization || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.hospital || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.mobile || d.contact || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-amber-300">{d.category || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-emerald-400">{d.visitDays || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.headquarter || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-sky-400">{d.workingArea || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-center">

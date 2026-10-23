@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { TrendingUp, User, ChevronDown, CheckCircle2, MapPin, Navigation, Clock, ShieldCheck } from 'lucide-react';
@@ -9,6 +9,23 @@ export default function Dashboard() {
   const curDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(() => monthsArr[curDate.getMonth()]);
   const [selectedYear, setSelectedYear] = useState(() => String(curDate.getFullYear()));
+  const [isMonthOpen, setIsMonthOpen] = useState(false);
+  const [isYearOpen, setIsYearOpen] = useState(false);
+  const monthRef = useRef<HTMLDivElement>(null);
+  const yearRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (monthRef.current && !monthRef.current.contains(event.target as Node)) {
+        setIsMonthOpen(false);
+      }
+      if (yearRef.current && !yearRef.current.contains(event.target as Node)) {
+        setIsYearOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [announcement, setAnnouncement] = useState('');
   const [tpReminder, setTpReminder] = useState<any>(null);
   const [stats, setStats] = useState({
@@ -276,41 +293,111 @@ export default function Dashboard() {
         {/* Filters Section */}
         <div>
           <h2 className="text-xl font-bold text-sky-400 mb-4">My Stats</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <CheckCircle2 size={16} className="text-sky-400" />
-              </div>
-              <select 
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full appearance-none bg-slate-700 border border-slate-700 rounded-xl py-3 pl-10 pr-10 font-semibold text-white focus:outline-none focus:border-sky-500"
+          <div className="grid grid-cols-2 gap-3 relative z-30">
+            {/* Month Dropdown Scroll Box */}
+            <div className="relative" ref={monthRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMonthOpen(!isMonthOpen);
+                  setIsYearOpen(false);
+                }}
+                className={`w-full bg-slate-700 hover:bg-slate-700/80 border ${
+                  isMonthOpen ? 'border-sky-500 shadow-lg shadow-sky-500/20' : 'border-slate-700'
+                } rounded-xl py-3 pl-10 pr-10 font-semibold text-white flex items-center justify-between transition-all`}
               >
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown size={18} className="text-slate-200" />
-              </div>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <CheckCircle2 size={16} className="text-sky-400" />
+                </div>
+                <span className="text-sm font-bold text-slate-100">{selectedMonth}</span>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <ChevronDown
+                    size={18}
+                    className={`text-slate-300 transition-transform duration-200 ${isMonthOpen ? 'rotate-180 text-sky-400' : ''}`}
+                  />
+                </div>
+              </button>
+
+              {isMonthOpen && (
+                <div className="absolute left-0 right-0 mt-2 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden py-1">
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-700/50">
+                    {monthsArr.map((m) => {
+                      const isSelected = selectedMonth === m;
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => {
+                            setSelectedMonth(m);
+                            setIsMonthOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center justify-between transition-colors ${
+                            isSelected
+                              ? 'bg-sky-500/20 text-sky-400'
+                              : 'text-slate-200 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <span>{m}</span>
+                          {isSelected && <CheckCircle2 size={14} className="text-sky-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <CheckCircle2 size={16} className="text-sky-400" />
-              </div>
-              <select 
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full appearance-none bg-slate-700 border border-slate-700 rounded-xl py-3 pl-10 pr-10 font-semibold text-white focus:outline-none focus:border-sky-500"
+            {/* Year Dropdown Scroll Box */}
+            <div className="relative" ref={yearRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsYearOpen(!isYearOpen);
+                  setIsMonthOpen(false);
+                }}
+                className={`w-full bg-slate-700 hover:bg-slate-700/80 border ${
+                  isYearOpen ? 'border-sky-500 shadow-lg shadow-sky-500/20' : 'border-slate-700'
+                } rounded-xl py-3 pl-10 pr-10 font-semibold text-white flex items-center justify-between transition-all`}
               >
-                {['2025', '2026', '2027'].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown size={18} className="text-slate-200" />
-              </div>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <CheckCircle2 size={16} className="text-sky-400" />
+                </div>
+                <span className="text-sm font-bold text-slate-100">{selectedYear}</span>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <ChevronDown
+                    size={18}
+                    className={`text-slate-300 transition-transform duration-200 ${isYearOpen ? 'rotate-180 text-sky-400' : ''}`}
+                  />
+                </div>
+              </button>
+
+              {isYearOpen && (
+                <div className="absolute left-0 right-0 mt-2 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden py-1">
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-700/50">
+                    {['2024', '2025', '2026', '2027', '2028'].map((y) => {
+                      const isSelected = selectedYear === y;
+                      return (
+                        <button
+                          key={y}
+                          type="button"
+                          onClick={() => {
+                            setSelectedYear(y);
+                            setIsYearOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center justify-between transition-colors ${
+                            isSelected
+                              ? 'bg-sky-500/20 text-sky-400'
+                              : 'text-slate-200 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <span>{y}</span>
+                          {isSelected && <CheckCircle2 size={14} className="text-sky-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
