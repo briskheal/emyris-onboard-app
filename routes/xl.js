@@ -28,7 +28,7 @@ const verifyToken = (req, res, next) => {
         '/tile-proxy', '/api/xl/tile-proxy',
         '/tour-program/submission-reminder', '/api/xl/tour-program/submission-reminder'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('submission-reminder') || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password')) {
+    if (openRoutes.includes(req.path) || req.path.includes('submission-reminder') || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password') || req.path.includes('change-password')) {
         return next();
     }
     
@@ -1161,12 +1161,36 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body;
         if (!email || !password) return res.json({ success: false, message: 'Email and password required' });
         
-        const user = await XlUser.findOne({ where: { email, password } });
+        const cleanEmail = email.trim().toLowerCase();
+        let user = await XlUser.findOne({ where: { email: cleanEmail } });
+        if (!user) {
+            user = await XlUser.findOne({
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')),
+                    cleanEmail
+                )
+            });
+        }
+        if (!user) {
+            user = await XlUser.findOne({ where: { employeeId: email.trim() } });
+        }
         if (!user) {
             return res.json({ success: false, message: 'Invalid email or password' });
         }
         if (user.status === 'Deactivated' || user.status === 'Inactive') {
             return res.json({ success: false, message: 'Not Authorized to Access' });
+        }
+
+        const bcrypt = require('bcryptjs');
+        const storedPass = user.password || '';
+        let passwordMatch = false;
+        if (storedPass.startsWith('$2')) {
+            passwordMatch = bcrypt.compareSync(password, storedPass);
+        } else {
+            passwordMatch = (password === storedPass);
+        }
+        if (!passwordMatch) {
+            return res.json({ success: false, message: 'Invalid email or password' });
         }
         
         // Remove password before sending to frontend
@@ -1184,6 +1208,426 @@ router.post('/login', async (req, res) => {
     } catch (e) {
         console.error('XL Login Error:', e);
         res.status(500).json({ success: false, message: 'System error during login' });
+    }
+});
+
+// ─── USER DRAWER: CHANGE PASSWORD WITH OTP PIN VIA REGISTERED EMAIL ─────────────
+
+// Step 1: Send OTP PIN directly to user's pre-captured email without asking for email
+router.post('/user/change-password/request-pin', async (req, res) => {
+    try {
+        const { employeeId, email, userId } = req.body;
+        const { XlUser, sequelize } = require('../db');
+        const { sendEmail } = require('../utils/mailer');
+
+        let user = null;
+        if (employeeId) {
+            user = await XlUser.findOne({ where: { employeeId: employeeId.trim() } });
+        }
+        if (!user && userId) {
+            user = await XlUser.findOne({ where: { _id: userId } });
+        }
+        if (!user && email) {
+            user = await XlUser.findOne({ 
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')), 
+                    email.trim().toLowerCase()
+                )
+            });
+        }
+        if (!user) {
+            return res.json({ success: false, message: 'User profile not found. Please log in again.' });
+        }
+
+        const targetEmail = (user.email || '').trim().toLowerCase();
+        if (!targetEmail || !targetEmail.includes('@')) {
+            return res.json({ 
+                success: false, 
+                message: 'No registered email address found for this user account. Please contact your administrator.' 
+            });
+        }
+
+        // Generate secure 6-digit random PIN
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await XlUser.update({ resetOtp: pin, resetOtpExpires: expires }, { where: { _id: user._id } });
+
+        // Mask email for privacy display (e.g. k•••••i@emyrishr.in)
+        const [uPart, dPart] = targetEmail.split('@');
+        const maskedEmail = uPart.length > 2 
+            ? uPart.charAt(0) + '••••' + uPart.charAt(uPart.length - 1) + '@' + dPart
+            : uPart.charAt(0) + '••••@' + dPart;
+
+        const userName = `${user.firstName || 'User'} ${user.lastName || ''}`.trim();
+
+        const emailHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #334155; border-radius: 14px; background-color: #0f172a; color: #f8fafc;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="display: inline-block; background: linear-gradient(135deg, #0284c7, #0369a1); padding: 10px 24px; border-radius: 8px; color: #ffffff; font-weight: 900; font-size: 20px; letter-spacing: 0.5px;">
+                        EMYRIS
+                    </div>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px;">Field CRM Security</p>
+                </div>
+
+                <h2 style="font-size: 18px; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 12px;">Password Change Verification PIN</h2>
+                <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px;">
+                    Hello <strong>${userName}</strong>,
+                </p>
+                <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px;">
+                    We received a request to change the password for your Emyris XL account. Please use the 6-Digit One-Time Verification PIN below to authorize this change:
+                </p>
+
+                <div style="background-color: #1e293b; border: 1px solid #334155; border-left: 4px solid #38bdf8; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your 6-Digit Verification PIN</div>
+                    <div style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #38bdf8; letter-spacing: 8px; background: #0f172a; padding: 12px 24px; border-radius: 8px; border: 1px dashed #38bdf8; display: inline-block;">
+                        ${pin}
+                    </div>
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8;">This code expires in <strong>10 minutes</strong>.</p>
+                </div>
+
+                <div style="font-size: 12px; line-height: 1.5; color: #64748b; border-top: 1px solid #334155; padding-top: 16px;">
+                    <p style="margin: 0 0 6px 0;"><strong>Security Notice:</strong> Do not share this PIN with anyone. Emyris support will never ask for your verification code.</p>
+                    <p style="margin: 0;">If you did not initiate this change, your account credentials remain unchanged and safe.</p>
+                </div>
+            </div>
+        `;
+
+        await sendEmail({
+            to: targetEmail,
+            subject: `Emyris XL - Password Change Verification PIN: ${pin}`,
+            html: emailHtml
+        });
+
+        res.json({
+            success: true,
+            maskedEmail,
+            message: `A 6-digit verification PIN has been sent to your registered email (${maskedEmail}).`
+        });
+    } catch (e) {
+        console.error('Request change password PIN error:', e);
+        res.status(500).json({ success: false, message: 'Failed to send PIN: ' + e.message });
+    }
+});
+
+// Step 2: Verify OTP PIN & Update password in database & send confirmation email
+router.post('/user/change-password/verify-pin', async (req, res) => {
+    try {
+        const { employeeId, email, userId, pin, newPassword } = req.body;
+        const { XlUser, sequelize } = require('../db');
+        const { sendEmail } = require('../utils/mailer');
+
+        let user = null;
+        if (employeeId) {
+            user = await XlUser.findOne({ where: { employeeId: employeeId.trim() } });
+        }
+        if (!user && userId) {
+            user = await XlUser.findOne({ where: { _id: userId } });
+        }
+        if (!user && email) {
+            user = await XlUser.findOne({
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')),
+                    email.trim().toLowerCase()
+                )
+            });
+        }
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        const submittedPin = String(pin || '').trim();
+        const trimmedNewPass = String(newPassword || '').trim();
+
+        if (!submittedPin) {
+            return res.json({ success: false, message: 'Verification PIN is required' });
+        }
+        if (!trimmedNewPass || trimmedNewPass.length < 4) {
+            return res.json({ success: false, message: 'New password must be at least 4 characters long' });
+        }
+
+        if (user.resetOtp !== submittedPin) {
+            return res.json({ success: false, message: 'Invalid verification PIN. Please check and try again.' });
+        }
+
+        if (!user.resetOtpExpires || new Date(user.resetOtpExpires).getTime() < Date.now()) {
+            return res.json({ success: false, message: 'Verification PIN has expired. Please request a new PIN.' });
+        }
+
+        // Update password in database and clear OTP
+        await XlUser.update(
+            { password: trimmedNewPass, resetOtp: null, resetOtpExpires: null },
+            { where: { _id: user._id } }
+        );
+
+        const targetEmail = (user.email || '').trim().toLowerCase();
+        const userName = `${user.firstName || 'User'} ${user.lastName || ''}`.trim();
+        const changeTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+
+        if (targetEmail && targetEmail.includes('@')) {
+            const confirmHtml = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #334155; border-radius: 14px; background-color: #0f172a; color: #f8fafc;">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); padding: 10px 24px; border-radius: 8px; color: #ffffff; font-weight: 900; font-size: 20px; letter-spacing: 0.5px;">
+                            EMYRIS
+                        </div>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #34d399; text-transform: uppercase; letter-spacing: 2px;">Field CRM Security Notice</p>
+                    </div>
+
+                    <h2 style="font-size: 18px; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 12px;">Password Changed Successfully</h2>
+                    <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px;">
+                        Hello <strong>${userName}</strong>,
+                    </p>
+                    <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px;">
+                        Your password for Emyris XL Field CRM was successfully changed in the database on <strong>${changeTime} (IST)</strong>.
+                    </p>
+
+                    <div style="background-color: #1e293b; border: 1px solid #334155; border-left: 4px solid #10b981; border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                        <p style="margin: 0; font-size: 13px; color: #34d399; font-weight: bold;">
+                            ✓ Your new password is now active in the database.
+                        </p>
+                    </div>
+
+                    <div style="font-size: 12px; line-height: 1.5; color: #64748b; border-top: 1px solid #334155; padding-top: 16px;">
+                        <p style="margin: 0;">If you did not make this change, please report immediately to <a href="mailto:support@emyrishr.in" style="color: #38bdf8;">support@emyrishr.in</a>.</p>
+                    </div>
+                </div>
+            `;
+            sendEmail({
+                to: targetEmail,
+                subject: 'Emyris XL - Password Changed Successfully',
+                html: confirmHtml
+            }).catch(e => console.error('Confirmation email error:', e));
+        }
+
+        res.json({
+            success: true,
+            message: 'Your password has been successfully updated in the database and confirmation email sent!'
+        });
+    } catch (e) {
+        console.error('Verify and change password error:', e);
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
+    }
+});
+
+// ─── USER DRAWER: MY HIERARCHY ──────────────────────────────────────────────────
+router.get('/user/hierarchy', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        const { XlUser, sequelize } = require('../db');
+        const { Op } = require('sequelize');
+        if (!employeeId) return res.status(400).json({ success: false, message: 'employeeId is required' });
+
+        const user = await XlUser.findOne({ where: { employeeId: employeeId.trim() }, raw: true });
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        let manager = null;
+        if (user.reportingManager) {
+            const mgrQuery = user.reportingManager.trim().toLowerCase();
+            manager = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { employeeId: user.reportingManager.trim() },
+                        sequelize.where(sequelize.fn('LOWER', sequelize.col('firstName')), mgrQuery),
+                        sequelize.where(
+                            sequelize.fn('LOWER', sequelize.fn('CONCAT', sequelize.col('firstName'), ' ', sequelize.col('lastName'))),
+                            mgrQuery
+                        )
+                    ]
+                },
+                attributes: ['firstName', 'lastName', 'designation', 'email', 'phone', 'hq', 'division'],
+                raw: true
+            });
+        }
+
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        const reportees = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { reportingManager: user.employeeId },
+                    { reportingManager: fullName }
+                ],
+                status: 'Active'
+            },
+            attributes: ['firstName', 'lastName', 'designation', 'hq', 'division', 'phone', 'email'],
+            raw: true
+        });
+
+        res.json({
+            success: true,
+            user: {
+                name: fullName,
+                designation: user.designation,
+                employeeId: user.employeeId,
+                hq: user.hq,
+                division: user.division,
+                phone: user.phone,
+                email: user.email
+            },
+            manager,
+            reportees
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// ─── USER DRAWER: CONSOLIDATED ACTIVITY (MTD SUMMARY) ───────────────────────────
+router.get('/user/consolidated-activity', async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.query;
+        const { XlDCR, XlTarget, XlPrimarySales, XlSecondarySales, XlUser } = require('../db');
+        const monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const curM = month || monthsArr[now.getMonth()];
+        const curY = year || String(now.getFullYear());
+        const mIdx = monthsArr.indexOf(curM);
+
+        const dcrRecords = await XlDCR.findAll({
+            where: { employeeId: (employeeId || '').trim() },
+            raw: true
+        });
+
+        const monthDcrs = dcrRecords.filter(d => {
+            const dt = new Date(d.date || d.createdAt);
+            return !isNaN(dt.getTime()) && dt.getMonth() === mIdx && String(dt.getFullYear()) === curY;
+        });
+
+        let doctorCalls = 0;
+        let chemistCalls = 0;
+        let stockistCalls = 0;
+        let totalPob = 0;
+        const datesWorked = new Set();
+
+        monthDcrs.forEach(d => {
+            if (d.entityType === 'Doctor') doctorCalls++;
+            else if (d.entityType === 'Chemist') chemistCalls++;
+            else if (d.entityType === 'Stockist') stockistCalls++;
+            totalPob += Number(d.pob || 0);
+            if (d.date) datesWorked.add(d.date);
+        });
+
+        const daysWorked = datesWorked.size;
+        const totalCalls = doctorCalls + chemistCalls + stockistCalls;
+        const callAvg = daysWorked > 0 ? Number((totalCalls / daysWorked).toFixed(1)) : 0;
+
+        res.json({
+            success: true,
+            data: {
+                month: curM,
+                year: curY,
+                totalCalls,
+                doctorCalls,
+                chemistCalls,
+                stockistCalls,
+                totalPob,
+                daysWorked,
+                callAvg
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// ─── USER DRAWER: TODAY'S ACTIVITY ──────────────────────────────────────────────
+router.get('/user/todays-activity', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        const { XlDCR, XlAttendance } = require('../db');
+        const { Op } = require('sequelize');
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const [att, dcrs] = await Promise.all([
+            XlAttendance.findOne({
+                where: {
+                    employeeId: (employeeId || '').trim(),
+                    date: { [Op.like]: `${todayStr}%` }
+                },
+                raw: true
+            }),
+            XlDCR.findAll({
+                where: {
+                    employeeId: (employeeId || '').trim(),
+                    date: { [Op.like]: `${todayStr}%` }
+                },
+                order: [['createdAt', 'DESC']],
+                raw: true
+            })
+        ]);
+
+        let docCount = 0;
+        let chemCount = 0;
+        let stkCount = 0;
+        let todayPob = 0;
+
+        dcrs.forEach(d => {
+            if (d.entityType === 'Doctor') docCount++;
+            else if (d.entityType === 'Chemist') chemCount++;
+            else if (d.entityType === 'Stockist') stkCount++;
+            todayPob += Number(d.pob || 0);
+        });
+
+        res.json({
+            success: true,
+            data: {
+                todayDate: new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }),
+                attendance: {
+                    isPunchedIn: !!(att && att.punchInTime),
+                    punchInTime: att?.punchInTime || null,
+                    punchOutTime: att?.punchOutTime || null,
+                    status: att?.status || (att?.punchInTime ? 'Present' : 'Not Punched In')
+                },
+                doctorCalls: docCount,
+                chemistCalls: chemCount,
+                stockistCalls: stkCount,
+                totalCalls: dcrs.length,
+                totalPob: todayPob,
+                visits: dcrs.slice(0, 10).map(d => ({
+                    entityType: d.entityType,
+                    name: d.entityName || d.doctorName || d.chemistName || 'Call',
+                    time: d.time || (d.createdAt ? new Date(d.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''),
+                    pob: d.pob || 0
+                }))
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// ─── USER DRAWER: CONTACT SUPPORT ───────────────────────────────────────────────
+router.post('/user/contact-support', async (req, res) => {
+    try {
+        const { employeeId, subject, message } = req.body;
+        const { XlUser } = require('../db');
+        const { sendEmail } = require('../utils/mailer');
+
+        const user = await XlUser.findOne({ where: { employeeId: (employeeId || '').trim() } });
+        const userName = user ? `${user.firstName} ${user.lastName}` : 'CRM Field User';
+        const userEmail = user?.email || 'N/A';
+        const userHq = user?.hq || 'N/A';
+
+        await sendEmail({
+            to: 'hradmin@emyrishr.in',
+            subject: `[XL CRM Support] ${subject || 'User Query'} - from ${userName} (${userHq})`,
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                    <h3 style="color: #0284c7; margin-top: 0;">Support Request from Emyris XL Field CRM</h3>
+                    <p><strong>Employee:</strong> ${userName} (${employeeId})</p>
+                    <p><strong>Headquarter:</strong> ${userHq}</p>
+                    <p><strong>Email:</strong> ${userEmail}</p>
+                    <p><strong>Subject:</strong> ${subject || 'Support Query'}</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
+                    <p><strong>Message:</strong></p>
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${message}</div>
+                </div>
+            `
+        });
+
+        res.json({ success: true, message: 'Your support request has been submitted to the management team.' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 
