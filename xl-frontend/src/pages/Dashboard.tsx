@@ -5,10 +5,37 @@ import { TrendingUp, User, ChevronDown, CheckCircle2, MapPin, Navigation, Clock,
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [selectedMonth, setSelectedMonth] = useState('August');
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const curDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(() => monthsArr[curDate.getMonth()]);
+  const [selectedYear, setSelectedYear] = useState(() => String(curDate.getFullYear()));
   const [announcement, setAnnouncement] = useState('');
   const [tpReminder, setTpReminder] = useState<any>(null);
+  const [stats, setStats] = useState({
+    target: 0,
+    primary: 0,
+    secondary: 0,
+    primaryPercent: 0,
+    secondaryPercent: 0,
+    calls: {
+      doctor: { actual: 0, target: 0 },
+      chemist: { actual: 0, target: 0 },
+      stockist: { actual: 0, target: 0 }
+    },
+    pob: {
+      doctor: 0,
+      chemist: 0,
+      stockist: 0,
+      total: 0
+    },
+    callAverages: {
+      doctor: 0,
+      chemist: 0,
+      stockist: 0,
+      daysWorked: 0
+    }
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
   const [officePunch, setOfficePunch] = useState<{
     enabled: boolean;
     isPunchedIn: boolean;
@@ -25,6 +52,29 @@ export default function Dashboard() {
     loading: true
   });
   const [punchingIn, setPunchingIn] = useState(false);
+
+  useEffect(() => {
+    let employeeId = '';
+    try {
+      const storedUser = localStorage.getItem('xl_user');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        employeeId = u.employeeId || u.email || u.uid || '';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setLoadingStats(true);
+    axios.get(`/api/xl/user/dashboard-stats?employeeId=${encodeURIComponent(employeeId)}&month=${selectedMonth}&year=${selectedYear}`)
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          setStats(res.data.data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch dashboard stats:', err))
+      .finally(() => setLoadingStats(false));
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     axios.get('/api/xl/admin/announcement')
@@ -267,9 +317,12 @@ export default function Dashboard() {
 
         {/* Sales Performance */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={20} className="text-sky-400" />
-            <h3 className="text-lg font-bold text-white">Sales Performance</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={20} className="text-sky-400" />
+              <h3 className="text-lg font-bold text-white">Sales Performance</h3>
+            </div>
+            {loadingStats && <span className="text-[10px] text-sky-400 font-bold animate-pulse">Syncing...</span>}
           </div>
           
           <div className="bg-slate-700 border border-slate-700 rounded-3xl p-5 shadow-lg shadow-black/20 space-y-6">
@@ -278,7 +331,9 @@ export default function Dashboard() {
                 <div className="w-2 h-2 rounded-full bg-slate-400"></div>
                 <span className="text-xs font-bold text-slate-200">Monthly Target</span>
               </div>
-              <p className="text-2xl font-black text-white pl-4">₹700,000.00</p>
+              <p className="text-2xl font-black text-white pl-4">
+                ₹{Number(stats.target || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
 
             <div>
@@ -287,12 +342,19 @@ export default function Dashboard() {
                   <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
                   <span className="text-xs font-bold text-emerald-400">Primary Sales</span>
                 </div>
-                <span className="text-xs font-bold text-emerald-400">58.07%</span>
+                <span className="text-xs font-bold text-emerald-400">
+                  {(stats.primaryPercent ?? (stats.target > 0 ? (stats.primary / stats.target) * 100 : 0)).toFixed(2)}%
+                </span>
               </div>
               <div className="h-3 w-full bg-slate-600 rounded-full overflow-hidden mb-2">
-                <div className="h-full bg-emerald-400 rounded-full" style={{ width: '58.07%' }}></div>
+                <div
+                  className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, stats.primaryPercent || (stats.target > 0 ? (stats.primary / stats.target) * 100 : 0)))}%` }}
+                ></div>
               </div>
-              <p className="text-lg font-black text-sky-400 pl-4">₹406,484.92</p>
+              <p className="text-lg font-black text-sky-400 pl-4">
+                ₹{Number(stats.primary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
 
             <div>
@@ -301,12 +363,19 @@ export default function Dashboard() {
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                   <span className="text-xs font-bold text-slate-300">Secondary Sales</span>
                 </div>
-                <span className="text-xs font-bold text-blue-400">20.40%</span>
+                <span className="text-xs font-bold text-blue-400">
+                  {(stats.secondaryPercent ?? (stats.target > 0 ? (stats.secondary / stats.target) * 100 : 0)).toFixed(2)}%
+                </span>
               </div>
               <div className="h-3 w-full bg-slate-600 rounded-full overflow-hidden mb-2">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: '20.40%' }}></div>
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, stats.secondaryPercent || (stats.target > 0 ? (stats.secondary / stats.target) * 100 : 0)))}%` }}
+                ></div>
               </div>
-              <p className="text-lg font-black text-sky-400 pl-4">₹142,766.00</p>
+              <p className="text-lg font-black text-sky-400 pl-4">
+                ₹{Number(stats.secondary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
         </div>
@@ -317,17 +386,23 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-400 text-center tracking-wide">11 / 412</span>
+              <span className="text-xs font-bold text-emerald-400 text-center tracking-wide">
+                {stats.calls?.doctor?.actual ?? 0} / {stats.calls?.doctor?.target ?? 0}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Doctors</span>
             </div>
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-amber-400" />
-              <span className="text-xs font-bold text-amber-400 text-center tracking-wide">4 / 108</span>
+              <span className="text-xs font-bold text-amber-400 text-center tracking-wide">
+                {stats.calls?.chemist?.actual ?? 0} / {stats.calls?.chemist?.target ?? 0}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Chemists</span>
             </div>
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-rose-400" />
-              <span className="text-xs font-bold text-rose-400 text-center tracking-wide">1 / 24</span>
+              <span className="text-xs font-bold text-rose-400 text-center tracking-wide">
+                {stats.calls?.stockist?.actual ?? 0} / {stats.calls?.stockist?.target ?? 0}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Stockists</span>
             </div>
           </div>
@@ -339,17 +414,41 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-400">₹ 14.5K</span>
+              <span className="text-xs font-bold text-emerald-400">
+                {(() => {
+                  const n = Number(stats.pob?.doctor || 0);
+                  if (n >= 10000000) return `₹ ${(n / 10000000).toFixed(2)}Cr`;
+                  if (n >= 100000) return `₹ ${(n / 100000).toFixed(1)}L`;
+                  if (n >= 1000) return `₹ ${(n / 1000).toFixed(1)}K`;
+                  return `₹ ${n}`;
+                })()}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Dr. POB</span>
             </div>
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-amber-400" />
-              <span className="text-xs font-bold text-amber-400">₹ 4.2K</span>
+              <span className="text-xs font-bold text-amber-400">
+                {(() => {
+                  const n = Number(stats.pob?.chemist || 0);
+                  if (n >= 10000000) return `₹ ${(n / 10000000).toFixed(2)}Cr`;
+                  if (n >= 100000) return `₹ ${(n / 100000).toFixed(1)}L`;
+                  if (n >= 1000) return `₹ ${(n / 1000).toFixed(1)}K`;
+                  return `₹ ${n}`;
+                })()}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Chem. POB</span>
             </div>
             <div className="bg-slate-700 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
               <User size={24} className="text-rose-400" />
-              <span className="text-xs font-bold text-rose-400">₹ 0</span>
+              <span className="text-xs font-bold text-rose-400">
+                {(() => {
+                  const n = Number(stats.pob?.stockist || 0);
+                  if (n >= 10000000) return `₹ ${(n / 10000000).toFixed(2)}Cr`;
+                  if (n >= 100000) return `₹ ${(n / 100000).toFixed(1)}L`;
+                  if (n >= 1000) return `₹ ${(n / 1000).toFixed(1)}K`;
+                  return `₹ ${n}`;
+                })()}
+              </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase">Stock. POB</span>
             </div>
           </div>
@@ -361,25 +460,45 @@ export default function Dashboard() {
           <div className="bg-slate-700 border border-slate-700 rounded-3xl p-5 shadow-lg flex justify-between">
             <div className="space-y-4 flex-1">
               <div>
-                <span className="text-2xl font-black text-sky-400">9.4</span>
+                <span className="text-2xl font-black text-sky-400">{stats.callAverages?.doctor ?? 0}</span>
                 <p className="text-xs font-bold text-slate-200">Doctor's Call Average</p>
               </div>
               <div>
-                <span className="text-2xl font-black text-sky-400">4.1</span>
+                <span className="text-2xl font-black text-sky-400">{stats.callAverages?.chemist ?? 0}</span>
                 <p className="text-xs font-bold text-slate-200">Chemist's Call Average</p>
               </div>
               <div>
-                <span className="text-2xl font-black text-sky-400">1.2</span>
+                <span className="text-2xl font-black text-sky-400">{stats.callAverages?.stockist ?? 0}</span>
                 <p className="text-xs font-bold text-slate-200">Stockist's Call Average</p>
               </div>
             </div>
             
             {/* Visual Bar Graph */}
-            <div className="flex items-end gap-3 h-36 pt-4 pr-2">
-              <div className="w-4 bg-emerald-500 rounded-full h-[94%]"></div>
-              <div className="w-4 bg-amber-400 rounded-full h-[41%]"></div>
-              <div className="w-4 bg-rose-400 rounded-full h-[12%]"></div>
-            </div>
+            {(() => {
+              const maxVal = Math.max(
+                stats.callAverages?.doctor || 0,
+                stats.callAverages?.chemist || 0,
+                stats.callAverages?.stockist || 0,
+                1
+              );
+              const docH = `${Math.min(95, Math.max(12, Math.round(((stats.callAverages?.doctor || 0) / maxVal) * 94)))}%`;
+              const chemH = `${Math.min(95, Math.max(12, Math.round(((stats.callAverages?.chemist || 0) / maxVal) * 94)))}%`;
+              const stkH = `${Math.min(95, Math.max(12, Math.round(((stats.callAverages?.stockist || 0) / maxVal) * 94)))}%`;
+
+              return (
+                <div className="flex items-end gap-3 h-36 pt-4 pr-2">
+                  <div className="flex flex-col items-center gap-1 h-full justify-end">
+                    <div className="w-4 bg-emerald-500 rounded-full transition-all duration-500" style={{ height: docH }}></div>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 h-full justify-end">
+                    <div className="w-4 bg-amber-400 rounded-full transition-all duration-500" style={{ height: chemH }}></div>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 h-full justify-end">
+                    <div className="w-4 bg-rose-400 rounded-full transition-all duration-500" style={{ height: stkH }}></div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 

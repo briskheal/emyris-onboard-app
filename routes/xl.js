@@ -7434,12 +7434,41 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         let doctorCalls = 0;
         let chemistCalls = 0;
         let stockistCalls = 0;
+        let doctorPob = 0;
+        let chemistPob = 0;
+        let stockistPob = 0;
+        const callDates = new Set();
 
         dcrs.forEach(d => {
-            if (d.entityType === 'Doctor') doctorCalls++;
-            else if (d.entityType === 'Chemist') chemistCalls++;
-            else if (d.entityType === 'Stockist') stockistCalls++;
+            if (d.date) callDates.add(String(d.date).split('T')[0]);
+            let pobVal = 0;
+            try {
+                const items = JSON.parse(d.pobItems || '[]');
+                if (Array.isArray(items)) {
+                    items.forEach(it => {
+                        const qty = parseFloat(it.qty || it.pobQty || 0) || 0;
+                        const rate = parseFloat(it.rate || it.basePrice || it.price || it.amount || 0) || 0;
+                        pobVal += (qty * rate);
+                    });
+                }
+            } catch (e) {}
+
+            if (d.entityType === 'Doctor') {
+                doctorCalls++;
+                doctorPob += pobVal;
+            } else if (d.entityType === 'Chemist') {
+                chemistCalls++;
+                chemistPob += pobVal;
+            } else if (d.entityType === 'Stockist') {
+                stockistCalls++;
+                stockistPob += pobVal;
+            }
         });
+
+        const daysWorked = callDates.size || 1;
+        const doctorCallAvg = Number((doctorCalls / daysWorked).toFixed(1));
+        const chemistCallAvg = Number((chemistCalls / daysWorked).toFixed(1));
+        const stockistCallAvg = Number((stockistCalls / daysWorked).toFixed(1));
 
         let targetDoctorCalls = 0;
         let targetChemistCalls = 0;
@@ -7544,32 +7573,56 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             });
         }
 
+        const primaryPercent = targetSum > 0 ? Number(((primarySum / targetSum) * 100).toFixed(2)) : 0;
+        const secondaryPercent = targetSum > 0 ? Number(((secondarySum / targetSum) * 100).toFixed(2)) : 0;
+
         res.json({
             success: true,
             data: {
                 target: targetSum,
                 primary: primarySum,
                 secondary: secondarySum,
+                primaryPercent,
+                secondaryPercent,
                 calls: {
                     doctor: { actual: doctorCalls, target: targetDoctorCalls },
                     chemist: { actual: chemistCalls, target: targetChemistCalls },
                     stockist: { actual: stockistCalls, target: targetStockistCalls }
+                },
+                pob: {
+                    doctor: doctorPob,
+                    chemist: chemistPob,
+                    stockist: stockistPob,
+                    total: doctorPob + chemistPob + stockistPob
+                },
+                callAverages: {
+                    doctor: doctorCallAvg,
+                    chemist: chemistCallAvg,
+                    stockist: stockistCallAvg,
+                    daysWorked
                 }
             }
         });
 
     } catch(e) {
         console.error("Dashboard Stats Error:", e);
-        // Ensure we ALWAYS return valid 200 format on catch so UI doesn't zero out completely if partial failure
         res.status(500).json({ 
             success: false, 
             message: e.message,
             data: {
-                target: 0, primary: 0, secondary: 0,
-                calls: { doctor: { actual: 0, target: 0 }, chemist: { actual: 0, target: 0 }, stockist: { actual: 0, target: 0 } }
+                target: 0, primary: 0, secondary: 0, primaryPercent: 0, secondaryPercent: 0,
+                calls: { doctor: { actual: 0, target: 0 }, chemist: { actual: 0, target: 0 }, stockist: { actual: 0, target: 0 } },
+                pob: { doctor: 0, chemist: 0, stockist: 0, total: 0 },
+                callAverages: { doctor: 0, chemist: 0, stockist: 0, daysWorked: 0 }
             }
         });
     }
+});
+
+router.get('/user/dashboard-stats', async (req, res) => {
+    // Forward directly to dashboard-stats
+    req.url = '/admin/dashboard-stats';
+    return router.handle(req, res);
 });
 
 router.get('/admin/debug-data', async (req, res) => {
@@ -7617,12 +7670,41 @@ router.get('/admin/debug-data', async (req, res) => {
         let doctorCalls = 0;
         let chemistCalls = 0;
         let stockistCalls = 0;
+        let doctorPob = 0;
+        let chemistPob = 0;
+        let stockistPob = 0;
+        const callDates = new Set();
 
         dcrs.forEach(d => {
-            if (d.entityType === 'Doctor') doctorCalls++;
-            else if (d.entityType === 'Chemist') chemistCalls++;
-            else if (d.entityType === 'Stockist') stockistCalls++;
+            if (d.date) callDates.add(String(d.date).split('T')[0]);
+            let pobVal = 0;
+            try {
+                const items = JSON.parse(d.pobItems || '[]');
+                if (Array.isArray(items)) {
+                    items.forEach(it => {
+                        const qty = parseFloat(it.qty || it.pobQty || 0) || 0;
+                        const rate = parseFloat(it.rate || it.basePrice || it.price || it.amount || 0) || 0;
+                        pobVal += (qty * rate);
+                    });
+                }
+            } catch (e) {}
+
+            if (d.entityType === 'Doctor') {
+                doctorCalls++;
+                doctorPob += pobVal;
+            } else if (d.entityType === 'Chemist') {
+                chemistCalls++;
+                chemistPob += pobVal;
+            } else if (d.entityType === 'Stockist') {
+                stockistCalls++;
+                stockistPob += pobVal;
+            }
         });
+
+        const daysWorked = callDates.size || 1;
+        const doctorCallAvg = Number((doctorCalls / daysWorked).toFixed(1));
+        const chemistCallAvg = Number((chemistCalls / daysWorked).toFixed(1));
+        const stockistCallAvg = Number((stockistCalls / daysWorked).toFixed(1));
 
         res.json({
             success: true,
@@ -12099,8 +12181,7 @@ async function autoSyncEmployeeCostCenter({ month, year, hq }) {
     const monthStrNum = String(monthNum).padStart(2, '0');
     const normFullMonth = fullMonths[mIdx];
     const lastDay = new Date(parseInt(yr), monthNum, 0).getDate();
-    const startDate = `${yr}-${monthStrNum}-01`;
-    const endDate = `${yr}-${monthStrNum}-${String(lastDay).padStart(2, '0')}`;
+    const datePrefix = `${yr}-${monthStrNum}`;
 
     // 1. Fetch all data needed for payroll & expenses
     const [users, applicants, savedPayslips, allExpenses, atts, dcrs, holidays, pref] = await Promise.all([
@@ -12115,28 +12196,30 @@ async function autoSyncEmployeeCostCenter({ month, year, hq }) {
             raw: true
         }),
         XlAttendance.findAll({
-            where: { date: { [Op.between]: [startDate, endDate] } },
+            where: { date: { [Op.like]: `${datePrefix}%` } },
             raw: true
         }),
         XlDCR.findAll({
             attributes: ['employeeId', 'date'],
-            where: { date: { [Op.between]: [startDate, endDate] } },
+            where: { date: { [Op.like]: `${datePrefix}%` } },
             raw: true
         }),
         XlHoliday.findAll({
-            where: { date: { [Op.between]: [startDate, endDate] } },
+            where: { date: { [Op.like]: `${datePrefix}%` } },
             raw: true
         }),
         XlGlobalSettings.findOne()
     ]);
 
-    // Merge attendance and DCRs
-    const attMap = new Set(atts.map(a => `${a.employeeId}_${a.date}`));
+    // Merge attendance and DCRs exactly matching the Attendance page
+    const attMap = new Set(atts.map(a => `${String(a.employeeId).toLowerCase().trim()}_${String(a.date).substring(0, 10)}`));
     const mergedData = [...atts];
     dcrs.forEach(d => {
-        const key = `${d.employeeId}_${d.date}`;
+        const dDate = String(d.date).substring(0, 10);
+        const key = `${String(d.employeeId).toLowerCase().trim()}_${dDate}`;
         if (!attMap.has(key)) {
-            mergedData.push({ employeeId: d.employeeId, date: d.date, status: 'Present' });
+            mergedData.push({ employeeId: d.employeeId, date: dDate, status: 'Present' });
+            attMap.add(key);
         }
     });
 
@@ -12448,14 +12531,13 @@ router.get('/cost-center', async (req, res) => {
         if (year) where.year = year;
         if (hq && hq !== 'ALL') where.hq = hq;
 
-        // Auto-populate for EMPLOYEE tab if records don't exist yet for this month!
+        // Auto-sync employee attendance and approved expenses on GET to ensure 100% live attendance sync
         if (!type || type.toUpperCase() === 'EMPLOYEE') {
-            const existingCount = await XlCostCenter.count({ where });
-            if (existingCount === 0 && month) {
+            if (month) {
                 try {
                     await autoSyncEmployeeCostCenter({ month, year, hq });
                 } catch(syncErr) {
-                    console.error('Auto-populating cost center on GET error:', syncErr);
+                    console.error('Auto-syncing cost center on GET error:', syncErr);
                 }
             }
         }
@@ -13548,6 +13630,9 @@ router.get('/reports/reminders', async (req, res) => {
                 calendarLink: meta.calendarLink || '',
                 participants,
                 emailSent: Boolean(meta.emailSent),
+                emailCount: meta.emailCount || (meta.emailSent ? (meta.recipientEmails?.length || participants.length) : 0),
+                emailError: meta.emailError || '',
+                recipientEmails: meta.recipientEmails || (meta.participants ? meta.participants.map(p => p.email).filter(Boolean) : []),
                 emailDeliveryMode: meta.emailDeliveryMode || 'group',
                 productsDetailed: Array.isArray(products) ? products : [],
                 products: Array.isArray(products) ? products : [],
@@ -13786,6 +13871,13 @@ router.post('/reminders', async (req, res) => {
                 emailSent = emailCount > 0;
             } catch (mailErr) {
                 console.error('Reminder email error:', mailErr.message);
+                emailError = mailErr.message;
+            }
+        } else {
+            if (recipientEmails.length === 0) {
+                emailError = 'No valid email addresses found for the selected participants.';
+            } else if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+                emailError = 'SMTP email credentials (EMAIL_USER / EMAIL_PASS) not configured in server environment.';
             }
         }
 
@@ -13797,6 +13889,8 @@ router.post('/reminders', async (req, res) => {
             participants,
             emailSent,
             emailCount,
+            emailError,
+            recipientEmails,
             emailDeliveryMode
         });
 
@@ -13835,6 +13929,8 @@ router.post('/reminders', async (req, res) => {
             groupId,
             emailSent,
             emailCount,
+            emailError: emailError || null,
+            recipientEmails,
             meetLink: finalMeetLink,
             calendarLink,
             data: createdRecords[0],

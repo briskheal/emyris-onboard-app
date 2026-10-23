@@ -88,16 +88,86 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
     } catch (e) { alert('Error deleting records'); }
   };
   
-  const exportToExcel = () => {
-    if(displayList.length === 0) return alert('No data to export');
-    const ws = XLSX.utils.json_to_sheet(displayList.map((d, i) => {
-        if(filterType === 'Doctor') return { 'Sr no.': i+1, Name: d.name, Degree: d.degree, Specialization: d.specialization, Hospital: d.hospital, 'Visit Days': d.visitDays, Birthday: d.birthday, Anniversary: d.anniversary, Email: d.email, Mobile: d.mobile, 'Clinic Contact': d.clinicContact, Address: d.address, Category: d.category, Contact: d.contact, Headquarter: d.headquarter, 'Working Area': d.workingArea };
-        if(filterType === 'Chemist') return { 'Sr no.': i+1, Name: d.proprietorName || d.name, 'Business Name': d.businessName, Certification: d.certifications, Birthday: d.birthday, Email: d.email, 'Chemist Contact': d.mobile, Address: d.address, City: d.city || '', 'Working Area': d.workingArea };
-        if(filterType === 'Stockist') return { 'Sr no.': i+1, Name: d.name, 'Business Name': d.businessName, Certification: d.certifications, 'GST Number': d.gst, 'Drug License Number': d.drugLicense, 'Drug Expiry Number': d.drugExpiryDate || '', 'Establishment Date': d.establishmentDate || '', 'Stockist Contact': d.mobile, Address: d.address, City: d.city || '' };
+  const exportToExcel = async () => {
+    if (displayList.length === 0) return alert('No data to export');
+    try {
+      const response = await axios.get(`/api/admin/dcs/export-excel?type=${filterType}&hq=${encodeURIComponent(filterHq || '')}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${filterType}_List.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const ws = XLSX.utils.json_to_sheet(displayList.map((d, i) => {
+        if (filterType === 'Doctor') return {
+          'Sr no.': i + 1,
+          UID: d.uid || '',
+          Name: d.name || '',
+          Degree: d.degree || '',
+          Specialization: d.specialization || '',
+          Hospital: d.hospital || '',
+          Category: d.category || '',
+          'Visit Days': d.visitDays || '',
+          Headquarter: d.headquarter || '',
+          'Working Area': d.workingArea || '',
+          'Mobile Number': d.mobile || d.contact || '',
+          'Clinic Contact': d.clinicContact || '',
+          Email: d.email || '',
+          'Clinics Address': d.address || '',
+          Birthday: d.birthday || '',
+          Anniversary: d.anniversary || '',
+          'Extra Information': d.extraInformation || '',
+          'Allotted User': d.userAllotted || d.employeeName || d.employeeId || '',
+          Status: d.status || 'Active'
+        };
+        if (filterType === 'Chemist') return {
+          'Sr no.': i + 1,
+          UID: d.uid || '',
+          'Business Name': d.businessName || '',
+          'Proprietor Name': d.proprietorName || d.name || '',
+          Certification: d.certifications || '',
+          Birthday: d.birthday || '',
+          Email: d.email || '',
+          Mobile: d.mobile || '',
+          Address: d.address || '',
+          City: d.city || '',
+          Headquarter: d.headquarter || '',
+          'Working Area': d.workingArea || '',
+          'Extra Information': d.extraInformation || '',
+          'Allotted User': d.userAllotted || '',
+          Status: d.status || 'Active'
+        };
+        return {
+          'Sr no.': i + 1,
+          UID: d.uid || '',
+          'Business Name': d.businessName || '',
+          'Contact Person': d.name || '',
+          Certification: d.certifications || '',
+          'GST Number': d.gst || '',
+          'Drug License Number': d.drugLicense || '',
+          'Drug Expiry Date': d.drugExpiryDate || '',
+          'Establishment Date': d.establishmentDate || '',
+          Mobile: d.mobile || '',
+          Email: d.email || '',
+          Address: d.address || '',
+          City: d.city || '',
+          Headquarter: d.headquarter || '',
+          'Working Area': d.workingArea || '',
+          'Extra Information': d.extraInformation || '',
+          'Allotted User': d.userAllotted || '',
+          Status: d.status || 'Active'
+        };
       }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${filterType}s`);
-    XLSX.writeFile(wb, `${filterType}_List.xlsx`);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${filterType}s`);
+      XLSX.writeFile(wb, `${filterType}_List.xlsx`);
+    }
   };
 
   const ThBase = ({ children, align = 'left', border = true }: { children: React.ReactNode, align?: 'left'|'center', border?: boolean }) => (
@@ -1171,28 +1241,41 @@ export default function ManageDCS() {
     };
 
     const handleDownloadFormat = async () => {
-      const { utils, writeFile } = await import('xlsx');
-      let headers: string[] = [];
-      let filename = '';
-
-      if (uploadType === 'Doctor') {
-        headers = ['Sr no.', 'Name', 'Degree', 'Specialization', 'Hospital', 'Visit Days', 'Birthday', 'Anniversary', 'Email', 'Mobile', 'Clinic Contact', 'Address', 'Category', 'Contact', 'Headquarter', 'Working Area'];
-        filename = 'doctor_upload_format.xlsx';
-      } else if (uploadType === 'Chemist') {
-        headers = ['Sr no.', 'Name', 'Business Name', 'Certification', 'Birthday', 'Email', 'Chemist Contact', 'Address', 'City', 'Working Area'];
-        filename = 'chemist_upload_format.xlsx';
-      } else if (uploadType === 'Stockist') {
-        headers = ['Sr no.', 'Name', 'Business Name', 'Certification', 'GST Number', 'Drug License Number', 'Drug Expiry Number', 'Establishment Date', 'Stockist Contact', 'Address', 'City'];
-        filename = 'stockist_upload_format.xlsx';
-      } else if (uploadType === 'CityOrArea') {
+      if (uploadType === 'CityOrArea') {
         alert('CityOrArea bulk upload is currently under development on the backend.');
         return;
       }
+      try {
+        const response = await axios.get(`/api/admin/dcs/download-format?type=${uploadType}`, {
+          responseType: 'blob'
+        });
+        const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${uploadType.toLowerCase()}_upload_format.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        const { utils, writeFile } = await import('xlsx');
+        let headers: string[] = [];
+        let filename = `${uploadType.toLowerCase()}_upload_format.xlsx`;
 
-      const ws = utils.aoa_to_sheet([headers]);
-      const wb = utils.book_new();
-      utils.book_append_sheet(wb, ws, 'Template');
-      writeFile(wb, filename);
+        if (uploadType === 'Doctor') {
+          headers = ['Sr no.', 'UID', 'Name', 'Degree', 'Specialization', 'Hospital', 'Category', 'Visit Days', 'Headquarter', 'Working Area', 'Mobile Number', 'Clinic Contact', 'Email', 'Clinics Address', 'Birthday', 'Anniversary', 'Extra Information', 'Allotted User', 'Status'];
+        } else if (uploadType === 'Chemist') {
+          headers = ['Sr no.', 'UID', 'Business Name', 'Proprietor Name', 'Certification', 'Birthday', 'Email', 'Mobile', 'Address', 'City', 'Headquarter', 'Working Area', 'Extra Information', 'Allotted User', 'Status'];
+        } else if (uploadType === 'Stockist') {
+          headers = ['Sr no.', 'UID', 'Business Name', 'Contact Person', 'Certification', 'GST Number', 'Drug License Number', 'Drug Expiry Date', 'Establishment Date', 'Mobile', 'Email', 'Address', 'City', 'Headquarter', 'Working Area', 'Extra Information', 'Allotted User', 'Status'];
+        }
+
+        const ws = utils.aoa_to_sheet([headers]);
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, 'Template');
+        writeFile(wb, filename);
+      }
     };
 
     return (

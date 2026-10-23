@@ -292,10 +292,12 @@ export default function Reminders() {
       });
 
       if (res.data?.success) {
-        const emailNote = res.data.emailSent
-          ? ` & Email sent to ${res.data.emailCount} recipient(s)`
-          : '';
-        showToast(`Reminder scheduled for ${selectedUserIds.length} user(s)${emailNote}!`, 'success');
+        if (res.data.emailSent) {
+          const recList = (res.data.recipientEmails || []).join(', ');
+          showToast(`Reminder scheduled & email sent to ${res.data.emailCount} user(s)${recList ? `: ${recList}` : ''}!`, 'success');
+        } else {
+          showToast(`Reminder scheduled, but email could not be delivered: ${res.data.emailError || 'No email recipients found'}`, 'error');
+        }
         setTitle('');
         setDescription('');
         setMeetLink(cleanedMeetLink);
@@ -863,6 +865,25 @@ export default function Reminders() {
                               {rem.meetingMode === 'Concall' ? <PhoneCall size={10} /> : <Video size={10} />}
                               {rem.meetingMode || 'Google Meet'}
                             </span>
+
+                            {rem.emailSent ? (
+                              <span 
+                                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm cursor-help"
+                                title={`Email delivered to: ${(rem.recipientEmails || []).join(', ') || 'recipients'}`}
+                              >
+                                <Mail size={10} className="text-emerald-400" />
+                                <span>Mail Sent ({rem.emailCount || (rem.recipientEmails || []).length || participants.length})</span>
+                              </span>
+                            ) : (
+                              <span 
+                                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 cursor-help"
+                                title={rem.emailError || 'Email invitation was not delivered.'}
+                              >
+                                <Mail size={10} className="text-amber-400" />
+                                <span>{rem.emailError ? 'Mail Failed' : 'No Mail'}</span>
+                              </span>
+                            )}
+
                             <span className="text-[10px] text-slate-400 font-semibold">
                               ({participants.length} user{participants.length > 1 ? 's' : ''})
                             </span>
@@ -881,17 +902,24 @@ export default function Reminders() {
                     </div>
 
                     {/* Card Middle 1: Scrollable Participant Blue Pills (Fixed Height) */}
-                    <div className="h-[54px] overflow-y-auto pr-1 my-1.5 shrink-0">
+                    <div className="min-h-[32px] max-h-[58px] overflow-y-auto pr-1 my-1.5 shrink-0">
                       <div className="flex flex-wrap gap-1.5">
                         {participants.map((p: any, pIdx: number) => (
                           <span
                             key={pIdx}
                             className="bg-[#3b82f6] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm"
+                            title={p.email ? `Email: ${p.email}` : 'No email'}
                           >
                             {p.firstName || p.name}
                           </span>
                         ))}
                       </div>
+                      {rem.recipientEmails && rem.recipientEmails.length > 0 && (
+                        <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 truncate" title={rem.recipientEmails.join(', ')}>
+                          <span className="text-emerald-400 font-bold">✉️ Sent to:</span>
+                          <span className="truncate">{rem.recipientEmails.join(', ')}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Middle 2: Scrollable Description / Message (Fixed Height) */}

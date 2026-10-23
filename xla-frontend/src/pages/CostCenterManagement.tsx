@@ -1283,21 +1283,6 @@ export default function CostCenterManagement() {
                                 </div>
                               </div>
                             </div>
-
-                            {/* Two-Way Formula Verification Note */}
-                            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-700/70 shadow-sm text-[11px] text-slate-400 space-y-1">
-                              <span className="font-bold text-slate-300 block uppercase tracking-wider text-[10px]">
-                                🔍 Dual Formula Reconciliation:
-                              </span>
-                              <div className="flex justify-between items-center text-slate-300 font-mono">
-                                <span>• Bank Outflow: Net ({netTakeHome.toLocaleString('en-IN')}) + Total PF ({totalPfToEpfo.toLocaleString('en-IN')}) + PT ({Number(ded.pt || 0)}) + Exp ({fieldExpTotal})</span>
-                                <span className="font-bold text-emerald-400">= ₹ {Number(detailItem.amount).toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-400 font-mono">
-                                <span>• CTC Structure: Gross ({Number(sal?.gross || 0).toLocaleString('en-IN')}) + Co PF ({Number(employerPf).toLocaleString('en-IN')}) + Exp ({fieldExpTotal})</span>
-                                <span className="font-bold text-emerald-400">= ₹ {Number(detailItem.amount).toLocaleString('en-IN')}</span>
-                              </div>
-                            </div>
                           </div>
 
                         </div>

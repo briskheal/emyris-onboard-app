@@ -6397,6 +6397,355 @@ router.get('/dcs/call-plan/saved', async (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 
+function normalizeVisitDays(raw, rowData = {}) {
+    const isY = (v) => v === 'Y' || v === 'y' || v === 'Yes' || v === 'yes' || v === true || v === 1 || v === '1';
+    const mon = isY(rowData['Mon'] || rowData['Monday'] || rowData['M']);
+    const tue = isY(rowData['Tue'] || rowData['Tuesday'] || rowData['Tu']);
+    const wed = isY(rowData['Wed'] || rowData['Wednesday'] || rowData['W']);
+    const thu = isY(rowData['Thu'] || rowData['Thursday'] || rowData['Th']);
+    const fri = isY(rowData['Fri'] || rowData['Friday'] || rowData['F']);
+    const sat = isY(rowData['Sat'] || rowData['Saturday'] || rowData['Sa']);
+
+    if (mon || tue || wed || thu || fri || sat) {
+        const parts = [];
+        if (mon) parts.push('M');
+        if (tue) parts.push('Tu');
+        if (wed) parts.push('W');
+        if (thu) parts.push('Th');
+        if (fri) parts.push('F');
+        if (sat) parts.push('Sa');
+        if (parts.length === 6) return 'ALL';
+        return parts.join(',');
+    }
+
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    if (s.toUpperCase() === 'ALL' || s.toLowerCase() === 'daily' || s.toLowerCase() === 'everyday' || s.toLowerCase() === 'every day') {
+        return 'ALL';
+    }
+
+    const tokens = s.split(/[,;/|\s]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+    const dayMap = {
+        'm': 'M', 'mon': 'M', 'monday': 'M',
+        'tu': 'Tu', 'tue': 'Tu', 'tues': 'Tu', 'tuesday': 'Tu', 't': 'Tu',
+        'w': 'W', 'wed': 'W', 'wednesday': 'W',
+        'th': 'Th', 'thu': 'Th', 'thur': 'Th', 'thurs': 'Th', 'thursday': 'Th',
+        'f': 'F', 'fri': 'F', 'friday': 'F',
+        'sa': 'Sa', 'sat': 'Sa', 'saturday': 'Sa', 's': 'Sa'
+    };
+
+    const resultDays = new Set();
+    tokens.forEach(tok => {
+        if (dayMap[tok]) {
+            resultDays.add(dayMap[tok]);
+        }
+    });
+
+    const order = ['M', 'Tu', 'W', 'Th', 'F', 'Sa'];
+    const sorted = order.filter(d => resultDays.has(d));
+    if (sorted.length === 6) return 'ALL';
+    return sorted.join(',') || s;
+}
+
+function getVisitDaysCombinations() {
+    const days = ['M', 'Tu', 'W', 'Th', 'F', 'Sa'];
+    const allCombos = [];
+    allCombos.push('ALL');
+    allCombos.push('M,Tu,W,Th,F,Sa');
+    allCombos.push('M,W,F');
+    allCombos.push('Tu,Th,Sa');
+    allCombos.push('M,Tu,W');
+    allCombos.push('Th,F,Sa');
+    allCombos.push('M,F');
+    allCombos.push('Tu,F');
+    allCombos.push('W,F');
+    allCombos.push('W,Sa');
+    allCombos.push('Th,Sa');
+    allCombos.push('Tu,Th');
+    allCombos.push('M,W');
+    allCombos.push('M,Tu');
+    allCombos.push('M,Th');
+    allCombos.push('M,Sa');
+    allCombos.push('Tu,W');
+    allCombos.push('Tu,Sa');
+    allCombos.push('W,Th');
+    allCombos.push('F,Sa');
+    days.forEach(d => allCombos.push(d));
+
+    for (let i = 1; i < (1 << days.length); i++) {
+        const combo = [];
+        for (let j = 0; j < days.length; j++) {
+            if ((i >> j) & 1) combo.push(days[j]);
+        }
+        const str = combo.join(',');
+        if (!allCombos.includes(str)) {
+            allCombos.push(str);
+        }
+    }
+    return allCombos;
+}
+
+async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false }) {
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Emyris Biolifesciences';
+    wb.created = new Date();
+
+    if (type === 'Doctor') {
+        const ws = wb.addWorksheet('Doctors');
+        const listWs = wb.addWorksheet('ValidationLists');
+        listWs.state = 'hidden';
+
+        const visitCombos = getVisitDaysCombinations();
+        listWs.getCell('A1').value = 'VisitDaysList';
+        visitCombos.forEach((c, idx) => {
+            listWs.getCell(`A${idx + 2}`).value = c;
+        });
+
+        const categories = [
+            'Core (2 Visits/Month)',
+            'SuperCore (3 Visits/Month)',
+            'Non-Core (1 Visit/Month)'
+        ];
+        listWs.getCell('B1').value = 'CategoriesList';
+        categories.forEach((cat, idx) => {
+            listWs.getCell(`B${idx + 2}`).value = cat;
+        });
+
+        ws.columns = [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'UID', key: 'uid', width: 14 },
+            { header: 'Name', key: 'name', width: 26 },
+            { header: 'Degree', key: 'degree', width: 18 },
+            { header: 'Specialization', key: 'specialization', width: 24 },
+            { header: 'Hospital', key: 'hospital', width: 28 },
+            { header: 'Category', key: 'category', width: 26 },
+            { header: 'Visit Days', key: 'visitDays', width: 22 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Mobile Number', key: 'mobile', width: 18 },
+            { header: 'Clinic Contact', key: 'clinicContact', width: 18 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Clinics Address', key: 'address', width: 32 },
+            { header: 'Birthday', key: 'birthday', width: 14 },
+            { header: 'Anniversary', key: 'anniversary', width: 14 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ];
+
+        const headerRow = ws.getRow(1);
+        headerRow.height = 28;
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        if (isTemplate) {
+            ws.addRow({
+                srNo: 1,
+                uid: 'DOC101',
+                name: 'Dr. Sample Doctor',
+                degree: 'MBBS, MD',
+                specialization: 'Cardiology',
+                hospital: 'City Hospital',
+                category: 'Core (2 Visits/Month)',
+                visitDays: 'M,W,F',
+                headquarter: 'AHMEDABAD-PST-1',
+                workingArea: 'West Zone',
+                mobile: '9876543210',
+                clinicContact: '0792345678',
+                email: 'doctor@example.com',
+                address: '101, Medical Enclave, Ahmedabad',
+                birthday: '1985-05-15',
+                anniversary: '2012-11-20',
+                extraInformation: 'Preferred time: 5 PM to 7 PM',
+                userAllotted: '',
+                status: 'Approved'
+            });
+        } else {
+            records.forEach((d, idx) => {
+                ws.addRow({
+                    srNo: idx + 1,
+                    uid: d.uid || '',
+                    name: d.name || '',
+                    degree: d.degree || '',
+                    specialization: d.specialization || '',
+                    hospital: d.hospital || '',
+                    category: d.category || '',
+                    visitDays: d.visitDays || '',
+                    headquarter: d.headquarter || '',
+                    workingArea: d.workingArea || '',
+                    mobile: d.mobile || d.contact || '',
+                    clinicContact: d.clinicContact || '',
+                    email: d.email || '',
+                    address: d.address || '',
+                    birthday: d.birthday || '',
+                    anniversary: d.anniversary || '',
+                    extraInformation: d.extraInformation || '',
+                    userAllotted: d.userAllotted || d.employeeName || d.employeeId || '',
+                    status: d.status || 'Active'
+                });
+            });
+        }
+
+        const totalRowsToValidate = Math.max(records.length + 50, isTemplate ? 100 : 500);
+        for (let r = 2; r <= totalRowsToValidate; r++) {
+            ws.getCell(`G${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`ValidationLists!$B$2:$B$${categories.length + 1}`],
+                showErrorMessage: true,
+                errorTitle: 'Invalid Category',
+                error: 'Please choose from Category options'
+            };
+
+            ws.getCell(`H${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`ValidationLists!$A$2:$A$${visitCombos.length + 1}`],
+                showErrorMessage: true,
+                errorTitle: 'Invalid Visit Days',
+                error: 'Please select a valid weekday combination from the dropdown (e.g., M,W,F or ALL)'
+            };
+        }
+    } else if (type === 'Chemist') {
+        const ws = wb.addWorksheet('Chemists');
+        ws.columns = [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'UID', key: 'uid', width: 14 },
+            { header: 'Business Name', key: 'businessName', width: 28 },
+            { header: 'Proprietor Name', key: 'proprietorName', width: 24 },
+            { header: 'Certification', key: 'certifications', width: 20 },
+            { header: 'Birthday', key: 'birthday', width: 14 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Mobile', key: 'mobile', width: 18 },
+            { header: 'Address', key: 'address', width: 32 },
+            { header: 'City', key: 'city', width: 18 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ];
+        const headerRow = ws.getRow(1);
+        headerRow.height = 28;
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        if (isTemplate) {
+            ws.addRow({
+                srNo: 1, uid: 'CHM101', businessName: 'Life Care Pharmacy', proprietorName: 'Ramesh Patel',
+                certifications: 'D.Pharm', birthday: '1990-01-01', email: 'lifecare@example.com', mobile: '9898989898',
+                address: 'Shop 12, Station Road', city: 'Ahmedabad', headquarter: 'AHMEDABAD-PST-1', workingArea: 'Station Area',
+                extraInformation: '', userAllotted: '', status: 'Approved'
+            });
+        } else {
+            records.forEach((d, idx) => {
+                ws.addRow({
+                    srNo: idx + 1, uid: d.uid || '', businessName: d.businessName || '', proprietorName: d.proprietorName || d.name || '',
+                    certifications: d.certifications || '', birthday: d.birthday || '', email: d.email || '', mobile: d.mobile || '',
+                    address: d.address || '', city: d.city || '', headquarter: d.headquarter || '', workingArea: d.workingArea || '',
+                    extraInformation: d.extraInformation || '', userAllotted: d.userAllotted || '', status: d.status || 'Active'
+                });
+            });
+        }
+    } else if (type === 'Stockist') {
+        const ws = wb.addWorksheet('Stockists');
+        ws.columns = [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'UID', key: 'uid', width: 14 },
+            { header: 'Business Name', key: 'businessName', width: 28 },
+            { header: 'Contact Person', key: 'name', width: 24 },
+            { header: 'Certification', key: 'certifications', width: 18 },
+            { header: 'GST Number', key: 'gst', width: 20 },
+            { header: 'Drug License Number', key: 'drugLicense', width: 22 },
+            { header: 'Drug Expiry Date', key: 'drugExpiryDate', width: 16 },
+            { header: 'Establishment Date', key: 'establishmentDate', width: 16 },
+            { header: 'Mobile', key: 'mobile', width: 18 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Address', key: 'address', width: 32 },
+            { header: 'City', key: 'city', width: 18 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ];
+        const headerRow = ws.getRow(1);
+        headerRow.height = 28;
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        if (isTemplate) {
+            ws.addRow({
+                srNo: 1, uid: 'STK101', businessName: 'Apollo Distributors', name: 'Suresh Shah', certifications: 'ISO',
+                gst: '24AAAAA0000A1Z5', drugLicense: '20B/21B-12345', drugExpiryDate: '2028-12-31', establishmentDate: '2010-04-01',
+                mobile: '9879879870', email: 'apollo@example.com', address: 'Plot 45, GIDC', city: 'Ahmedabad',
+                headquarter: 'AHMEDABAD-PST-1', workingArea: 'GIDC', extraInformation: '', userAllotted: '', status: 'Approved'
+            });
+        } else {
+            records.forEach((d, idx) => {
+                ws.addRow({
+                    srNo: idx + 1, uid: d.uid || '', businessName: d.businessName || '', name: d.name || '',
+                    certifications: d.certifications || '', gst: d.gst || '', drugLicense: d.drugLicense || '',
+                    drugExpiryDate: d.drugExpiryDate || '', establishmentDate: d.establishmentDate || '', mobile: d.mobile || '',
+                    email: d.email || '', address: d.address || '', city: d.city || '', headquarter: d.headquarter || '',
+                    workingArea: d.workingArea || '', extraInformation: d.extraInformation || '', userAllotted: d.userAllotted || '',
+                    status: d.status || 'Active'
+                });
+            });
+        }
+    }
+
+    return wb;
+}
+
+router.get('/dcs/export-excel', async (req, res) => {
+    try {
+        const { type = 'Doctor', hq } = req.query;
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        let records = [];
+        let where = {};
+        if (hq && hq.trim() !== '' && hq !== 'All' && hq !== 'All Headquarters') {
+            where.headquarter = hq.trim();
+        }
+
+        if (type === 'Doctor') {
+            records = await XlDoctor.findAll({ where, order: [['createdAt', 'DESC']], raw: true });
+        } else if (type === 'Chemist') {
+            records = await XlChemist.findAll({ where, order: [['createdAt', 'DESC']], raw: true });
+        } else if (type === 'Stockist') {
+            records = await XlStockist.findAll({ where, order: [['createdAt', 'DESC']], raw: true });
+        }
+
+        const wb = await generateDcsExcelWorkbook({ type, records, isTemplate: false });
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${type}_List.xlsx"`);
+        await wb.xlsx.write(res);
+        res.end();
+    } catch (e) {
+        console.error('Export DCS Excel error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.get('/dcs/download-format', async (req, res) => {
+    try {
+        const { type = 'Doctor' } = req.query;
+        const wb = await generateDcsExcelWorkbook({ type, records: [], isTemplate: true });
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${type.toLowerCase()}_upload_format.xlsx"`);
+        await wb.xlsx.write(res);
+        res.end();
+    } catch (e) {
+        console.error('Download DCS format error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.post('/dcs/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) throw new Error('No file uploaded');
@@ -6439,18 +6788,21 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.degree = d.Degree || d.degree || '';
         row.specialization = d.Specialization || d.specialization || '';
         row.hospital = d.Hospital || d.hospital || '';
-        row.visitDays = d['Visit Days'] || d.visitDays || '';
-        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
-        row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
+        row.visitDays = normalizeVisitDays(d['Visit Days'] || d.visitDays || d['VisitDays'] || '', d);
+        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['Mobile Number'] || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
+        row.clinicContact = String(d['Clinic Contact'] || d['Clinic Contact Number'] || d.clinicContact || '');
 
         row.category = d.Category || d.category || '';
-        row.address = d.Address || d.address || '';
+        row.address = d.Address || d.address || d['Clinics Address'] || '';
         row.workingArea = d['Working Area'] || d.workingArea || '';
         row.birthday = d.Birthday || d.birthday || '';
-        row.anniversary = d.Anniversary || d.anniversary || '';
-        row.email = d.Email || d.email || '';
+        row.anniversary = d.Anniversary || d['Marriage Anniversary'] || d.anniversary || '';
+        row.email = d.Email || d.email || d['Email Address'] || '';
         row.contact = String(d.Contact || d.contact || '');
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
+        if (d['Headquarter'] || d.headquarter) {
+            row.headquarter = d['Headquarter'] || d.headquarter;
+        }
       }
       if (type === 'Chemist') {
         if (!d.UID && !d.uid) {

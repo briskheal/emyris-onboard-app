@@ -100,11 +100,20 @@ export default function ProfitCenterManagement() {
   // Table Container Ref & Cursor Hover for Arrow Key Scrolling
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [isMouseInTable, setIsMouseInTable] = useState<boolean>(false);
+  const roiTableContainerRef = useRef<HTMLDivElement>(null);
+  const [isMouseInRoiTable, setIsMouseInRoiTable] = useState<boolean>(false);
 
   // Arrow Key Navigation exclusively within the table when mouse/cursor is inside table
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isMouseInTable || !tableContainerRef.current) return;
+      let container: HTMLDivElement | null = null;
+      if (isMouseInTable && tableContainerRef.current) {
+        container = tableContainerRef.current;
+      } else if (isMouseInRoiTable && roiTableContainerRef.current) {
+        container = roiTableContainerRef.current;
+      }
+
+      if (!container) return;
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown'].includes(e.key)) {
         const activeEl = document.activeElement;
@@ -119,7 +128,6 @@ export default function ProfitCenterManagement() {
         e.preventDefault();
         e.stopPropagation();
 
-        const container = tableContainerRef.current;
         const rowStep = 44; // scroll by one row
         const colStep = 120; // scroll by one column
 
@@ -141,7 +149,7 @@ export default function ProfitCenterManagement() {
 
     window.addEventListener('keydown', handleKeyDown, { passive: false });
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMouseInTable]);
+  }, [isMouseInTable, isMouseInRoiTable]);
 
   // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, marginPercent, saving, saved }
   const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; marginPercent: number | string; saving?: boolean; saved?: boolean }>>({});
@@ -2185,18 +2193,24 @@ export default function ProfitCenterManagement() {
                     <Download size={13} /> Export Excel
                   </button>
                 </div>
-                <div className="flex-1 overflow-auto">
+                <div 
+                  ref={roiTableContainerRef}
+                  onMouseEnter={() => setIsMouseInRoiTable(true)}
+                  onMouseLeave={() => setIsMouseInRoiTable(false)}
+                  tabIndex={0}
+                  className="flex-1 overflow-auto max-h-[calc(100vh-270px)] min-h-[480px] focus:outline-none"
+                >
                   <table className="w-full text-center border-collapse border border-slate-700 text-xs whitespace-nowrap">
                     <thead>
-                      <tr className="bg-slate-900/90 text-slate-300 font-bold text-[11px] uppercase tracking-wider">
-                        <th className="border border-slate-700 px-3 py-2 w-14">Sr no.</th>
-                        <th className="border border-slate-700 px-3 py-2 text-left">Headquarter / Territory</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right">Selling Value (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right">Product Cost (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right text-sky-400">Gross Product Profit (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right text-rose-400">Cost Center Expenses (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2 text-right font-black">Actual Net Profit (₹)</th>
-                        <th className="border border-slate-700 px-3 py-2">Status</th>
+                      <tr className="sticky top-0 z-30 bg-slate-950 text-slate-300 font-bold text-[11px] uppercase tracking-wider shadow-md">
+                        <th className="sticky top-0 left-0 z-40 bg-slate-950 border border-slate-700 px-3 py-2.5 w-14">Sr no.</th>
+                        <th className="sticky top-0 left-14 z-40 bg-slate-950 border border-slate-700 border-r-2 border-r-slate-500 px-3 py-2.5 text-left shadow-[4px_0_10px_-2px_rgba(0,0,0,0.6)]">Headquarter / Territory</th>
+                        <th className="border border-slate-700 px-3 py-2.5 text-right">Selling Value (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2.5 text-right">Product Cost (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2.5 text-right text-sky-400">Gross Product Profit (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2.5 text-right text-rose-400">Cost Center Expenses (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2.5 text-right font-black">Actual Net Profit (₹)</th>
+                        <th className="border border-slate-700 px-3 py-2.5">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2208,9 +2222,9 @@ export default function ProfitCenterManagement() {
                         </tr>
                       ) : (
                         roiData.breakdown.map((b: any, i: number) => (
-                          <tr key={i} className="hover:bg-slate-700/40 transition-colors">
-                            <td className="border border-slate-700 px-3 py-2 text-slate-400 font-mono">{i + 1}</td>
-                            <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
+                          <tr key={i} className="group hover:bg-slate-700/50 transition-colors">
+                            <td className="sticky left-0 z-20 bg-slate-900 group-hover:bg-slate-800 border border-slate-700 px-3 py-2 text-slate-400 font-mono w-14">{i + 1}</td>
+                            <td className="sticky left-14 z-20 bg-slate-900 group-hover:bg-slate-800 border border-slate-700 border-r-2 border-r-slate-500 px-3 py-2 text-left font-bold text-white shadow-[4px_0_10px_-2px_rgba(0,0,0,0.6)]">
                               {b.hq}
                             </td>
                             <td className="border border-slate-700 px-3 py-2 text-right font-mono text-slate-300">
