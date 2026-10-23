@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  X, Moon, MessageCircle, Users, Activity, ListTodo, Key, LogOut, 
+  X, Moon, Sun, MessageCircle, Users, Activity, ListTodo, Key, LogOut, 
   Mail, Phone, MapPin, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw, Send, ShieldCheck, ChevronRight, UserCheck
 } from 'lucide-react';
 import axios from 'axios';
@@ -14,8 +14,22 @@ interface NavigationDrawerProps {
 
 export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDrawerProps) {
   const navigate = useNavigate();
-  const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    return localStorage.getItem('xl_theme') !== 'light';
+  });
   const [logoUrl, setLogoUrl] = useState('');
+
+  const handleToggleTheme = () => {
+    const nextTheme = !isDarkTheme;
+    setIsDarkTheme(nextTheme);
+    if (nextTheme) {
+      document.documentElement.classList.remove('theme-light');
+      localStorage.setItem('xl_theme', 'dark');
+    } else {
+      document.documentElement.classList.add('theme-light');
+      localStorage.setItem('xl_theme', 'light');
+    }
+  };
 
   // Modals state
   const [activeModal, setActiveModal] = useState<'PASSWORD' | 'CONTACT' | 'HIERARCHY' | 'CONSOLIDATED' | 'TODAY' | 'LOGOUT' | null>(null);
@@ -303,17 +317,19 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
           
           {/* Dark Theme Toggle */}
           <button 
-            onClick={() => setIsDarkTheme(!isDarkTheme)}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-slate-700/50 border border-slate-700/30 mb-2"
+            onClick={handleToggleTheme}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-slate-700/50 border border-slate-700/30 mb-2 active:scale-[0.99] transition-transform"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
-                <Moon size={16} className="text-slate-300" />
+                {isDarkTheme ? <Moon size={16} className="text-sky-400" /> : <Sun size={16} className="text-amber-500" />}
               </div>
-              <span className="text-sm font-bold text-slate-300">Dark Theme</span>
+              <span className="text-sm font-bold text-slate-300">
+                {isDarkTheme ? 'Dark Theme' : 'Light Theme'}
+              </span>
             </div>
             
-            <div className={`w-12 h-6 rounded-full p-1 flex transition-colors ${isDarkTheme ? 'bg-sky-500' : 'bg-slate-600'}`}>
+            <div className={`w-12 h-6 rounded-full p-1 flex transition-colors ${isDarkTheme ? 'bg-sky-500' : 'bg-slate-400'}`}>
               <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isDarkTheme ? 'translate-x-6' : 'translate-x-0'}`} />
             </div>
           </button>

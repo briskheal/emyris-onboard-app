@@ -1600,7 +1600,7 @@ router.get('/user/todays-activity', async (req, res) => {
 router.post('/user/contact-support', async (req, res) => {
     try {
         const { employeeId, subject, message } = req.body;
-        const { XlUser } = require('../db');
+        const { XlUser, XlNotification } = require('../db');
         const { sendEmail } = require('../utils/mailer');
 
         const user = await XlUser.findOne({ where: { employeeId: (employeeId || '').trim() } });
@@ -1608,6 +1608,7 @@ router.post('/user/contact-support', async (req, res) => {
         const userEmail = user?.email || 'N/A';
         const userHq = user?.hq || 'N/A';
 
+        // 1. Send direct email to adminhr@emyrishr.in
         await sendEmail({
             to: 'adminhr@emyrishr.in',
             subject: `[XL CRM Support] ${subject || 'User Query'} - from ${userName} (${userHq})`,
@@ -1624,6 +1625,13 @@ router.post('/user/contact-support', async (req, res) => {
                 </div>
             `
         });
+
+        // 2. Save directly in database notifications for Admin portal
+        await XlNotification.create({
+            employeeId: 'ADMIN',
+            title: `Support Query: ${subject || 'General'} (${userName} - ${userHq})`,
+            message: `From: ${userName} (${employeeId}) | HQ: ${userHq} | Email: ${userEmail}\n\n${message}`
+        }).catch(err => console.error('Notification log error:', err));
 
         res.json({ success: true, message: 'Your support request has been submitted to the management team.' });
     } catch (e) {

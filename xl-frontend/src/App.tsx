@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -46,6 +47,15 @@ import GiftManagementView from './pages/utilities/GiftManagementView';
 import TargetsView from './pages/utilities/TargetsView';
 
 function App() {
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('xl_theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('theme-light');
+    } else {
+      document.documentElement.classList.remove('theme-light');
+    }
+  }, []);
+
   return (
     <BrowserRouter basename="/xl">
       <Routes>

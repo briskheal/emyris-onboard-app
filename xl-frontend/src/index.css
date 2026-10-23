@@ -26,6 +26,65 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Light Mode Overrides when user toggles Dark Theme off */
+html.theme-light, 
+html.theme-light body {
+  color-scheme: light !important;
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html.theme-light .bg-slate-900 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-800 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-700 {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html.theme-light .bg-slate-600 {
+  background-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+html.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+html.theme-light .text-slate-100,
+html.theme-light .text-slate-200,
+html.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.theme-light .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.theme-light .border-slate-800,
+html.theme-light .border-slate-700,
+html.theme-light .border-slate-600 {
+  border-color: #cbd5e1 !important;
+}
+
+html.theme-light input,
+html.theme-light textarea,
+html.theme-light select {
+  color-scheme: light !important;
+}
+
+html.theme-light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
 }
 
 
