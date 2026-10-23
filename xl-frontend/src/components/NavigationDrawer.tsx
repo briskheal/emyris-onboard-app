@@ -525,8 +525,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                 <Mail size={16} className="text-sky-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <p className="text-slate-400 font-semibold">Official Support Email</p>
-                  <a href="mailto:support@emyrishr.in" className="text-white font-bold hover:underline">
-                    support@emyrishr.in
+                  <a href="mailto:adminhr@emyrishr.in" className="text-white font-bold hover:underline">
+                    adminhr@emyrishr.in
                   </a>
                 </div>
               </div>
@@ -534,7 +534,9 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                 <Phone size={16} className="text-emerald-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <p className="text-slate-400 font-semibold">Helpdesk Contact</p>
-                  <p className="text-white font-bold">+91 79 4000 8000 / +91 98250 00000</p>
+                  <a href="tel:7993163300" className="text-white font-bold hover:underline">
+                    7993163300
+                  </a>
                 </div>
               </div>
               <div className="flex items-start gap-3">

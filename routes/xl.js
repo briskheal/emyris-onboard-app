@@ -1389,7 +1389,7 @@ router.post('/user/change-password/verify-pin', async (req, res) => {
                     </div>
 
                     <div style="font-size: 12px; line-height: 1.5; color: #64748b; border-top: 1px solid #334155; padding-top: 16px;">
-                        <p style="margin: 0;">If you did not make this change, please report immediately to <a href="mailto:support@emyrishr.in" style="color: #38bdf8;">support@emyrishr.in</a>.</p>
+                        <p style="margin: 0;">If you did not make this change, please report immediately to <a href="mailto:adminhr@emyrishr.in" style="color: #38bdf8;">adminhr@emyrishr.in</a>.</p>
                     </div>
                 </div>
             `;
@@ -1609,7 +1609,7 @@ router.post('/user/contact-support', async (req, res) => {
         const userHq = user?.hq || 'N/A';
 
         await sendEmail({
-            to: 'hradmin@emyrishr.in',
+            to: 'adminhr@emyrishr.in',
             subject: `[XL CRM Support] ${subject || 'User Query'} - from ${userName} (${userHq})`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
