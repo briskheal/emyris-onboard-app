@@ -1902,12 +1902,18 @@ router.get('/reports/doctors', async (req, res) => {
     try {
         const { employeeId, hq } = req.query;
         let where = {};
-        if (hq) {
-            where.headquarter = hq;
+        if (hq && hq.trim() !== '' && hq !== 'All') {
+            where.headquarter = sequelize.where(
+                sequelize.fn('lower', sequelize.col('headquarter')),
+                hq.trim().toLowerCase()
+            );
         } else if (employeeId) {
             const user = await XlUser.findOne({ where: { employeeId } });
             if (user && user.hq) {
-                where.headquarter = user.hq;
+                where.headquarter = sequelize.where(
+                    sequelize.fn('lower', sequelize.col('headquarter')),
+                    user.hq.trim().toLowerCase()
+                );
             } else {
                 where.employeeId = employeeId;
             }

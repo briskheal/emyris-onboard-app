@@ -6823,12 +6823,23 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
 
     const docs = [];
     let index = 0;
+    const cleanVal = (v) => {
+      if (v === undefined || v === null) return '';
+      const s = String(v).trim();
+      return (s === '-' || s === '--') ? '' : s;
+    };
+
     for (let d of data) {
-      let row = { headquarter: targetHq, status: 'Pending',  };
-      
+      let row = { headquarter: targetHq, status: 'Pending' };
       row.updateAt = new Date().toLocaleString();
 
       if (type === 'Doctor') {
+        const rawName = cleanVal(d.Name || d.name);
+        // Skip Medom ERP footer metadata rows or empty rows
+        if (!rawName || rawName.startsWith('Report From') || rawName.startsWith('Employee Name') || rawName.startsWith('Employee Des')) {
+          continue;
+        }
+
         if (!d.UID && !d.uid) {
             currentUidMax++;
             row.uid = 'DOC' + currentUidMax;
@@ -6836,69 +6847,76 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
             row.uid = d.UID || d.uid;
         }
 
-        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
-        row.name = d.Name || d.name || '';
-        row.degree = d.Degree || d.degree || '';
-        row.specialization = d.Specialization || d.specialization || '';
-        row.hospital = d.Hospital || d.hospital || '';
-        row.visitDays = normalizeVisitDays(d['Visit Days'] || d.visitDays || d['VisitDays'] || '', d);
-        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['Mobile Number'] || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
-        row.clinicContact = String(d['Clinic Contact'] || d['Clinic Contact Number'] || d.clinicContact || '');
+        row.employeeId = cleanVal(d['Employee ID'] || d.employeeId || d.EmployeeID) || null;
+        row.name = rawName;
+        row.degree = cleanVal(d.Degree || d.degree);
+        row.specialization = cleanVal(d.Specialization || d.specialization);
+        row.hospital = cleanVal(d.Hospital || d.hospital);
+        row.visitDays = normalizeVisitDays(cleanVal(d['Visit Days'] || d.visitDays || d['VisitDays']), d);
+        row.mobile = cleanVal(d.Mobile || d.mobile || d.Contact || d.contact || d['Mobile Number'] || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact']);
+        row.clinicContact = cleanVal(d['Clinic Contact'] || d['Clinic Contact Number'] || d.clinicContact);
 
-        row.category = d.Category || d.category || '';
-        row.address = d.Address || d.address || d['Clinics Address'] || '';
-        row.workingArea = d['Working Area'] || d.workingArea || '';
-        row.birthday = d.Birthday || d.birthday || '';
-        row.anniversary = d.Anniversary || d['Marriage Anniversary'] || d.anniversary || '';
-        row.email = d.Email || d.email || d['Email Address'] || '';
-        row.contact = String(d.Contact || d.contact || '');
-        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
+        row.category = cleanVal(d.Category || d.category);
+        row.address = cleanVal(d.Address || d.address || d['Clinics Address']);
+        row.workingArea = cleanVal(d['Working Area'] || d.workingArea);
+        row.birthday = cleanVal(d.Birthday || d.birthday);
+        row.anniversary = cleanVal(d.Anniversary || d['Marriage Anniversary'] || d.anniversary);
+        row.email = cleanVal(d.Email || d.email || d['Email Address']);
+        row.contact = cleanVal(d.Contact || d.contact);
+        row.extraInformation = cleanVal(d['Extra Information'] || d.extraInformation);
         if (d['Headquarter'] || d.headquarter) {
-            row.headquarter = d['Headquarter'] || d.headquarter;
+            const hqVal = cleanVal(d['Headquarter'] || d.headquarter);
+            if (hqVal) row.headquarter = hqVal;
         }
       }
       if (type === 'Chemist') {
+        const bName = cleanVal(d['Business Name'] || d.businessName || d['business name']);
+        if (!bName || bName.startsWith('Report From') || bName.startsWith('Employee Name')) {
+          continue;
+        }
         if (!d.UID && !d.uid) {
             currentUidMax++;
             row.uid = 'CHM' + currentUidMax;
         } else {
             row.uid = d.UID || d.uid;
         }
-        row.businessName = d['Business Name'] || d.businessName || d['business name'] || '';
-        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
-        row.proprietorName = d['Proprietor Name'] || d.proprietorName || d.Name || d.name || '';
-        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
-        row.email = d.Email || d.email || '';
-          row.city = d.City || d.city || '';
-        row.address = d.Address || d.address || '';
-        row.workingArea = d['Working Area'] || d.workingArea || '';
-        row.birthday = d.Birthday || d.birthday || '';
-          row.certifications = d.Certifications || d.certifications || d.Certification || d.certification || '';
-        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
+        row.businessName = bName;
+        row.employeeId = cleanVal(d['Employee ID'] || d.employeeId || d.EmployeeID) || null;
+        row.proprietorName = cleanVal(d['Proprietor Name'] || d.proprietorName || d.Name || d.name);
+        row.mobile = cleanVal(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact']);
+        row.email = cleanVal(d.Email || d.email);
+        row.city = cleanVal(d.City || d.city);
+        row.address = cleanVal(d.Address || d.address);
+        row.workingArea = cleanVal(d['Working Area'] || d.workingArea);
+        row.birthday = cleanVal(d.Birthday || d.birthday);
+        row.certifications = cleanVal(d.Certifications || d.certifications || d.Certification || d.certification);
+        row.extraInformation = cleanVal(d['Extra Information'] || d.extraInformation);
       }
       if (type === 'Stockist') {
+        const bName = cleanVal(d['Business Name'] || d.businessName || d['business name'] || d.Name || d.name);
+        if (!bName || bName.startsWith('Report From') || bName.startsWith('Employee Name')) {
+          continue;
+        }
         if (!d.UID && !d.uid) {
             currentUidMax++;
             row.uid = 'STK' + currentUidMax;
         } else {
             row.uid = d.UID || d.uid;
         }
-        row.businessName = d['Business Name'] || d.businessName || d['business name'] || d.Name || d.name || '';
-        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
-        row.name = d['Proprietor Name'] || d.name || d.Name || '';
-        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
-        row.email = d.Email || d.email || '';
-          row.certifications = d.Certifications || d.certifications || d.Certification || d.certification || '';
-          row.gst = String(d['GST Number'] || d.GST || d.gst || '');
-          row.drugLicense = String(d['Drug License Number'] || d['Drug License'] || d.drugLicense || '');
-          row.drugExpiryDate = String(d['Drug Expiry Number'] || d['Drug Expiry Date'] || d.drugExpiryDate || '');
-          row.establishmentDate = String(d['Establishment Date'] || d.establishmentDate || '');
-          row.city = d.City || d.city || '';
-
-        row.address = d.Address || d.address || '';
-        row.workingArea = d['Working Area'] || d.workingArea || '';
-
-        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
+        row.businessName = bName;
+        row.employeeId = cleanVal(d['Employee ID'] || d.employeeId || d.EmployeeID) || null;
+        row.name = cleanVal(d['Proprietor Name'] || d.name || d.Name);
+        row.mobile = cleanVal(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact']);
+        row.email = cleanVal(d.Email || d.email);
+        row.certifications = cleanVal(d.Certifications || d.certifications || d.Certification || d.certification);
+        row.gst = cleanVal(d['GST Number'] || d.GST || d.gst);
+        row.drugLicense = cleanVal(d['Drug License Number'] || d['Drug License'] || d.drugLicense);
+        row.drugExpiryDate = cleanVal(d['Drug Expiry Number'] || d['Drug Expiry Date'] || d.drugExpiryDate);
+        row.establishmentDate = cleanVal(d['Establishment Date'] || d.establishmentDate);
+        row.city = cleanVal(d.City || d.city);
+        row.address = cleanVal(d.Address || d.address);
+        row.workingArea = cleanVal(d['Working Area'] || d.workingArea);
+        row.extraInformation = cleanVal(d['Extra Information'] || d.extraInformation);
       }
       
       docs.push(row);
