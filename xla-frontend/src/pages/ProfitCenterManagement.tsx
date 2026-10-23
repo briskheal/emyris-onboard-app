@@ -10,7 +10,8 @@ import {
   X,
   BarChart3,
   Activity,
-  Building
+  Building,
+  Search
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -1806,6 +1807,29 @@ export default function ProfitCenterManagement() {
                         <span>Apply to All</span>
                       )}
                     </button>
+                  </div>
+
+                  {/* SEARCH PRODUCT BUTTON & INPUT RIGHT TO MARGIN BUTTON */}
+                  <div className="relative flex items-center shrink-0">
+                    <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search product..."
+                      className="w-40 sm:w-56 bg-slate-900 border border-slate-700/80 hover:border-slate-600 focus:border-sky-500 rounded-lg pl-8 pr-7 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all shadow-inner"
+                      title="Search products by name or composition"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2 text-slate-400 hover:text-white transition-colors"
+                        title="Clear search"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
