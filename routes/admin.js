@@ -6513,7 +6513,26 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
             listWs.getCell(`B${idx + 2}`).value = cat;
         });
 
-        ws.columns = [
+        ws.columns = isTemplate ? [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'Name', key: 'name', width: 26 },
+            { header: 'Degree', key: 'degree', width: 18 },
+            { header: 'Specialization', key: 'specialization', width: 24 },
+            { header: 'Hospital', key: 'hospital', width: 28 },
+            { header: 'Category', key: 'category', width: 26 },
+            { header: 'Visit Days', key: 'visitDays', width: 22 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Mobile Number', key: 'mobile', width: 18 },
+            { header: 'Clinic Contact', key: 'clinicContact', width: 18 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Clinics Address', key: 'address', width: 32 },
+            { header: 'Birthday', key: 'birthday', width: 14 },
+            { header: 'Anniversary', key: 'anniversary', width: 14 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ] : [
             { header: 'Sr no.', key: 'srNo', width: 8 },
             { header: 'UID', key: 'uid', width: 14 },
             { header: 'Name', key: 'name', width: 26 },
@@ -6544,7 +6563,6 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
         if (isTemplate) {
             ws.addRow({
                 srNo: 1,
-                uid: 'DOC101',
                 name: 'Dr. Sample Doctor',
                 degree: 'MBBS, MD',
                 specialization: 'Cardiology',
@@ -6589,9 +6607,11 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
             });
         }
 
+        const catCol = isTemplate ? 'F' : 'G';
+        const visitCol = isTemplate ? 'G' : 'H';
         const totalRowsToValidate = Math.max(records.length + 50, isTemplate ? 100 : 500);
         for (let r = 2; r <= totalRowsToValidate; r++) {
-            ws.getCell(`G${r}`).dataValidation = {
+            ws.getCell(`${catCol}${r}`).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: [`ValidationLists!$B$2:$B$${categories.length + 1}`],
@@ -6600,7 +6620,7 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
                 error: 'Please choose from Category options'
             };
 
-            ws.getCell(`H${r}`).dataValidation = {
+            ws.getCell(`${visitCol}${r}`).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: [`ValidationLists!$A$2:$A$${visitCombos.length + 1}`],
@@ -6611,7 +6631,22 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
         }
     } else if (type === 'Chemist') {
         const ws = wb.addWorksheet('Chemists');
-        ws.columns = [
+        ws.columns = isTemplate ? [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'Business Name', key: 'businessName', width: 28 },
+            { header: 'Proprietor Name', key: 'proprietorName', width: 24 },
+            { header: 'Certification', key: 'certifications', width: 20 },
+            { header: 'Birthday', key: 'birthday', width: 14 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Mobile', key: 'mobile', width: 18 },
+            { header: 'Address', key: 'address', width: 32 },
+            { header: 'City', key: 'city', width: 18 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ] : [
             { header: 'Sr no.', key: 'srNo', width: 8 },
             { header: 'UID', key: 'uid', width: 14 },
             { header: 'Business Name', key: 'businessName', width: 28 },
@@ -6636,7 +6671,7 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
 
         if (isTemplate) {
             ws.addRow({
-                srNo: 1, uid: 'CHM101', businessName: 'Life Care Pharmacy', proprietorName: 'Ramesh Patel',
+                srNo: 1, businessName: 'Life Care Pharmacy', proprietorName: 'Ramesh Patel',
                 certifications: 'D.Pharm', birthday: '1990-01-01', email: 'lifecare@example.com', mobile: '9898989898',
                 address: 'Shop 12, Station Road', city: 'Ahmedabad', headquarter: 'AHMEDABAD-PST-1', workingArea: 'Station Area',
                 extraInformation: '', userAllotted: '', status: 'Approved'
@@ -6653,7 +6688,25 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
         }
     } else if (type === 'Stockist') {
         const ws = wb.addWorksheet('Stockists');
-        ws.columns = [
+        ws.columns = isTemplate ? [
+            { header: 'Sr no.', key: 'srNo', width: 8 },
+            { header: 'Business Name', key: 'businessName', width: 28 },
+            { header: 'Contact Person', key: 'name', width: 24 },
+            { header: 'Certification', key: 'certifications', width: 18 },
+            { header: 'GST Number', key: 'gst', width: 20 },
+            { header: 'Drug License Number', key: 'drugLicense', width: 22 },
+            { header: 'Drug Expiry Date', key: 'drugExpiryDate', width: 16 },
+            { header: 'Establishment Date', key: 'establishmentDate', width: 16 },
+            { header: 'Mobile', key: 'mobile', width: 18 },
+            { header: 'Email', key: 'email', width: 26 },
+            { header: 'Address', key: 'address', width: 32 },
+            { header: 'City', key: 'city', width: 18 },
+            { header: 'Headquarter', key: 'headquarter', width: 22 },
+            { header: 'Working Area', key: 'workingArea', width: 22 },
+            { header: 'Extra Information', key: 'extraInformation', width: 28 },
+            { header: 'Allotted User', key: 'userAllotted', width: 20 },
+            { header: 'Status', key: 'status', width: 14 }
+        ] : [
             { header: 'Sr no.', key: 'srNo', width: 8 },
             { header: 'UID', key: 'uid', width: 14 },
             { header: 'Business Name', key: 'businessName', width: 28 },
@@ -6681,7 +6734,7 @@ async function generateDcsExcelWorkbook({ type, records = [], isTemplate = false
 
         if (isTemplate) {
             ws.addRow({
-                srNo: 1, uid: 'STK101', businessName: 'Apollo Distributors', name: 'Suresh Shah', certifications: 'ISO',
+                srNo: 1, businessName: 'Apollo Distributors', name: 'Suresh Shah', certifications: 'ISO',
                 gst: '24AAAAA0000A1Z5', drugLicense: '20B/21B-12345', drugExpiryDate: '2028-12-31', establishmentDate: '2010-04-01',
                 mobile: '9879879870', email: 'apollo@example.com', address: 'Plot 45, GIDC', city: 'Ahmedabad',
                 headquarter: 'AHMEDABAD-PST-1', workingArea: 'GIDC', extraInformation: '', userAllotted: '', status: 'Approved'
