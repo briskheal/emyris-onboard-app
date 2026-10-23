@@ -12859,6 +12859,39 @@ router.put('/profit-center/product-costs', async (req, res) => {
     }
 });
 
+// Bulk Update Margin % across all products in Master
+router.put('/profit-center/bulk-margin', async (req, res) => {
+    try {
+        const { XlProduct, sequelize } = require('../db');
+        const { marginPercent } = req.body;
+        if (marginPercent === undefined || marginPercent === null || isNaN(Number(marginPercent))) {
+            return res.status(400).json({ success: false, message: 'Valid marginPercent is required' });
+        }
+        const margin = Number(marginPercent);
+
+        // Update via Sequelize model
+        await XlProduct.update({ marginPercent: margin }, { where: {} });
+
+        // Direct raw query execution to ensure Postgres column is updated
+        try {
+            await sequelize.query('UPDATE xl_products SET "marginPercent" = :margin', {
+                replacements: { margin }
+            });
+        } catch (rawErr) {
+            console.log('Raw query fallback err:', rawErr.message);
+        }
+
+        res.json({
+            success: true,
+            message: `Profit margin updated to ${margin}% across all products in Master`,
+            marginPercent: margin
+        });
+    } catch (e) {
+        console.error('Error in PUT /profit-center/bulk-margin:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.post('/profit-center', async (req, res) => {
     try {
         const { XlProfitCenter } = require('../db');

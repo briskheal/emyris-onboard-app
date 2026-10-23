@@ -997,6 +997,10 @@ export default function CostCenterManagement() {
                     const employerPf = contrib.employerPf ?? ded.employeePf ?? 0;
                     const fieldExpTotal = Number(exp.total || ((exp.dailyAllowance || b.dailyAllowance || 0) + (exp.travel || b.travel || 0) + (exp.hotel || b.hotel || 0) + (exp.otherExpenses || b.otherExpenses || 0)));
 
+                    const totalPfToEpfo = Number(ded.employeePf || 0) + Number(employerPf);
+                    const netTakeHome = Number(ded.netSalary || ((sal?.gross || 0) - (ded.employeePf || 0) - (ded.pt || 0)));
+                    const govtRemittances = totalPfToEpfo + Number(ded.pt || 0);
+
                     return (
                       <div className="space-y-4">
                         {/* 1. TOP HORIZONTAL EXECUTIVE KPI STRIP (4 Side-by-side KPI boxes) */}
@@ -1009,20 +1013,20 @@ export default function CostCenterManagement() {
                             <span className="text-[10px] text-slate-500">Payable Days: {att ? `${att.payableDays}/${att.totalMonthDays}` : 'Full Month'}</span>
                           </div>
 
-                          <div className="bg-purple-950/20 p-3 rounded-xl border border-purple-500/30 shadow-sm">
-                            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Employer Matching PF</span>
-                            <span className="text-base font-black text-purple-300 font-mono mt-0.5 block">
-                              + ₹ {Number(employerPf).toLocaleString('en-IN')}
+                          <div className="bg-sky-950/30 p-3 rounded-xl border border-sky-500/40 shadow-sm">
+                            <span className="text-[10px] font-bold text-sky-300 uppercase tracking-wider block">Net Take-Home Salary</span>
+                            <span className="text-base font-black text-sky-400 font-mono mt-0.5 block">
+                              ₹ {netTakeHome.toLocaleString('en-IN')}
                             </span>
-                            <span className="text-[10px] text-purple-400/80">Company's Contribution (100%)</span>
+                            <span className="text-[10px] text-sky-400/80">Credited to Employee Bank</span>
                           </div>
 
-                          <div className="bg-amber-950/20 p-3 rounded-xl border border-amber-500/30 shadow-sm">
-                            <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">Approved Field Expenses</span>
-                            <span className="text-base font-black text-amber-300 font-mono mt-0.5 block">
-                              + ₹ {fieldExpTotal.toLocaleString('en-IN')}
+                          <div className="bg-purple-950/20 p-3 rounded-xl border border-purple-500/30 shadow-sm">
+                            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">PF &amp; PT Remittances</span>
+                            <span className="text-base font-black text-purple-300 font-mono mt-0.5 block">
+                              + ₹ {govtRemittances.toLocaleString('en-IN')}
                             </span>
-                            <span className="text-[10px] text-amber-400/80">DA + TA/Fuel + Hotel + Other</span>
+                            <span className="text-[10px] text-purple-400/80">EPFO: ₹{totalPfToEpfo.toLocaleString('en-IN')} • PT: ₹{Number(ded.pt || 0)}</span>
                           </div>
 
                           <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/30 p-3 rounded-xl border border-emerald-500/40 shadow-sm">
@@ -1030,7 +1034,7 @@ export default function CostCenterManagement() {
                             <span className="text-lg font-black text-emerald-400 font-mono mt-0.5 block">
                               ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
                             </span>
-                            <span className="text-[10px] text-emerald-400/80">Gross + Employer PF + Expenses</span>
+                            <span className="text-[10px] text-emerald-400/80">Real Outflow from Bank</span>
                           </div>
                         </div>
 
@@ -1120,45 +1124,78 @@ export default function CostCenterManagement() {
                             )}
                           </div>
 
-                          {/* RIGHT COLUMN: Contributions/Deductions, Field Expenses, & Total CTC */}
+                          {/* RIGHT COLUMN: Real Bank Outflow Breakdown & Field Expenses */}
                           <div className="space-y-4">
-                            {/* Company Contributions & Deductions */}
-                            <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
-                              <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider block pb-2 mb-2.5 border-b border-slate-800">
-                                🏛️ Company Contributions & Deductions
-                              </span>
+                            {/* REAL CASH OUTFLOW BREAKDOWN (Direct Bank Reconciliation) */}
+                            <div className="bg-slate-900/90 rounded-xl p-3.5 border border-sky-500/40 shadow-sm space-y-2">
+                              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                                <span className="text-[11px] font-black text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                  🏦 Real Cash Outflow from Company Bank
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  Direct Bank Debits
+                                </span>
+                              </div>
+                              
                               <div className="space-y-2 text-xs">
-                                <div className="flex justify-between items-center bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/25">
+                                <div className="flex justify-between items-center bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
                                   <div>
-                                    <span className="font-bold text-purple-300 block">Employer PF Contribution (Company Expense):</span>
-                                    <span className="text-[10px] text-slate-400 font-light">Matches 100% of employee PF deduction (up to ₹1,800)</span>
+                                    <span className="text-white font-bold block">1. Net Salary to Employee Account:</span>
+                                    <span className="text-[10px] text-slate-400 font-normal">Gross (₹{(sal?.gross || 0).toLocaleString('en-IN')}) minus PF &amp; PT deductions</span>
                                   </div>
-                                  <span className="font-mono font-bold text-purple-300 text-sm">
-                                    + ₹ {Number(employerPf).toLocaleString('en-IN')}
+                                  <span className="font-mono font-bold text-sky-400 text-sm">
+                                    ₹ {netTakeHome.toLocaleString('en-IN')}
                                   </span>
                                 </div>
-                                <div className="flex justify-between items-center text-slate-400 px-1 pt-0.5">
-                                  <span>Employee PF Deduction:</span>
-                                  <span className="font-mono text-rose-300">- ₹ {Number(ded.employeePf || 0).toLocaleString('en-IN')}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-slate-400 px-1">
-                                  <span>Professional Tax (PT):</span>
-                                  <span className="font-mono text-rose-300">- ₹ {Number(ded.pt || 0).toLocaleString('en-IN')}</span>
-                                </div>
-                                {ded.netSalary > 0 && (
-                                  <div className="flex justify-between items-center text-slate-200 px-1 pt-1.5 border-t border-slate-800 font-semibold">
-                                    <span>Net Take-Home Salary:</span>
-                                    <span className="font-mono font-bold text-sky-400">₹ {Number(ded.netSalary).toLocaleString('en-IN')}</span>
+
+                                <div className="flex justify-between items-center bg-purple-950/20 px-2.5 py-1.5 rounded-lg border border-purple-500/25">
+                                  <div>
+                                    <span className="text-purple-300 font-bold block">2. Total PF Remitted to EPFO:</span>
+                                    <span className="text-[10px] text-purple-400/80 font-normal">
+                                      ₹{Number(ded.employeePf || 0).toLocaleString('en-IN')} (Employee) + ₹{Number(employerPf).toLocaleString('en-IN')} (Company Matching)
+                                    </span>
                                   </div>
-                                )}
+                                  <span className="font-mono font-bold text-purple-300 text-sm">
+                                    + ₹ {totalPfToEpfo.toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-rose-950/20 px-2.5 py-1.5 rounded-lg border border-rose-500/25">
+                                  <div>
+                                    <span className="text-rose-300 font-bold block">3. Professional Tax (PT) Remitted:</span>
+                                    <span className="text-[10px] text-rose-400/80 font-normal">Deducted from employee &amp; deposited to State Govt</span>
+                                  </div>
+                                  <span className="font-mono font-bold text-rose-300 text-sm">
+                                    + ₹ {Number(ded.pt || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-amber-500/25">
+                                  <div>
+                                    <span className="text-amber-300 font-bold block">4. Approved Field Expenses Reimbursed:</span>
+                                    <span className="text-[10px] text-amber-400/80 font-normal">DA + TA/Fuel + Hotel + Other Expenses</span>
+                                  </div>
+                                  <span className="font-mono font-bold text-amber-300 text-sm">
+                                    + ₹ {fieldExpTotal.toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2 border-t border-slate-700/80 text-emerald-400 font-black text-sm">
+                                  <span className="text-xs text-white font-bold uppercase tracking-wider">
+                                    Total Real Cost to Company:
+                                  </span>
+                                  <span className="font-mono text-base text-emerald-400">
+                                    ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Approved Field Expenses Card */}
+                            {/* Approved Field Expenses Breakdown Card */}
                             <div className="bg-slate-900/80 rounded-xl p-3.5 border border-slate-700/80 shadow-sm">
                               <div className="flex justify-between items-center pb-2 mb-2.5 border-b border-slate-800">
                                 <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-                                  🚗 Approved Field Expenses
+                                  🚗 Field Expense Items Breakdown
                                 </span>
                                 <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30">
                                   Total: ₹ {fieldExpTotal.toLocaleString('en-IN')}
@@ -1178,7 +1215,7 @@ export default function CostCenterManagement() {
                                   </span>
                                 </div>
                                 <div className="bg-slate-800/60 p-2 rounded-lg border border-slate-700/40">
-                                  <span className="text-[10px] text-slate-400 block">Hotel & Boarding</span>
+                                  <span className="text-[10px] text-slate-400 block">Hotel &amp; Boarding</span>
                                   <span className="font-mono font-bold text-white text-xs mt-0.5 block">
                                     ₹ {Number(exp.hotel ?? b.hotel ?? 0).toLocaleString('en-IN')}
                                   </span>
@@ -1192,20 +1229,18 @@ export default function CostCenterManagement() {
                               </div>
                             </div>
 
-                            {/* Total Cost to Company Formula Card */}
-                            <div className="bg-gradient-to-r from-emerald-950/50 via-slate-900 to-sky-950/40 p-3.5 rounded-xl border border-emerald-500/40 shadow-lg flex items-center justify-between">
-                              <div>
-                                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">
-                                  Cost Center Formula (Total CTC + Field Expenses)
-                                </span>
-                                <span className="text-[11px] text-slate-300 font-mono mt-0.5 block">
-                                  Gross ({Number(sal?.gross || 0).toLocaleString('en-IN')}) + PF ({Number(employerPf).toLocaleString('en-IN')}) + Expenses ({fieldExpTotal.toLocaleString('en-IN')})
-                                </span>
+                            {/* Two-Way Formula Verification Note */}
+                            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-700/70 shadow-sm text-[11px] text-slate-400 space-y-1">
+                              <span className="font-bold text-slate-300 block uppercase tracking-wider text-[10px]">
+                                🔍 Dual Formula Reconciliation:
+                              </span>
+                              <div className="flex justify-between items-center text-slate-300 font-mono">
+                                <span>• Bank Outflow: Net ({netTakeHome.toLocaleString('en-IN')}) + Total PF ({totalPfToEpfo.toLocaleString('en-IN')}) + PT ({Number(ded.pt || 0)}) + Exp ({fieldExpTotal})</span>
+                                <span className="font-bold text-emerald-400">= ₹ {Number(detailItem.amount).toLocaleString('en-IN')}</span>
                               </div>
-                              <div className="text-right">
-                                <span className="text-xl font-mono font-black text-emerald-400">
-                                  ₹ {Number(detailItem.amount).toLocaleString('en-IN')}
-                                </span>
+                              <div className="flex justify-between items-center text-slate-400 font-mono">
+                                <span>• CTC Structure: Gross ({Number(sal?.gross || 0).toLocaleString('en-IN')}) + Co PF ({Number(employerPf).toLocaleString('en-IN')}) + Exp ({fieldExpTotal})</span>
+                                <span className="font-bold text-emerald-400">= ₹ {Number(detailItem.amount).toLocaleString('en-IN')}</span>
                               </div>
                             </div>
                           </div>

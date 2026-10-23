@@ -92,6 +92,11 @@ export default function ProfitCenterManagement() {
   const [editMarginPercent, setEditMarginPercent] = useState<string>('0');
   const [savingCost, setSavingCost] = useState<boolean>(false);
 
+  // Bulk Profit Margin % to Auto-Populate across All Products
+  const [bulkMarginInput, setBulkMarginInput] = useState<string>('');
+  const [bulkMarginSaving, setBulkMarginSaving] = useState<boolean>(false);
+  const [bulkMarginApplied, setBulkMarginApplied] = useState<boolean>(false);
+
   // Inline Editable Costs: Map of productId -> { purchaseCost, transportCost, marginPercent, saving, saved }
   const [inlineCosts, setInlineCosts] = useState<Record<string, { purchaseCost: number | string; transportCost: number | string; marginPercent: number | string; saving?: boolean; saved?: boolean }>>({});
 
@@ -185,6 +190,68 @@ export default function ProfitCenterManagement() {
         ...prev,
         [productId]: { ...prev[productId], saving: false }
       }));
+    }
+  };
+
+  // Bulk Apply Margin % to All Products
+  const handleApplyBulkMargin = async () => {
+    const marginNum = parseFloat(bulkMarginInput);
+    if (isNaN(marginNum) || marginNum < 0) {
+      alert('Please enter a valid margin percentage (e.g. 30).');
+      return;
+    }
+
+    setBulkMarginSaving(true);
+    try {
+      const res = await axios.put('/api/xl/profit-center/bulk-margin', {
+        marginPercent: marginNum
+      });
+
+      if (res.data?.success) {
+        // 1. Auto-populate all product margin boxes in inlineCosts state
+        setInlineCosts(prev => {
+          const next = { ...prev };
+          records.forEach(r => {
+            const id = r.productId || r._id;
+            next[id] = {
+              ...(next[id] || { purchaseCost: r.purchaseCost || 0, transportCost: r.transportCost || 0 }),
+              marginPercent: marginNum,
+              saved: true
+            };
+          });
+          return next;
+        });
+
+        // 2. Immediately recalculate all records with the new margin
+        setRecords(prev => prev.map(r => {
+          const id = r.productId || r._id;
+          const purc = inlineCosts[id]?.purchaseCost !== undefined 
+            ? Number(inlineCosts[id].purchaseCost) 
+            : Number(r.purchaseCost || 0);
+          const trans = inlineCosts[id]?.transportCost !== undefined 
+            ? Number(inlineCosts[id].transportCost) 
+            : Number(r.transportCost || 0);
+          const baseCost = purc + trans;
+          const totalUnitCost = Number((baseCost * (1 + marginNum / 100)).toFixed(2));
+          const costOfProduct = r.quantity * totalUnitCost;
+          const actualProfit = r.sellingPrice - costOfProduct;
+          return {
+            ...r,
+            marginPercent: marginNum,
+            totalUnitCost,
+            costOfProduct,
+            actualProfit
+          };
+        }));
+
+        setBulkMarginApplied(true);
+        setTimeout(() => setBulkMarginApplied(false), 3000);
+      }
+    } catch (err: any) {
+      console.error('Error applying bulk margin:', err);
+      alert(err.response?.data?.message || 'Failed to apply profit margin to all products');
+    } finally {
+      setBulkMarginSaving(false);
     }
   };
 
@@ -1631,7 +1698,7 @@ export default function ProfitCenterManagement() {
 
           </div>
 
-          {/* MAIN VIEW: PRODUCTS TABLE OR ROI VIEW (Free flow layout, no double scrollbars) */}
+          {/* MAIN VIEW: PRODUCTS TABLE OR ROI VIEW (Free flow layout, frozen header & product names) */}
           {activeTab === 'PRODUCTS' ? (
             <div className="w-full bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg flex flex-col mb-8">
               <div className="px-4 py-2.5 bg-slate-800/90 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3">
@@ -1645,6 +1712,48 @@ export default function ProfitCenterManagement() {
                   <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full font-bold">
                     Purc. &amp; Transport Editable by Admin
                   </span>
+
+                  {/* PROFIT MARGIN % BUTTON & INPUT TO AUTO-POPULATE ALL PRODUCTS */}
+                  <div className="flex items-center gap-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg px-2.5 py-1 shadow-sm">
+                    <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                      Profit Margin:
+                    </span>
+                    <div className="flex items-center">
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="any"
+                        value={bulkMarginInput}
+                        onChange={(e) => setBulkMarginInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleApplyBulkMargin();
+                        }}
+                        placeholder="30"
+                        className="w-14 bg-slate-900 border border-amber-500/60 rounded px-1.5 py-0.5 text-right font-mono font-bold text-amber-300 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"
+                        title="Enter profit margin % to auto-populate all product margin boxes"
+                      />
+                      <span className="text-xs font-bold text-amber-400 ml-1">%</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleApplyBulkMargin}
+                      disabled={bulkMarginSaving || bulkMarginInput === ''}
+                      className="ml-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 font-black text-[10px] px-2.5 py-1 rounded transition-all shadow-sm disabled:opacity-50 flex items-center gap-1 uppercase tracking-wide cursor-pointer"
+                      title="Click to auto-populate this margin % into all product margin boxes and recalculate profits"
+                    >
+                      {bulkMarginSaving ? (
+                        <>
+                          <RefreshCw size={11} className="animate-spin text-slate-950" />
+                          <span>Applying...</span>
+                        </>
+                      ) : bulkMarginApplied ? (
+                        <span className="text-emerald-950 font-black">✓ Applied to All</span>
+                      ) : (
+                        <span>Apply to All Products</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -1662,37 +1771,46 @@ export default function ProfitCenterManagement() {
                 </div>
               </div>
 
-              {/* Free Flow Table Container (no vertical scroll constraint, no double scrollbar) */}
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-center border-collapse border border-slate-700 text-xs whitespace-nowrap">
+              {/* Table Container: Frozen Table Header (top) and Frozen Product Names (left), rest scrolls smoothly in 2D */}
+              <div className="overflow-auto w-full max-h-[calc(100vh-270px)] min-h-[480px] border border-slate-700/80 rounded-b-none relative">
+                <table className="w-full text-center border-separate border-spacing-0 text-xs whitespace-nowrap">
                   <thead>
-                    <tr className="bg-slate-900/95 text-slate-300 font-bold text-[10px] uppercase tracking-wider sticky top-0 z-10 shadow-md">
-                      <th className="border border-slate-700 px-2.5 py-2.5 w-10">#</th>
-                      <th className="border border-slate-700 px-3 py-2.5 text-left min-w-[200px]">Product Name</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">MRP (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTR (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">PTS (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right">CUS (₹)</th>
-                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[95px]">
+                    <tr className="bg-slate-950 text-slate-300 font-bold text-[10px] uppercase tracking-wider">
+                      {/* Frozen Column 1: Sr No. (#) */}
+                      <th className="sticky top-0 left-0 z-30 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 w-12 min-w-[48px] max-w-[48px] text-center shadow-sm">
+                        #
+                      </th>
+
+                      {/* Frozen Column 2: Product Name */}
+                      <th className="sticky top-0 left-[48px] z-30 bg-slate-950 border-b-2 border-r-2 border-slate-700 border-r-slate-500 px-3 py-2.5 text-left min-w-[240px] max-w-[280px] shadow-[4px_0_10px_-2px_rgba(0,0,0,0.6)]">
+                        Product Name
+                      </th>
+
+                      {/* Scrollable Columns with Frozen Sticky Top Header */}
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right">MRP (₹)</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right">PTR (₹)</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right">PTS (₹)</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right">CUS (₹)</th>
+                      <th className="sticky top-0 z-20 bg-amber-950/90 border-b-2 border-r border-slate-700 px-2 py-2.5 text-center text-amber-300 min-w-[95px]">
                         Purc. Cost (₹) ✎
                       </th>
-                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[95px]">
+                      <th className="sticky top-0 z-20 bg-amber-950/90 border-b-2 border-r border-slate-700 px-2 py-2.5 text-center text-amber-300 min-w-[95px]">
                         Transport (₹) ✎
                       </th>
-                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-amber-950/30 text-amber-300 min-w-[85px]">
+                      <th className="sticky top-0 z-20 bg-amber-950/90 border-b-2 border-r border-slate-700 px-2 py-2.5 text-center text-amber-300 min-w-[85px]">
                         Margin (%) ✎
                       </th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right bg-purple-950/30 text-purple-300 font-bold">
+                      <th className="sticky top-0 z-20 bg-purple-950/90 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right text-purple-300 font-bold">
                         Total Unit Cost (₹)
                       </th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right bg-sky-950/20 text-sky-300">Sold Price</th>
-                      <th className="border border-slate-700 px-2 py-2.5 text-center bg-sky-950/20 text-sky-300">Qty Sold</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right text-white">Selling Value (₹)</th>
-                      <th className="border border-slate-700 px-2.5 py-2.5 text-right text-slate-400">Total Cost (₹)</th>
-                      <th className="border border-slate-700 px-3 py-2.5 text-right font-black text-emerald-400 bg-emerald-950/20">
+                      <th className="sticky top-0 z-20 bg-sky-950/80 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right text-sky-300">Sold Price</th>
+                      <th className="sticky top-0 z-20 bg-sky-950/80 border-b-2 border-r border-slate-700 px-2 py-2.5 text-center text-sky-300">Qty Sold</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right text-white">Selling Value (₹)</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-r border-slate-700 px-2.5 py-2.5 text-right text-slate-400">Total Cost (₹)</th>
+                      <th className="sticky top-0 z-20 bg-emerald-950/90 border-b-2 border-r border-slate-700 px-3 py-2.5 text-right font-black text-emerald-400">
                         Actual Profit (₹)
                       </th>
-                      <th className="border border-slate-700 px-2 py-2.5 w-16">Status</th>
+                      <th className="sticky top-0 z-20 bg-slate-950 border-b-2 border-slate-700 px-2 py-2.5 w-16">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1722,21 +1840,28 @@ export default function ProfitCenterManagement() {
                         const profit = r.sellingPrice - costOfProd;
 
                         return (
-                          <tr key={id || i} className="hover:bg-slate-700/40 transition-colors">
-                            <td className="border border-slate-700 px-2 py-2 text-slate-500 font-mono text-[11px]">{i + 1}</td>
-                            <td className="border border-slate-700 px-3 py-2 text-left font-bold text-white">
-                              <div>{r.productName}</div>
+                          <tr key={id || i} className="group hover:bg-slate-800/80 transition-colors">
+                            {/* Frozen Column 1: Sr No. (#) */}
+                            <td className="sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800 border-b border-r border-slate-700/80 px-2 py-2 text-slate-400 font-mono text-[11px] w-12 min-w-[48px] max-w-[48px] text-center shadow-sm">
+                              {i + 1}
+                            </td>
+
+                            {/* Frozen Column 2: Product Name */}
+                            <td className="sticky left-[48px] z-10 bg-slate-900 group-hover:bg-slate-800 border-b border-r-2 border-slate-700/80 border-r-slate-500 px-3 py-2 text-left font-bold text-white min-w-[240px] max-w-[280px] shadow-[4px_0_10px_-2px_rgba(0,0,0,0.6)]">
+                              <div className="truncate max-w-[260px]" title={r.productName}>{r.productName}</div>
                               {r.composition && (
-                                <div className="text-[10px] text-slate-400 font-normal truncate max-w-xs">{r.composition}</div>
+                                <div className="text-[10px] text-slate-400 font-normal truncate max-w-[260px]" title={r.composition}>{r.composition}</div>
                               )}
                             </td>
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.mrp || 0}</td>
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.ptr || 0}</td>
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-300">{r.pts || 0}</td>
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
+
+                            {/* Scrollable Data Columns */}
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono text-slate-300">{r.mrp || 0}</td>
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono text-slate-300">{r.ptr || 0}</td>
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono text-slate-300">{r.pts || 0}</td>
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono text-slate-400">{r.cus > 0 ? r.cus : '-'}</td>
                             
                             {/* Editable Purchase Cost Field */}
-                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                            <td className="border-b border-r border-slate-700/80 px-1 py-1 text-center bg-amber-950/20 group-hover:bg-amber-950/30">
                               <div className="flex items-center justify-center gap-0.5">
                                 <span className="text-[10px] text-amber-400 font-bold">₹</span>
                                 <input
@@ -1755,7 +1880,7 @@ export default function ProfitCenterManagement() {
                             </td>
 
                             {/* Editable Transport Cost Field */}
-                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                            <td className="border-b border-r border-slate-700/80 px-1 py-1 text-center bg-amber-950/20 group-hover:bg-amber-950/30">
                               <div className="flex items-center justify-center gap-0.5">
                                 <span className="text-[10px] text-amber-400 font-bold">₹</span>
                                 <input
@@ -1774,7 +1899,7 @@ export default function ProfitCenterManagement() {
                             </td>
 
                             {/* Editable Margin % Field (Amber colored) */}
-                            <td className="border border-slate-700 px-1 py-1 text-center bg-amber-950/20">
+                            <td className="border-b border-r border-slate-700/80 px-1 py-1 text-center bg-amber-950/20 group-hover:bg-amber-950/30">
                               <div className="flex items-center justify-center gap-0.5">
                                 <input
                                   type="number"
@@ -1793,12 +1918,12 @@ export default function ProfitCenterManagement() {
                             </td>
 
                             {/* Derived Total Unit Cost = (Purc + Transport) + Margin% */}
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-black text-purple-300 bg-purple-950/20">
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono font-black text-purple-300 bg-purple-950/20 group-hover:bg-purple-950/30">
                               ₹ {unitCost.toLocaleString('en-IN')}
                             </td>
 
                             {/* Sold Price (with Avg indicator if multi-HQ) */}
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-semibold text-sky-300 bg-sky-950/10">
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono font-semibold text-sky-300 bg-sky-950/10 group-hover:bg-sky-950/20">
                               ₹ {Number(r.soldPrice || 0).toLocaleString('en-IN')}
                               <span className={`text-[9px] ml-1.5 px-1 py-0.2 rounded font-bold ${
                                 r.priceType === 'AVG'
@@ -1810,7 +1935,7 @@ export default function ProfitCenterManagement() {
                             </td>
 
                             {/* Qty Sold */}
-                            <td className="border border-slate-700 px-2 py-2 text-center font-mono font-bold text-white bg-sky-950/10">
+                            <td className="border-b border-r border-slate-700/80 px-2 py-2 text-center font-mono font-bold text-white bg-sky-950/10 group-hover:bg-sky-950/20">
                               {r.quantity > 0 ? (
                                 <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
                                   {r.quantity}
@@ -1821,20 +1946,20 @@ export default function ProfitCenterManagement() {
                             </td>
 
                             {/* Selling Value, Total Cost, Actual Profit */}
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono font-bold text-white">
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono font-bold text-white">
                               ₹ {r.sellingPrice.toLocaleString('en-IN')}
                             </td>
-                            <td className="border border-slate-700 px-2.5 py-2 text-right font-mono text-slate-400">
+                            <td className="border-b border-r border-slate-700/80 px-2.5 py-2 text-right font-mono text-slate-400">
                               ₹ {costOfProd.toLocaleString('en-IN')}
                             </td>
-                            <td className={`border border-slate-700 px-3 py-2 text-right font-mono font-black bg-emerald-950/15 ${
+                            <td className={`border-b border-r border-slate-700/80 px-3 py-2 text-right font-mono font-black bg-emerald-950/15 group-hover:bg-emerald-950/25 ${
                               profit >= 0 ? 'text-emerald-400' : 'text-rose-400'
                             }`}>
                               ₹ {profit.toLocaleString('en-IN')}
                             </td>
 
                             {/* Save Status Indicator */}
-                            <td className="border border-slate-700 px-2 py-1.5 text-center">
+                            <td className="border-b border-slate-700/80 px-2 py-1.5 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 {inline?.saving ? (
                                   <span className="text-[10px] text-amber-400 font-bold flex items-center justify-center gap-1 animate-pulse">
