@@ -71,9 +71,10 @@ export default function PrimarySalesReportView() {
         endDate,
         type: reportType,
         dateWise: String(dateWise),
-        stockist: row.stockist,
+        stockist: row.stockist || row.stockistName,
         headquarter: row.headquarter,
         user: row.employeeId || selectedUser?.employeeId,
+        employeeId: selectedUser?.employeeId,
         date: row.date
       }
     });

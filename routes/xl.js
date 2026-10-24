@@ -7121,7 +7121,8 @@ router.get('/reports/primary-sales', async (req, res) => {
 
 router.get('/reports/primary-sales/detail', async (req, res) => {
     try {
-        const { XlPrimarySales, sequelize } = require('../db');
+        const { XlPrimarySales, XlStockist, sequelize } = require('../db');
+        const { Op } = require('sequelize');
         const { startDate, endDate, type, dateWise, stockist, headquarter, user, date } = req.query;
 
         let whereClauses = [];
@@ -7150,16 +7151,32 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         }
 
         if (type === 'Stockist' && stockist) {
-            whereClauses.push('p.stockist = :stockist');
-            replacements.stockist = stockist;
+            const targetStockist = await XlStockist.findOne({
+                where: { [Op.or]: [{ uid: stockist }, { _id: stockist }, { businessName: stockist }, { name: stockist }] }
+            });
+            const searchStockistIds = [stockist];
+            if (targetStockist) {
+                if (targetStockist.uid) searchStockistIds.push(targetStockist.uid);
+                if (targetStockist._id) searchStockistIds.push(targetStockist._id);
+                if (targetStockist.businessName) searchStockistIds.push(targetStockist.businessName);
+                if (targetStockist.name) searchStockistIds.push(targetStockist.name);
+            }
+            whereClauses.push('p.stockist IN (:searchStockistIds)');
+            replacements.searchStockistIds = searchStockistIds;
         } else if (type === 'Headquarter' && headquarter) {
             whereClauses.push('p.headquarter = :headquarter');
             replacements.headquarter = headquarter;
         } else if (type === 'User' && user) {
             whereClauses.push('p.\"employeeId\" = :user');
             replacements.user = user;
-        } else if (type === 'Date' && date) {
-            whereClauses.push('COALESCE(p."invoiceDate", p.date) = :date');
+        }
+
+        if (date) {
+            whereClauses.push(`(
+                COALESCE(p."invoiceDate", p.date) = :date 
+                OR p.date = :date 
+                OR p."invoiceDate" = :date
+            )`);
             replacements.date = date;
         }
 
@@ -7185,10 +7202,15 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             GROUP BY ${groupQuery}
         `;
 
-        const data = await sequelize.query(sql, {
-            replacements: replacements,
-            type: sequelize.QueryTypes.SELECT
-        });
+        let data = [];
+        try {
+            data = await sequelize.query(sql, {
+                replacements: replacements,
+                type: sequelize.QueryTypes.SELECT
+            });
+        } catch(sqlErr) {
+            console.error('Direct items SQL error, attempting fallback:', sqlErr.message);
+        }
 
         // Map product names
         const { XlProduct } = require('../db');
@@ -7198,22 +7220,76 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             const name = pr.productName || pr.name || pr.uid || pr._id;
             if (pr.uid) prodMap[pr.uid] = name;
             if (pr._id) prodMap[pr._id] = name;
+            if (pr.name) prodMap[pr.name] = name;
+            if (pr.productName) prodMap[pr.productName] = name;
         });
 
-        data.forEach(d => {
-            if (d.product && prodMap[d.product]) {
-                d.productName = prodMap[d.product];
-            }
-            if (d.date) {
-                d.displayDate = toDisplayDate(d.date);
-            }
-            // Add quantity/averagePrice safely for fallback mapping
-            d.quantity = Number(d.quantity || 0);
-            d.averagePrice = Number(d.averagePrice || 0);
-            d.totalSales = Number(d.totalSales || 0);
-        });
+        // Fallback: If relational items table returned 0 items, extract from productsData JSON on matching sales
+        if (!data || data.length === 0) {
+            try {
+                const salesFallback = await sequelize.query(`
+                    SELECT p."_id", p."productsData", p."netInvValue", COALESCE(p."invoiceDate", p.date) as date
+                    FROM xl_primary_sales p
+                    ${whereSql}
+                `, { replacements, type: sequelize.QueryTypes.SELECT });
 
-        res.json({ success: true, data });
+                const itemMap = {};
+                salesFallback.forEach(sale => {
+                    if (sale.productsData) {
+                        try {
+                            let parsed = typeof sale.productsData === 'string' ? JSON.parse(sale.productsData) : sale.productsData;
+                            if (!Array.isArray(parsed)) parsed = Object.values(parsed || {});
+                            parsed.forEach(item => {
+                                const prodId = item.productId || item.product || item.id || item._id;
+                                if (!prodId) return;
+                                const qty = Number(item.qty || item.quantity || 0);
+                                const price = Number(item.basePrice || item.customPrice || item.rate || item.price || 0);
+                                const total = Number(item.totalSales || item.total || (qty * price) || 0);
+
+                                if (!itemMap[prodId]) {
+                                    itemMap[prodId] = {
+                                        product: prodId,
+                                        productName: item.productName || item.name || prodMap[prodId] || prodId,
+                                        quantity: 0,
+                                        totalSales: 0,
+                                        prices: []
+                                    };
+                                }
+                                itemMap[prodId].quantity += qty;
+                                itemMap[prodId].totalSales += total;
+                                if (price > 0) itemMap[prodId].prices.push(price);
+                            });
+                        } catch(e) {}
+                    }
+                });
+
+                data = Object.values(itemMap).map(it => ({
+                    product: it.product,
+                    productName: prodMap[it.product] || it.productName,
+                    quantity: it.quantity,
+                    averagePrice: it.quantity > 0 && it.totalSales > 0 
+                        ? Math.round(it.totalSales / it.quantity) 
+                        : (it.prices.length > 0 ? Math.round(it.prices.reduce((a, b) => a + b, 0) / it.prices.length) : 0),
+                    totalSales: Math.round(it.totalSales)
+                }));
+            } catch(fbErr) {
+                console.error('Fallback productsData error:', fbErr.message);
+            }
+        } else {
+            data.forEach(d => {
+                if (d.product && prodMap[d.product]) {
+                    d.productName = prodMap[d.product];
+                }
+                if (d.date) {
+                    d.displayDate = toDisplayDate(d.date);
+                }
+                d.quantity = Number(d.quantity || 0);
+                d.averagePrice = Number(d.averagePrice || 0);
+                d.totalSales = Number(d.totalSales || 0);
+            });
+        }
+
+        res.json({ success: true, data: data || [] });
     } catch (error) {
         console.error('Detail Error:', error);
         res.status(500).json({ success: false, error: 'Failed to fetch details: ' + error.message });
