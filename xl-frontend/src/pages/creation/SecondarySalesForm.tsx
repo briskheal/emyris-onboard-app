@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Plus, Trash2, Search, X, ChevronDown } from 'lucide-react';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 export default function SecondarySalesForm() {
   const navigate = useNavigate();
@@ -334,7 +335,7 @@ export default function SecondarySalesForm() {
             <div>
               <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Year</label>
               <select disabled={isLocked} value={header.year} onChange={e => setHeader({...header, year: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none">
-                {[2024,2025,2026,2027].map(y => ( <option key={y} value={y}>{y}</option> ))}
+                {getDynamicYears(2, 2).map(y => ( <option key={y} value={y}>{y}</option> ))}
               </select>
             </div>
           </div>

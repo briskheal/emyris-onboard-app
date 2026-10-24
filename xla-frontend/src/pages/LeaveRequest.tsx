@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import CustomSelect from '../components/CustomSelect';
+import { getCurrentFinancialYear } from '../utils/dateUtils';
 
 export default function LeaveRequest() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function LeaveRequest() {
   const fetchBalances = async (empId: string) => {
     if (!empId) { setBalances([]); return; }
     try {
-      const year = new Date().getMonth() >= 3 ? `${new Date().getFullYear()}-${new Date().getFullYear()+1}` : `${new Date().getFullYear()-1}-${new Date().getFullYear()}`;
+      const year = getCurrentFinancialYear();
       const res = await axios.get(`/api/xl/assigned-leaves/my?employeeId=${empId}&year=${year}`);
       setBalances(res.data.data || []);
     } catch(e) {}
@@ -425,7 +426,7 @@ export default function LeaveRequest() {
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/40 flex items-center justify-between text-[10px] text-slate-400">
-                  <span>Year: <strong className="text-slate-300">2026-2027</strong></span>
+                  <span>Year: <strong className="text-slate-300">{getCurrentFinancialYear()}</strong></span>
                   <span className="text-emerald-400 font-semibold">Active Quota</span>
                 </div>
               </div>
@@ -439,7 +440,7 @@ export default function LeaveRequest() {
                   Select an employee from the form to view their live available balance, used days, and remaining leaves.
                 </p>
                 <div className="mt-3 px-2.5 py-1 rounded bg-slate-900/60 border border-slate-700/50 text-[10px] text-slate-300">
-                  Financial Year <span className="text-sky-400 font-bold">2026-2027</span>
+                  Financial Year <span className="text-sky-400 font-bold">{getCurrentFinancialYear()}</span>
                 </div>
               </div>
             )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { TrendingUp, User, ChevronDown, CheckCircle2, MapPin, Navigation, Clock, ShieldCheck } from 'lucide-react';
+import { getDynamicYears } from '../utils/dateUtils';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -374,7 +375,7 @@ export default function Dashboard() {
               {isYearOpen && (
                 <div className="absolute left-0 right-0 mt-2 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden py-1">
                   <div className="max-h-52 overflow-y-auto divide-y divide-slate-700/50">
-                    {['2024', '2025', '2026', '2027', '2028'].map((y) => {
+                    {getDynamicYears(2, 2).map((y) => {
                       const isSelected = selectedYear === y;
                       return (
                         <button

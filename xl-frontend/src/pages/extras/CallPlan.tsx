@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2, BarChart2, AlertCircle, Send, Eye } from 'lucide-react';
 import axios from 'axios';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 interface ProductSelect { product: string; qty: number; }
 interface GiftSelect { item: string; qty: number; }
@@ -457,7 +458,7 @@ function CallPlan() {
             </button>
             {showYearDropdown && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-40 max-h-60 overflow-y-auto">
-                {['2025','2026','2027','2028'].map(y => (
+                {getDynamicYears(2, 2).map(y => (
                   <button key={y} onClick={() => { setYear(y); setShowYearDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0">
                     {y}
                   </button>

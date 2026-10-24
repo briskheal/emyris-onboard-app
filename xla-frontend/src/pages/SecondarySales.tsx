@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { formatStorageDate, toInputDateValue } from '../utils/dateUtils';
+import { formatStorageDate, toInputDateValue, getDynamicYears } from '../utils/dateUtils';
 
 const todayFormatted = () => {
   const d = new Date();
@@ -50,7 +50,7 @@ export default function SecondarySales() {
   const monthOptions = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
-  const yearOptions = ['2023', '2024', '2025', '2026', '2027', '2028'];
+  const yearOptions = getDynamicYears(3, 2).map(String);
 
   useEffect(() => {
     const fetchData = async () => {

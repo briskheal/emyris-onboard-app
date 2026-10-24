@@ -10,6 +10,7 @@ import * as htmlToImage from 'html-to-image';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import CustomUserSelect from '../components/CustomUserSelect';
+import { getDynamicYears } from '../utils/dateUtils';
 
 interface UserItem {
   _id: string;
@@ -1416,7 +1417,7 @@ export default function GeoLocationAnalysisReport() {
                     onChange={(e) => setArchiveYear(Number(e.target.value))}
                     className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   >
-                    {[2025, 2026, 2027, 2028].map(y => (
+                    {getDynamicYears(2, 2).map(y => (
                       <option key={y} value={y}>{y}</option>
                     ))}
                   </select>

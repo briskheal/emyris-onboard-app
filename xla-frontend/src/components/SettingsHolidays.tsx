@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Trash2, CheckSquare, ChevronDown, X, Calendar } from 'lucide-react';
+import { getDynamicYears } from '../utils/dateUtils';
 
 function formatDDMMYYYY(dateStr: string) {
   if (!dateStr) return '-';
@@ -121,7 +122,7 @@ export default function SettingsHolidays() {
   };
 
   const dynamicYears = Array.from(new Set([
-    '2025', '2026', '2027', '2028',
+    ...getDynamicYears(2, 2),
     ...holidays.map(h => String(h.date || '').slice(0, 4)).filter(Boolean)
   ])).sort();
 

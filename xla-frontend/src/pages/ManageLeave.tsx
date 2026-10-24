@@ -4,14 +4,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getDynamicFinancialYears, getCurrentFinancialYear } from '../utils/dateUtils';
 
-const YEAR_OPTIONS = [
-  { value: '2024-2025', label: '2024-2025' },
-  { value: '2025-2026', label: '2025-2026' },
-  { value: '2026-2027', label: '2026-2027' },
-  { value: '2027-2028', label: '2027-2028' },
-  { value: '2028-2029', label: '2028-2029' }
-];
+const YEAR_OPTIONS = getDynamicFinancialYears(2, 2).map(fy => ({ value: fy, label: fy }));
 
 function CreateLeaveTypeTab() {
   const [types, setTypes] = useState([]);
@@ -168,7 +163,7 @@ function CreateLeaveTypeTab() {
 function AssignLeaveTab({ users }: { users: any[] }) {
   const [types, setTypes] = useState([]);
   const [assigned, setAssigned] = useState([]);
-  const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', leaveType: '', count: '', used: '' });
+  const [formData, setFormData] = useState({ year: getCurrentFinancialYear(), employeeId: '', leaveType: '', count: '', used: '' });
   
   const fetchAssigned = async () => {
     if(!formData.employeeId) { setAssigned([]); return; }
@@ -282,7 +277,7 @@ function AssignLeaveTab({ users }: { users: any[] }) {
 
 function AssignedLeavesTab({ users }: { users: any[] }) {
   const [data, setData] = useState<any[]>([]);
-  const [year, setYear] = useState('2026-2027');
+  const [year, setYear] = useState(getCurrentFinancialYear());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   
   const [editItem, setEditItem] = useState<any>(null);
@@ -661,7 +656,7 @@ function CreateLeaveTemplateTab() {
 
 function AssignLeaveTemplateTab({ users }: { users: any[] }) {
   const [templates, setTemplates] = useState([]);
-  const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', templateId: '' });
+  const [formData, setFormData] = useState({ year: getCurrentFinancialYear(), employeeId: '', templateId: '' });
   
   useEffect(() => {
     axios.get('/api/xl/leave-templates').then(res => setTemplates(res.data.data||[]));
@@ -684,8 +679,9 @@ function AssignLeaveTemplateTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT YEAR *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.year} onChange={e=>setFormData({...formData, year:e.target.value})}>
-            <option>2026-2027</option>
-            <option>2027-2028</option>
+            {getDynamicFinancialYears(2, 2).map(fy => (
+              <option key={fy} value={fy}>{fy}</option>
+            ))}
           </select>
         </div>
         <div>

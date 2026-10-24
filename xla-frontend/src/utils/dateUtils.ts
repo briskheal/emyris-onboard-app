@@ -105,3 +105,40 @@ export function formatStorageDate(dateInput: string | Date | null | undefined): 
 export function toInputDateValue(dateStr: string | null | undefined): string {
   return formatStorageDate(dateStr);
 }
+
+/**
+ * Generates an array of years dynamically anchored around the current calendar year.
+ * e.g. for 2026 with past=2, future=2: ['2024', '2025', '2026', '2027', '2028']
+ * When calendar rolls to 2027: ['2025', '2026', '2027', '2028', '2029']
+ */
+export function getDynamicYears(pastYears = 2, futureYears = 2): string[] {
+  const current = new Date().getFullYear();
+  const years: string[] = [];
+  for (let y = current - pastYears; y <= current + futureYears; y++) {
+    years.push(String(y));
+  }
+  return years;
+}
+
+/**
+ * Generates financial years dynamically based on current date.
+ * (April 1st roll-over for Indian Financial Year)
+ * e.g. ['2024-2025', '2025-2026', '2026-2027', '2027-2028', '2028-2029']
+ */
+export function getDynamicFinancialYears(pastCount = 2, futureCount = 2): string[] {
+  const now = new Date();
+  const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const list: string[] = [];
+  for (let i = -pastCount; i <= futureCount; i++) {
+    const y = startYear + i;
+    list.push(`${y}-${y + 1}`);
+  }
+  return list;
+}
+
+export function getCurrentFinancialYear(): string {
+  const now = new Date();
+  const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+

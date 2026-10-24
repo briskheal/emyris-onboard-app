@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Edit2, Upload, X, CheckCircle2, Info, FileText } from 'lucide-react';
 import axios from 'axios';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 const convertToWebp = (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -519,7 +520,7 @@ export default function Expense() {
              </div>
              <div className="flex-1 relative">
                 <select value={selectedYear} onChange={e=>setSelectedYear(parseInt(e.target.value))} className="w-full bg-transparent border border-sky-500/50 text-white rounded-lg p-2.5 appearance-none focus:outline-none">
-                  {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y} className="bg-[#1a1e2d]">{y}</option>)}
+                  {getDynamicYears(2, 2).map(y => <option key={y} value={y} className="bg-[#1a1e2d]">{y}</option>)}
                 </select>
                 <ChevronLeft className="absolute right-3 top-3 rotate-270 text-sky-500 pointer-events-none" size={16} />
              </div>

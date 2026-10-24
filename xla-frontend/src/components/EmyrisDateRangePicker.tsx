@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getDynamicYears } from '../utils/dateUtils';
 
 interface EmyrisDateRangePickerProps {
   startDate: Date | null;
@@ -8,7 +9,7 @@ interface EmyrisDateRangePickerProps {
 }
 
 export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: EmyrisDateRangePickerProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 8, 1)); // September 2026 default based on screenshot
+  const [currentMonth, setCurrentMonth] = useState(() => startDate || new Date());
 
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -203,7 +204,7 @@ export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: 
               value={currentMonth.getFullYear()}
               onChange={(e) => setCurrentMonth(new Date(parseInt(e.target.value), currentMonth.getMonth(), 1))}
             >
-              {[2024, 2025, 2026, 2027, 2028].map(y => (
+              {getDynamicYears(3, 2).map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>

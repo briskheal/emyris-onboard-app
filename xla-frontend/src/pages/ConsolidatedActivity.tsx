@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, CalendarDays, User, Store, Building2, ClipboardList, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { formatDDMMYYYY } from '../utils/dateUtils';
+import { formatDDMMYYYY, getDynamicYears } from '../utils/dateUtils';
 
 export default function ConsolidatedActivity() {
   const navigate = useNavigate();
@@ -118,7 +118,7 @@ export default function ConsolidatedActivity() {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-slate-700 border border-slate-600 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none"
             >
-              {[2025, 2026, 2027].map(y => (
+              {getDynamicYears(2, 2).map(y => (
                 <option key={y} value={String(y)}>{y}</option>
               ))}
             </select>

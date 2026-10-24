@@ -6,6 +6,7 @@ import {
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import ReportUserFilter, { SelectedReportUser } from '../../components/ReportUserFilter';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 const MONTHS = [
   { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
@@ -152,7 +153,7 @@ export default function MissedReportsView() {
             onChange={(e) => setYear(e.target.value)}
             className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white"
           >
-            {['2024', '2025', '2026', '2027', '2028'].map(y => (
+            {getDynamicYears(2, 2).map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>

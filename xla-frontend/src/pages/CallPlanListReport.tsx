@@ -7,6 +7,7 @@ import {
 import * as XLSX from 'xlsx-js-style';
 import CustomLocationSelect from '../components/CustomLocationSelect';
 import CustomUserSelect from '../components/CustomUserSelect';
+import { getDynamicYears } from '../utils/dateUtils';
 
 const MONTHS = [
   { label: 'January', value: '01' },
@@ -23,7 +24,7 @@ const MONTHS = [
   { label: 'December', value: '12' },
 ];
 
-const YEARS = ['2024', '2025', '2026', '2027', '2028'];
+const YEARS = getDynamicYears(2, 2);
 
 // Helper to format date string to DD-MM-YYYY (e.g. 01-10-2026)
 const formatDisplayDate = (dStr: string) => {

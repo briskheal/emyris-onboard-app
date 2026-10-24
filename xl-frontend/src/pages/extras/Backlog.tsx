@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, Lock, X } from 'lucide-react';
 import axios from 'axios';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 const getUserId = () => {
   const u = localStorage.getItem('xl_user');
@@ -10,7 +11,7 @@ const getUserId = () => {
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const YEARS = [2024, 2025, 2026, 2027, 2028];
+const YEARS = getDynamicYears(2, 2).map(Number);
 
 export default function Backlog() {
   const navigate = useNavigate();

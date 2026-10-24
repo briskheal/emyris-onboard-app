@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Check, CheckCircle } from 'lucide-react';
+import { getDynamicYears } from '../utils/dateUtils';
 
 
 function SearchableSelect({ value, onChange, options, placeholder, hideSearch }: { value: string, onChange: (val: string) => void, options: any[], placeholder?: string, hideSearch?: boolean }) {
@@ -401,7 +402,7 @@ export default function TourProgram() {
             </button>
             {showYearDropdown && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-                {['2025','2026','2027','2028'].map(y => (
+                {getDynamicYears(2, 2).map(y => (
                   <button key={y} onClick={() => { setYear(y); setShowYearDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0 text-sm">
                     {y}
                   </button>

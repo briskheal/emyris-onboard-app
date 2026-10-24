@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import ReportUserFilter, { SelectedReportUser } from '../../components/ReportUserFilter';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -164,7 +165,7 @@ export default function AnalysisReportsView() {
                 onChange={(e) => setYear(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white"
               >
-                {['2024', '2025', '2026', '2027', '2028'].map(y => (
+                {getDynamicYears(2, 2).map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>

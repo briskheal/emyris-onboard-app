@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import TransferDataModal from '../components/TransferDataModal';
+import { getDynamicYears } from '../utils/dateUtils';
 
 // Reusable Table Footer Component
 function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, setPageSize }: any) {
@@ -3243,7 +3244,7 @@ function SetTargetTab() {
             <div>
               <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Select Year</label>
               <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
-                {[2024,2025,2026,2027,2028].map(y => <option key={y} value={y}>{y}</option>)}
+                {getDynamicYears(2, 2).map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div>
@@ -3412,7 +3413,7 @@ function SetTargetTab() {
                   onChange={e => setSelectedYear(e.target.value)} 
                   className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-bold text-sm focus:outline-none focus:border-sky-500 shadow-inner"
                 >
-                  {[2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+                  {getDynamicYears(2, 2).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               {selectedMonth && (
@@ -3602,11 +3603,7 @@ function SetTargetTab() {
                 <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select Year *</label>
                 <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 w-48">
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
+                    {getDynamicYears(2, 2).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
                 </div>
                 

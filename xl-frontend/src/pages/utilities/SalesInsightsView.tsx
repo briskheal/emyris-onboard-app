@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronLeft, BarChart3, Package, RefreshCw } from 'lucide-react';
 import ReportUserFilter, { SelectedUser } from '../../components/ReportUserFilter';
+import { getDynamicYears } from '../../utils/dateUtils';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -111,7 +112,7 @@ const SalesInsightsView: React.FC = () => {
                                 onChange={e => setEndYear(e.target.value)} 
                                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-sky-500"
                             >
-                                {['2025', '2026', '2027'].map(y => <option key={y} value={y}>{y}</option>)}
+                                {getDynamicYears(2, 2).map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
                         </div>
                         <div>

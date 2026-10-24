@@ -6,6 +6,7 @@ import {
   Table, Calendar as CalendarIcon, Stethoscope, RefreshCw
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { getDynamicYears } from '../utils/dateUtils';
 
 interface DoctorItem {
   _id: string;
@@ -462,8 +463,8 @@ export default function MonthlyCallPlanTab({
                 onChange={e => setSelectedYear(Number(e.target.value))}
                 className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[34px]"
               >
-                {[2025, 2026, 2027].map(y => (
-                  <option key={y} value={y}>{y}</option>
+                {getDynamicYears(2, 2).map(y => (
+                  <option key={y} value={Number(y)}>{y}</option>
                 ))}
               </select>
             </div>
