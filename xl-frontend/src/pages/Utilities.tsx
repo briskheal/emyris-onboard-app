@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { LogOut, 
+import { 
   Zap, FileText, CalendarDays, Route, BarChart3, Receipt, MapPin, 
   BellRing, List, Clock, PackageSearch, TrendingUp, ShoppingCart, 
   ClipboardList, CalendarRange, Box, Gift, Target
@@ -36,16 +36,6 @@ export default function Utilities() {
         <h1 className="text-lg font-black text-white tracking-wide">
           UTILITIES <span className="text-sky-400 font-bold text-[13px] ml-1">(Reports)</span>
         </h1>
-        <button 
-          onClick={() => {
-            localStorage.removeItem('xl_user');
-            navigate('/login');
-          }}
-          className="flex items-center gap-2 bg-rose-500/10 text-rose-500 px-4 py-2 rounded-xl font-bold text-xs active:scale-95 transition-transform"
-        >
-          <LogOut size={16} />
-          LOGOUT
-        </button>
       </div>
 
       <div className="px-5 mt-6">
