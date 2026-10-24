@@ -5,8 +5,9 @@ import axios from 'axios';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('xla_saved_email') || '');
+  const [password, setPassword] = useState(() => localStorage.getItem('xla_saved_password') || '');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('xla_remember_me') === 'true');
   const [showPassword, setShowPassword] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
 
@@ -56,6 +57,17 @@ export default function Login() {
           sessionStorage.setItem('xla_token', res.data.token);
           sessionStorage.setItem('xla_user', JSON.stringify(res.data.user || {}));
           sessionStorage.setItem('xla_role', res.data.role || 'admin');
+
+          if (rememberMe) {
+            localStorage.setItem('xla_remember_me', 'true');
+            localStorage.setItem('xla_saved_email', email.trim());
+            localStorage.setItem('xla_saved_password', password);
+          } else {
+            localStorage.removeItem('xla_remember_me');
+            localStorage.removeItem('xla_saved_email');
+            localStorage.removeItem('xla_saved_password');
+          }
+
           navigate('/dashboard');
         } else {
           setError(res.data.message || 'Invalid credentials');
@@ -188,8 +200,13 @@ export default function Login() {
           </div>
 
           <div className="flex items-center justify-between mb-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-rose-500 focus:ring-rose-500 focus:ring-offset-slate-800" />
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-rose-500 focus:ring-rose-500 focus:ring-offset-slate-800 cursor-pointer" 
+              />
               <span className="text-xs font-medium text-slate-400">Remember me</span>
             </label>
             <button 

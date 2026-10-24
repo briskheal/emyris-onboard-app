@@ -5,12 +5,27 @@ import { Mail, Lock, LogIn, ArrowRight, Building, Eye, EyeOff } from 'lucide-rea
 
 export default function Login() {
   const navigate = useNavigate();
-  const [companyName, setCompanyName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [companyName, setCompanyName] = useState(() => localStorage.getItem('xl_saved_company') || 'EMYRIS');
+  const [email, setEmail] = useState(() => localStorage.getItem('xl_saved_email') || '');
+  const [password, setPassword] = useState(() => localStorage.getItem('xl_saved_password') || '');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('xl_remember_me') === 'true');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
+
+  useEffect(() => {
+    // If remember me is set, ensure the saved credentials are prefilled
+    const isRemembered = localStorage.getItem('xl_remember_me') === 'true';
+    if (isRemembered) {
+      setRememberMe(true);
+      const savedCompany = localStorage.getItem('xl_saved_company');
+      const savedEmail = localStorage.getItem('xl_saved_email');
+      const savedPass = localStorage.getItem('xl_saved_password');
+      if (savedCompany) setCompanyName(savedCompany);
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPass) setPassword(savedPass);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
@@ -49,6 +64,20 @@ export default function Login() {
             // Save user data to localStorage
             localStorage.setItem('xl_user', JSON.stringify(res.data.user));
             if (res.data.token) localStorage.setItem('xl_token', res.data.token);
+
+            // Handle Remember Me
+            if (rememberMe) {
+                localStorage.setItem('xl_remember_me', 'true');
+                localStorage.setItem('xl_saved_company', companyName.trim());
+                localStorage.setItem('xl_saved_email', email.trim());
+                localStorage.setItem('xl_saved_password', password);
+            } else {
+                localStorage.removeItem('xl_remember_me');
+                localStorage.removeItem('xl_saved_company');
+                localStorage.removeItem('xl_saved_email');
+                localStorage.removeItem('xl_saved_password');
+            }
+
             navigate('/dashboard');
         } else {
             alert(res.data.message || "Login failed");
@@ -133,8 +162,13 @@ export default function Login() {
           </div>
 
           <div className="flex items-center justify-between mb-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800" />
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800 cursor-pointer" 
+              />
               <span className="text-xs font-medium text-slate-200">Remember me</span>
             </label>
             <button type="button" className="text-xs font-bold text-sky-400">Forgot Password?</button>
