@@ -6474,7 +6474,7 @@ router.get('/settings/holidays', async (req, res) => {
             const { Op } = require('sequelize');
             where = {
                 date: {
-                    [Op.like]: `${year}%`
+                    [Op.between]: [`${year}-01-01`, `${year}-12-31`]
                 }
             };
         }
