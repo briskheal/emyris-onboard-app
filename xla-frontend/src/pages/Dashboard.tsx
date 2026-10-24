@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, ChevronDown, Download, Activity, Check, Calendar, Send, ArrowRight, Clock } from 'lucide-react';
+import { 
+  User, ChevronDown, Download, Activity, Check, Calendar, Send, ArrowRight, Clock,
+  X, RefreshCw, FileSpreadsheet, ExternalLink
+} from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,6 +24,67 @@ export default function Dashboard() {
   // Tour Program Coming Month Submission Reminder
   const [tpReminder, setTpReminder] = useState<any>(null);
   const [previewReminder, setPreviewReminder] = useState<boolean>(() => localStorage.getItem('xla_simulate_25th_tp') === 'true');
+
+  // Modals state for Consolidated Reports & Today's Activity
+  const [activeModal, setActiveModal] = useState<'CONSOLIDATED' | 'TODAY' | null>(null);
+  const [consolidatedData, setConsolidatedData] = useState<any>(null);
+  const [consolidatedLoading, setConsolidatedLoading] = useState(false);
+  const [todaysData, setTodaysData] = useState<any>(null);
+  const [todaysLoading, setTodaysLoading] = useState(false);
+
+  const handleOpenConsolidated = () => {
+    setActiveModal('CONSOLIDATED');
+    setConsolidatedLoading(true);
+    const [year, monthNum] = monthInput.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[parseInt(monthNum) - 1];
+    const empId = selectedDashboardUser ? (selectedDashboardUser.employeeId || selectedDashboardUser.uid || selectedDashboardUser._id) : '';
+
+    axios.get(`/api/xl/user/consolidated-activity?employeeId=${encodeURIComponent(empId)}&month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}`)
+      .then(res => {
+        setConsolidatedLoading(false);
+        if (res.data.success) {
+          setConsolidatedData(res.data.data);
+        }
+      })
+      .catch(() => setConsolidatedLoading(false));
+  };
+
+  const handleOpenToday = () => {
+    setActiveModal('TODAY');
+    setTodaysLoading(true);
+    const empId = selectedDashboardUser ? (selectedDashboardUser.employeeId || selectedDashboardUser.uid || selectedDashboardUser._id) : '';
+
+    axios.get(`/api/xl/user/todays-activity?employeeId=${encodeURIComponent(empId)}`)
+      .then(res => {
+        setTodaysLoading(false);
+        if (res.data.success) {
+          setTodaysData(res.data.data);
+        }
+      })
+      .catch(() => setTodaysLoading(false));
+  };
+
+  const exportConsolidatedCSV = () => {
+    if (!consolidatedData) return;
+    const headers = ['Date', 'Doctor Calls', 'Chemist Calls', 'Stockist Calls', 'Total Calls', 'POB Value (INR)'];
+    const rows = (consolidatedData.dailyBreakdown || []).map((r: any) => [
+      r.date,
+      r.doctor,
+      r.chemist,
+      r.stockist,
+      r.total,
+      r.pob
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e: any) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Consolidated_Report_${consolidatedData.month}_${consolidatedData.year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
       const [year, monthNum] = monthInput.split('-');
@@ -159,13 +223,19 @@ export default function Dashboard() {
                 </button>
               )}
 
-              <button className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] border border-slate-200 dark:border-[#3b3b5a] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95">
+              <button 
+                onClick={handleOpenConsolidated}
+                className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] hover:bg-sky-50 dark:hover:bg-[#323252] border border-slate-200 dark:border-[#3b3b5a] text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
                  <Download size={16} className="text-sky-400" />
-                 Consolidated Reports
+                 <span>Consolidated Reports</span>
               </button>
-              <button className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] border border-slate-200 dark:border-[#3b3b5a] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95">
+              <button 
+                onClick={handleOpenToday}
+                className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] hover:bg-emerald-50 dark:hover:bg-[#323252] border border-slate-200 dark:border-[#3b3b5a] text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
                  <Activity size={16} className="text-emerald-400" />
-                 Today's Activity
+                 <span>Today's Activity</span>
               </button>
            </div>
         </div>
@@ -408,7 +478,319 @@ export default function Dashboard() {
 
       </div>
     
-      
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      {/* 1. CONSOLIDATED REPORTS MODAL */}
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      {activeModal === 'CONSOLIDATED' && (
+        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-[#1e1e30] border border-slate-200 dark:border-[#3b3b5a] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-[#25253d] border-b border-slate-200 dark:border-[#3b3b5a] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-500 dark:text-sky-400 flex items-center justify-center">
+                  <Download size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white">Consolidated Activity Reports</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Period: <span className="font-semibold text-sky-500 dark:text-sky-400">{consolidatedData?.month || monthName} {consolidatedData?.year || yearStr}</span> • Staff: <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName) : 'All Field Staff'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={exportConsolidatedCSV}
+                  disabled={consolidatedLoading || !consolidatedData?.dailyBreakdown?.length}
+                  className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm cursor-pointer"
+                  title="Download as CSV"
+                >
+                  <FileSpreadsheet size={15} />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  onClick={() => { setActiveModal(null); navigate('/consolidated-activity'); }}
+                  className="flex items-center gap-1.5 bg-slate-200 dark:bg-[#32324e] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                  title="Open Dedicated Full Page"
+                >
+                  <ExternalLink size={14} />
+                  <span>Full Page</span>
+                </button>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {consolidatedLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center space-y-3">
+                  <RefreshCw size={36} className="text-sky-400 animate-spin" />
+                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading consolidated records...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Calls</span>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white mt-2">{consolidatedData?.totalCalls || 0}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Avg: {consolidatedData?.callAvg || 0}/day</span>
+                    </div>
+
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Doctors</span>
+                      <p className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-2">{consolidatedData?.doctorCalls || 0}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Field Calls</span>
+                    </div>
+
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider">Chemists</span>
+                      <p className="text-2xl font-black text-sky-500 dark:text-sky-400 mt-2">{consolidatedData?.chemistCalls || 0}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Retail Visits</span>
+                    </div>
+
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">Stockists</span>
+                      <p className="text-2xl font-black text-amber-500 dark:text-amber-400 mt-2">{consolidatedData?.stockistCalls || 0}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Distributor Meets</span>
+                    </div>
+
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-wider">Days Worked</span>
+                      <p className="text-2xl font-black text-purple-500 dark:text-purple-400 mt-2">{consolidatedData?.daysWorked || 0}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Active Days</span>
+                    </div>
+
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Total POB</span>
+                      <p className="text-xl font-black text-indigo-500 dark:text-indigo-400 mt-2">₹{Math.round(Number(consolidatedData?.totalPob || 0)).toLocaleString('en-IN')}</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Orders Booked</span>
+                    </div>
+                  </div>
+
+                  {/* Daily Log Table */}
+                  <div className="bg-slate-50 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a] rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white">Daily Field Breakdown</h4>
+                      <span className="text-xs text-slate-500">{(consolidatedData?.dailyBreakdown || []).length} working day(s)</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-[#3b3b5a] text-slate-500 uppercase tracking-wider">
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3 text-center">Doctors</th>
+                            <th className="py-2.5 px-3 text-center">Chemists</th>
+                            <th className="py-2.5 px-3 text-center">Stockists</th>
+                            <th className="py-2.5 px-3 text-center">Total Calls</th>
+                            <th className="py-2.5 px-3 text-right">POB Booked (₹)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-[#3b3b5a]/40">
+                          {(consolidatedData?.dailyBreakdown || []).length > 0 ? (
+                            consolidatedData.dailyBreakdown.map((row: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-white dark:hover:bg-[#2d2d46] transition-colors">
+                                <td className="py-2.5 px-3 font-semibold text-slate-700 dark:text-slate-200">{row.date}</td>
+                                <td className="py-2.5 px-3 text-center font-bold text-emerald-500 dark:text-emerald-400">{row.doctor}</td>
+                                <td className="py-2.5 px-3 text-center font-bold text-sky-500 dark:text-sky-400">{row.chemist}</td>
+                                <td className="py-2.5 px-3 text-center font-bold text-amber-500 dark:text-amber-400">{row.stockist}</td>
+                                <td className="py-2.5 px-3 text-center font-black text-slate-800 dark:text-white">{row.total}</td>
+                                <td className="py-2.5 px-3 text-right font-bold text-indigo-500 dark:text-indigo-400">
+                                  ₹{Math.round(Number(row.pob || 0)).toLocaleString('en-IN')}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                                No activity or call logs recorded for this period.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      {/* 2. TODAY'S ACTIVITY MODAL */}
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      {activeModal === 'TODAY' && (
+        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-[#1e1e30] border border-slate-200 dark:border-[#3b3b5a] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-[#25253d] border-b border-slate-200 dark:border-[#3b3b5a] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 flex items-center justify-center">
+                  <Activity size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white">Today's Live Activity</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {todaysData?.todayDate || 'Daily Tracking'} • Staff: <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName) : 'All Field Staff'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setActiveModal(null); navigate('/todays-activity'); }}
+                  className="flex items-center gap-1.5 bg-slate-200 dark:bg-[#32324e] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                  title="Open Dedicated Full Page"
+                >
+                  <ExternalLink size={14} />
+                  <span>Full Page</span>
+                </button>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {todaysLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center space-y-3">
+                  <RefreshCw size={36} className="text-emerald-400 animate-spin" />
+                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading today's logs...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Attendance Card */}
+                  <div className="bg-slate-50 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-slate-200 dark:bg-[#32324e] flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <Clock size={20} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Attendance Status</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                            todaysData?.attendance?.isPunchedIn
+                              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          }`}>
+                            {todaysData?.attendance?.status || 'Not Punched In'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6 text-xs border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-[#3b3b5a] pt-3 sm:pt-0 sm:pl-6">
+                      <div>
+                        <span className="text-slate-400 block font-medium">Punch-In Time</span>
+                        <span className="font-bold text-slate-800 dark:text-white text-sm">{todaysData?.attendance?.punchInTime || '--:--'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Punch-Out Time</span>
+                        <span className="font-bold text-slate-800 dark:text-white text-sm">{todaysData?.attendance?.punchOutTime || 'Active in Field'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Badges */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 text-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Calls</span>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{todaysData?.totalCalls || 0}</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 text-center">
+                      <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider block">Doctors</span>
+                      <p className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-1">{todaysData?.doctorCalls || 0}</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 text-center">
+                      <span className="text-[10px] font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider block">Chemists</span>
+                      <p className="text-2xl font-black text-sky-500 dark:text-sky-400 mt-1">{todaysData?.chemistCalls || 0}</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 text-center">
+                      <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider block">Stockists</span>
+                      <p className="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{todaysData?.stockistCalls || 0}</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a]/60 rounded-2xl p-4 text-center col-span-2 sm:col-span-1">
+                      <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block">Today's POB</span>
+                      <p className="text-xl font-black text-indigo-500 dark:text-indigo-400 mt-1">₹{Math.round(Number(todaysData?.totalPob || 0)).toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+
+                  {/* Logged Visits */}
+                  <div className="bg-slate-50 dark:bg-[#25253d] border border-slate-200 dark:border-[#3b3b5a] rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white">Logged Visits Today</h4>
+                      <span className="text-xs text-slate-500">{(todaysData?.visits || []).length} visit(s) recorded</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-[#3b3b5a] text-slate-500 uppercase tracking-wider">
+                            <th className="py-2.5 px-3">Time</th>
+                            <th className="py-2.5 px-3">Entity Name</th>
+                            <th className="py-2.5 px-3">Type</th>
+                            <th className="py-2.5 px-3">Area / Route</th>
+                            <th className="py-2.5 px-3 text-right">POB (₹)</th>
+                            <th className="py-2.5 px-3 text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-[#3b3b5a]/40">
+                          {(todaysData?.visits || []).length > 0 ? (
+                            todaysData.visits.map((v: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-white dark:hover:bg-[#2d2d46] transition-colors">
+                                <td className="py-2.5 px-3 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">{v.time || '--:--'}</td>
+                                <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-white">{v.name}</td>
+                                <td className="py-2.5 px-3">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                    v.entityType === 'Doctor'
+                                      ? 'bg-emerald-500/20 text-emerald-500 dark:text-emerald-400'
+                                      : v.entityType === 'Chemist'
+                                      ? 'bg-sky-500/20 text-sky-500 dark:text-sky-400'
+                                      : 'bg-amber-500/20 text-amber-500 dark:text-amber-400'
+                                  }`}>
+                                    {v.entityType}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">{v.workingAreas || '-'}</td>
+                                <td className="py-2.5 px-3 text-right font-bold text-indigo-500 dark:text-indigo-400">
+                                  {Number(v.pob) > 0 ? `₹${Math.round(Number(v.pob)).toLocaleString('en-IN')}` : '-'}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 dark:bg-slate-700/60 px-2 py-0.5 rounded-full">
+                                    {v.status || 'Logged'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                                No visits or calls submitted yet today.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
   </div>
   );
 }

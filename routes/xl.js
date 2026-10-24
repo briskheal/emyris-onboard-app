@@ -1472,19 +1472,24 @@ router.get('/user/hierarchy', async (req, res) => {
     }
 });
 
-// ─── USER DRAWER: CONSOLIDATED ACTIVITY (MTD SUMMARY) ───────────────────────────
+// ─── USER DRAWER / DASHBOARD: CONSOLIDATED ACTIVITY (MTD SUMMARY) ─────────────
 router.get('/user/consolidated-activity', async (req, res) => {
     try {
         const { employeeId, month, year } = req.query;
-        const { XlDCR, XlTarget, XlPrimarySales, XlSecondarySales, XlUser } = require('../db');
+        const { XlDCR } = require('../db');
         const monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const now = new Date();
         const curM = month || monthsArr[now.getMonth()];
         const curY = year || String(now.getFullYear());
         const mIdx = monthsArr.indexOf(curM);
 
+        const where = {};
+        if (employeeId && employeeId.trim() !== '' && employeeId.trim() !== 'ALL') {
+            where.employeeId = employeeId.trim();
+        }
+
         const dcrRecords = await XlDCR.findAll({
-            where: { employeeId: (employeeId || '').trim() },
+            where,
             raw: true
         });
 
@@ -1498,18 +1503,43 @@ router.get('/user/consolidated-activity', async (req, res) => {
         let stockistCalls = 0;
         let totalPob = 0;
         const datesWorked = new Set();
+        const dailyMap = {};
 
         monthDcrs.forEach(d => {
             if (d.entityType === 'Doctor') doctorCalls++;
             else if (d.entityType === 'Chemist') chemistCalls++;
             else if (d.entityType === 'Stockist') stockistCalls++;
-            totalPob += Number(d.pob || 0);
-            if (d.date) datesWorked.add(d.date);
+
+            let rowPob = 0;
+            if (d.pobItems) {
+                try {
+                    const parsed = typeof d.pobItems === 'string' ? JSON.parse(d.pobItems) : d.pobItems;
+                    if (Array.isArray(parsed)) {
+                        rowPob = parsed.reduce((sum, item) => sum + (Number(item.qty || item.quantity || 0) * Number(item.rate || item.price || 0)), 0);
+                    }
+                } catch (_) {}
+            }
+            if (!rowPob && d.pob) rowPob = Number(d.pob || 0);
+            totalPob += rowPob;
+
+            const day = d.date ? d.date.split('T')[0] : '';
+            if (day) {
+                datesWorked.add(day);
+                if (!dailyMap[day]) {
+                    dailyMap[day] = { date: day, doctor: 0, chemist: 0, stockist: 0, total: 0, pob: 0 };
+                }
+                if (d.entityType === 'Doctor') dailyMap[day].doctor++;
+                else if (d.entityType === 'Chemist') dailyMap[day].chemist++;
+                else if (d.entityType === 'Stockist') dailyMap[day].stockist++;
+                dailyMap[day].total++;
+                dailyMap[day].pob += rowPob;
+            }
         });
 
         const daysWorked = datesWorked.size;
         const totalCalls = doctorCalls + chemistCalls + stockistCalls;
         const callAvg = daysWorked > 0 ? Number((totalCalls / daysWorked).toFixed(1)) : 0;
+        const dailyBreakdown = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
 
         res.json({
             success: true,
@@ -1522,7 +1552,8 @@ router.get('/user/consolidated-activity', async (req, res) => {
                 stockistCalls,
                 totalPob,
                 daysWorked,
-                callAvg
+                callAvg,
+                dailyBreakdown
             }
         });
     } catch (e) {
@@ -1530,7 +1561,7 @@ router.get('/user/consolidated-activity', async (req, res) => {
     }
 });
 
-// ─── USER DRAWER: TODAY'S ACTIVITY ──────────────────────────────────────────────
+// ─── USER DRAWER / DASHBOARD: TODAY'S ACTIVITY ─────────────────────────────────
 router.get('/user/todays-activity', async (req, res) => {
     try {
         const { employeeId } = req.query;
@@ -1538,19 +1569,21 @@ router.get('/user/todays-activity', async (req, res) => {
         const { Op } = require('sequelize');
         const todayStr = new Date().toISOString().split('T')[0];
 
-        const [att, dcrs] = await Promise.all([
-            XlAttendance.findOne({
-                where: {
-                    employeeId: (employeeId || '').trim(),
-                    date: { [Op.like]: `${todayStr}%` }
-                },
+        const attWhere = { date: { [Op.like]: `${todayStr}%` } };
+        const dcrWhere = { date: { [Op.like]: `${todayStr}%` } };
+
+        if (employeeId && employeeId.trim() !== '' && employeeId.trim() !== 'ALL') {
+            attWhere.employeeId = employeeId.trim();
+            dcrWhere.employeeId = employeeId.trim();
+        }
+
+        const [atts, dcrs] = await Promise.all([
+            XlAttendance.findAll({
+                where: attWhere,
                 raw: true
             }),
             XlDCR.findAll({
-                where: {
-                    employeeId: (employeeId || '').trim(),
-                    date: { [Op.like]: `${todayStr}%` }
-                },
+                where: dcrWhere,
                 order: [['createdAt', 'DESC']],
                 raw: true
             })
@@ -1565,29 +1598,49 @@ router.get('/user/todays-activity', async (req, res) => {
             if (d.entityType === 'Doctor') docCount++;
             else if (d.entityType === 'Chemist') chemCount++;
             else if (d.entityType === 'Stockist') stkCount++;
-            todayPob += Number(d.pob || 0);
+
+            let rowPob = 0;
+            if (d.pobItems) {
+                try {
+                    const parsed = typeof d.pobItems === 'string' ? JSON.parse(d.pobItems) : d.pobItems;
+                    if (Array.isArray(parsed)) {
+                        rowPob = parsed.reduce((sum, item) => sum + (Number(item.qty || item.quantity || 0) * Number(item.rate || item.price || 0)), 0);
+                    }
+                } catch (_) {}
+            }
+            if (!rowPob && d.pob) rowPob = Number(d.pob || 0);
+            todayPob += rowPob;
         });
+
+        const att = atts.length > 0 ? atts[0] : null;
 
         res.json({
             success: true,
             data: {
                 todayDate: new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }),
+                todayStr,
                 attendance: {
                     isPunchedIn: !!(att && att.punchInTime),
                     punchInTime: att?.punchInTime || null,
                     punchOutTime: att?.punchOutTime || null,
-                    status: att?.status || (att?.punchInTime ? 'Present' : 'Not Punched In')
+                    status: att?.status || (att?.punchInTime ? 'Present' : 'Not Punched In'),
+                    allAttendees: atts
                 },
                 doctorCalls: docCount,
                 chemistCalls: chemCount,
                 stockistCalls: stkCount,
                 totalCalls: dcrs.length,
                 totalPob: todayPob,
-                visits: dcrs.slice(0, 10).map(d => ({
+                visits: dcrs.map(d => ({
+                    _id: d._id,
+                    employeeId: d.employeeId,
+                    employeeName: d.employeeName,
                     entityType: d.entityType,
                     name: d.entityName || d.doctorName || d.chemistName || 'Call',
-                    time: d.time || (d.createdAt ? new Date(d.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''),
-                    pob: d.pob || 0
+                    workingAreas: d.workingAreas || d.workingAreaType || '',
+                    time: d.checkInTime || d.time || (d.createdAt ? new Date(d.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''),
+                    pob: d.pob || 0,
+                    status: d.status || 'Submitted'
                 }))
             }
         });
