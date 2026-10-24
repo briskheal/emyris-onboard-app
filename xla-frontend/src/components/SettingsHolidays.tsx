@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Trash2, CheckSquare, ChevronDown, X } from 'lucide-react';
+import { Trash2, CheckSquare, ChevronDown, X, Calendar } from 'lucide-react';
 
 function formatDDMMYYYY(dateStr: string) {
   if (!dateStr) return '-';
@@ -33,6 +33,7 @@ export default function SettingsHolidays() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
 
   // Form State
   const [type, setType] = useState('National');
@@ -89,8 +90,7 @@ export default function SettingsHolidays() {
         const newHolidays = results.filter(r => r.data.success).map(r => r.data.data);
         setHolidays(prev => [...prev, ...newHolidays]);
       }
-      setTitle(''); setDate(''); setSelectedStates(''.split(''));
-      setSelectedStates([]);
+      setTitle(''); setDate(''); setSelectedStates([]);
     } catch (e) {
       setFormError('Failed to add holiday. Please try again.');
     } finally {
@@ -120,8 +120,30 @@ export default function SettingsHolidays() {
     }
   };
 
-  const allSelected = holidays.length > 0 && selected.size === holidays.length;
-  const toggleSelectAll = () => setSelected(allSelected ? new Set() : new Set(holidays.map(h => h._id)));
+  const dynamicYears = Array.from(new Set([
+    '2025', '2026', '2027', '2028',
+    ...holidays.map(h => String(h.date || '').slice(0, 4)).filter(Boolean)
+  ])).sort();
+
+  const displayedHolidays = holidays.filter(h => {
+    if (selectedYear === 'ALL') return true;
+    const y = String(h.date || '').slice(0, 4);
+    return y === selectedYear;
+  });
+
+  const allDisplayedSelected = displayedHolidays.length > 0 && displayedHolidays.every(h => selected.has(h._id));
+  const toggleSelectAll = () => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allDisplayedSelected) {
+        displayedHolidays.forEach(h => next.delete(h._id));
+      } else {
+        displayedHolidays.forEach(h => next.add(h._id));
+      }
+      return next;
+    });
+  };
+
   const toggleSelect = (id: string) => {
     setSelected(prev => {
       const n = new Set(prev);
@@ -133,16 +155,16 @@ export default function SettingsHolidays() {
   const renderDate = (d: string) => formatDDMMYYYY(d);
 
   const downloadHolidays = () => {
-    if (holidays.length === 0) return;
+    if (displayedHolidays.length === 0) return;
 
     // Get all unique states present in the current holidays data
     const uniqueStates = Array.from(new Set(
-      holidays.filter(h => h.state && h.state !== 'N/A').map(h => h.state)
+      displayedHolidays.filter(h => h.state && h.state !== 'N/A').map(h => h.state)
     )).sort();
 
     // Group by date + title to create one row per holiday
     const grouped: Record<string, { date: string; title: string; type: string; states: Set<string> }> = {};
-    holidays.forEach(h => {
+    displayedHolidays.forEach(h => {
       const key = `${formatDDMMYYYY(h.date)}__${h.title}`;
       if (!grouped[key]) {
         grouped[key] = { date: h.date, title: h.title, type: h.type, states: new Set() };
@@ -181,8 +203,8 @@ export default function SettingsHolidays() {
       ];
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Holiday List');
-      XLSX.writeFile(wb, 'Holiday_List_2026.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, `Holidays ${selectedYear}`);
+      XLSX.writeFile(wb, `Holiday_List_${selectedYear}.xlsx`);
     });
   };
 
@@ -190,18 +212,41 @@ export default function SettingsHolidays() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between gap-3 mb-6 shrink-0">
-        <h2 className="text-xl font-black text-white uppercase tracking-wide">Create Holidays</h2>
-        {holidays.length > 0 && (
-          <button
-            onClick={downloadHolidays}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
-          >
-            ↓ Download Excel
-          </button>
-        )}
-      </div>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 shrink-0">
+        <div>
+          <h2 className="text-xl font-black text-white uppercase tracking-wide">Create Holidays</h2>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+            Showing <span className="text-sky-400 font-bold">{displayedHolidays.length}</span> declared {displayedHolidays.length === 1 ? 'holiday' : 'holidays'} {selectedYear === 'ALL' ? 'across all years' : `for year ${selectedYear}`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          {/* Year Filter Dropdown */}
+          <div className="flex items-center gap-2 bg-[#151521] border border-[#3b3b5a] rounded-xl px-3 py-2 shadow-sm">
+            <Calendar size={14} className="text-sky-400 shrink-0" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Year:</span>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(e.target.value)}
+              className="bg-transparent text-xs font-black text-sky-400 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="bg-[#1c1c2e] text-white">All Years</option>
+              {dynamicYears.map(y => (
+                <option key={y} value={y} className="bg-[#1c1c2e] text-white">{y}</option>
+              ))}
+            </select>
+          </div>
 
+          {displayedHolidays.length > 0 && (
+            <button
+              onClick={downloadHolidays}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
+            >
+              ↓ Download Excel
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 shrink-0">
@@ -233,9 +278,9 @@ export default function SettingsHolidays() {
             {selectedStates.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {selectedStates.map(s => (
-                  <span key={s} className="flex items-center gap-1 px-2 py-1 bg-sky-500/20 text-sky-300 text-[10px] font-black rounded-lg border border-sky-500/30">
+                  <span key={s} className="bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
                     {s}
-                    <button onClick={() => toggleState(s)} className="hover:text-white transition-colors"><X size={10} /></button>
+                    <button type="button" onClick={() => toggleState(s)} className="hover:text-white"><X size={10} /></button>
                   </span>
                 ))}
               </div>
@@ -316,8 +361,8 @@ export default function SettingsHolidays() {
             <thead className="sticky top-0 bg-[#151521] border-b border-[#3b3b5a] z-10">
               <tr>
                 <th className="px-4 py-4">
-                  <button onClick={toggleSelectAll} className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${allSelected ? 'bg-rose-500 border-rose-500' : 'border-[#3b3b5a] hover:border-rose-500'}`}>
-                    {allSelected && <CheckSquare size={12} className="text-white" />}
+                  <button onClick={toggleSelectAll} className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${allDisplayedSelected ? 'bg-rose-500 border-rose-500' : 'border-[#3b3b5a] hover:border-rose-500'}`}>
+                    {allDisplayedSelected && <CheckSquare size={12} className="text-white" />}
                   </button>
                 </th>
                 <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
@@ -329,9 +374,9 @@ export default function SettingsHolidays() {
               </tr>
             </thead>
             <tbody>
-              {holidays.length === 0 ? (
-                <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No data found</td></tr>
-              ) : holidays.map((h, i) => (
+              {displayedHolidays.length === 0 ? (
+                <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No holidays declared for {selectedYear}</td></tr>
+              ) : displayedHolidays.map((h, i) => (
                 <tr key={h._id} className={`border-b border-[#3b3b5a] transition-colors ${selected.has(h._id) ? 'bg-rose-500/5' : 'hover:bg-[#27273f]/30'}`}>
                   <td className="px-4 py-4">
                     <button onClick={() => toggleSelect(h._id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selected.has(h._id) ? 'bg-rose-500 border-rose-500' : 'border-[#3b3b5a] hover:border-rose-500'}`}>

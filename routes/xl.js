@@ -6468,7 +6468,17 @@ router.post('/settings/preferences', async (req, res) => {
 // GET Holidays
 router.get('/settings/holidays', async (req, res) => {
     try {
-        const holidays = await XlHoliday.findAll({ order: [['date', 'ASC']] });
+        const { year } = req.query;
+        let where = {};
+        if (year && year !== 'ALL') {
+            const { Op } = require('sequelize');
+            where = {
+                date: {
+                    [Op.like]: `${year}%`
+                }
+            };
+        }
+        const holidays = await XlHoliday.findAll({ where, order: [['date', 'ASC']] });
         res.json({ success: true, data: holidays });
     } catch (e) {
         console.error(e);
