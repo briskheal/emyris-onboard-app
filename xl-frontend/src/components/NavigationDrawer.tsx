@@ -65,6 +65,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
   const [todaysLoading, setTodaysLoading] = useState(false);
 
   const [corporateAddress, setCorporateAddress] = useState('Ahmedabad, Gujarat, India');
+  const [supportEmail, setSupportEmail] = useState('adminhr@emyrishr.in');
+  const [helpdeskPhone, setHelpdeskPhone] = useState('7993163300');
 
   useEffect(() => {
     if (isOpen) {
@@ -76,6 +78,12 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
             }
             if (res.data.address) {
               setCorporateAddress(res.data.address);
+            }
+            if (res.data.email) {
+              setSupportEmail(res.data.email);
+            }
+            if (res.data.phone) {
+              setHelpdeskPhone(res.data.phone);
             }
           }
         })
@@ -548,8 +556,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                 <Mail size={16} className="text-sky-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <p className="text-slate-400 font-semibold">Official Support Email</p>
-                  <a href="mailto:adminhr@emyrishr.in" className="text-white font-bold hover:underline">
-                    adminhr@emyrishr.in
+                  <a href={`mailto:${supportEmail}`} className="text-white font-bold hover:underline">
+                    {supportEmail}
                   </a>
                 </div>
               </div>
@@ -557,8 +565,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                 <Phone size={16} className="text-emerald-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <p className="text-slate-400 font-semibold">Helpdesk Contact</p>
-                  <a href="tel:7993163300" className="text-white font-bold hover:underline">
-                    7993163300
+                  <a href={`tel:${helpdeskPhone}`} className="text-white font-bold hover:underline">
+                    {helpdeskPhone}
                   </a>
                 </div>
               </div>

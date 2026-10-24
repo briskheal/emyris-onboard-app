@@ -28,6 +28,7 @@ export const adminItems: RouteItem[] = [
   { label: 'SAMPLES & GIFTS', icon: Gift, path: '/extras/samples', title: 'Samples & Gifts Management', breadcrumb: 'Admin > Gifts', keywords: ['sample', 'gift', 'promotional', 'stock', 'inventory'] },
   { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals', title: 'Approvals Hub', breadcrumb: 'Admin > Approvals', keywords: ['approval', 'approvals', 'pending', 'call plan approval', 'tp approval', 'tour program approval', 'expense approval', 'leave approval', 'dcr approval'] },
   { label: 'MANAGE LEAVE', icon: CalendarDays, path: '/admin/leave', title: 'Manage Leave', breadcrumb: 'Admin > Leave', keywords: ['leave', 'holiday', 'leave type', 'leave balance', 'vacation', 'casual leave', 'sick leave'] },
+  { label: 'COMPANY PROFILE & CONTACT', icon: Building2, path: '/admin/company-profile', title: 'Company Profile & Contact', breadcrumb: 'Admin > Company Profile', keywords: ['company', 'profile', 'address', 'contact', 'email', 'phone', 'support', 'helpdesk', 'corporate office', 'head office'] },
   { label: 'SETTINGS', icon: SettingsIcon, path: '/extras/settings', title: 'Admin Settings', breadcrumb: 'Admin > Settings', keywords: ['settings', 'configuration', 'preferences', 'system', 'typography', 'theme'] }
 ];
 
