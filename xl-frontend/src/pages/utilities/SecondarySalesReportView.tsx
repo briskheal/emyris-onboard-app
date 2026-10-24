@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Eye, PlusCircle, History, RefreshCw, X, Building2 } from 'lucide-react';
+import { ChevronLeft, Eye, PlusCircle, History, RefreshCw, X, Building2 } from 'lucide-react';
 import ReportUserFilter, { SelectedUser } from '../../components/ReportUserFilter';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -72,73 +72,100 @@ const SecondarySalesReportView: React.FC = () => {
     const totalQty = rows.reduce((s, r) => s + Number(r.quantity || 0), 0);
 
     return (
-        <div className="min-h-screen bg-[#f4f6f9] pb-24">
-            <div className="bg-white border-b border-gray-100 px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between shadow-sm">
+        <div className="min-h-screen bg-slate-900 text-slate-100 pb-24 font-sans">
+            {/* Header */}
+            <div className="px-4 py-3.5 bg-gradient-to-b from-slate-800 to-slate-900 border-b border-slate-700/50 sticky top-0 z-30 flex items-center justify-between shadow-sm">
                 <div className="flex items-center space-x-3">
-                    <button onClick={() => navigate('/utilities')} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700">
-                        <ArrowLeft className="w-5 h-5" />
+                    <button 
+                        onClick={() => navigate('/utilities')} 
+                        className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 hover:text-white active:scale-95"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-[15px] font-black text-gray-800 uppercase tracking-tight">Secondary Sales Reports</h1>
-                        <p className="text-[10px] text-gray-400 font-semibold">Stockist & HQ Wise Secondary Sales</p>
+                        <h1 className="text-[15px] font-black text-white uppercase tracking-tight flex items-center gap-1.5">
+                            <Building2 className="w-4 h-4 text-emerald-400" />
+                            SECONDARY <span className="text-emerald-400">SALES</span>
+                        </h1>
+                        <p className="text-[10px] text-slate-400 font-semibold">Stockist & HQ Wise Secondary Sales</p>
                     </div>
                 </div>
-                <button onClick={fetchReport} className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                <button 
+                    onClick={fetchReport} 
+                    className="p-2 rounded-xl bg-slate-700/60 text-emerald-400 hover:bg-slate-700 active:scale-95"
+                    title="Refresh data"
+                >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
             <div className="p-3.5 space-y-3.5">
-                {/* Quick Action Links to Secondary Sales Entry & History */}
+                {/* Quick Action Links */}
                 <div className="grid grid-cols-2 gap-2.5">
                     <button
                         onClick={() => navigate('/creation/secondary-sales')}
-                        className="bg-blue-600 text-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold shadow-sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-95 transition"
                     >
                         <PlusCircle className="w-4 h-4" /> New Sec. Sales
                     </button>
                     <button
                         onClick={() => navigate('/creation/secondary-sales/history')}
-                        className="bg-white text-gray-700 border border-gray-200 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold shadow-sm"
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-95 transition"
                     >
-                        <History className="w-4 h-4 text-blue-600" /> Entry History
+                        <History className="w-4 h-4 text-emerald-400" /> Entry History
                     </button>
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white rounded-xl p-3.5 shadow-sm border border-gray-100 space-y-3">
+                <div className="bg-slate-800/90 rounded-2xl p-4 shadow-lg border border-slate-700/70 space-y-3">
                     <ReportUserFilter onSelectUser={setSelectedUser} />
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">From Month</label>
-                            <div className="flex gap-1">
-                                <select value={startMonth} onChange={e => setStartMonth(e.target.value)} className="w-1/2 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">From Month</label>
+                            <div className="flex gap-1.5">
+                                <select 
+                                    value={startMonth} 
+                                    onChange={e => setStartMonth(e.target.value)} 
+                                    className="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                                >
                                     {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
-                                <select value={startYear} onChange={e => setStartYear(e.target.value)} className="w-1/2 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold">
+                                <select 
+                                    value={startYear} 
+                                    onChange={e => setStartYear(e.target.value)} 
+                                    className="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                                >
                                     {['2025', '2026', '2027'].map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">To Month</label>
-                            <div className="flex gap-1">
-                                <select value={endMonth} onChange={e => setEndMonth(e.target.value)} className="w-1/2 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">To Month</label>
+                            <div className="flex gap-1.5">
+                                <select 
+                                    value={endMonth} 
+                                    onChange={e => setEndMonth(e.target.value)} 
+                                    className="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                                >
                                     {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
-                                <select value={endYear} onChange={e => setEndYear(e.target.value)} className="w-1/2 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold">
+                                <select 
+                                    value={endYear} 
+                                    onChange={e => setEndYear(e.target.value)} 
+                                    className="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                                >
                                     {['2025', '2026', '2027'].map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex gap-1.5 bg-gray-100 p-1 rounded-lg">
+                    <div className="flex gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-700/60">
                         {(['Stockist', 'Headquarter', 'Inventory'] as const).map(t => (
                             <button
                                 key={t}
                                 onClick={() => setType(t)}
-                                className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${type === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${type === t ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
                             >
                                 {t}
                             </button>
@@ -147,46 +174,49 @@ const SecondarySalesReportView: React.FC = () => {
                 </div>
 
                 {/* Summary Banner */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-3.5 text-white flex items-center justify-between shadow-sm">
+                <div className="bg-gradient-to-r from-emerald-600/90 to-teal-800/90 rounded-2xl p-4 text-white flex items-center justify-between shadow-md border border-emerald-500/20">
                     <div>
-                        <p className="text-[10px] font-bold uppercase opacity-80">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-200">
                             {type === 'Inventory' ? 'Total Secondary Units' : 'Total Secondary Sales'}
                         </p>
-                        <p className="text-xl font-black mt-0.5">
-                            {type === 'Inventory' ? `${totalQty.toLocaleString('en-IN')} Units` : `₹${totalAmount.toLocaleString('en-IN')}`}
+                        <p className="text-xl font-black mt-0.5 text-white">
+                            {type === 'Inventory' ? `${totalQty.toLocaleString('en-IN')} Units` : `₹${Math.round(totalAmount).toLocaleString('en-IN')}`}
                         </p>
                     </div>
-                    <span className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-lg">{rows.length} Records</span>
+                    <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-xl">{rows.length} Records</span>
                 </div>
 
                 {/* Records */}
                 {loading ? (
-                    <div className="bg-white rounded-xl p-8 text-center text-xs font-bold text-gray-400">Loading secondary sales...</div>
+                    <div className="bg-slate-800/90 border border-slate-700/70 rounded-2xl p-8 text-center text-xs font-bold text-slate-400">Loading secondary sales...</div>
                 ) : rows.length === 0 ? (
-                    <div className="bg-white rounded-xl p-8 text-center text-xs font-bold text-gray-400">No secondary sales found for selected period.</div>
+                    <div className="bg-slate-800/90 border border-slate-700/70 rounded-2xl p-8 text-center text-xs font-bold text-slate-400">No secondary sales found for selected period.</div>
                 ) : (
                     <div className="space-y-2.5">
                         {rows.map((r, i) => (
-                            <div key={i} className="bg-white rounded-xl p-3.5 shadow-sm border border-gray-100 flex items-center justify-between">
+                            <div key={i} className="bg-slate-800/90 rounded-2xl p-3.5 shadow-lg border border-slate-700/70 flex items-center justify-between hover:border-slate-600 transition">
                                 <div className="space-y-0.5">
                                     <div className="flex items-center gap-1.5">
-                                        <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                                        <span className="text-xs font-black text-gray-800">
+                                        <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                                        <span className="text-xs font-black text-white">
                                             {type === 'Headquarter' ? (r.headquarter || 'HQ') : (r.stockistName || r.stockist || 'Stockist')}
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-semibold">
+                                    <p className="text-[10px] text-slate-400 font-semibold">
                                         HQ: {r.headquarter || '-'} • {r.month} {r.year}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2.5">
                                     <div className="text-right">
-                                        <p className="text-xs font-black text-emerald-600">
-                                            {type === 'Inventory' ? `${r.quantity || 0} Qty` : `₹${Number(r.totalSales || 0).toLocaleString('en-IN')}`}
+                                        <p className="text-xs font-black text-emerald-400">
+                                            {type === 'Inventory' ? `${r.quantity || 0} Qty` : `₹${Math.round(Number(r.totalSales || 0)).toLocaleString('en-IN')}`}
                                         </p>
                                     </div>
                                     {type !== 'Inventory' && (
-                                        <button onClick={() => openDetail(r)} className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+                                        <button 
+                                            onClick={() => openDetail(r)} 
+                                            className="p-2 rounded-xl bg-slate-700/80 text-emerald-400 hover:bg-slate-700 active:scale-95"
+                                        >
                                             <Eye className="w-4 h-4" />
                                         </button>
                                     )}
@@ -199,25 +229,25 @@ const SecondarySalesReportView: React.FC = () => {
 
             {/* Product Detail Modal */}
             {detailModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-                    <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[80vh] flex flex-col overflow-hidden">
-                        <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="text-xs font-black text-gray-800 uppercase">{detailModal.title}</h3>
-                            <button onClick={() => setDetailModal(null)} className="p-1 rounded-lg hover:bg-gray-100">
-                                <X className="w-4 h-4 text-gray-500" />
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="bg-slate-800 border border-slate-700 w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[80vh] flex flex-col overflow-hidden text-slate-100 shadow-2xl">
+                        <div className="px-4 py-3.5 border-b border-slate-700 flex items-center justify-between bg-slate-900/60">
+                            <h3 className="text-xs font-black text-white uppercase">{detailModal.title}</h3>
+                            <button onClick={() => setDetailModal(null)} className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white">
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="p-3.5 overflow-y-auto divide-y divide-gray-50">
+                        <div className="p-3.5 overflow-y-auto divide-y divide-slate-700/50">
                             {detailModal.items.length === 0 ? (
-                                <p className="text-center text-xs text-gray-400 py-6">No product items found.</p>
+                                <p className="text-center text-xs text-slate-400 py-6">No product items found.</p>
                             ) : (
                                 detailModal.items.map((it, idx) => (
                                     <div key={idx} className="py-2.5 flex items-center justify-between">
                                         <div>
-                                            <p className="text-xs font-bold text-gray-800">{it.productName || it.product}</p>
-                                            <p className="text-[10px] text-gray-400 font-semibold">Qty: {it.quantity} • Rate: ₹{Number(it.price || 0).toFixed(2)}</p>
+                                            <p className="text-xs font-bold text-white">{it.productName || it.product}</p>
+                                            <p className="text-[10px] text-slate-400 font-semibold">Qty: {it.quantity} • Rate: ₹{Number(it.price || 0).toFixed(2)}</p>
                                         </div>
-                                        <p className="text-xs font-black text-emerald-600">₹{Number(it.totalSales || 0).toLocaleString('en-IN')}</p>
+                                        <p className="text-xs font-black text-emerald-400">₹${Math.round(Number(it.totalSales || 0)).toLocaleString('en-IN')}</p>
                                     </div>
                                 ))
                             )}
