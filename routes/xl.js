@@ -1657,40 +1657,96 @@ router.get('/user/todays-activity', async (req, res) => {
 router.post('/user/contact-support', async (req, res) => {
     try {
         const { employeeId, subject, message } = req.body;
-        const { XlUser, XlNotification } = require('../db');
+        const { XlUser, XlNotification, Company } = require('../db');
         const { sendEmail } = require('../utils/mailer');
 
         const user = await XlUser.findOne({ where: { employeeId: (employeeId || '').trim() } });
         const userName = user ? `${user.firstName} ${user.lastName}` : 'CRM Field User';
         const userEmail = user?.email || 'N/A';
         const userHq = user?.hq || 'N/A';
+        const userDesignation = user?.designation || 'TERRITORY BUSINESS MANAGER';
 
-        // 1. Send direct email to adminhr@emyrishr.in
+        // Fetch official company support email dynamically from Company profile
+        let companySupportEmail = 'hradmin@emyrishr.in';
+        try {
+            const company = await Company.findOne();
+            if (company && company.email) {
+                companySupportEmail = company.email.trim();
+            }
+        } catch (_) {}
+
+        const ticketNo = 'TCK-' + Date.now().toString().slice(-6);
+
+        // 1. Send direct email to company support email with replyTo set to employee
         await sendEmail({
-            to: 'adminhr@emyrishr.in',
-            subject: `[XL CRM Support] ${subject || 'User Query'} - from ${userName} (${userHq})`,
+            to: companySupportEmail,
+            replyTo: (userEmail && userEmail !== 'N/A' && userEmail.includes('@')) ? userEmail : undefined,
+            subject: `[Support Ticket #${ticketNo}] ${subject || 'User Query'} - from ${userName} (${userHq})`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-                    <h3 style="color: #0284c7; margin-top: 0;">Support Request from Emyris XL Field CRM</h3>
-                    <p><strong>Employee:</strong> ${userName} (${employeeId})</p>
-                    <p><strong>Headquarter:</strong> ${userHq}</p>
-                    <p><strong>Email:</strong> ${userEmail}</p>
-                    <p><strong>Subject:</strong> ${subject || 'Support Query'}</p>
+                    <div style="background: #0284c7; color: white; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 16px;">New Support Request #${ticketNo}</h3>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9;">Emyris XL Field CRM Help Desk</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+                        <tr><td style="padding: 6px 0; color: #64748b; width: 140px;"><strong>Employee:</strong></td><td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${userName} (${employeeId || 'N/A'})</td></tr>
+                        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Designation:</strong></td><td style="padding: 6px 0; color: #0f172a;">${userDesignation}</td></tr>
+                        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Headquarter:</strong></td><td style="padding: 6px 0; color: #0f172a;">${userHq}</td></tr>
+                        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Employee Email:</strong></td><td style="padding: 6px 0; color: #0284c7;"><a href="mailto:${userEmail}">${userEmail}</a></td></tr>
+                        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Subject / Concern:</strong></td><td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${subject || 'Support Query'}</td></tr>
+                    </table>
                     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-                    <p><strong>Message:</strong></p>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${message}</div>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Message / Concern:</strong></p>
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #1e293b;">${message}</div>
+                    <div style="margin-top: 20px; font-size: 11px; color: #94a3b8; text-align: center;">
+                        To reply to the employee, click Reply in your email client.
+                    </div>
                 </div>
             `
         });
 
-        // 2. Save directly in database notifications for Admin portal
+        // 2. Also send an immediate acknowledgement / confirmation copy to the Employee!
+        if (userEmail && userEmail !== 'N/A' && userEmail.includes('@')) {
+            await sendEmail({
+                to: userEmail,
+                subject: `[Received #${ticketNo}] Support Concern: ${subject || 'General'}`,
+                html: `
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                        <h3 style="color: #0284c7; margin-top: 0;">We've received your query</h3>
+                        <p style="font-size: 14px; color: #334155;">Hello <strong>${userName}</strong>,</p>
+                        <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                            Thank you for reaching out to Emyris Support. Your request has been logged under <strong>Ticket #${ticketNo}</strong> and forwarded to our HR & Operations team (<strong>${companySupportEmail}</strong>).
+                        </p>
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; margin: 16px 0;">
+                            <p style="margin: 0 0 8px 0;"><strong>Concern:</strong> ${subject || 'Support Query'}</p>
+                            <p style="margin: 0; color: #64748b; white-space: pre-wrap;">${message}</p>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b;">
+                            If you need urgent assistance, you can also contact the helpdesk at <strong>7993163300</strong>.
+                        </p>
+                        <p style="font-size: 12px; color: #94a3b8; margin-top: 20px;">Best Regards,<br>Emyris Support Team</p>
+                    </div>
+                `
+            }).catch(err => console.error('Employee ack email error:', err));
+        }
+
+        // 3. Save directly in database notifications for Admin portal
         await XlNotification.create({
             employeeId: 'ADMIN',
-            title: `Support Query: ${subject || 'General'} (${userName} - ${userHq})`,
-            message: `From: ${userName} (${employeeId}) | HQ: ${userHq} | Email: ${userEmail}\n\n${message}`
+            title: `Support #${ticketNo}: ${subject || 'General'} (${userName} - ${userHq})`,
+            message: `From: ${userName} (${employeeId || 'N/A'}) | HQ: ${userHq} | Email: ${userEmail}\n\n${message}`
         }).catch(err => console.error('Notification log error:', err));
 
-        res.json({ success: true, message: 'Your support request has been submitted to the management team.' });
+        // 4. Also save in the employee's personal notifications in their mobile app
+        if (employeeId) {
+            await XlNotification.create({
+                employeeId: employeeId.trim(),
+                title: `Support Ticket #${ticketNo} Submitted`,
+                message: `Your query regarding "${subject || 'General'}" has been sent to ${companySupportEmail}.`
+            }).catch(err => console.error('User notification log error:', err));
+        }
+
+        res.json({ success: true, message: `Your support request #${ticketNo} has been submitted to the management team.` });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     }

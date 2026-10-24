@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 
-async function sendEmail({ to, subject, html, attachments = [] }) {
+async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
     const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
     const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
@@ -31,7 +31,10 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
             console.log(`📧 [INFO] Attempting SMTP delivery via ${host}...`);
             const info = await transporter.sendMail({
                 from: fromAddr,
-                to, subject, html,
+                to,
+                replyTo: replyTo || undefined,
+                subject, 
+                html,
                 attachments: attachments.map(a => ({
                     filename: a.filename,
                     content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content, 'base64'),
