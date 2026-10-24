@@ -8877,7 +8877,7 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
         }
 
         if (stockist) {
-            whereClauses.push('(s.stockist = :stockist OR s.stockist IN (SELECT uid FROM xl_stockists WHERE name = :stockist OR "businessName" = :stockist OR uid = :stockist OR "_id" = :stockist))');
+            whereClauses.push('(s.stockist = :stockist OR s.stockist IN (SELECT uid FROM xl_stockists WHERE name = :stockist OR "businessName" = :stockist OR uid = :stockist OR "_id" = :stockist) OR s.stockist IN (SELECT "_id" FROM xl_stockists WHERE name = :stockist OR "businessName" = :stockist OR uid = :stockist OR "_id" = :stockist) OR s.stockist IN (SELECT "businessName" FROM xl_stockists WHERE name = :stockist OR "businessName" = :stockist OR uid = :stockist OR "_id" = :stockist))');
             replacements.stockist = stockist;
         }
         if (headquarter) {
@@ -8900,9 +8900,9 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
             sql = `
                 SELECT 
                     i.product, 
-                    SUM(i.qty) as quantity, 
-                    MAX(COALESCE(NULLIF(i."basePrice", 0), NULLIF(i."customPrice", 0), pr.ptr, 0)) as price,
-                    SUM(i.qty * COALESCE(NULLIF(i."basePrice", 0), NULLIF(i."customPrice", 0), pr.ptr, 0)) as "totalSales"
+                    SUM(COALESCE(NULLIF(i."salesQty", 0), i.qty, 0)) as quantity, 
+                    MAX(COALESCE(NULLIF(i."customPrice", 0), NULLIF(i."basePrice", 0), pr.ptr, 0)) as price,
+                    SUM(COALESCE(NULLIF(i."salesQty", 0), i.qty, 0) * COALESCE(NULLIF(i."customPrice", 0), NULLIF(i."basePrice", 0), pr.ptr, 0)) as "totalSales"
                 FROM xl_secondary_sales s
                 JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
                 LEFT JOIN xl_products pr ON (i.product = pr.uid OR i.product = pr."_id" OR i."productId" = pr.uid OR i."productId" = pr."_id")
@@ -8911,10 +8911,47 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
             `;
         }
 
-        const data = await sequelize.query(sql, {
+        let data = await sequelize.query(sql, {
             replacements,
             type: sequelize.QueryTypes.SELECT
         });
+
+        // Fallback to s.productsData JSON if items query returned 0 rows
+        if ((!data || data.length === 0) && type !== 'Stockist') {
+            try {
+                const rawSales = await sequelize.query(`
+                    SELECT s."productsData"
+                    FROM xl_secondary_sales s
+                    ${whereSql}
+                `, { replacements, type: sequelize.QueryTypes.SELECT });
+
+                const prodMapTemp = {};
+                rawSales.forEach(s => {
+                    if (!s.productsData) return;
+                    try {
+                        const parsed = typeof s.productsData === 'string' ? JSON.parse(s.productsData) : s.productsData;
+                        if (Array.isArray(parsed)) {
+                            parsed.forEach(it => {
+                                const pId = it.productId || it.product;
+                                const qty = Number(it.salesQty || it.qty || 0);
+                                const price = Number(it.customPrice || it.basePrice || it.price || 0);
+                                if (pId && qty > 0) {
+                                    if (!prodMapTemp[pId]) {
+                                        prodMapTemp[pId] = { product: pId, quantity: 0, price: price, totalSales: 0 };
+                                    }
+                                    prodMapTemp[pId].quantity += qty;
+                                    prodMapTemp[pId].price = Math.max(prodMapTemp[pId].price, price);
+                                    prodMapTemp[pId].totalSales += (qty * price);
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                });
+                data = Object.values(prodMapTemp);
+            } catch (err) {
+                console.error('Secondary productsData fallback error:', err);
+            }
+        }
 
         const { XlProduct, XlStockist } = require('../db');
         
