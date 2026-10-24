@@ -64,12 +64,19 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
   const [todaysData, setTodaysData] = useState<any>(null);
   const [todaysLoading, setTodaysLoading] = useState(false);
 
+  const [corporateAddress, setCorporateAddress] = useState('Ahmedabad, Gujarat, India');
+
   useEffect(() => {
     if (isOpen) {
       axios.get('/api/company-profile')
         .then(res => {
-          if (res.data && res.data.logoUrl) {
-            setLogoUrl(res.data.logoUrl);
+          if (res.data) {
+            if (res.data.logoUrl) {
+              setLogoUrl(res.data.logoUrl);
+            }
+            if (res.data.address) {
+              setCorporateAddress(res.data.address);
+            }
           }
         })
         .catch(err => console.error("Failed to load company profile", err));
@@ -559,7 +566,7 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                 <MapPin size={16} className="text-rose-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <p className="text-slate-400 font-semibold">Corporate Office</p>
-                  <p className="text-white font-bold">Ahmedabad, Gujarat, India</p>
+                  <p className="text-white font-bold">{corporateAddress}</p>
                 </div>
               </div>
             </div>
