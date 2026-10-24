@@ -1526,7 +1526,11 @@ router.get('/user/consolidated-activity', async (req, res) => {
             if (day) {
                 datesWorked.add(day);
                 if (!dailyMap[day]) {
-                    dailyMap[day] = { date: day, doctor: 0, chemist: 0, stockist: 0, total: 0, pob: 0 };
+                    const parts = day.split('-');
+                    const formattedDate = parts.length === 3 && parts[0].length === 4 
+                        ? `${parts[2]}-${parts[1]}-${parts[0]}` 
+                        : day;
+                    dailyMap[day] = { date: formattedDate, rawDate: day, doctor: 0, chemist: 0, stockist: 0, total: 0, pob: 0 };
                 }
                 if (d.entityType === 'Doctor') dailyMap[day].doctor++;
                 else if (d.entityType === 'Chemist') dailyMap[day].chemist++;
@@ -1539,7 +1543,7 @@ router.get('/user/consolidated-activity', async (req, res) => {
         const daysWorked = datesWorked.size;
         const totalCalls = doctorCalls + chemistCalls + stockistCalls;
         const callAvg = daysWorked > 0 ? Number((totalCalls / daysWorked).toFixed(1)) : 0;
-        const dailyBreakdown = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+        const dailyBreakdown = Object.values(dailyMap).sort((a, b) => b.rawDate.localeCompare(a.rawDate));
 
         res.json({
             success: true,

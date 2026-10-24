@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, CalendarDays, User, Store, Building2, ClipboardList, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { formatDDMMYYYY } from '../utils/dateUtils';
 
 export default function ConsolidatedActivity() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function ConsolidatedActivity() {
     if (!data?.dailyBreakdown?.length) return;
     const headers = ['Date', 'Doctor Calls', 'Chemist Calls', 'Stockist Calls', 'Total Calls', 'POB Value (INR)'];
     const rows = data.dailyBreakdown.map((r: any) => [
-      r.date,
+      formatDDMMYYYY(r.date),
       r.doctor,
       r.chemist,
       r.stockist,
@@ -171,7 +172,7 @@ export default function ConsolidatedActivity() {
                     {(data?.dailyBreakdown || []).length > 0 ? (
                       data.dailyBreakdown.map((r: any, idx: number) => (
                         <tr key={idx} className="hover:bg-slate-700/40">
-                          <td className="py-2.5 px-3 font-semibold text-slate-200">{r.date}</td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-200">{formatDDMMYYYY(r.date)}</td>
                           <td className="py-2.5 px-3 text-center font-bold text-emerald-400">{r.doctor}</td>
                           <td className="py-2.5 px-3 text-center font-bold text-sky-400">{r.chemist}</td>
                           <td className="py-2.5 px-3 text-center font-bold text-amber-400">{r.stockist}</td>

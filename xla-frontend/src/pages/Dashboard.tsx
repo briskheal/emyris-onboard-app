@@ -5,6 +5,7 @@ import {
   User, ChevronDown, Download, Activity, Check, Calendar, Send, ArrowRight, Clock,
   X, RefreshCw, FileSpreadsheet, ExternalLink
 } from 'lucide-react';
+import { formatDDMMYYYY } from '../utils/dateUtils';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export default function Dashboard() {
     if (!consolidatedData) return;
     const headers = ['Date', 'Doctor Calls', 'Chemist Calls', 'Stockist Calls', 'Total Calls', 'POB Value (INR)'];
     const rows = (consolidatedData.dailyBreakdown || []).map((r: any) => [
-      r.date,
+      formatDDMMYYYY(r.date),
       r.doctor,
       r.chemist,
       r.stockist,
@@ -596,7 +597,7 @@ export default function Dashboard() {
                           {(consolidatedData?.dailyBreakdown || []).length > 0 ? (
                             consolidatedData.dailyBreakdown.map((row: any, idx: number) => (
                               <tr key={idx} className="hover:bg-white dark:hover:bg-[#2d2d46] transition-colors">
-                                <td className="py-2.5 px-3 font-semibold text-slate-700 dark:text-slate-200">{row.date}</td>
+                                <td className="py-2.5 px-3 font-semibold text-slate-700 dark:text-slate-200">{formatDDMMYYYY(row.date)}</td>
                                 <td className="py-2.5 px-3 text-center font-bold text-emerald-500 dark:text-emerald-400">{row.doctor}</td>
                                 <td className="py-2.5 px-3 text-center font-bold text-sky-500 dark:text-sky-400">{row.chemist}</td>
                                 <td className="py-2.5 px-3 text-center font-bold text-amber-500 dark:text-amber-400">{row.stockist}</td>
