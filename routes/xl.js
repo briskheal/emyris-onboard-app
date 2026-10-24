@@ -7168,10 +7168,10 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let groupQuery = '';
 
         if (isDateWise) {
-            selectQuery = 'COALESCE(p."invoiceDate", p.date) as date, i.product, SUM(i.qty) as quantity, AVG(i.\"basePrice\") as \"averagePrice\", SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
+            selectQuery = 'COALESCE(p."invoiceDate", p.date) as date, i.product, SUM(COALESCE(i.qty, 0)) as quantity, CASE WHEN SUM(COALESCE(i.qty, 0)) > 0 THEN ROUND(SUM(i."basePrice" * i.qty) / SUM(i.qty), 2) ELSE ROUND(AVG(i."basePrice"), 2) END as "averagePrice", SUM(i."basePrice" * i.qty) as "totalSales"';
             groupQuery = 'COALESCE(p."invoiceDate", p.date), i.product';
         } else {
-            selectQuery = 'i.product, SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
+            selectQuery = 'i.product, SUM(COALESCE(i.qty, 0)) as quantity, CASE WHEN SUM(COALESCE(i.qty, 0)) > 0 THEN ROUND(SUM(i."basePrice" * i.qty) / SUM(i.qty), 2) ELSE ROUND(AVG(i."basePrice"), 2) END as "averagePrice", SUM(i."basePrice" * i.qty) as "totalSales"';
             groupQuery = 'i.product';
         }
 
