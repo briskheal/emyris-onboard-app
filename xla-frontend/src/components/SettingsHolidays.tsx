@@ -4,16 +4,19 @@ import { Trash2, CheckSquare, ChevronDown, X } from 'lucide-react';
 
 function formatDDMMYYYY(dateStr: string) {
   if (!dateStr) return '-';
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-      const parts = dateStr.split('T')[0].split('-');
-      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  const clean = String(dateStr).split('T')[0].trim();
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(clean)) {
+    const parts = clean.split('-');
+    return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
+  }
+  if (/^\d{2}-\d{2}-\d{4}$/.test(clean)) {
+    return clean;
   }
   try {
-      const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
-          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
-      }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    }
   } catch (e) {}
   return dateStr;
 }
@@ -127,7 +130,7 @@ export default function SettingsHolidays() {
     });
   };
 
-  const renderDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+  const renderDate = (d: string) => formatDDMMYYYY(d);
 
   const downloadHolidays = () => {
     if (holidays.length === 0) return;
@@ -156,7 +159,7 @@ export default function SettingsHolidays() {
     const rows = Object.values(grouped)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map((g, index) => {
-        const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+        const dateStr = formatDDMMYYYY(g.date);
         
         // Check 'Y' for each state column
         const stateChecks = uniqueStates.map(stateName => {

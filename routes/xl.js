@@ -11860,7 +11860,7 @@ router.get('/reports/quick-summary', async (req, res) => {
         let todayHoliday = holidaysOnToday.find(h => {
             const hs = (h.state || '').toLowerCase().trim();
             return !hs || hs === 'all' || hs === 'n/a' || h.type === 'National' || (userState && hs === userState);
-        }) || holidaysOnToday[0] || null;
+        }) || null;
 
         if (!todayHoliday && curTp) {
             try {
@@ -12212,15 +12212,19 @@ router.get('/reports/monthly-summary', async (req, res) => {
         const attMap = {};
         attendances.forEach(a => { attMap[a.date] = a; });
 
-        // Map Holidays by date (State-matched or National or fallback)
+        // Map Holidays by date (State-matched or National)
         const userState = (ctx.state || '').toLowerCase().trim();
         const holMap = {};
         holidays.forEach(h => {
             const hd = normalizeHolidayDateStr(h.date);
             if (!hd) return;
             const hs = (h.state || '').toLowerCase().trim();
-            if (!hs || hs === 'all' || hs === 'n/a' || h.type === 'National' || (userState && hs === userState) || !holMap[hd]) {
-                holMap[hd] = h.title || 'Holiday';
+            const isNational = h.type === 'National' || !hs || hs === 'all' || hs === 'n/a';
+            const isStateMatch = userState && hs === userState;
+            if (isNational || isStateMatch) {
+                if (!holMap[hd] || isStateMatch) {
+                    holMap[hd] = h.title || 'Holiday';
+                }
             }
         });
 
