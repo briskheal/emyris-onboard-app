@@ -8935,8 +8935,8 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
         data.forEach(d => {
             if (d.product && prodMap[d.product]) d.productName = prodMap[d.product];
             if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
-            d.totalSales = Number(d.totalSales || 0);
-            d.price = Number(d.price || 0);
+            d.totalSales = Math.round(Number(d.totalSales || 0));
+            d.price = Math.round(Number(d.price || 0));
             d.quantity = Number(d.quantity || 0);
         });
 
