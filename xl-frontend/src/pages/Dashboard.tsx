@@ -419,7 +419,7 @@ export default function Dashboard() {
                 <span className="text-xs font-bold text-slate-200">Monthly Target</span>
               </div>
               <p className="text-2xl font-black text-white pl-4">
-                ₹{Number(stats.target || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Math.round(Number(stats.target || 0)).toLocaleString('en-IN')}
               </p>
             </div>
 
@@ -440,7 +440,7 @@ export default function Dashboard() {
                 ></div>
               </div>
               <p className="text-lg font-black text-sky-400 pl-4">
-                ₹{Number(stats.primary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Math.round(Number(stats.primary || 0)).toLocaleString('en-IN')}
               </p>
             </div>
 
@@ -461,7 +461,7 @@ export default function Dashboard() {
                 ></div>
               </div>
               <p className="text-lg font-black text-sky-400 pl-4">
-                ₹{Number(stats.secondary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Math.round(Number(stats.secondary || 0)).toLocaleString('en-IN')}
               </p>
             </div>
           </div>
