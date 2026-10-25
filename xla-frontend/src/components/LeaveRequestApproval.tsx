@@ -61,6 +61,25 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
     }
   };
 
+  const handleSingleAction = async (recordId: string, action: string) => {
+    if (!window.confirm(`Are you sure you want to ${action} this leave request?`)) return;
+    try {
+      const res = await axios.post('/api/xl/approvals/action', {
+        type: 'Leave Request',
+        action,
+        recordId
+      });
+      if (res.data.success) {
+        fetchPending();
+        fetchCounts();
+      } else {
+        alert(res.data.message || 'Action failed');
+      }
+    } catch (e) {
+      alert('Action failed');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
        {/* Top Control Bar */}
@@ -143,65 +162,137 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
           </div>
        )}
 
-       {/* Full Width Excel Grid Table */}
-       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
-          <table className="w-full text-left border-collapse relative">
-            <thead>
-              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Start Date ↑</th>
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">End Date ↑</th>
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reason For Leave</th>
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Status</th>
-                <th className="p-3.5 w-16 text-center">
-                   <div className="flex items-center justify-center gap-1.5">
-                     <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
-                     <input 
-                       type="checkbox" 
-                       checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} 
-                       onChange={toggleAll} 
-                       className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
-                     />
-                   </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/30">
-              {filteredItems.length === 0 ? (
-                <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Leave Requests Found</td></tr>
-              ) : filteredItems.map((d: any, idx: number) => {
-                const sd = d.startDate || d.date || '';
-                const ed = d.endDate || d.date || '';
-                const st = d.status || 'Pending';
-                const statusColor = st === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                    st === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                                    st === 'Revoked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                    'bg-sky-500/20 text-sky-400 border border-sky-500/30';
-                return (
-                  <tr key={d._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
-                    <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
-                    <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">
-                      {new Date(sd).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
-                    </td>
-                    <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap border-r border-slate-700/30">
-                      {new Date(ed).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
-                    </td>
-                    <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName || d.employeeId}</td>
-                    <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.reason || d.remarks || '-'}</td>
-                    <td className="p-3 text-center border-r border-slate-700/30">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}`}>
-                        {st}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+       {/* Content Area */}
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c] p-3 md:p-0">
+          {/* Mobile Touch Cards (< md) */}
+          <div className="md:hidden space-y-3">
+             {filteredItems.length === 0 ? (
+               <div className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">
+                 No Leave Requests Found
+               </div>
+             ) : filteredItems.map((d: any, idx: number) => {
+               const sd = d.startDate || d.date || '';
+               const ed = d.endDate || d.date || '';
+               const st = d.status || 'Pending';
+               const statusColor = st === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                   st === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                   st === 'Revoked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                   'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+               return (
+                 <div key={d._id} className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 shadow-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black bg-slate-700/80 text-slate-300 px-2 py-0.5 rounded">#{idx + 1}</span>
+                          <span className="text-xs font-bold text-sky-400">{d.employeeName || d.employeeId}</span>
+                       </div>
+                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${statusColor}`}>
+                          {st}
+                       </span>
+                    </div>
+
+                    <div className="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700/40 text-xs space-y-1.5">
+                       <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">Leave Dates:</span>
+                          <span className="font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                             {new Date(sd).toLocaleDateString('en-GB')} {sd !== ed && ` to ${new Date(ed).toLocaleDateString('en-GB')}`}
+                          </span>
+                       </div>
+                       <div className="text-slate-300 pt-1 border-t border-slate-800/80">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Reason:</span>
+                          <p className="italic text-slate-200">{d.reason || d.remarks || 'No reason provided'}</p>
+                       </div>
+                    </div>
+
+                    {st === 'Pending' ? (
+                       <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => handleSingleAction(d._id, 'Approved')}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all"
+                          >
+                            <CheckCircle size={14} /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleSingleAction(d._id, 'Rejected')}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all"
+                          >
+                            <XCircle size={14} /> Reject
+                          </button>
+                       </div>
+                    ) : (
+                       <div className="flex items-center justify-end">
+                          <button
+                            onClick={() => handleSingleAction(d._id, 'Revoked')}
+                            className="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 text-xs font-bold rounded-lg transition-all"
+                          >
+                            Revoke Decision
+                          </button>
+                       </div>
+                    )}
+                 </div>
+               );
+             })}
+          </div>
+
+          {/* Desktop Table (>= md) */}
+          <div className="hidden md:block">
+            <table className="w-full text-left border-collapse relative">
+              <thead>
+                <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Start Date ↑</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">End Date ↑</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reason For Leave</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Status</th>
+                  <th className="p-3.5 w-16 text-center">
+                     <div className="flex items-center justify-center gap-1.5">
+                       <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                       <input 
+                         type="checkbox" 
+                         checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} 
+                         onChange={toggleAll} 
+                         className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
+                       />
+                     </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {filteredItems.length === 0 ? (
+                  <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Leave Requests Found</td></tr>
+                ) : filteredItems.map((d: any, idx: number) => {
+                  const sd = d.startDate || d.date || '';
+                  const ed = d.endDate || d.date || '';
+                  const st = d.status || 'Pending';
+                  const statusColor = st === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                      st === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                      st === 'Revoked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                      'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+                  return (
+                    <tr key={d._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                      <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">
+                        {new Date(sd).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
+                      </td>
+                      <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap border-r border-slate-700/30">
+                        {new Date(ed).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
+                      </td>
+                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName || d.employeeId}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.reason || d.remarks || '-'}</td>
+                      <td className="p-3 text-center border-r border-slate-700/30">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}`}>
+                          {st}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
        </div>
     </div>
   );

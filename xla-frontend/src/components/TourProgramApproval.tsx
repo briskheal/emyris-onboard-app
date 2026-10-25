@@ -402,87 +402,176 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
        </div>
 
        {/* Full Width Excel Grid Table */}
-       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
-          <table className="w-full text-left border-collapse relative">
-            <thead>
-              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
-                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
-                {isMonthlyView ? (
-                  <>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Month ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Year ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Name ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reporting Manager</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16">View</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Area Type</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Location</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Remarks</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Activity</th>
-                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Worked with</th>
-                    <th className="p-3.5 w-16 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
-                        <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
-                          if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
-                          else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${formatDDMMYYYY(d.date)}`));
-                        }} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c] p-3 md:p-0">
+          {/* Mobile Card List (< md) */}
+          <div className="md:hidden space-y-3 mb-6">
+             {isMonthlyView ? (
+               filteredItems.length === 0 ? (
+                 <div className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly TPs</div>
+               ) : filteredItems.map((item: any) => (
+                 <div key={item._id} className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 shadow-lg space-y-2.5">
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs font-bold text-sky-400">{item.employeeName || item.employeeId}</span>
+                       <span className="text-[10px] font-black uppercase bg-slate-700/80 text-white px-2 py-0.5 rounded">{item.month} {item.year}</span>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                       <span>{item.designation || '-'}</span> • <span className="text-slate-300">Manager: {item.reportingManager || '-'}</span>
+                    </div>
+                    <button 
+                      onClick={() => setDetailedMonthTpId(item._id)} 
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-sky-600/20 border border-sky-500/40 text-sky-300 rounded-lg text-xs font-bold active:scale-95 transition-all"
+                    >
+                       <Eye size={14} /> View Month Tour Days
+                    </button>
+                 </div>
+               ))
+             ) : (
+               dayWiseData.length === 0 ? (
+                 <div className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</div>
+               ) : dayWiseData.map((d: any, idx: number) => {
+                 const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
+                 const isSel = selectedRows.includes(rowId);
+                 return (
+                   <div key={rowId} className={`bg-slate-800/90 border ${isSel ? 'border-sky-500 bg-sky-950/20' : 'border-slate-700/80'} rounded-xl p-4 shadow-lg space-y-2.5`}>
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black bg-slate-700/80 text-slate-300 px-2 py-0.5 rounded">#{idx + 1}</span>
+                            <span className="text-xs font-bold text-sky-400">{d.employeeName}</span>
+                         </div>
+                         <span className="text-[11px] font-bold text-white bg-slate-700 px-2 py-0.5 rounded">{formatDDMMYYYY(d.date)}</span>
                       </div>
-                    </th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/30">
-              {isMonthlyView ? (
-                filteredItems.length === 0 ? (
-                  <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly TPs</td></tr>
-                ) : filteredItems.map((item: any, idx: number) => (
-                  <tr key={item._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
-                    <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
-                    <td className="p-3 text-[13px] font-bold text-white capitalize bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{item.month}</td>
-                    <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{item.year}</td>
-                    <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{item.employeeName || item.employeeId}</td>
-                    <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.designation || "-"}</td>
-                    <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.reportingManager || "-"}</td>
-                    <td className="p-3 text-center">
-                      <button onClick={() => setDetailedMonthTpId(item._id)} className="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                        <Eye size={16} strokeWidth={2.5}/>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                dayWiseData.length === 0 ? (
-                  <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
-                ) : dayWiseData.map((d: any, idx: number) => {
-                  const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
-                  return (
-                    <tr key={rowId} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+
+                      <div className="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700/40 text-xs space-y-1">
+                         <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold">Area Type:</span>
+                            <span className="text-white font-medium">{d.areaType}</span>
+                         </div>
+                         <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold">Location:</span>
+                            <span className="text-sky-300 font-bold">{d.location}</span>
+                         </div>
+                         {d.activity && (
+                            <div className="flex items-center justify-between text-slate-300">
+                               <span className="text-[10px] text-slate-400 uppercase font-bold">Activity:</span>
+                               <span className="text-slate-300">{d.activity}</span>
+                            </div>
+                         )}
+                         {d.remarks && (
+                            <div className="text-[11px] italic text-slate-400 pt-1 border-t border-slate-800">
+                               Remarks: {d.remarks}
+                            </div>
+                         )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                         <button
+                           onClick={() => {
+                             setSelectedRows([rowId]);
+                             handleBulkAction('Approved');
+                           }}
+                           className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all text-center"
+                         >
+                           Approve
+                         </button>
+                         <button
+                           onClick={() => {
+                             setSelectedRows([rowId]);
+                             handleBulkAction('Rejected');
+                           }}
+                           className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all text-center"
+                         >
+                           Reject
+                         </button>
+                      </div>
+                   </div>
+                 );
+               })
+             )}
+          </div>
+
+          {/* Desktop Table (>= md) */}
+          <div className="hidden md:block">
+            <table className="w-full text-left border-collapse relative">
+              <thead>
+                <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                  {isMonthlyView ? (
+                    <>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Month ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Year ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Name ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reporting Manager</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16">View</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Area Type</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Location</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Remarks</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Activity</th>
+                      <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Worked with</th>
+                      <th className="p-3.5 w-16 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                          <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
+                            if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
+                            else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${formatDDMMYYYY(d.date)}`));
+                          }} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                        </div>
+                      </th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {isMonthlyView ? (
+                  filteredItems.length === 0 ? (
+                    <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly TPs</td></tr>
+                  ) : filteredItems.map((item: any, idx: number) => (
+                    <tr key={item._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
                       <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
-                      <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
-                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.designation}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.areaType}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.location}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.remarks}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.activity}</td>
-                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.workedWith}</td>
+                      <td className="p-3 text-[13px] font-bold text-white capitalize bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{item.month}</td>
+                      <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{item.year}</td>
+                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{item.employeeName || item.employeeId}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.designation || "-"}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.reportingManager || "-"}</td>
                       <td className="p-3 text-center">
-                        <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                        <button onClick={() => setDetailedMonthTpId(item._id)} className="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                          <Eye size={16} strokeWidth={2.5}/>
+                        </button>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ))
+                ) : (
+                  dayWiseData.length === 0 ? (
+                    <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
+                  ) : dayWiseData.map((d: any, idx: number) => {
+                    const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
+                    return (
+                      <tr key={rowId} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                        <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                        <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
+                        <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.designation}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.areaType}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.location}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.remarks}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.activity}</td>
+                        <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.workedWith}</td>
+                        <td className="p-3 text-center">
+                          <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
        </div>
     </div>
   );

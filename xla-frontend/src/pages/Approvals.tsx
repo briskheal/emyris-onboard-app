@@ -176,9 +176,64 @@ export default function Approvals() {
   };
 
   return (
-    <div className="flex h-full bg-[#151c2c] text-white overflow-hidden font-sans">
-       {/* Sidebar */}
-       <div className={`${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0 shadow-2xl z-10 transition-all duration-200`}>
+    <div className="flex flex-col md:flex-row h-full bg-[#151c2c] text-white overflow-hidden font-sans">
+       {/* Mobile Navigation Header & Horizontal Category Bar */}
+       <div className="md:hidden flex flex-col bg-slate-900 border-b border-slate-800 shrink-0 z-20">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-800/60">
+             <button 
+               onClick={() => navigate('/admin')} 
+               className="text-slate-200 hover:text-sky-400 transition-colors flex items-center gap-1.5 text-xs font-bold"
+               title="Back to Admin Menu"
+             >
+               <ArrowLeft size={16} className="text-sky-400" />
+               <span className="tracking-wide">Admin Menu</span>
+             </button>
+             <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{selectedModule}</span>
+                {(counts[selectedModule] || 0) > 0 && (
+                   <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black shadow-sm">
+                      {counts[selectedModule]} pending
+                   </span>
+                )}
+             </div>
+          </div>
+          {/* Horizontal Category Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto px-3 py-2 no-scrollbar">
+             {sidebarItems.map(item => {
+                const count = counts[item.path] || 0;
+                const isSelected = selectedModule === item.path;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      sessionStorage.setItem('adminApprovalModule', item.path);
+                      setSelectedModule(item.path);
+                      setSelectedRows([]);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
+                      isSelected
+                        ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30'
+                        : 'bg-slate-800/90 text-slate-400 border border-slate-700/60 hover:text-white'
+                    }`}
+                  >
+                     <Icon size={13} className={isSelected ? 'text-white' : 'text-slate-400'} />
+                     <span>{item.label}</span>
+                     {count > 0 && (
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          isSelected ? 'bg-white text-sky-600' : 'bg-rose-500 text-white'
+                        }`}>
+                          {count > 99 ? '99+' : count}
+                        </span>
+                     )}
+                  </button>
+                );
+             })}
+          </div>
+       </div>
+
+       {/* Desktop Sidebar */}
+       <div className={`hidden md:flex ${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-900 border-r border-slate-800 flex-col h-full shrink-0 shadow-2xl z-10 transition-all duration-200`}>
           <div className="p-3.5 border-b border-slate-800 flex flex-col gap-2.5">
              <button 
                onClick={() => navigate('/admin')} 

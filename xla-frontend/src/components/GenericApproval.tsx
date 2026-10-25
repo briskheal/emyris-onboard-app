@@ -180,6 +180,34 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     }
   };
 
+  const handleSingleAction = async (recordId: string, action: string) => {
+    if (!window.confirm(`Are you sure you want to ${action} this request?`)) return;
+    try {
+      let endpointType = selectedModule;
+      if (selectedModule === 'Deletion Request') {
+        endpointType = activeToggle === 'DOCTORS' ? 'Deletion Request: Doctor' :
+                       activeToggle === 'STOCKISTS' ? 'Deletion Request: Stockist' :
+                       'Deletion Request: Chemist';
+      }
+      const user = JSON.parse(localStorage.getItem('xla_user') || localStorage.getItem('user') || '{}');
+      const approvedBy = user.employeeId || user.uid || 'Admin';
+      const res = await axios.post('/api/xl/approvals/action', {
+        type: endpointType,
+        action,
+        recordId,
+        approvedBy
+      });
+      if (res.data.success) {
+        fetchPending();
+        fetchCounts();
+      } else {
+        alert(res.data.message || 'Action failed');
+      }
+    } catch (e) {
+      alert('Action failed');
+    }
+  };
+
   const handleBulkAction = async (action: string) => {
     if (selectedRows.length === 0) return;
     try {
@@ -360,7 +388,74 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
        )}
 
        {/* Full Width Excel Grid Table */}
-       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c] p-3 md:p-0">
+          {/* Mobile Card List (< md) */}
+          <div className="md:hidden space-y-3 mb-6">
+             {filteredItems.length === 0 ? (
+               <div className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">
+                 No Records Found
+               </div>
+             ) : filteredItems.map((d: any, idx: number) => {
+               const title = d.name || d.businessName || d.cityName || d.employeeName || `Item #${idx + 1}`;
+               const creator = d.employeeName || d.userAllotted || d.employeeId || 'Admin';
+               const hq = d.headquarter || d.hq || d.state || '-';
+               const status = d.status || 'Pending';
+               const statusColor = status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                   status === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                   'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+               return (
+                 <div key={d._id} className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 shadow-lg space-y-2.5">
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs font-bold text-sky-400 truncate max-w-[200px]">{title}</span>
+                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${statusColor}`}>
+                          {status}
+                       </span>
+                    </div>
+                    <div className="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700/40 text-xs space-y-1">
+                       <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">Created By:</span>
+                          <span className="text-slate-200">{creator}</span>
+                       </div>
+                       <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">HQ / Territory:</span>
+                          <span className="text-slate-200">{hq}</span>
+                       </div>
+                       {columns.slice(2, 4).map((col: any, ci: number) => (
+                          <div key={ci} className="flex items-center justify-between text-slate-300">
+                             <span className="text-[10px] text-slate-400 uppercase font-bold">{col.label.replace('↑', '').trim()}:</span>
+                             <span className="text-slate-200">{renderCellValue(d, col)}</span>
+                          </div>
+                       ))}
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                       {hasView && (
+                          <button
+                            onClick={() => handleViewItem(d)}
+                            className="p-2 bg-sky-600/20 border border-sky-500/40 text-sky-300 rounded-lg text-xs font-bold active:scale-95 transition-all flex items-center justify-center"
+                            title="View Details"
+                          >
+                             <Eye size={14} />
+                          </button>
+                       )}
+                       <button
+                         onClick={() => handleSingleAction(d._id, 'Approved')}
+                         className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all"
+                       >
+                         <CheckCircle size={14} /> Approve
+                       </button>
+                       <button
+                         onClick={() => handleSingleAction(d._id, 'Rejected')}
+                         className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition-all"
+                       >
+                         <XCircle size={14} /> Reject
+                       </button>
+                    </div>
+                 </div>
+               );
+             })}
+          </div>
+          {/* Desktop Table (>= md) */}
+          <div className="hidden md:block">
           <table className="w-full text-left border-collapse relative">
             <thead>
               <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
@@ -441,6 +536,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
               })}
             </tbody>
           </table>
+          </div>
        </div>
     </div>
   );
