@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Mail, Phone, MapPin, Globe, Award, Save, RefreshCw, 
-  CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, MessageCircle, KeyRound 
+  CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, MessageCircle, KeyRound, Headphones 
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -335,6 +335,16 @@ export default function ManageCompanyProfile() {
                     <span className="text-white font-bold">{phone || '7993163300'}</span>
                   </div>
                 </div>
+
+                {tollFree && (
+                  <div className="flex items-start gap-2.5">
+                    <Headphones size={15} className="text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Toll-Free Helpline</span>
+                      <span className="text-white font-bold">{tollFree}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-start gap-2.5">
                   <MapPin size={15} className="text-rose-400 shrink-0 mt-0.5" />

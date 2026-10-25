@@ -4,12 +4,33 @@ import {
   LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, 
   MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, 
   Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare, Sliders,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Laptop, Monitor, ArrowLeft
 } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
 import TypographySettingsModal from './TypographySettingsModal';
 import axios from 'axios';
 import { GLOBAL_ROUTES } from '../config/navigation';
+
+const DESKTOP_ONLY_MODULES: { path: string; label: string }[] = [
+  { path: '/admin/locations', label: 'Manage Locations' },
+  { path: '/admin/users', label: 'Manage Users' },
+  { path: '/admin/products', label: 'Manage Products' },
+  { path: '/admin/user-performance-analysis', label: 'User Performance Analysis' },
+  { path: '/admin/expenses', label: 'Manage Expenses & Allowances' },
+  { path: '/admin/dcs', label: 'Manage DCS (Doctors, Stockists, Chemists)' },
+  { path: '/admin/approvals', label: 'Approvals Hub' },
+  { path: '/admin/leave', label: 'Manage Leave' },
+  { path: '/admin/company-profile', label: 'Company Profile & Contact' },
+  { path: '/reports/geo-location-analysis', label: 'Geo-Location Analysis Report' },
+  { path: '/reports/office-geo-analysis', label: 'Office Geo-Presence Report' },
+  { path: '/reports/sales-insights', label: 'Sales Insights Report' },
+  { path: '/reports/primary-sales', label: 'Primary Sales Reports' },
+  { path: '/reports/secondary-sales', label: 'Secondary Sales Reports' },
+  { path: '/reports/missed-reports', label: 'Missed Reports' },
+  { path: '/utilities/lists', label: 'Master Lists Directory' },
+  { path: '/extras/call-plan', label: 'Monthly Doctor Call Plan' },
+  { path: '/extras/profit', label: 'Profit & Financial Analysis' },
+];
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -62,6 +83,40 @@ export default function Layout() {
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('xla_theme') === 'light';
   });
+
+  // Mobile Screen Warning for Desktop-Only Modules
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+  const [dismissedDesktopWarning, setDismissedDesktopWarning] = useState<string[]>(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('xla_dismissed_desktop_warnings') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const matchedDesktopModule = useMemo(() => {
+    return DESKTOP_ONLY_MODULES.find(m => location.pathname.startsWith(m.path));
+  }, [location.pathname]);
+
+  const showDesktopModal = isMobileScreen && !!matchedDesktopModule && !dismissedDesktopWarning.includes(matchedDesktopModule.path);
+
+  const handleDismissDesktopWarning = () => {
+    if (matchedDesktopModule) {
+      const updated = [...dismissedDesktopWarning, matchedDesktopModule.path];
+      setDismissedDesktopWarning(updated);
+      sessionStorage.setItem('xla_dismissed_desktop_warnings', JSON.stringify(updated));
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('xla_theme', isLightMode ? 'light' : 'dark');
@@ -183,16 +238,8 @@ export default function Layout() {
       {/* TOP HEADER - SPANS FULL WIDTH ABOVE ALL MENUS & SUBMENUS */}
       <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-[#1e1e30] border-b border-slate-200 dark:border-[#3b3b5a] shadow-md z-30 flex-shrink-0">
         
-        {/* Left: Brand Logo & Hamburger Collapse Trigger */}
+        {/* Left: Brand Logo */}
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsDrawerOpen(true)} 
-            className="text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white md:hidden active:scale-95 transition-transform p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            title="Open Navigation"
-          >
-            <Menu size={22} />
-          </button>
-
           <div 
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2.5 cursor-pointer select-none"
@@ -352,6 +399,15 @@ export default function Layout() {
               {userName}
             </span>
           </div>
+
+          {/* Mobile Hamburger Trigger (Right Side, exactly matching XL Portal) */}
+          <button 
+            onClick={() => setIsDrawerOpen(true)} 
+            className="md:hidden text-slate-600 dark:text-slate-300 hover:text-sky-500 dark:hover:text-white active:scale-95 transition-transform p-1 rounded-lg"
+            title="Open Menu"
+          >
+            <Menu size={24} />
+          </button>
         </div>
       </header>
 
@@ -539,6 +595,53 @@ export default function Layout() {
         isOpen={isTypographyModalOpen} 
         onClose={() => setIsTypographyModalOpen(false)} 
       />
+
+      {/* Mobile Screen: Open in Desktop / Laptop Modal */}
+      {showDesktopModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative overflow-hidden">
+            {/* Top decorative gradient glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-2 bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-400 rounded-full" />
+            
+            <div className="w-16 h-16 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-500 mx-auto flex items-center justify-center mb-4 shadow-lg shadow-sky-500/10">
+              <Laptop size={32} strokeWidth={2.2} />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[11px] font-bold uppercase tracking-wider mb-2">
+              <Monitor size={13} />
+              <span>Desktop / Laptop Recommended</span>
+            </div>
+
+            <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mb-2">
+              Open in Desktop / Laptop
+            </h3>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
+              <strong className="text-sky-500 dark:text-sky-400">{matchedDesktopModule?.label}</strong> is a high-density administrative module designed for larger screens.
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+              Wide tables, multi-column filters, and bulk operations are not fully compatible with mobile screens. For the best experience, please open this module on your <strong>Desktop or Laptop</strong>.
+            </p>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold text-xs tracking-wide shadow-lg shadow-sky-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowLeft size={16} />
+                <span>Return to Mobile Dashboard</span>
+              </button>
+
+              <button
+                onClick={handleDismissDesktopWarning}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Continue Anyway (View on Mobile)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

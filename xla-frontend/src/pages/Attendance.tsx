@@ -263,14 +263,11 @@ export default function Attendance() {
 
   return (
     <div className="min-h-screen bg-[#1c1c2e] flex flex-col text-slate-100 font-sans pb-24 md:pb-8">
-      <div className="md:hidden flex items-center gap-4 px-5 pt-12 pb-4 bg-[#1c1c2e] border-b border-[#2d2f45] sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} className="text-white active:scale-95 transition-transform flex items-center gap-1">
-          <ArrowLeft size={22} />
+      <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#1c1c2e] border-b border-[#2d2f45]">
+        <button onClick={() => navigate(-1)} className="text-white active:scale-95 p-1 rounded-lg">
+          <ArrowLeft size={20} />
         </button>
-        <div>
-          <h1 className="text-lg font-black text-white tracking-tight leading-none">EMYRIS</h1>
-          <p className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
-        </div>
+        <h1 className="text-sm font-bold text-white uppercase tracking-wider">Attendance Summary</h1>
       </div>
 
       <div className="flex flex-col px-3 py-4 md:px-4 md:py-6">

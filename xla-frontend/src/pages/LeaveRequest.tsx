@@ -223,14 +223,11 @@ export default function LeaveRequest() {
     <div className="min-h-screen bg-slate-900 flex flex-col text-slate-100 font-sans pb-16 md:pb-6 relative">
       
       {/* Mobile Sticky Header */}
-      <div className="md:hidden flex items-center gap-3 px-4 pt-8 pb-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-white active:scale-95 transition-transform flex items-center gap-1">
+      <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-slate-900 border-b border-slate-800">
+        <button onClick={() => navigate(-1)} className="text-white active:scale-95 p-1 rounded-lg">
           <ArrowLeft size={18} />
         </button>
-        <div>
-          <h1 className="text-base font-black text-white tracking-tight leading-none">EMYRIS</h1>
-          <p className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
-        </div>
+        <h1 className="text-sm font-bold text-white uppercase tracking-wider">Leave Request</h1>
       </div>
 
       {/* Main Container */}

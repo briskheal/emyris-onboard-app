@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Moon, Sun, MessageCircle, Users, Activity, ListTodo, Key, LogOut, 
-  Mail, Phone, MapPin, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw, Send, ShieldCheck, ChevronRight, UserCheck
+  Mail, Phone, MapPin, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw, Send, ShieldCheck, ChevronRight, UserCheck, Headphones
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -67,6 +67,7 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
   const [corporateAddress, setCorporateAddress] = useState('Ahmedabad, Gujarat, India');
   const [supportEmail, setSupportEmail] = useState('adminhr@emyrishr.in');
   const [helpdeskPhone, setHelpdeskPhone] = useState('7993163300');
+  const [tollFree, setTollFree] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -84,6 +85,9 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
             }
             if (res.data.phone) {
               setHelpdeskPhone(res.data.phone);
+            }
+            if (res.data.tollFree) {
+              setTollFree(res.data.tollFree);
             }
           }
         })
@@ -570,6 +574,17 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
                   </a>
                 </div>
               </div>
+              {tollFree && (
+                <div className="flex items-start gap-3">
+                  <Headphones size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="text-slate-400 font-semibold">Toll-Free Helpline</p>
+                    <a href={`tel:${tollFree}`} className="text-white font-bold hover:underline">
+                      {tollFree}
+                    </a>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <MapPin size={16} className="text-rose-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
