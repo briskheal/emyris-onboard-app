@@ -76,6 +76,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
           if (res.data) {
             if (res.data.logoUrl) {
               setLogoUrl(res.data.logoUrl);
+            } else if (res.data.logo && res.data.logo.length > 0 && res.data.logo[0].data) {
+              setLogoUrl(res.data.logo[0].data);
             }
             if (res.data.address) {
               setCorporateAddress(res.data.address);

@@ -89,7 +89,7 @@ export const staticRoutes: RouteItem[] = [
   { title: 'Call Report Approvals', path: '/admin/approvals', breadcrumb: 'Admin > Approvals > Call Report', keywords: ['call report approvals', 'approve dcr', 'dcr approval'] },
 
   // Field Team Activity
-  { title: 'Hierarchy', path: '/hierarchy', breadcrumb: 'Organization > Hierarchy', keywords: ['hierarchy', 'org chart', 'reporting tree', 'team members', 'chain of command'] },
+  { title: 'Organogram', path: '/hierarchy', breadcrumb: 'Organization > Organogram', keywords: ['organogram', 'hierarchy', 'org chart', 'reporting tree', 'team members', 'chain of command'] },
   { title: "Today's Activity", path: '/todays-activity', breadcrumb: 'Activity > Today', keywords: ["today's activity", 'live tracking', 'daily activity', 'todays calls'] },
   { title: 'Consolidated Activity', path: '/consolidated-activity', breadcrumb: 'Activity > Consolidated', keywords: ['consolidated activity', 'monthly field activity', 'all activity'] },
 ];

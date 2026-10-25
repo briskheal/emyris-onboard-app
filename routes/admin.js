@@ -2350,6 +2350,13 @@ router.get('/company-profile', async (req, res) => {
                     profile[field] = [];
                 }
             }
+            if (profile.logo && profile.logo.length > 0 && profile.logo[0].data) {
+                profile.logoUrl = profile.logo[0].data;
+            } else if (profile.activeLogoId) {
+                profile.logoUrl = `/api/admin/api/public/asset/${profile.activeLogoId}`;
+            } else {
+                profile.logoUrl = '';
+            }
         }
 
         // Hydrate with latest active divisions and hqs

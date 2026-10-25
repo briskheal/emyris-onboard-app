@@ -248,7 +248,10 @@ export default function NavigationDrawer({ isOpen, onClose }: NavigationDrawerPr
                   <div className="w-8 h-8 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center group-hover:bg-sky-500/10">
                     <Users size={16} />
                   </div>
-                  <span className="text-sm font-bold text-slate-300 group-hover:text-white">My Hierarchy</span>
+                  <div>
+                    <span className="text-sm font-bold text-slate-300 group-hover:text-white block leading-tight">Organogram</span>
+                    <span className="text-[10px] text-slate-500 font-medium">Company Hierarchy Tree</span>
+                  </div>
                 </div>
                 <ChevronRight size={16} className="text-slate-500" />
               </button>

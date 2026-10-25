@@ -927,6 +927,190 @@ function getDesignationAliases(desig) {
     return Array.from(aliases);
 }
 
+// Standard designation rank and hierarchy level classifier
+function getDesignationInfo(desig) {
+    if (!desig) return { level: 1, badge: 'TBM' };
+    const d = desig.toLowerCase().trim();
+    if (d.includes('gm') || d.includes('general manager') || d.includes('director') || d.includes('president')) return { level: 9, badge: 'GM' };
+    if (d.includes('national sales manager') || d.includes('nsm')) return { level: 8, badge: 'NSM' };
+    if (d.includes('sales manager') && !d.includes('area') && !d.includes('regional') && !d.includes('zonal')) return { level: 7, badge: 'SM' };
+    if (d.includes('sr. zonal') || d.includes('sr zonal') || d.includes('senior zonal') || d.includes('szsm')) return { level: 6, badge: 'Sr. ZSM' };
+    if (d.includes('zonal sales manager') || d.includes('zsm')) return { level: 5, badge: 'ZSM' };
+    if (d.includes('sr. regional') || d.includes('sr regional') || d.includes('senior regional') || d.includes('sr. rsm') || d.includes('sr rsm')) return { level: 4, badge: 'Sr. RSM' };
+    if (d.includes('regional sales manager') || d.includes('rsm') || d.includes('rbm') || d.includes('regional business manager')) return { level: 3, badge: 'RSM' };
+    if (d.includes('area sales manager') || d.includes('asm') || d.includes('abm') || d.includes('area business manager')) return { level: 2, badge: 'ASM' };
+    if (d.includes('product manager') || d.includes('pm')) return { level: 6, badge: 'PM' };
+    return { level: 1, badge: 'TBM' };
+}
+
+// Enterprise organizational tree builder resolving full downline hierarchies across all departments
+async function getFullOrganizationHierarchy() {
+    const { XlUser } = require('../db');
+    const rawUsers = await XlUser.findAll({
+        attributes: ['_id', 'uid', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'phone', 'email', 'reportingManager', 'status', 'controls'],
+        raw: true
+    });
+
+    // Filter active users
+    const allUsers = rawUsers.filter(u => {
+        if (!u) return false;
+        if (u.status === 'Deactivated' || u.status === 'Inactive') return false;
+        if (u.controls) {
+            let c = u.controls;
+            if (typeof c === 'string') {
+                try { c = JSON.parse(c); } catch(e) {}
+            }
+            if (c && c.locked === true) return false;
+        }
+        return true;
+    });
+
+    const userMap = {};
+    allUsers.forEach(u => {
+        const empId = u.employeeId || u.uid || u._id;
+        const dInfo = getDesignationInfo(u.designation);
+        userMap[empId] = {
+            ...u,
+            id: empId,
+            employeeId: empId,
+            name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || empId,
+            level: dInfo.level,
+            badge: dInfo.badge,
+            children: [],
+            managerName: '',
+            managerDesignation: '',
+            managerHq: ''
+        };
+    });
+
+    // Link reportees to managers
+    allUsers.forEach(u => {
+        const empId = u.employeeId || u.uid || u._id;
+        const userObj = userMap[empId];
+        if (!userObj) return;
+
+        let mgr = null;
+        if (u.reportingManager) {
+            mgr = userMap[u.reportingManager];
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const desigHq = `${m.designation || ''} (${m.hq || ''})`.toLowerCase().trim();
+                    return desigHq === u.reportingManager.toLowerCase().trim();
+                });
+            }
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const mHq = (m.hq || '').replace(/-pst-\d+/i, '').trim().toLowerCase();
+                    const desigHq = `${m.designation || ''} (${mHq})`.toLowerCase().trim();
+                    const repClean = u.reportingManager.replace(/-pst-\d+/i, '').trim().toLowerCase();
+                    return desigHq === repClean;
+                });
+            }
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const desigOnly = (m.designation || '').toLowerCase().trim();
+                    const repMgr = u.reportingManager.toLowerCase().trim();
+                    return repMgr === desigOnly && desigOnly.length > 2;
+                });
+            }
+            if (!mgr) {
+                mgr = Object.values(userMap).find(m => {
+                    const mName = `${m.firstName || ''} ${m.lastName || ''}`.toLowerCase().trim();
+                    return mName === u.reportingManager.toLowerCase().trim();
+                });
+            }
+        }
+
+        // Hierarchy rule: RSMs, ZSMs, Sr. ZSMs (levels 3-6) report to SM/NSM/GM
+        if (!mgr && (userObj.level >= 3 && userObj.level <= 6)) {
+            const smManager = Object.values(userMap).find(m => m.level >= 7 && (m.division === userObj.division || (m.designation || '').toLowerCase().includes('west') || m.level === 9));
+            if (smManager) mgr = smManager;
+        }
+
+        if (mgr && (mgr.employeeId || mgr._id) !== empId) {
+            userObj.managerName = mgr.name;
+            userObj.managerDesignation = mgr.designation;
+            userObj.managerHq = mgr.hq;
+            if (!mgr.children.some(c => (c.employeeId || c.id) === empId)) {
+                mgr.children.push(userObj);
+            }
+        }
+    });
+
+    // Find roots: top level nodes or those whose managers are not internal field reportees
+    const roots = Object.values(userMap).filter(u => {
+        if (!u.managerName) return true;
+        return false;
+    });
+
+    if (roots.length === 0 && Object.keys(userMap).length > 0) {
+        const maxLevel = Math.max(...Object.values(userMap).map(u => u.level));
+        Object.values(userMap).filter(u => u.level === maxLevel).forEach(r => roots.push(r));
+    }
+
+    roots.sort((a, b) => (b.level - a.level) || a.name.localeCompare(b.name));
+
+    // Calculate downline team count recursively
+    function computeTeamCounts(node, depth = 0) {
+        node.treeDepth = depth;
+        let count = node.children.length;
+        node.children.forEach(child => {
+            count += computeTeamCounts(child, depth + 1);
+        });
+        node.totalTeamCount = count;
+        return count;
+    }
+    roots.forEach(r => computeTeamCounts(r, 0));
+
+    // Flatten tree in hierarchical order
+    const flatList = [];
+    const visited = new Set();
+    function traverse(node) {
+        if (visited.has(node.employeeId)) return;
+        visited.add(node.employeeId);
+        flatList.push({
+            employeeId: node.employeeId,
+            name: node.name,
+            firstName: node.firstName,
+            lastName: node.lastName,
+            designation: node.designation,
+            level: node.level,
+            badge: node.badge,
+            hq: node.hq,
+            division: node.division,
+            phone: node.phone,
+            email: node.email,
+            reportingManager: node.reportingManager,
+            managerName: node.managerName,
+            managerDesignation: node.managerDesignation,
+            managerHq: node.managerHq,
+            directReportsCount: node.children.length,
+            totalTeamCount: node.totalTeamCount,
+            treeDepth: node.treeDepth
+        });
+        node.children.sort((a, b) => (b.level - a.level) || a.name.localeCompare(b.name));
+        node.children.forEach(traverse);
+    }
+    roots.forEach(traverse);
+
+    Object.values(userMap).forEach(u => {
+        if (!visited.has(u.employeeId)) {
+            traverse(u);
+        }
+    });
+
+    const divisions = Array.from(new Set(allUsers.map(u => u.division).filter(Boolean))).sort();
+    const designations = Array.from(new Set(allUsers.map(u => u.designation).filter(Boolean))).sort();
+
+    return {
+        roots,
+        flatList,
+        totalEmployees: allUsers.length,
+        divisions,
+        designations
+    };
+}
+
 // Robust recursive team collector resolving all direct and downline subordinates across any hierarchy level
 async function getAllTeamMembers(managerUser, allUsers = null) {
     if (!managerUser) return [];
@@ -1508,16 +1692,45 @@ router.post('/user/change-password/verify-pin', async (req, res) => {
     }
 });
 
+// ─── FULL COMPANY HIERARCHY (ADMIN / TREE) ────────────────────────────────────
+router.get('/hierarchy', async (req, res) => {
+    try {
+        const fullHierarchy = await getFullOrganizationHierarchy();
+        res.json({ success: true, isFullHierarchy: true, ...fullHierarchy });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // ─── USER DRAWER: MY HIERARCHY ──────────────────────────────────────────────────
 router.get('/user/hierarchy', async (req, res) => {
     try {
-        const { employeeId } = req.query;
+        const { employeeId, all } = req.query;
         const { XlUser, sequelize } = require('../db');
         const { Op } = require('sequelize');
-        if (!employeeId) return res.status(400).json({ success: false, message: 'employeeId is required' });
 
-        const user = await XlUser.findOne({ where: { employeeId: employeeId.trim() }, raw: true });
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        // If 'all' is requested, or no employeeId, or ALL, return entire company hierarchy
+        if (!employeeId || employeeId.trim() === '' || employeeId === 'ALL' || all === 'true') {
+            const fullHierarchy = await getFullOrganizationHierarchy();
+            return res.json({ success: true, isFullHierarchy: true, ...fullHierarchy });
+        }
+
+        const user = await XlUser.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { employeeId: employeeId.trim() },
+                    { uid: employeeId.trim() },
+                    { _id: employeeId.trim() }
+                ]
+            }, 
+            raw: true 
+        });
+
+        // If employee not found in field records (e.g., Admin account), return full hierarchy
+        if (!user) {
+            const fullHierarchy = await getFullOrganizationHierarchy();
+            return res.json({ success: true, isFullHierarchy: true, ...fullHierarchy });
+        }
 
         let manager = null;
         if (user.reportingManager) {
@@ -1768,6 +1981,7 @@ router.get('/user/consolidated-activity', async (req, res) => {
             data: {
                 month: curM,
                 year: curY,
+                isAllMode: !employeeId || employeeId === 'ALL' || employeeId.trim() === '',
                 totalCalls,
                 doctorCalls,
                 chemistCalls,
@@ -1851,6 +2065,10 @@ router.get('/user/todays-activity', async (req, res) => {
             todayPob += rowPob;
         });
 
+        const { XlUser } = require('../db');
+        const activeFieldUsers = await XlUser.findAll({ where: { status: 'Active' }, attributes: ['employeeId', 'firstName', 'lastName', 'designation', 'hq'], raw: true });
+        const totalPunchedIn = atts.filter(a => !!a.punchInTime).length;
+        const isAllMode = !employeeId || employeeId.trim() === '' || employeeId === 'ALL';
         const att = atts.length > 0 ? atts[0] : null;
 
         res.json({
@@ -1858,11 +2076,14 @@ router.get('/user/todays-activity', async (req, res) => {
             data: {
                 todayDate: new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }),
                 todayStr,
+                isAllMode,
+                totalStaffCount: activeFieldUsers.length,
+                totalPunchedIn,
                 attendance: {
-                    isPunchedIn: !!(att && att.punchInTime),
+                    isPunchedIn: isAllMode ? totalPunchedIn > 0 : !!(att && att.punchInTime),
                     punchInTime: att?.punchInTime || null,
                     punchOutTime: att?.punchOutTime || null,
-                    status: att?.status || (att?.punchInTime ? 'Present' : 'Not Punched In'),
+                    status: isAllMode ? `${totalPunchedIn} / ${activeFieldUsers.length} Staff Active in Field` : (att?.status || (att?.punchInTime ? 'Present' : 'Not Punched In')),
                     allAttendees: atts
                 },
                 doctorCalls: docCount,
@@ -1874,6 +2095,7 @@ router.get('/user/todays-activity', async (req, res) => {
                     _id: d._id,
                     employeeId: d.employeeId,
                     employeeName: d.employeeName,
+                    hq: d.hq || d.workingHq || '',
                     entityType: d.entityType,
                     name: d.entityName || d.doctorName || d.chemistName || 'Call',
                     workingAreas: d.workingAreas || d.workingAreaType || '',
