@@ -601,7 +601,18 @@ export default function CallReport() {
                         }
                         const employee = users.find(u => u.employeeId === selectedUser);
                         if (!employee || !employee.reportingManager) return 'Admin (Assumed)';
-                        const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
+                        const rm = (employee.reportingManager || '').trim().toLowerCase();
+                        const manager = users.find(u => {
+                          if (u.uid === employee.reportingManager || u.employeeId === employee.reportingManager) return true;
+                          const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+                          if (fullName && rm === fullName) return true;
+                          const desigHq = `${(u.designation || '').trim()} (${(u.hq || '').trim()})`.toLowerCase();
+                          if (rm === desigHq) return true;
+                          const baseHq = (u.hq || '').replace(/-pst-\d+/i, '').split('-')[0].trim().toLowerCase();
+                          if (baseHq && rm === `${(u.designation || '').trim().toLowerCase()} (${baseHq})`) return true;
+                          if ((u.designation || '').trim().toLowerCase() === rm) return true;
+                          return false;
+                        });
                         return manager ? `${manager.firstName} ${manager.lastName} (Assumed)` : employee.reportingManager;
                       })()}
                     </p>

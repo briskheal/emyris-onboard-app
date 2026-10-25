@@ -927,113 +927,144 @@ function getDesignationAliases(desig) {
     return Array.from(aliases);
 }
 
+// Robust recursive team collector resolving all direct and downline subordinates across any hierarchy level
+async function getAllTeamMembers(managerUser, allUsers = null) {
+    if (!managerUser) return [];
+    const { XlUser } = require('../db');
+    if (!allUsers) {
+        allUsers = await XlUser.findAll({ where: { status: 'Active' }, raw: true });
+    }
+
+    const team = [];
+    const queue = [managerUser];
+    const visited = new Set([managerUser.employeeId || managerUser._id]);
+
+    while (queue.length > 0) {
+        const currentMgr = queue.shift();
+        const mgrFullName = ((currentMgr.firstName || '') + ' ' + (currentMgr.lastName || '')).trim().toLowerCase();
+        const mgrDesig = (currentMgr.designation || '').trim();
+        const mgrHq = (currentMgr.hq || '').trim();
+        const baseHq = mgrHq.replace(/-pst-\d+/i, '').split('-')[0].trim().toLowerCase();
+        const desigAliases = getDesignationAliases(mgrDesig);
+
+        for (const u of allUsers) {
+            const uId = u.employeeId || u._id;
+            if (visited.has(uId)) continue;
+            if (u.status !== 'Active') continue;
+            const rm = (u.reportingManager || '').trim();
+            if (!rm) continue;
+            const rmLower = rm.toLowerCase();
+
+            let isMatch = false;
+            if (currentMgr.employeeId && rmLower === currentMgr.employeeId.toLowerCase()) isMatch = true;
+            if (currentMgr.uid && rmLower === currentMgr.uid.toLowerCase()) isMatch = true;
+            if (mgrFullName && rmLower === mgrFullName) isMatch = true;
+
+            if (!isMatch && mgrDesig) {
+                for (const d of desigAliases) {
+                    if (rmLower === d) { isMatch = true; break; }
+                    if (mgrHq) {
+                        const hqLower = mgrHq.toLowerCase();
+                        if (rmLower === `${d} (${hqLower})` || rmLower === `${d} - ${hqLower}` || rmLower.startsWith(`${d} (${hqLower}`)) {
+                            isMatch = true;
+                            break;
+                        }
+                    }
+                    if (baseHq) {
+                        if (rmLower === `${d} (${baseHq})` || rmLower === `${d} - ${baseHq}` || rmLower.startsWith(`${d} (${baseHq}`)) {
+                            isMatch = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (isMatch) {
+                visited.add(uId);
+                team.push(u);
+                queue.push(u);
+            }
+        }
+    }
+    return team;
+}
+
+// Find actual reporting manager records matching a reportingManager string (which is usually "Designation (HQ)")
+async function findReportingManagers(reportingManagerStr) {
+    if (!reportingManagerStr) return [];
+    const { XlUser, sequelize } = require('../db');
+    const { Op } = require('sequelize');
+
+    const mgrRaw = reportingManagerStr.trim();
+    const mgrQuery = mgrRaw.toLowerCase();
+    const hqMatch = mgrRaw.match(/\(([^)]+)\)/);
+    const targetHq = hqMatch ? hqMatch[1].trim() : null;
+    const targetDesig = mgrRaw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+    const managerOr = [
+        { employeeId: mgrRaw },
+        sequelize.where(sequelize.fn('LOWER', sequelize.col('firstName')), mgrQuery),
+        sequelize.where(
+            sequelize.fn('LOWER', sequelize.fn('CONCAT', sequelize.col('firstName'), ' ', sequelize.col('lastName'))),
+            mgrQuery
+        )
+    ];
+
+    if (mgrRaw.length <= 36) {
+        managerOr.push({ uid: mgrRaw });
+    }
+
+    if (targetDesig) {
+        const desigAliases = getDesignationAliases(targetDesig);
+        for (const d of desigAliases) {
+            if (targetHq) {
+                const baseHq = targetHq.replace(/-pst-\d+/i, '').split('-')[0].trim().toLowerCase();
+                managerOr.push({
+                    [Op.and]: [
+                        sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), d),
+                        {
+                            [Op.or]: [
+                                sequelize.where(sequelize.fn('LOWER', sequelize.col('hq')), targetHq.toLowerCase()),
+                                sequelize.where(sequelize.fn('LOWER', sequelize.col('hq')), { [Op.like]: `${baseHq}%` })
+                            ]
+                        }
+                    ]
+                });
+            } else {
+                managerOr.push(sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), d));
+            }
+        }
+    }
+
+    return await XlUser.findAll({
+        where: { [Op.or]: managerOr, status: 'Active' },
+        attributes: ['_id', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'email', 'phone'],
+        raw: true
+    });
+}
+
 // N-Level Recursive Hierarchy Lookup for Users and HQs
 async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set(), managerUser = null) {
     if (!designation || designation.toUpperCase() === 'ADMIN') return userList;
+    const { XlUser } = require('../db');
     
-    const cleanDesig = (designation || '').trim();
-    const cleanHq = (hq || '').trim();
-    const visitKey = `${cleanDesig.toLowerCase()}_${cleanHq.toLowerCase()}_${managerUser?.employeeId || ''}`;
-    if (visited.has(visitKey)) return userList;
-    visited.add(visitKey);
-
-    const { Op, fn, col, where: seqWhere } = require('sequelize');
-
-    const orConditions = [];
-
-    // 1. Designation variants match
-    const desigVariants = getDesignationAliases(cleanDesig);
-    for (const v of desigVariants) {
-        orConditions.push(seqWhere(fn('lower', col('reportingManager')), v));
-        orConditions.push(
-            seqWhere(fn('lower', col('reportingManager')), {
-                [Op.like]: `${v}%`
-            })
-        );
-        orConditions.push(
-            seqWhere(fn('lower', col('reportingManager')), {
-                [Op.like]: `%${v}%`
-            })
-        );
-        if (cleanHq) {
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} (${cleanHq.toLowerCase()})`));
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} - ${cleanHq.toLowerCase()}`));
-        }
+    let resolvedMgr = managerUser;
+    if (!resolvedMgr) {
+        resolvedMgr = await XlUser.findOne({
+            where: { designation, ...(hq ? { hq } : {}) }
+        });
     }
-
-    // 2. Senior/Zonal/Regional/Director level managers oversee multiple territories in a zone
-    const isSeniorManager = /zonal|regional|state|national|general|director|vice president|vp|gm|head/i.test(cleanDesig);
-    if (isSeniorManager) {
-        for (const v of desigVariants) {
-            orConditions.push(
-                seqWhere(fn('lower', col('reportingManager')), {
-                    [Op.like]: `${v}%`
-                })
-            );
-        }
-    }
-
-    // 3. Match any employee whose reportingManager specifies the manager's assigned HQ (e.g. Ahmedabad)
-    if (cleanHq) {
-        orConditions.push(
-            seqWhere(fn('lower', col('reportingManager')), {
-                [Op.like]: `%(${cleanHq.toLowerCase()})%`
-            })
-        );
-        orConditions.push(
-            seqWhere(fn('lower', col('reportingManager')), {
-                [Op.like]: `%${cleanHq.toLowerCase()}%`
-            })
-        );
-    }
-
-    // 4. Match by Manager User details (employeeId, email, uid, fullName)
-    if (managerUser) {
-        if (managerUser.employeeId) {
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.employeeId.toLowerCase().trim()));
-        }
-        if (managerUser.email) {
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.email.toLowerCase().trim()));
-        }
-        if (managerUser.uid) {
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.uid.toLowerCase().trim()));
-        }
-        const fullName = `${managerUser.firstName || ''} ${managerUser.lastName || ''}`.trim().toLowerCase();
-        if (fullName) {
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), fullName));
-            orConditions.push(seqWhere(fn('lower', col('reportingManager')), { [Op.like]: `%${fullName}%` }));
-        }
-    }
-
-    const queryWhere = { [Op.or]: orConditions };
-    if (division && division !== 'All' && division !== 'null' && division !== 'undefined') {
-        const cleanDiv = division.trim().toLowerCase();
-        queryWhere[Op.and] = [
-            { [Op.or]: orConditions },
-            { 
-                [Op.or]: [
-                    seqWhere(fn('lower', col('division')), cleanDiv), 
-                    { division: null }, 
-                    { division: '' }
-                ] 
+    
+    if (resolvedMgr) {
+        const team = await getAllTeamMembers(resolvedMgr);
+        for (const t of team) {
+            if (!userList.some(existing => (existing.employeeId || existing._id) === (t.employeeId || t._id))) {
+                userList.push(t);
             }
-        ];
-        delete queryWhere[Op.or];
-    }
-
-    const reportees = await XlUser.findAll({ where: queryWhere });
-    if (!reportees || reportees.length === 0) return userList;
-
-    for (const r of reportees) {
-        const empId = r.employeeId || r._id;
-        if (!userList.some(existing => (existing.employeeId || existing._id) === empId)) {
-            userList.push(r);
         }
-        // Recursively resolve subordinates of reportees (e.g. MRs under ABMs under SZSM)
-        if (r.designation && r.designation.toLowerCase() !== cleanDesig.toLowerCase()) {
-            await getReporteeUsers(r.designation, r.hq, r.division || division, userList, visited, r);
-        }
+        return userList;
     }
+    
     return userList;
 }
 
@@ -1048,6 +1079,12 @@ async function getSubordinateHQs(designation, hq, division, hqSet = new Set()) {
             hqSet.add(clean.toLowerCase());
             hqSet.add(clean.replace(/\s+/g, '-'));
             hqSet.add(clean.replace(/-/g, ' '));
+            const base = clean.replace(/-pst-\d+/i, '').split('-')[0].trim();
+            if (base) {
+                hqSet.add(base);
+                hqSet.add(base.toUpperCase());
+                hqSet.add(base.toLowerCase());
+            }
         }
     }
     return Array.from(hqSet);
@@ -1594,7 +1631,24 @@ router.get('/user/consolidated-activity', async (req, res) => {
 
         const where = {};
         if (employeeId && employeeId.trim() !== '' && employeeId.trim() !== 'ALL') {
-            where.employeeId = employeeId.trim();
+            const { XlUser } = require('../db');
+            const { Op } = require('sequelize');
+            const user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { employeeId: employeeId.trim() },
+                        { uid: employeeId.trim() },
+                        { _id: employeeId.trim() }
+                    ]
+                }
+            });
+            if (user) {
+                const team = await getAllTeamMembers(user);
+                const allEmpKeys = [user.employeeId, user.uid, user._id, ...team.map(t => t.employeeId), ...team.map(t => t.uid), ...team.map(t => t._id)].filter(Boolean);
+                where.employeeId = { [Op.in]: allEmpKeys };
+            } else {
+                where.employeeId = employeeId.trim();
+            }
         }
 
         const dcrRecords = await XlDCR.findAll({
@@ -1686,8 +1740,25 @@ router.get('/user/todays-activity', async (req, res) => {
         const dcrWhere = { date: { [Op.like]: `${todayStr}%` } };
 
         if (employeeId && employeeId.trim() !== '' && employeeId.trim() !== 'ALL') {
-            attWhere.employeeId = employeeId.trim();
-            dcrWhere.employeeId = employeeId.trim();
+            const { XlUser } = require('../db');
+            const user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { employeeId: employeeId.trim() },
+                        { uid: employeeId.trim() },
+                        { _id: employeeId.trim() }
+                    ]
+                }
+            });
+            if (user) {
+                const team = await getAllTeamMembers(user);
+                const allEmpKeys = [user.employeeId, user.uid, user._id, ...team.map(t => t.employeeId), ...team.map(t => t.uid), ...team.map(t => t._id)].filter(Boolean);
+                attWhere.employeeId = { [Op.in]: allEmpKeys };
+                dcrWhere.employeeId = { [Op.in]: allEmpKeys };
+            } else {
+                attWhere.employeeId = employeeId.trim();
+                dcrWhere.employeeId = employeeId.trim();
+            }
         }
 
         const [atts, dcrs] = await Promise.all([
@@ -3056,14 +3127,7 @@ router.post('/tour-program', async (req, res) => {
                 const u = await XlUser.findOne({ where: { employeeId } });
                 if (u && u.reportingManager) {
                     try {
-                        const managers = await XlUser.findAll({
-                            where: {
-                                [Op.or]: [
-                                    { designation: u.reportingManager },
-                                    { employeeId: u.reportingManager }
-                                ]
-                            }
-                        });
+                        const managers = await findReportingManagers(u.reportingManager);
                         for (const m of managers) {
                             if (m.employeeId) {
                                 await XlNotification.create({
@@ -3123,14 +3187,7 @@ router.put('/tour-program/:id/submit', async (req, res) => {
         try {
             const user = await XlUser.findOne({ where: { employeeId: tp.employeeId } });
             if (user && user.reportingManager) {
-                const managers = await XlUser.findAll({ 
-                    where: { 
-                        [Op.or]: [
-                            { designation: user.reportingManager },
-                            { employeeId: user.reportingManager }
-                        ]
-                    } 
-                });
+                const managers = await findReportingManagers(user.reportingManager);
                 for (const m of managers) {
                     if (m.employeeId) {
                         await XlNotification.create({
@@ -6231,7 +6288,7 @@ router.post('/call-plan/bulk', async (req, res) => {
         const mgrUser = userForId || await XlUser.findOne({ where: { employeeId } });
         const senderName = mgrUser ? (((mgrUser.firstName || '') + ' ' + (mgrUser.lastName || '')).trim() || mgrUser.name || employeeId) : employeeId;
         if (mgrUser && mgrUser.reportingManager) {
-            const managers = await XlUser.findAll({ where: { designation: mgrUser.reportingManager } });
+            const managers = await findReportingManagers(mgrUser.reportingManager);
             for (const m of managers) {
                 await XlNotification.create({
                     _id: generateId(),
@@ -6360,7 +6417,7 @@ router.post('/call-plan/submit-all', async (req, res) => {
 
         // Notify reporting manager
         if (userForId && userForId.reportingManager) {
-            const managers = await XlUser.findAll({ where: { designation: userForId.reportingManager } });
+            const managers = await findReportingManagers(userForId.reportingManager);
             for (const m of managers) {
                 await XlNotification.create({
                     _id: generateId(),
@@ -8117,8 +8174,12 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         }
 
         let whereUser = {};
+        let isManager = false;
+        let managerUser = null;
+        let team = [];
+
         if (employeeId) {
-            const user = await XlUser.findOne({
+            managerUser = await XlUser.findOne({
                 where: {
                     [Op.or]: [
                         { _id: employeeId },
@@ -8127,8 +8188,11 @@ router.get('/admin/dashboard-stats', async (req, res) => {
                     ]
                 }
             });
-            if (user) {
-                const userKeys = [user._id, user.uid, user.employeeId].filter(Boolean);
+            if (managerUser) {
+                const allActiveUsers = await XlUser.findAll({ where: { status: 'Active' }, raw: true });
+                team = await getAllTeamMembers(managerUser, allActiveUsers);
+                isManager = team.length > 0;
+                const userKeys = [managerUser._id, managerUser.uid, managerUser.employeeId, ...team.map(t => t.employeeId), ...team.map(t => t.uid), ...team.map(t => t._id)].filter(Boolean);
                 whereUser.employeeId = { [Op.in]: userKeys };
             } else {
                 whereUser.employeeId = employeeId;
@@ -8269,27 +8333,36 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         }
 
         if (employeeId) {
-            let dTargetPerDay = 0;
-            let cTargetPerDay = 0;
-            let sTargetPerDay = 0;
-            const user = await XlUser.findOne({
-                where: {
-                    [Op.or]: [
-                        { _id: employeeId },
-                        { uid: employeeId },
-                        { employeeId: employeeId }
-                    ]
-                }
+            const allDesigs = await require('../db').XlDesignation.findAll();
+            const desigMap = {};
+            allDesigs.forEach(d => {
+                desigMap[d._id] = d;
+                if (d.designationName) desigMap[d.designationName] = d;
             });
-            if (user && user.designation) {
-                const desig = await require('../db').XlDesignation.findOne({
-                    where: {
-                        [Op.or]: [
-                            { _id: user.designation },
-                            { designationName: user.designation }
-                        ]
+
+            if (isManager && team.length > 0) {
+                // For a manager, target calls are aggregated across their field team members
+                team.forEach(u => {
+                    const desig = desigMap[u.designation];
+                    let dT = 0, cT = 0, sT = 0;
+                    if (desig) {
+                        if (desig.targetDoctorCalls) dT = desig.targetDoctorCalls;
+                        else {
+                            if (desig.level === 1 || desig.level === 2) dT = 8;
+                            else if (desig.level === 3 || desig.level === 4) dT = 6;
+                            else if (desig.level >= 5) dT = 5;
+                        }
+                        if (desig.targetChemistCalls) cT = desig.targetChemistCalls;
+                        if (desig.targetStockistCalls) sT = desig.targetStockistCalls;
                     }
+                    targetDoctorCalls += workingDays * dT;
+                    targetChemistCalls += workingDays * cT;
+                    targetStockistCalls += workingDays * sT;
                 });
+            } else if (managerUser && managerUser.designation) {
+                // Front-line individual contributor
+                const desig = desigMap[managerUser.designation];
+                let dTargetPerDay = 0, cTargetPerDay = 0, sTargetPerDay = 0;
                 if (desig) {
                     if (desig.targetDoctorCalls) dTargetPerDay = desig.targetDoctorCalls;
                     else {
@@ -8300,11 +8373,10 @@ router.get('/admin/dashboard-stats', async (req, res) => {
                     if (desig.targetChemistCalls) cTargetPerDay = desig.targetChemistCalls;
                     if (desig.targetStockistCalls) sTargetPerDay = desig.targetStockistCalls;
                 }
+                targetDoctorCalls = workingDays * dTargetPerDay;
+                targetChemistCalls = workingDays * cTargetPerDay;
+                targetStockistCalls = workingDays * sTargetPerDay;
             }
-            targetDoctorCalls = workingDays * dTargetPerDay;
-            targetChemistCalls = workingDays * cTargetPerDay;
-            targetStockistCalls = workingDays * sTargetPerDay;
-
         } else {
             // ADMIN VIEW: Aggregate targets across all employees
             const allUsers = await XlUser.findAll({ 
