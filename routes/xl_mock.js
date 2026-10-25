@@ -3858,12 +3858,24 @@ router.get('/coworkers', async (req, res) => {
 
         let coworkersMap = new Map();
 
-        // Return ALL other users in the company (to support both upward and downward joint working)
-        // The frontend already has a searchable dropdown, so they can easily find anyone they worked with.
-        const allUsers = await XlUser.findAll();
+        // Return only ACTIVE and UNLOCKED coworkers in the company
+        const allUsers = await XlUser.findAll({
+            where: {
+                status: 'Active'
+            }
+        });
         allUsers.forEach(u => {
             if (u.employeeId !== email) {
-                coworkersMap.set(u.employeeId, u);
+                let isLocked = false;
+                try {
+                    let c = u.controls;
+                    if (typeof c === 'string') c = JSON.parse(c);
+                    if (c && (c.locked === true || c.locked === 'true')) isLocked = true;
+                } catch(err) {}
+
+                if (!isLocked && u.status !== 'Deactivated' && u.status !== 'Inactive') {
+                    coworkersMap.set(u.employeeId, u);
+                }
             }
         });
 

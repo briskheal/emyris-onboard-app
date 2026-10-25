@@ -2323,8 +2323,11 @@ router.get('/company-profile', async (req, res) => {
         let profile = await Company.findOne().lean();
         if (!profile) {
             // Creation will apply all schema defaults
-            const newCompany = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
+            const newCompany = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", companyCode: "EMYRIS" });
             profile = newCompany.toObject();
+        }
+        if (!profile.companyCode) {
+            profile.companyCode = 'EMYRIS';
         }
 
         // Legacy safety checks removed to allow explicit empty configurations
@@ -2395,6 +2398,10 @@ router.post('/company-profile', async (req, res) => {
         const updateData = req.body;
         // Don't allow overwriting _id or active
         delete updateData._id;
+        
+        if (updateData.companyCode !== undefined) {
+            updateData.companyCode = (updateData.companyCode || 'EMYRIS').toString().trim().toUpperCase();
+        }
         
         // If designations array is included, sync to XlDesignation
         if (Array.isArray(updateData.designations)) {
@@ -5292,10 +5299,18 @@ router.post('/users/send-profile-card', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please select at least one employee.' });
         }
 
-        const { XlUser, XlAdmin } = require('../db');
+        const { XlUser, XlAdmin, Company } = require('../db');
         const { Op } = require('sequelize');
         const { sendEmail } = require('../utils/mailer');
         const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
+
+        let companyProfile = {};
+        try {
+            companyProfile = (await Company.findOne().lean()) || {};
+        } catch (e) {}
+        const companyName = companyProfile.name || 'EMYRIS BIOLIFESCIENCES PVT. LTD.';
+        const companyCode = (companyProfile.companyCode || 'EMYRIS').toUpperCase().trim();
+        const supportEmail = companyProfile.email || 'hradmin@emyrishr.in';
 
         // Fetch users from XlUser
         const users = await XlUser.findAll({
@@ -5518,12 +5533,20 @@ router.post('/users/send-profile-card', async (req, res) => {
                               🔐 Portal & Mobile Application Access
                             </h3>
                             <p style="margin: 0 0 12px; font-size: 12px; color: #3b82f6;">
-                              You can log into the Emyris Field Portal using these credentials:
+                              You can log into the Field CRM Portal & Mobile Application using these credentials:
                             </p>
                             <table width="100%" cellpadding="3" cellspacing="0" style="font-size: 13px;">
                               <tr>
-                                <td width="28%" style="color: #1e3a8a; font-weight: 600;">Portal Link:</td>
-                                <td width="72%"><a href="${baseUrl}/xl/login" style="color: #0284c7; font-weight: 700; text-decoration: underline;">${baseUrl}/xl/login</a></td>
+                                <td width="32%" style="color: #1e3a8a; font-weight: 600;">Portal Link:</td>
+                                <td width="68%"><a href="${baseUrl}/xl/login" style="color: #0284c7; font-weight: 700; text-decoration: underline;">${baseUrl}/xl/login</a></td>
+                              </tr>
+                              <tr>
+                                <td style="color: #1e3a8a; font-weight: 600;">Company Name:</td>
+                                <td style="color: #0f172a; font-weight: 700;">${companyName}</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #1e3a8a; font-weight: 600;">Company Code:</td>
+                                <td style="color: #0284c7; font-family: monospace; font-weight: 800; font-size: 14px; letter-spacing: 0.5px;">${companyCode}</td>
                               </tr>
                               <tr>
                                 <td style="color: #1e3a8a; font-weight: 600;">Login ID / Email:</td>
@@ -5542,10 +5565,10 @@ router.post('/users/send-profile-card', async (req, res) => {
                       <tr>
                         <td style="background-color: #0f172a; padding: 25px 30px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.5;">
                           <p style="margin: 0 0 6px; font-weight: 700; color: #e2e8f0;">
-                            EMYRIS BIOLIFESCIENCES PVT. LTD.
+                            ${companyName}
                           </p>
                           <p style="margin: 0 0 10px;">
-                            Human Resources & Operations Department &bull; <a href="mailto:hradmin@emyrishr.in" style="color: #38bdf8; text-decoration: none;">hradmin@emyrishr.in</a>
+                            Human Resources & Operations Department &bull; <a href="mailto:${supportEmail}" style="color: #38bdf8; text-decoration: none;">${supportEmail}</a>
                           </p>
                           <p style="margin: 0; font-size: 10px; color: #64748b;">
                             Confidentiality Notice: This email and any attachments are confidential and intended solely for the recipient. If you have received this in error, please notify the sender immediately.

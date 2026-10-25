@@ -123,6 +123,10 @@ await XlTarget.sync({ alter: true });
             await sequelize.query("ALTER TABLE xl_products ADD COLUMN uid VARCHAR(255);");
         } catch(e) {}
 
+        // --- Company Code & Identity Upgrades ---
+        try { await sequelize.query('ALTER TABLE onboard_companies ADD COLUMN IF NOT EXISTS "companyCode" VARCHAR(100) DEFAULT \'EMYRIS\';'); } catch(e) {}
+        try { await sequelize.query('UPDATE onboard_companies SET "companyCode" = \'EMYRIS\' WHERE "companyCode" IS NULL OR "companyCode" = \'\';'); } catch(e) {}
+
         // --- Permanent Territory & HQ Hierarchy Upgrades ---
         try { await sequelize.query('ALTER TABLE xl_hqs ADD COLUMN IF NOT EXISTS "parentHq" VARCHAR(255);'); } catch(e) {}
         try { await sequelize.query('ALTER TABLE xl_targets ADD COLUMN IF NOT EXISTS "headquarter" VARCHAR(255);'); } catch(e) {}

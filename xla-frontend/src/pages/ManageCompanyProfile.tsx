@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Mail, Phone, MapPin, Globe, Award, Save, RefreshCw, 
-  CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, MessageCircle 
+  CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, MessageCircle, KeyRound 
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -16,6 +16,7 @@ export default function ManageCompanyProfile() {
 
   // Form Fields
   const [name, setName] = useState('');
+  const [companyCode, setCompanyCode] = useState('EMYRIS');
   const [tagline, setTagline] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,6 +30,7 @@ export default function ManageCompanyProfile() {
       const res = await axios.get('/api/company-profile');
       if (res.data) {
         setName(res.data.name || 'EMYRIS BIOLIFESCIENCES PVT LTD.');
+        setCompanyCode((res.data.companyCode || 'EMYRIS').toUpperCase().trim());
         setTagline(res.data.marqueeText || 'Enhancing Life, Excelling in Care.');
         setAddress(res.data.address || 'Ahmedabad, Gujarat, India');
         setPhone(res.data.phone || '7993163300');
@@ -56,6 +58,7 @@ export default function ManageCompanyProfile() {
     try {
       const payload = {
         name: name.trim(),
+        companyCode: (companyCode || 'EMYRIS').trim().toUpperCase(),
         marqueeText: tagline.trim(),
         address: address.trim(),
         phone: phone.trim(),
@@ -156,6 +159,24 @@ export default function ManageCompanyProfile() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. EMYRIS BIOLIFESCIENCES PVT LTD."
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Company Code (Login Credential)</span>
+                    <span className="text-[10px] text-sky-400 font-semibold tracking-normal">Used on CRM/App Login</span>
+                  </label>
+                  <div className="relative">
+                    <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" />
+                    <input
+                      type="text"
+                      value={companyCode}
+                      onChange={(e) => setCompanyCode(e.target.value.toUpperCase().trim())}
+                      placeholder="e.g. EMYRIS"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm text-sky-400 font-mono font-bold placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors tracking-widest uppercase"
                       required
                     />
                   </div>

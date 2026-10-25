@@ -6,6 +6,7 @@ module.exports = function initModels(sequelize) {
 const OnboardCompany = sequelize.define('onboard_company', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
     name: { type: DataTypes.STRING, defaultValue: "" },
+    companyCode: { type: DataTypes.STRING, defaultValue: "EMYRIS" },
     address: DataTypes.TEXT,
     phone: DataTypes.STRING,
     tollFree: DataTypes.STRING,

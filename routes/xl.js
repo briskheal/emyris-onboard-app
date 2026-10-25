@@ -1241,9 +1241,24 @@ router.get('/debug-linkage', async (req, res) => {
 // --- DOCTOR CONTROL ROUTES ---
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, companyCode } = req.body;
         if (!email || !password) return res.json({ success: false, message: 'Email and password required' });
         
+        // Validate Company Code against Company Profile
+        try {
+            const { Company } = require('../db');
+            const companyRec = await Company.findOne().lean();
+            const expectedCode = ((companyRec && companyRec.companyCode) || 'EMYRIS').trim().toUpperCase();
+            if (companyCode) {
+                const inputCode = companyCode.trim().toUpperCase();
+                if (inputCode !== expectedCode) {
+                    return res.json({ success: false, message: 'Invalid Company Code' });
+                }
+            }
+        } catch (compErr) {
+            console.error('Company code check error:', compErr);
+        }
+
         const cleanEmail = email.trim().toLowerCase();
         let user = await XlUser.findOne({ where: { email: cleanEmail } });
         if (!user) {
@@ -7973,12 +7988,24 @@ router.get('/coworkers', async (req, res) => {
 
         let coworkersMap = new Map();
 
-        // Return ALL other users in the company (to support both upward and downward joint working)
-        // The frontend already has a searchable dropdown, so they can easily find anyone they worked with.
-        const allUsers = await XlUser.findAll();
+        // Return only ACTIVE and UNLOCKED coworkers in the company
+        const allUsers = await XlUser.findAll({
+            where: {
+                status: 'Active'
+            }
+        });
         allUsers.forEach(u => {
             if (u.employeeId !== email) {
-                coworkersMap.set(u.employeeId, u);
+                let isLocked = false;
+                try {
+                    let c = u.controls;
+                    if (typeof c === 'string') c = JSON.parse(c);
+                    if (c && (c.locked === true || c.locked === 'true')) isLocked = true;
+                } catch(err) {}
+
+                if (!isLocked && u.status !== 'Deactivated' && u.status !== 'Inactive') {
+                    coworkersMap.set(u.employeeId, u);
+                }
             }
         });
 

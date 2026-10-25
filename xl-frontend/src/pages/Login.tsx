@@ -15,6 +15,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
+  const [profileName, setProfileName] = useState('EMYRIS BIOLIFESCIENCES PVT LTD.');
+  const [profileTagline, setProfileTagline] = useState('Enhancing Life, Excelling in Care.');
 
   // Forgot Password State
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
@@ -143,6 +145,8 @@ export default function Login() {
           } else if (res.data.logoUrl) {
             setLogoUrl(res.data.logoUrl);
           }
+          if (res.data.name) setProfileName(res.data.name);
+          if (res.data.marqueeText) setProfileTagline(res.data.marqueeText);
         }
       } catch (e) {
         console.error("Failed to load company profile", e);
@@ -154,18 +158,17 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName || !email || !password) {
-        alert("Please enter Company Name, Email and Password");
-        return;
-    }
-    
-    if (companyName.trim().toUpperCase() !== 'EMYRIS') {
-        alert("Invalid Company Name.");
+        alert("Please enter Company Code, Email and Password");
         return;
     }
     
     setLoading(true);
     try {
-        const res = await axios.post('/api/xl/login', { email, password });
+        const res = await axios.post('/api/xl/login', { 
+            email, 
+            password, 
+            companyCode: companyName.trim() 
+        });
         if (res.data.success) {
             // Save user data to localStorage
             localStorage.setItem('xl_user', JSON.stringify(res.data.user));
@@ -214,8 +217,8 @@ export default function Login() {
               <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
             </div>
           )}
-          <h1 className="text-xl font-black text-white tracking-tight leading-tight mb-2">EMYRIS BIOLIFESCIENCES PVT LTD.</h1>
-          <p className="text-[11px] font-bold text-emerald-400 tracking-wider">Enhancing Life, Excelling in Care.</p>
+          <h1 className="text-xl font-black text-white tracking-tight leading-tight mb-2">{profileName}</h1>
+          <p className="text-[11px] font-bold text-emerald-400 tracking-wider">{profileTagline}</p>
         </div>
 
         {/* Login Form */}
@@ -229,8 +232,8 @@ export default function Login() {
                 type="text" 
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Company Name"
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                placeholder="Company Code (e.g. EMYRIS)"
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors uppercase tracking-wider"
                 required
               />
             </div>
