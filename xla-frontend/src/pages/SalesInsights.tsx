@@ -322,6 +322,8 @@ function SvgBarChart({
                   key={idx}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
+                  onTouchStart={() => setHoveredIdx(idx)}
+                  onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
                   className="cursor-pointer transition-opacity"
                 >
                   {/* Subtle column hover background */}
@@ -412,6 +414,8 @@ function SvgBarChart({
                   key={idx}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
+                  onTouchStart={() => setHoveredIdx(idx)}
+                  onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
                   className="cursor-pointer"
                 >
                   {isHovered && (

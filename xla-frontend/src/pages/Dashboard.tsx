@@ -22,6 +22,10 @@ export default function Dashboard() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
 
+  // Interactive Touch/Hover Tooltip states for Bar Graphs
+  const [activeSalesBar, setActiveSalesBar] = useState<'target' | 'primary' | 'secondary' | null>(null);
+  const [activeReportsBar, setActiveReportsBar] = useState<'doctor' | 'chemist' | 'stockist' | null>(null);
+
   // Tour Program Coming Month Submission Reminder
   const [tpReminder, setTpReminder] = useState<any>(null);
   const [previewReminder, setPreviewReminder] = useState<boolean>(() => localStorage.getItem('xla_simulate_25th_tp') === 'true');
@@ -336,26 +340,108 @@ export default function Dashboard() {
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16">
               {/* Graph 1: Target vs Primary vs Secondary */}
               {(() => {
-                 const targetSales = dashboardStats ? dashboardStats.target : 0;
-                 const primarySales = dashboardStats ? dashboardStats.primary : 0;
-                 const secondarySales = dashboardStats ? dashboardStats.secondary : 0;
+                 const targetSales = dashboardStats ? (Number(dashboardStats.target) || 0) : 0;
+                 const primarySales = dashboardStats ? (Number(dashboardStats.primary) || 0) : 0;
+                 const secondarySales = dashboardStats ? (Number(dashboardStats.secondary) || 0) : 0;
                  const maxS = Math.max(targetSales, primarySales, secondarySales, 1000);
                  const maxSales = Math.ceil(maxS / 1000) * 1000;
+
+                 const formatCompact = (val: number) => {
+                    if (val >= 10000000) return '₹' + (val / 10000000).toFixed(2) + 'Cr';
+                    if (val >= 100000) return '₹' + (val / 100000).toFixed(1) + 'L';
+                    if (val >= 1000) return '₹' + Math.round(val / 1000) + 'k';
+                    return '₹' + val;
+                 };
+
                  return (
-                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12">
+                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12 select-none">
                     <div className="absolute inset-0 pl-12 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
-                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{maxSales}</span></div>
-                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.8)}</span></div>
-                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.6)}</span></div>
-                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.4)}</span></div>
-                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.2)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{formatCompact(maxSales)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{formatCompact(Math.round(maxSales*0.8))}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{formatCompact(Math.round(maxSales*0.6))}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{formatCompact(Math.round(maxSales*0.4))}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{formatCompact(Math.round(maxSales*0.2))}</span></div>
                        <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
                     </div>
                     
-                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
-                       <div className="w-14 md:w-20 bg-sky-500 transition-all hover:opacity-90 relative group" title={'₹' + targetSales.toLocaleString()} style={{height: `${(targetSales/maxSales)*100}%`}}></div>
-                       <div className="w-14 md:w-20 bg-emerald-500 transition-all hover:opacity-90 relative group" title={'₹' + primarySales.toLocaleString()} style={{height: `${(primarySales/maxSales)*100}%`}}></div>
-                       <div className="w-14 md:w-20 bg-orange-500 transition-all hover:opacity-90 relative group" title={'₹' + secondarySales.toLocaleString()} style={{height: `${(secondarySales/maxSales)*100}%`}}></div>
+                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-6 border-l border-slate-200 dark:border-[#3b3b5a]">
+                       {/* Target Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeSalesBar === 'target' && (
+                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-sky-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-sky-400 font-bold uppercase tracking-wider">Target Sales</p>
+                                <p className="text-xs font-black text-white">₹{targetSales.toLocaleString('en-IN')}</p>
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-sky-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-sky-400 mb-1 pointer-events-none">
+                             {formatCompact(targetSales)}
+                          </span>
+                          <div 
+                             onClick={() => setActiveSalesBar(prev => prev === 'target' ? null : 'target')}
+                             onTouchStart={() => setActiveSalesBar('target')}
+                             onMouseEnter={() => setActiveSalesBar('target')}
+                             onMouseLeave={() => setActiveSalesBar(null)}
+                             className={`w-full bg-sky-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeSalesBar === 'target' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={'Target: ₹' + targetSales.toLocaleString('en-IN')} 
+                             style={{ height: `${Math.max((targetSales/maxSales)*100, 2)}%` }}
+                          />
+                       </div>
+
+                       {/* Primary Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeSalesBar === 'primary' && (
+                             <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-emerald-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">Primary Sales</p>
+                                <p className="text-xs font-black text-white">₹{primarySales.toLocaleString('en-IN')}</p>
+                                {targetSales > 0 && (
+                                   <p className="text-[9px] text-emerald-300 font-semibold">{Math.round((primarySales / targetSales) * 100)}% of Target</p>
+                                )}
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-emerald-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-emerald-400 mb-1 pointer-events-none">
+                             {formatCompact(primarySales)}
+                          </span>
+                          <div 
+                             onClick={() => setActiveSalesBar(prev => prev === 'primary' ? null : 'primary')}
+                             onTouchStart={() => setActiveSalesBar('primary')}
+                             onMouseEnter={() => setActiveSalesBar('primary')}
+                             onMouseLeave={() => setActiveSalesBar(null)}
+                             className={`w-full bg-emerald-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeSalesBar === 'primary' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={'Primary: ₹' + primarySales.toLocaleString('en-IN')} 
+                             style={{ height: `${Math.max((primarySales/maxSales)*100, 2)}%` }}
+                          />
+                       </div>
+
+                       {/* Secondary Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeSalesBar === 'secondary' && (
+                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-orange-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-orange-400 font-bold uppercase tracking-wider">Secondary Sales</p>
+                                <p className="text-xs font-black text-white">₹{secondarySales.toLocaleString('en-IN')}</p>
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-orange-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-orange-400 mb-1 pointer-events-none">
+                             {formatCompact(secondarySales)}
+                          </span>
+                          <div 
+                             onClick={() => setActiveSalesBar(prev => prev === 'secondary' ? null : 'secondary')}
+                             onTouchStart={() => setActiveSalesBar('secondary')}
+                             onMouseEnter={() => setActiveSalesBar('secondary')}
+                             onMouseLeave={() => setActiveSalesBar(null)}
+                             className={`w-full bg-orange-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeSalesBar === 'secondary' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={'Secondary: ₹' + secondarySales.toLocaleString('en-IN')} 
+                             style={{ height: `${Math.max((secondarySales/maxSales)*100, 2)}%` }}
+                          />
+                       </div>
                     </div>
                     
                     <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-12px]">
@@ -364,7 +450,10 @@ export default function Dashboard() {
                        <span className="w-14 md:w-20 text-center">Secondary</span>
                     </div>
                     
-                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white">Target vs Primary vs Secondary</div>
+                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white flex items-center justify-center gap-1.5">
+                       <span>Target vs Primary vs Secondary</span>
+                       <span className="text-[10px] font-normal text-slate-400">(Tap bar for details)</span>
+                    </div>
                  </div>
                  );
               })()}
@@ -377,7 +466,7 @@ export default function Dashboard() {
                  const maxR = Math.max(docCalls, chemCalls, stockCalls, 10);
                  const maxRep = Math.ceil(maxR / 10) * 10;
                  return (
-                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12">
+                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12 select-none">
                     <div className="absolute inset-0 pl-12 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
                        <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{maxRep}</span></div>
                        <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxRep*0.8)}</span></div>
@@ -387,10 +476,75 @@ export default function Dashboard() {
                        <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
                     </div>
                     
-                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
-                       <div className="w-14 md:w-20 bg-sky-500 transition-all hover:opacity-90 relative group" title={String(docCalls)} style={{height: `${(docCalls/maxRep)*100}%`}}></div>
-                       <div className="w-14 md:w-20 bg-emerald-500 transition-all hover:opacity-90 relative group" title={String(chemCalls)} style={{height: `${(chemCalls/maxRep)*100}%`}}></div>
-                       <div className="w-14 md:w-20 bg-orange-500 transition-all hover:opacity-90 relative group" title={String(stockCalls)} style={{height: `${(stockCalls/maxRep)*100}%`}}></div>
+                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-6 border-l border-slate-200 dark:border-[#3b3b5a]">
+                       {/* Doctor Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeReportsBar === 'doctor' && (
+                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-sky-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-sky-400 font-bold uppercase tracking-wider">Doctor Visits</p>
+                                <p className="text-xs font-black text-white">{docCalls} Calls</p>
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-sky-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-sky-400 mb-1 pointer-events-none">{docCalls}</span>
+                          <div 
+                             onClick={() => setActiveReportsBar(prev => prev === 'doctor' ? null : 'doctor')}
+                             onTouchStart={() => setActiveReportsBar('doctor')}
+                             onMouseEnter={() => setActiveReportsBar('doctor')}
+                             onMouseLeave={() => setActiveReportsBar(null)}
+                             className={`w-full bg-sky-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeReportsBar === 'doctor' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={`Doctors: ${docCalls} Calls`} 
+                             style={{ height: `${Math.max((docCalls/maxRep)*100, 2)}%` }}
+                          />
+                       </div>
+
+                       {/* Chemist Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeReportsBar === 'chemist' && (
+                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-emerald-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">Chemist Visits</p>
+                                <p className="text-xs font-black text-white">{chemCalls} Calls</p>
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-emerald-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-emerald-400 mb-1 pointer-events-none">{chemCalls}</span>
+                          <div 
+                             onClick={() => setActiveReportsBar(prev => prev === 'chemist' ? null : 'chemist')}
+                             onTouchStart={() => setActiveReportsBar('chemist')}
+                             onMouseEnter={() => setActiveReportsBar('chemist')}
+                             onMouseLeave={() => setActiveReportsBar(null)}
+                             className={`w-full bg-emerald-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeReportsBar === 'chemist' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={`Chemists: ${chemCalls} Calls`} 
+                             style={{ height: `${Math.max((chemCalls/maxRep)*100, 2)}%` }}
+                          />
+                       </div>
+
+                       {/* Stockist Bar */}
+                       <div className="relative flex flex-col items-center h-full justify-end w-14 md:w-20">
+                          {activeReportsBar === 'stockist' && (
+                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-orange-400 text-white rounded-xl px-2.5 py-1.5 shadow-2xl text-center whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 pointer-events-none">
+                                <p className="text-[9px] text-orange-400 font-bold uppercase tracking-wider">Stockist Visits</p>
+                                <p className="text-xs font-black text-white">{stockCalls} Calls</p>
+                                <div className="w-2 h-2 bg-slate-900 border-r border-b border-orange-400 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                             </div>
+                          )}
+                          <span className="text-[10px] font-bold text-orange-400 mb-1 pointer-events-none">{stockCalls}</span>
+                          <div 
+                             onClick={() => setActiveReportsBar(prev => prev === 'stockist' ? null : 'stockist')}
+                             onTouchStart={() => setActiveReportsBar('stockist')}
+                             onMouseEnter={() => setActiveReportsBar('stockist')}
+                             onMouseLeave={() => setActiveReportsBar(null)}
+                             className={`w-full bg-orange-500 rounded-t-lg transition-all cursor-pointer ${
+                                activeReportsBar === 'stockist' ? 'brightness-125 ring-2 ring-white/70 shadow-lg scale-105' : 'hover:opacity-90 active:scale-95'
+                             }`} 
+                             title={`Stockists: ${stockCalls} Calls`} 
+                             style={{ height: `${Math.max((stockCalls/maxRep)*100, 2)}%` }}
+                          />
+                       </div>
                     </div>
 
                     <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-12px]">
@@ -399,7 +553,10 @@ export default function Dashboard() {
                        <span className="w-14 md:w-20 text-center">Stockist</span>
                     </div>
                     
-                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white">Reports Submitted</div>
+                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white flex items-center justify-center gap-1.5">
+                       <span>Reports Submitted</span>
+                       <span className="text-[10px] font-normal text-slate-400">(Tap bar for details)</span>
+                    </div>
                  </div>
                  );
               })()}

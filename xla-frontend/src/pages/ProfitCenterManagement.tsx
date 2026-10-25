@@ -1070,7 +1070,12 @@ export default function ProfitCenterManagement() {
                           }
 
                           return (
-                            <g key={d.month} className="cursor-pointer" onClick={() => setFocusedMonth(d.month)}>
+                            <g 
+                              key={d.month} 
+                              className="cursor-pointer" 
+                              onClick={() => setFocusedMonth(d.month)}
+                              onTouchStart={() => setFocusedMonth(d.month)}
+                            >
                               {/* Focused Highlight Column */}
                               {isFocused && (
                                 <rect
