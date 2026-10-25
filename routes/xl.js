@@ -917,6 +917,12 @@ function getDesignationAliases(desig) {
         aliases.add('senior zonal sales manager');
     }
     if (check === 'zsm') aliases.add('zonal sales manager');
+    if (check.includes('general manager')) aliases.add(check.replace(/general manager/g, 'gm').replace(/\s+/g, ' ').trim());
+    if (check.includes('gm')) aliases.add(check.replace(/\bgm\b/g, 'general manager').replace(/\s+/g, ' ').trim());
+    if (check.includes('national sales manager')) aliases.add('nsm');
+    if (check === 'nsm') aliases.add('national sales manager');
+    if (check.includes('vice president')) aliases.add('vp');
+    if (check === 'vp') aliases.add('vice president');
 
     return Array.from(aliases);
 }
@@ -1423,35 +1429,138 @@ router.get('/user/hierarchy', async (req, res) => {
 
         let manager = null;
         if (user.reportingManager) {
-            const mgrQuery = user.reportingManager.trim().toLowerCase();
+            const mgrRaw = user.reportingManager.trim();
+            const mgrQuery = mgrRaw.toLowerCase();
+            const hqMatch = mgrRaw.match(/\(([^)]+)\)/);
+            const targetHq = hqMatch ? hqMatch[1].trim() : null;
+            const targetDesig = mgrRaw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+            const managerOr = [
+                { employeeId: mgrRaw },
+                sequelize.where(sequelize.fn('LOWER', sequelize.col('firstName')), mgrQuery),
+                sequelize.where(
+                    sequelize.fn('LOWER', sequelize.fn('CONCAT', sequelize.col('firstName'), ' ', sequelize.col('lastName'))),
+                    mgrQuery
+                )
+            ];
+
+            if (user.reportingManager.trim().length <= 36) {
+                managerOr.push({ uid: mgrRaw });
+            }
+
+            if (targetDesig) {
+                const desigAliases = getDesignationAliases(targetDesig);
+                for (const d of desigAliases) {
+                    if (targetHq) {
+                        const baseHq = targetHq.split('-')[0].trim().toLowerCase();
+                        managerOr.push({
+                            [Op.and]: [
+                                sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), d),
+                                {
+                                    [Op.or]: [
+                                        sequelize.where(sequelize.fn('LOWER', sequelize.col('hq')), targetHq.toLowerCase()),
+                                        sequelize.where(sequelize.fn('LOWER', sequelize.col('hq')), { [Op.like]: `${baseHq}%` })
+                                    ]
+                                }
+                            ]
+                        });
+                    } else {
+                        managerOr.push(sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), d));
+                    }
+                }
+            }
+
             manager = await XlUser.findOne({
-                where: {
-                    [Op.or]: [
-                        { employeeId: user.reportingManager.trim() },
-                        sequelize.where(sequelize.fn('LOWER', sequelize.col('firstName')), mgrQuery),
-                        sequelize.where(
-                            sequelize.fn('LOWER', sequelize.fn('CONCAT', sequelize.col('firstName'), ' ', sequelize.col('lastName'))),
-                            mgrQuery
-                        )
-                    ]
-                },
+                where: { [Op.or]: managerOr },
                 attributes: ['firstName', 'lastName', 'designation', 'email', 'phone', 'hq', 'division'],
                 raw: true
             });
         }
 
         const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        const reportees = await XlUser.findAll({
+        const reporteeOrConditions = [
+            { reportingManager: user.employeeId },
+            { reportingManager: user.employeeId.trim() }
+        ];
+
+        if (user.uid) {
+            reporteeOrConditions.push({ reportingManager: user.uid });
+        }
+
+        if (fullName) {
+            reporteeOrConditions.push({ reportingManager: fullName });
+            reporteeOrConditions.push(sequelize.where(
+                sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                fullName.toLowerCase()
+            ));
+        }
+
+        // Designation & HQ based matching for subordinates
+        if (user.designation) {
+            const desigAliases = getDesignationAliases(user.designation);
+            const hqClean = (user.hq || '').trim();
+            const baseHq = hqClean.split('-')[0].trim();
+
+            for (const d of desigAliases) {
+                // Match designation alone (when reportingManager does not specify an HQ)
+                reporteeOrConditions.push(sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                    d
+                ));
+
+                // Match designation + exact HQ / base HQ
+                if (hqClean) {
+                    const hqLower = hqClean.toLowerCase();
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        `${d} (${hqLower})`
+                    ));
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        `${d} - ${hqLower}`
+                    ));
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        { [Op.like]: `${d} (${hqLower}%` }
+                    ));
+                }
+                if (baseHq && baseHq.toLowerCase() !== hqClean.toLowerCase()) {
+                    const baseLower = baseHq.toLowerCase();
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        `${d} (${baseLower})`
+                    ));
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        `${d} - ${baseLower}`
+                    ));
+                    reporteeOrConditions.push(sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
+                        { [Op.like]: `${d} (${baseLower}%` }
+                    ));
+                }
+            }
+        }
+
+        const rawReportees = await XlUser.findAll({
             where: {
-                [Op.or]: [
-                    { reportingManager: user.employeeId },
-                    { reportingManager: fullName }
-                ],
+                [Op.or]: reporteeOrConditions,
                 status: 'Active'
             },
-            attributes: ['firstName', 'lastName', 'designation', 'hq', 'division', 'phone', 'email'],
+            attributes: ['firstName', 'lastName', 'designation', 'hq', 'division', 'phone', 'email', 'employeeId'],
             raw: true
         });
+
+        // Deduplicate and filter out self
+        const reportees = [];
+        const seen = new Set();
+        for (const r of rawReportees) {
+            const key = r.employeeId || `${r.firstName}_${r.lastName}_${r.hq}`;
+            if (r.employeeId !== user.employeeId && !seen.has(key)) {
+                seen.add(key);
+                reportees.push(r);
+            }
+        }
 
         res.json({
             success: true,
