@@ -165,12 +165,11 @@ export default function ManageCompanyProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>Company Code (Login Credential)</span>
-                    <span className="text-[10px] text-sky-400 font-semibold tracking-normal">Used on CRM/App Login</span>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Company Code
                   </label>
                   <div className="relative">
-                    <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" />
+                    <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       value={companyCode}
@@ -198,7 +197,7 @@ export default function ManageCompanyProfile() {
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                     Official Website URL
                   </label>
