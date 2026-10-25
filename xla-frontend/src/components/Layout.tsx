@@ -256,7 +256,7 @@ export default function Layout() {
     <div className="flex flex-col h-dvh bg-white dark:bg-[#1a1a2e] overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors">
       
       {/* TOP HEADER - SPANS FULL WIDTH ABOVE ALL MENUS & SUBMENUS */}
-      <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-[#1e1e30] border-b border-slate-200 dark:border-[#3b3b5a] shadow-md z-30 flex-shrink-0">
+      <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-white dark:bg-[#1e1e30] border-b border-slate-200 dark:border-[#3b3b5a] shadow-md z-30 flex-shrink-0">
         
         {/* Left: Brand Logo */}
         <div className="flex items-center gap-3">
@@ -324,8 +324,8 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Right: Theme Toggle, Broadcast, Notifications, User Avatar */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Right: Theme Toggle, Font Settings, Broadcast, Notifications, User Avatar */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Theme Toggle with Tooltip */}
           <button 
             onClick={() => setIsLightMode(!isLightMode)} 
@@ -350,16 +350,19 @@ export default function Layout() {
             </span>
           </button>
 
-          <div className="w-px h-5 bg-slate-200 dark:bg-[#3b3b5a] hidden sm:block"></div>
-
           {/* Broadcast Announcement Button */}
           <button 
             onClick={() => setIsBroadcastModalOpen(true)} 
-            className="text-slate-500 dark:text-[#8b8baf] hover:text-sky-400 transition-colors relative hidden sm:block p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" 
+            className="text-slate-500 dark:text-[#8b8baf] hover:text-sky-400 transition-colors relative group p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" 
             title="Broadcast Scroll Message"
           >
             <MessageSquare size={20} />
+            <span className="text-[10px] absolute -bottom-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-slate-800 text-white px-2 py-1 rounded shadow-lg pointer-events-none z-50">
+              Broadcast Message
+            </span>
           </button>
+
+          <div className="w-px h-5 bg-slate-200 dark:bg-[#3b3b5a] hidden sm:block"></div>
 
           {/* Notifications Dropdown / Full Phone Boundary Modal */}
           <div className="relative">
