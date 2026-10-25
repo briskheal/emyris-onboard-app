@@ -3400,6 +3400,7 @@ router.post('/tour-program', async (req, res) => {
             if (userForId.uid) idArray3.push(userForId.uid);
         }
         let tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray3 }, month, year } });
+        const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
 
         if (tp) {
             if ((tp.status === 'Submitted' || tp.status === 'Approved') && resubmitRemark) {
@@ -3442,7 +3443,6 @@ router.post('/tour-program', async (req, res) => {
             }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
         } else {
-            const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
             const finalStatus = isAdminSender ? 'Approved' : 'Draft';
             const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
             const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved', isEdited: false } : e);
