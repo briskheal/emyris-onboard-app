@@ -123,6 +123,48 @@ await XlTarget.sync({ alter: true });
             await sequelize.query("ALTER TABLE xl_products ADD COLUMN uid VARCHAR(255);");
         } catch(e) {}
 
+        // --- Permanent Territory & HQ Hierarchy Upgrades ---
+        try { await sequelize.query('ALTER TABLE xl_hqs ADD COLUMN IF NOT EXISTS "parentHq" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_targets ADD COLUMN IF NOT EXISTS "headquarter" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_dcrs ADD COLUMN IF NOT EXISTS "headquarter" VARCHAR(255);'); } catch(e) {}
+        
+        // Auto-backfill targets from users if headquarter is missing
+        try {
+            await sequelize.query(`
+                UPDATE xl_targets t
+                SET headquarter = UPPER(TRIM(u.hq))
+                FROM xl_users u
+                WHERE (t.headquarter IS NULL OR t.headquarter = '') 
+                  AND t."employeeId" = u."employeeId" 
+                  AND u.hq IS NOT NULL AND u.hq <> '';
+            `);
+        } catch(e) {}
+
+        // Auto-backfill DCRs from users if headquarter is missing
+        try {
+            await sequelize.query(`
+                UPDATE xl_dcrs d
+                SET headquarter = UPPER(TRIM(u.hq))
+                FROM xl_users u
+                WHERE (d.headquarter IS NULL OR d.headquarter = '') 
+                  AND d."employeeId" = u."employeeId" 
+                  AND u.hq IS NOT NULL AND u.hq <> '';
+            `);
+        } catch(e) {}
+
+        // Auto-backfill initial parentHq in xl_hqs based on current reportingManager designations
+        try {
+            await sequelize.query(`
+                UPDATE xl_hqs h
+                SET "parentHq" = UPPER(TRIM(SUBSTRING(u."reportingManager" FROM '\\\\(([^)]+)\\\\)')))
+                FROM xl_users u
+                WHERE (h."parentHq" IS NULL OR h."parentHq" = '')
+                  AND UPPER(TRIM(h."hqName")) = UPPER(TRIM(u.hq))
+                  AND u."reportingManager" LIKE '%(%)%'
+                  AND SUBSTRING(u."reportingManager" FROM '\\\\(([^)]+)\\\\)') IS NOT NULL;
+            `);
+        } catch(e) {}
+
         if (sequelize.getDialect() === 'sqlite') {
             await sequelize.query('PRAGMA journal_mode=WAL;');
             await sequelize.query('PRAGMA synchronous=NORMAL;');

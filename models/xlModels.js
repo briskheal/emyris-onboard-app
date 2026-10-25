@@ -210,6 +210,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         uid: { type: DataTypes.STRING }, // e.g. HQS1
         state: { type: DataTypes.STRING, allowNull: false },
         hqName: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hqName', val.toUpperCase().trim()); } },
+        parentHq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('parentHq', val.toUpperCase().trim()); } },
+        division: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
@@ -387,6 +389,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         employeeId: { type: DataTypes.STRING, allowNull: false },
         employeeName: { type: DataTypes.STRING },
+        headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
         date: { type: DataTypes.STRING, allowNull: false },         // "YYYY-MM-DD"
         tourProgramId: { type: DataTypes.STRING },                  // FK to xl_tour_program
         entityType: { type: DataTypes.STRING },                     // "Doctor" or "Chemist"
@@ -611,7 +614,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     
     const XlTarget = sequelize.define('xl_target', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeId: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING },
+        headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
         userName: { type: DataTypes.STRING },
         targetPeriod: { type: DataTypes.STRING, allowNull: false },
         month: { type: DataTypes.STRING },

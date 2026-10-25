@@ -4707,10 +4707,15 @@ router.get('/locations/hqs', async (req, res) => {
 
 router.post('/locations/hqs', async (req, res) => {
     try {
-        const { state, hqName } = req.body;
+        const { state, hqName, parentHq } = req.body;
         const max = await getMaxUID(XlHQ, 'HQS');
         const uid = 'HQS' + (max + 1);
-        const newHQ = await XlHQ.create({ state, hqName, uid });
+        const newHQ = await XlHQ.create({ 
+            state, 
+            hqName, 
+            parentHq: parentHq ? parentHq.toUpperCase().trim() : null, 
+            uid 
+        });
         await syncXlHqsToOnboard();
         res.json({ success: true, hq: newHQ });
     } catch (e) {
@@ -4934,11 +4939,12 @@ router.post('/locations/upload', locationUpload.single('file'), async (req, res)
       if (type === 'Headquarter') {
         const hqName = String(d['HQ Name'] || d.hqName || d.Headquarter || d.HQ || '').trim();
         const state = String(d.State || d.state || '').trim();
+        const parentHq = String(d['Reporting HQ'] || d['Parent HQ'] || d.parentHq || d.reportingHq || '').trim();
         if(!hqName) continue;
         let uid = d.UID || d.uid;
         if (!uid) { currentUidMax++; uid = 'HQS' + currentUidMax; }
         
-        let row = { hqName, state, uid };
+        let row = { hqName, state, uid, ...(parentHq ? { parentHq: parentHq.toUpperCase() } : {}) };
         const ex = await XlHQ.findOne({ where: { uid } });
         if (ex) await ex.update(row); else await XlHQ.create(row);
         docs.push(row);
@@ -5274,6 +5280,309 @@ router.post('/send-credentials', async (req, res) => {
         res.json({ success: true, message: 'Credentials sent to ' + email });
     } catch (e) {
         console.error('[send-credentials error]', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Send Rich Employee Details Profile Card Email to Selected Users
+router.post('/users/send-profile-card', async (req, res) => {
+    try {
+        const { userIds, customMessage } = req.body;
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'Please select at least one employee.' });
+        }
+
+        const { XlUser, XlAdmin } = require('../db');
+        const { Op } = require('sequelize');
+        const { sendEmail } = require('../utils/mailer');
+        const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
+
+        // Fetch users from XlUser
+        const users = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { _id: { [Op.in]: userIds } },
+                    { employeeId: { [Op.in]: userIds } },
+                    { uid: { [Op.in]: userIds } }
+                ]
+            }
+        });
+
+        // Also check XlAdmin if some IDs weren't in XlUser
+        const foundUserIds = new Set(users.map(u => u._id));
+        const missingIds = userIds.filter(id => !foundUserIds.has(id));
+        let admins = [];
+        if (missingIds.length > 0) {
+            admins = await XlAdmin.findAll({
+                where: {
+                    [Op.or]: [
+                        { _id: { [Op.in]: missingIds } },
+                        { employeeId: { [Op.in]: missingIds } },
+                        { uid: { [Op.in]: missingIds } }
+                    ]
+                }
+            });
+        }
+
+        const allRecipients = [...users, ...admins];
+        if (allRecipients.length === 0) {
+            return res.status(404).json({ success: false, message: 'No matching employees found for the selected IDs.' });
+        }
+
+        let sentCount = 0;
+        let failedList = [];
+
+        for (const u of allRecipients) {
+            if (!u.email) {
+                failedList.push({ name: `${u.firstName} ${u.lastName || ''}`, reason: 'No email address' });
+                continue;
+            }
+
+            const fullName = `${u.firstName || ''} ${u.middleName || ''} ${u.lastName || ''}`.replace(/\s+/g, ' ').trim();
+            const empId = u.employeeId || u.uid || '-';
+            const passDisplay = u.password && !u.password.startsWith('$2') 
+                ? u.password 
+                : (u.password ? 'Active (Use your existing login password)' : 'Not set');
+
+            const addressParts = [u.streetAddress1, u.streetAddress2, u.city, u.state].filter(Boolean);
+            const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : '-';
+
+            const emailHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Employee Profile Card</title>
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f172a; padding: 30px 10px;">
+                <tr>
+                  <td align="center">
+                    <table width="650" cellpadding="0" cellspacing="0" style="max-width: 650px; width: 100%; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);">
+                      
+                      <!-- Header Banner -->
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0f172a 100%); padding: 35px 30px; text-align: center;">
+                          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">
+                            EMYRIS BIOLIFESCIENCES
+                          </h1>
+                          <p style="margin: 6px 0 0; color: #bae6fd; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
+                            Official Employee Profile & Access Card
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- Welcome Message -->
+                      <tr>
+                        <td style="padding: 28px 32px 18px;">
+                          <p style="margin: 0 0 14px; font-size: 16px; color: #0f172a; font-weight: 700;">
+                            Dear ${fullName},
+                          </p>
+                          <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #475569;">
+                            ${customMessage || 'Warm greetings from the Management! We are pleased to provide your official Employee Details Card containing your territory assignment, reporting structure, and field portal login credentials. Please review the details below and keep your login access secure.'}
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- Employee ID Card Container -->
+                      <tr>
+                        <td style="padding: 0 32px 28px;">
+                          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                            
+                            <!-- Card Ribbon Header -->
+                            <tr>
+                              <td style="background-color: #0284c7; padding: 10px 18px; color: #ffffff;">
+                                <table width="100%">
+                                  <tr>
+                                    <td style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ffffff;">
+                                      EMPLOYEE CARD
+                                    </td>
+                                    <td align="right" style="font-size: 12px; font-family: monospace; font-weight: 700; color: #e0f2fe;">
+                                      ID: ${empId}
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+
+                            <!-- Card Body Table -->
+                            <tr>
+                              <td style="padding: 20px;">
+                                
+                                <!-- Section 1: Basic & Contact -->
+                                <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #0284c7; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+                                  Personal & Contact Information
+                                </p>
+                                <table width="100%" cellpadding="4" cellspacing="0" style="font-size: 13px; margin-bottom: 16px;">
+                                  <tr>
+                                    <td width="30%" style="color: #64748b; font-weight: 600;">Full Name:</td>
+                                    <td width="70%" style="color: #0f172a; font-weight: 700;">${fullName}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Employee ID:</td>
+                                    <td style="color: #0284c7; font-weight: 700; font-family: monospace;">${empId}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Email Address:</td>
+                                    <td style="color: #0f172a; font-weight: 600;">${u.email}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Phone Number:</td>
+                                    <td style="color: #0f172a; font-weight: 600;">${u.phone || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Date of Birth:</td>
+                                    <td style="color: #0f172a;">${u.dob || '-'}</td>
+                                  </tr>
+                                </table>
+
+                                <!-- Section 2: Hierarchy & Territory -->
+                                <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #0284c7; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+                                  Territorial & Reporting Allocation
+                                </p>
+                                <table width="100%" cellpadding="4" cellspacing="0" style="font-size: 13px; margin-bottom: 16px;">
+                                  <tr>
+                                    <td width="30%" style="color: #64748b; font-weight: 600;">Designation:</td>
+                                    <td width="70%" style="color: #0f172a; font-weight: 700;">${u.designation || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Headquarter (HQ):</td>
+                                    <td style="color: #0284c7; font-weight: 700;">${u.hq || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Division:</td>
+                                    <td style="color: #0f172a; font-weight: 600;">${u.division || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Reporting Manager:</td>
+                                    <td style="color: #0f172a; font-weight: 600;">${u.reportingManager || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Date of Joining:</td>
+                                    <td style="color: #0f172a;">${u.doj || '-'}</td>
+                                  </tr>
+                                </table>
+
+                                <!-- Section 3: Allowances -->
+                                <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #0284c7; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+                                  Field Allowance Structure
+                                </p>
+                                <table width="100%" cellpadding="4" cellspacing="0" style="font-size: 13px; margin-bottom: 16px;">
+                                  <tr>
+                                    <td width="33%" style="background-color: #f1f5f9; padding: 8px; border-radius: 6px; text-align: center;">
+                                      <div style="font-size: 11px; color: #64748b; font-weight: 600;">Daily (DA)</div>
+                                      <div style="font-size: 14px; color: #0f172a; font-weight: 700;">₹${u.dailyAllowance || 0}</div>
+                                    </td>
+                                    <td width="33%" style="background-color: #f1f5f9; padding: 8px; border-radius: 6px; text-align: center;">
+                                      <div style="font-size: 11px; color: #64748b; font-weight: 600;">Ex-Station DA</div>
+                                      <div style="font-size: 14px; color: #0f172a; font-weight: 700;">₹${u.exStationAllowance || 0}</div>
+                                    </td>
+                                    <td width="33%" style="background-color: #f1f5f9; padding: 8px; border-radius: 6px; text-align: center;">
+                                      <div style="font-size: 11px; color: #64748b; font-weight: 600;">Out-Station DA</div>
+                                      <div style="font-size: 14px; color: #0f172a; font-weight: 700;">₹${u.outStationAllowance || 0}</div>
+                                    </td>
+                                  </tr>
+                                </table>
+
+                                <!-- Section 4: Address & Tax -->
+                                <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #0284c7; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+                                  Residential & Identification Records
+                                </p>
+                                <table width="100%" cellpadding="4" cellspacing="0" style="font-size: 13px;">
+                                  <tr>
+                                    <td width="30%" style="color: #64748b; font-weight: 600;">Address:</td>
+                                    <td width="70%" style="color: #0f172a;">${fullAddress}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">PAN Number:</td>
+                                    <td style="color: #0f172a; font-family: monospace; font-weight: 600;">${u.pan || '-'}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color: #64748b; font-weight: 600;">Aadhar Number:</td>
+                                    <td style="color: #0f172a; font-family: monospace; font-weight: 600;">${u.aadhar || '-'}</td>
+                                  </tr>
+                                </table>
+
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                      <!-- Portal Access Credentials Box -->
+                      <tr>
+                        <td style="padding: 0 32px 30px;">
+                          <div style="background-color: #eff6ff; border: 1.5px dashed #3b82f6; border-radius: 12px; padding: 18px 20px;">
+                            <h3 style="margin: 0 0 8px; color: #1e40af; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                              🔐 Portal & Mobile Application Access
+                            </h3>
+                            <p style="margin: 0 0 12px; font-size: 12px; color: #3b82f6;">
+                              You can log into the Emyris Field Portal using these credentials:
+                            </p>
+                            <table width="100%" cellpadding="3" cellspacing="0" style="font-size: 13px;">
+                              <tr>
+                                <td width="28%" style="color: #1e3a8a; font-weight: 600;">Portal Link:</td>
+                                <td width="72%"><a href="${baseUrl}/xl/login" style="color: #0284c7; font-weight: 700; text-decoration: underline;">${baseUrl}/xl/login</a></td>
+                              </tr>
+                              <tr>
+                                <td style="color: #1e3a8a; font-weight: 600;">Login ID / Email:</td>
+                                <td style="color: #0f172a; font-weight: 700;">${u.email}</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #1e3a8a; font-weight: 600;">Password:</td>
+                                <td style="color: #dc2626; font-family: monospace; font-weight: 700; font-size: 14px;">${passDisplay}</td>
+                              </tr>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+
+                      <!-- Footer -->
+                      <tr>
+                        <td style="background-color: #0f172a; padding: 25px 30px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.5;">
+                          <p style="margin: 0 0 6px; font-weight: 700; color: #e2e8f0;">
+                            EMYRIS BIOLIFESCIENCES PVT. LTD.
+                          </p>
+                          <p style="margin: 0 0 10px;">
+                            Human Resources & Operations Department &bull; <a href="mailto:hradmin@emyrishr.in" style="color: #38bdf8; text-decoration: none;">hradmin@emyrishr.in</a>
+                          </p>
+                          <p style="margin: 0; font-size: 10px; color: #64748b;">
+                            Confidentiality Notice: This email and any attachments are confidential and intended solely for the recipient. If you have received this in error, please notify the sender immediately.
+                          </p>
+                        </td>
+                      </tr>
+
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+            `;
+
+            try {
+                await sendEmail({
+                    to: u.email,
+                    subject: `Welcome to Emyris - Your Employee Profile Card [${empId}]`,
+                    html: emailHtml
+                });
+                sentCount++;
+            } catch (err) {
+                console.error(`Failed to email employee card to ${u.email}:`, err.message);
+                failedList.push({ name: fullName, email: u.email, reason: err.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            sentCount,
+            failedCount: failedList.length,
+            failedList,
+            message: `Successfully sent Employee Profile Card to ${sentCount} employee(s)!${failedList.length > 0 ? ` (${failedList.length} failed)` : ''}`
+        });
+    } catch (e) {
+        console.error('[send-profile-card error]', e);
         res.status(500).json({ success: false, message: e.message });
     }
 });
@@ -7536,6 +7845,7 @@ router.post('/targets/upload', async (req, res) => {
             const employeeId = user ? user.employeeId : empAlias;
             
             
+            const targetHq = user?.hq || row['HQ'] || row['Headquarter'] || row['Headquarters'] || '';
             for (const month of months) {
                 if (row[month] !== undefined && row[month] !== '') {
                     const monthVal = parseFloat(row[month]);
@@ -7548,11 +7858,13 @@ router.post('/targets/upload', async (req, res) => {
                             await target.update({
                                 allocationType: 'Lump-Sum',
                                 lumpSumAmount: monthVal,
-                                totalProductAmount: 0
+                                totalProductAmount: 0,
+                                ...(targetHq ? { headquarter: targetHq } : {})
                             });
                         } else {
                             await XlTarget.create({
                                 employeeId,
+                                headquarter: targetHq,
                                 userName: row['Employee Name'],
                                 targetPeriod: 'Monthly',
                                 month,
@@ -7597,7 +7909,8 @@ router.post('/targets/upload', async (req, res) => {
                                 allocationType: 'Qty * Amount',
                                 productTargets,
                                 totalProductAmount,
-                                lumpSumAmount: 0
+                                lumpSumAmount: 0,
+                                ...(targetHq ? { headquarter: targetHq } : {})
                             });
                         } else {
                             if (qty > 0) {
@@ -7611,6 +7924,7 @@ router.post('/targets/upload', async (req, res) => {
                                 
                                 await XlTarget.create({
                                     employeeId,
+                                    headquarter: targetHq,
                                     userName: row['Employee Name'],
                                     targetPeriod: 'Monthly',
                                     month,

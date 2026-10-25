@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail, Eye, Search, Download, X,
   UserPlus, ShieldPlus, Users, UserCog, ShieldCheck, Layers, Briefcase, Target, Upload, 
-  KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen, UserCheck
+  KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen, UserCheck, Send
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -88,6 +88,15 @@ function AccessControlTab() {
   // Re-activation Modal states
   const [reactivateTarget, setReactivateTarget] = useState<any>(null);
   const [reactivateLoading, setReactivateLoading] = useState(false);
+
+  // Email Employee Details Card states
+  const [mailMode, setMailMode] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [sendSuccessMsg, setSendSuccessMsg] = useState('');
+  const [sendErrorMsg, setSendErrorMsg] = useState('');
+  const [customMailMessage, setCustomMailMessage] = useState('');
+  const [showMailConfirmModal, setShowMailConfirmModal] = useState(false);
 
   // HQ Bulk Lock states
   const [showConfirm, setShowConfirm] = useState(false);
@@ -1455,6 +1464,15 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
   const [reactivateTarget, setReactivateTarget] = useState<any>(null);
   const [reactivateLoading, setReactivateLoading] = useState(false);
 
+  // Email Employee Details Card states
+  const [mailMode, setMailMode] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [sendSuccessMsg, setSendSuccessMsg] = useState('');
+  const [sendErrorMsg, setSendErrorMsg] = useState('');
+  const [customMailMessage, setCustomMailMessage] = useState('');
+  const [showMailConfirmModal, setShowMailConfirmModal] = useState(false);
+
   const handleAutoGeneratePass = () => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$";
     let pwd = "";
@@ -1666,6 +1684,128 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
   const activeProfiles = profiles.filter(p => !isUserLocked(p));
   const deactivatedProfiles = profiles.filter(p => isUserLocked(p));
 
+  const allActiveSelected = activeProfiles.length > 0 && activeProfiles.every(p => selectedUserIds.includes(p._id));
+
+  const handleSelectAllActive = () => {
+    if (allActiveSelected) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(activeProfiles.map(p => p._id));
+    }
+  };
+
+  const handleToggleUserSelect = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleSendProfileCards = async () => {
+    if (selectedUserIds.length === 0) return;
+    setIsSendingEmails(true);
+    setSendSuccessMsg('');
+    setSendErrorMsg('');
+    try {
+      const res = await axios.post('/api/admin/users/send-profile-card', {
+        userIds: selectedUserIds,
+        customMessage: customMailMessage.trim() || undefined
+      });
+      if (res.data.success) {
+        setSendSuccessMsg(res.data.message || `Successfully sent Employee Profile Cards to ${res.data.sentCount} employee(s)!`);
+        setShowMailConfirmModal(false);
+        setSelectedUserIds([]);
+        setTimeout(() => setSendSuccessMsg(''), 7000);
+      } else {
+        setSendErrorMsg(res.data.message || 'Failed to send emails');
+      }
+    } catch (e: any) {
+      console.error(e);
+      setSendErrorMsg(e.response?.data?.message || e.message || 'Error sending employee profile cards');
+    } finally {
+      setIsSendingEmails(false);
+    }
+  };
+
+  const renderMailConfirmModal = () => {
+    if (!showMailConfirmModal) return null;
+    const selectedUsers = profiles.filter(p => selectedUserIds.includes(p._id));
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+          <button 
+            type="button"
+            onClick={() => setShowMailConfirmModal(false)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2.5 mb-3 text-sky-400">
+            <Mail size={22} />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              Send Employee Details Card via Email
+            </h3>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed mb-3">
+            You are about to email the official <strong>Employee Details Profile Card</strong> with territorial assignment, reporting manager, allowance details, and portal login credentials to the following <strong>{selectedUsers.length}</strong> active employee(s):
+          </p>
+
+          <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-3 max-h-48 overflow-y-auto mb-4 divide-y divide-slate-800">
+            {selectedUsers.map(u => (
+              <div key={u._id} className="py-1.5 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-white font-bold">{u.firstName} {u.lastName}</span>
+                  <span className="text-slate-400 text-[11px] ml-2 font-mono">({u.employeeId || u.uid})</span>
+                  <span className="text-sky-400 text-[11px] ml-2 font-semibold">• {u.designation || 'MR'} ({u.hq || '-'})</span>
+                </div>
+                <span className="text-emerald-400 text-[11px] font-mono">{u.email || 'No Email!'}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-4">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+              Personalized Welcome / Greeting Message (Optional)
+            </label>
+            <textarea
+              rows={2}
+              value={customMailMessage}
+              onChange={e => setCustomMailMessage(e.target.value)}
+              placeholder="e.g. Warm greetings from the Management! We are pleased to provide your official Employee Details Card..."
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none resize-none"
+            />
+          </div>
+
+          {sendErrorMsg && (
+            <div className="p-3 rounded-lg mb-4 text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              {sendErrorMsg}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-700/60 mt-auto">
+            <button 
+              type="button" 
+              onClick={() => setShowMailConfirmModal(false)} 
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={isSendingEmails} 
+              onClick={handleSendProfileCards} 
+              className="px-5 py-2 rounded-lg text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-sky-900/30 cursor-pointer"
+            >
+              <Send size={14} />
+              {isSendingEmails ? 'Sending Emails...' : `Confirm & Send to ${selectedUsers.length} User(s)`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const filteredByStatus = statusFilter === 'Active'
     ? activeProfiles
     : statusFilter === 'Deactivated'
@@ -1813,6 +1953,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
         </div>
         {renderResetPassModal()}
+      {renderMailConfirmModal()}
       </div>
     );
   }
@@ -2174,32 +2315,127 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
             </button>
           </div>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            placeholder="Search name, ID, email, phone, HQ..."
-            className="w-full bg-slate-800 border border-slate-700 focus:border-sky-500 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 outline-none transition-colors"
-          />
-          {searchQuery && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-full sm:w-72">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              placeholder="Search name, ID, email, phone, HQ..."
+              className="w-full bg-slate-800 border border-slate-700 focus:border-sky-500 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Email button right side of search bar */}
+          <button
+            type="button"
+            onClick={() => {
+              setMailMode(!mailMode);
+              if (mailMode) setSelectedUserIds([]);
+            }}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
+              mailMode
+                ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-900/30'
+                : 'bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700'
+            }`}
+            title={mailMode ? 'Cancel Email Mode' : 'Email Employee Details Cards'}
+          >
+            <Mail size={14} />
+            {mailMode ? 'Cancel' : 'Email'}
+          </button>
+
+          {/* Send button right side of search bar */}
+          {mailMode && (
             <button
               type="button"
-              onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              disabled={selectedUserIds.length === 0 || isSendingEmails}
+              onClick={() => setShowMailConfirmModal(true)}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white transition-all flex items-center gap-1.5 shadow-md shadow-sky-900/40 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="Send Employee Details Card to Selected Users"
             >
-              <X size={14} />
+              <Send size={14} />
+              {isSendingEmails ? 'Sending...' : `Send (${selectedUserIds.length})`}
             </button>
           )}
         </div>
       </div>
+
+      {mailMode && (
+        <div className="flex items-center justify-between bg-sky-950/40 border border-sky-500/30 px-3.5 py-2.5 rounded-xl text-xs text-sky-200 mt-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Mail size={15} className="text-sky-400 shrink-0" />
+            <span>
+              <strong>Email Selection Mode:</strong> {selectedUserIds.length} of {activeProfiles.length} active employee(s) selected. Click <strong>"Send"</strong> to email their official Employee Profile Card with login credentials.
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSelectAllActive}
+              className="text-[11px] font-bold text-sky-400 hover:text-white underline cursor-pointer"
+            >
+              {allActiveSelected ? 'Deselect All' : `Select All Active (${activeProfiles.length})`}
+            </button>
+            {selectedUserIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedUserIds([])}
+                className="text-[11px] font-bold text-slate-400 hover:text-white cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {sendSuccessMsg && (
+        <div className="p-3 rounded-xl mb-3 text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-between">
+          <span>{sendSuccessMsg}</span>
+          <button onClick={() => setSendSuccessMsg('')} className="text-slate-400 hover:text-white"><X size={14} /></button>
+        </div>
+      )}
+      {sendErrorMsg && (
+        <div className="p-3 rounded-xl mb-3 text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center justify-between">
+          <span>{sendErrorMsg}</span>
+          <button onClick={() => setSendErrorMsg('')} className="text-slate-400 hover:text-white"><X size={14} /></button>
+        </div>
+      )}
+
       <div className="w-full flex flex-col mt-2 bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
                 <tr className="border-b border-slate-700 text-slate-300">
-                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800 sticky left-0 z-20">Sr No.</th>
+                  <th className="border-r border-slate-700 p-2.5 font-bold uppercase tracking-wider text-[11px] bg-slate-800 sticky left-0 z-20 text-center w-24">
+                    {mailMode ? (
+                      <div 
+                        className="flex items-center justify-center gap-1 cursor-pointer select-none"
+                        onClick={handleSelectAllActive}
+                        title="Click to select/deselect all active users"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={allActiveSelected}
+                          onChange={handleSelectAllActive}
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-sky-300 font-bold">ALL</span>
+                      </div>
+                    ) : (
+                      'Sr No.'
+                    )}
+                  </th>
                   <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800 sticky left-[50px] z-20">Name</th>
                   <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Employee ID</th>
                   <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Email Address</th>
@@ -2222,7 +2458,28 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
               <tbody className="divide-y divide-slate-700">
                 {infoPaginated.map((p, i) => (
                   <tr key={p._id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors text-xs">
-                    <td className="border-r border-slate-700 p-3 text-slate-300 bg-slate-800/90 sticky left-0 z-10">{(currentPage - 1) * pageSize + i + 1}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300 bg-slate-800/90 sticky left-0 z-10 text-center font-medium">
+                      {mailMode ? (
+                        !isUserLocked(p) ? (
+                          <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedUserIds.includes(p._id)}
+                              onChange={() => handleToggleUserSelect(p._id)}
+                              className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500 cursor-pointer"
+                              title={`Select ${p.firstName} ${p.lastName || ''} for email`}
+                            />
+                            <span className="text-[11px] text-slate-400 font-mono">{(currentPage - 1) * pageSize + i + 1}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 font-mono line-through" title="Deactivated user cannot be emailed">
+                            {(currentPage - 1) * pageSize + i + 1}
+                          </span>
+                        )
+                      ) : (
+                        (currentPage - 1) * pageSize + i + 1
+                      )}
+                    </td>
                     <td className="border-r border-slate-700 p-3 text-white font-bold bg-slate-800/90 sticky left-[50px] z-10">{p.firstName} {p.lastName}</td>
                     <td className="border-r border-slate-700 p-3 text-emerald-400 font-bold">{p.employeeId || p.uid || '-'}</td>
                     <td className="border-r border-slate-700 p-3 text-sky-400 font-bold">{p.email || '-'}</td>
@@ -2268,6 +2525,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         <TableFooter data={infoFilteredProfiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
       {renderResetPassModal()}
+      {renderMailConfirmModal()}
     </div>
   );
 }

@@ -1070,6 +1070,46 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
 
 async function getSubordinateHQs(designation, hq, division, hqSet = new Set()) {
     if (!designation || designation === 'ADMIN') return Array.from(hqSet);
+    const { XlHQ } = require('../db');
+
+    // 1. Permanent Territory Hierarchy Traversal via XlHQ.parentHq
+    if (hq) {
+        const rootHq = hq.trim().toUpperCase();
+        const baseRoot = rootHq.replace(/-pst-\d+/i, '').split('-')[0].trim();
+        const hqQueue = [rootHq];
+        if (baseRoot && baseRoot !== rootHq) hqQueue.push(baseRoot);
+
+        const visitedHqs = new Set(hqQueue);
+        try {
+            const allHqs = await XlHQ.findAll({ raw: true });
+            while (hqQueue.length > 0) {
+                const currentParent = hqQueue.shift();
+                for (const h of allHqs) {
+                    const hName = (h.hqName || '').trim().toUpperCase();
+                    const pName = (h.parentHq || '').trim().toUpperCase();
+                    const pBase = pName.replace(/-pst-\d+/i, '').split('-')[0].trim();
+
+                    if (pName === currentParent || pBase === currentParent) {
+                        if (!visitedHqs.has(hName)) {
+                            visitedHqs.add(hName);
+                            hqQueue.push(hName);
+                            hqSet.add(hName);
+                            hqSet.add(hName.toLowerCase());
+                            const hBase = hName.replace(/-pst-\d+/i, '').split('-')[0].trim();
+                            if (hBase) {
+                                hqSet.add(hBase);
+                                hqSet.add(hBase.toLowerCase());
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[HQ Traversal Warning]', e.message);
+        }
+    }
+
+    // 2. Traversal via active users downline (backwards-compatibility & vacant fallback)
     const reportees = await getReporteeUsers(designation, hq, division);
     for (const r of reportees) {
         if (r.hq) {
@@ -3531,9 +3571,11 @@ router.post('/dcr', async (req, res) => {
             }
         }
 
+        const hqToRecord = (req.body.headquarter || req.body.hq || userForId?.hq || tp?.hq || '').toUpperCase().trim();
         const dcr = await XlDCR.create({
             _id: generateId(),
             ...req.body,
+            headquarter: hqToRecord,
             tourProgramId: tp._id,
             samplesGiven: JSON.stringify(req.body.samplesGiven || []),
             gifts: JSON.stringify(req.body.gifts || []),

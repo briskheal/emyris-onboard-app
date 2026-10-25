@@ -230,6 +230,7 @@ function HQTab() {
   const [states, setStates] = useState<any[]>([]);
   const [stateName, setStateName] = useState('');
   const [hqName, setHqName] = useState('');
+  const [parentHq, setParentHq] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -252,8 +253,8 @@ function HQTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/hqs', { state: stateName, hqName });
-      if (res.data.success) { setHqName(''); fetchData(); } else alert(res.data.message);
+      const res = await axios.post('/api/admin/locations/hqs', { state: stateName, hqName, parentHq });
+      if (res.data.success) { setHqName(''); setParentHq(''); fetchData(); } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
@@ -325,6 +326,17 @@ function HQTab() {
               placeholder="Headquarter Name" 
             />
           </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Reporting HQ (Parent HQ)</label>
+            <select 
+              value={parentHq} 
+              onChange={e => setParentHq(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">None (Top-Level / Corporate HQ)</option>
+              {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+            </select>
+          </div>
           <button 
             disabled={loading} 
             className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors h-[32px] shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
@@ -355,6 +367,7 @@ function HQTab() {
                 <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
                 <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">HQ</th>
                 <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-28">UID</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Reporting HQ</th>
                 <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">State</th>
                 <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
@@ -371,6 +384,12 @@ function HQTab() {
                       </td>
                       <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{h.uid || '-'}</td>
                       <td className="border-r border-slate-700/60 px-2 py-1">
+                        <select value={editData.parentHq || ''} onChange={e => setEditData({...editData, parentHq: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
+                          <option value="">None (Top-Level)</option>
+                          {hqs.filter(item => item._id !== h._id).map(item => <option key={item._id} value={item.hqName}>{item.hqName}</option>)}
+                        </select>
+                      </td>
+                      <td className="border-r border-slate-700/60 px-2 py-1">
                         <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Select State</option>
                           {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
@@ -381,6 +400,7 @@ function HQTab() {
                     <>
                       <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{h.hqName}</td>
                       <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{h.uid || '-'}</td>
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-sky-400 font-semibold">{h.parentHq || '-'}</td>
                       <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{h.state}</td>
                     </>
                   )}
