@@ -4,7 +4,7 @@ import {
   LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, 
   MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, 
   Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare, Sliders,
-  ChevronLeft, ChevronRight, Laptop, Monitor, ArrowLeft
+  ChevronLeft, ChevronRight, Laptop, Monitor, ArrowLeft, Trash2, X
 } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
 import TypographySettingsModal from './TypographySettingsModal';
@@ -179,6 +179,26 @@ export default function Layout() {
     }
   };
 
+  const handleToggleNotifications = () => {
+    if (!isNotifOpen) {
+      fetchNotifications();
+    }
+    setIsNotifOpen(prev => !prev);
+  };
+
+  const formatNotifDate = (dateString?: string) => {
+    if (!dateString) return { datePart: '', timePart: '' };
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return { datePart: '', timePart: '' };
+    const today = new Date();
+    const isToday = d.getDate() === today.getDate() && 
+                    d.getMonth() === today.getMonth() && 
+                    d.getFullYear() === today.getFullYear();
+    const datePart = isToday ? 'Today' : d.toLocaleDateString();
+    const timePart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+    return { datePart, timePart };
+  };
+
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim()) return alert('Message cannot be empty');
     try {
@@ -341,12 +361,12 @@ export default function Layout() {
             <MessageSquare size={20} />
           </button>
 
-          {/* Notifications Dropdown */}
+          {/* Notifications Dropdown / Full Phone Boundary Modal */}
           <div className="relative">
             <button 
-              onClick={() => setIsNotifOpen(!isNotifOpen)} 
-              className="text-slate-500 dark:text-[#8b8baf] hover:text-emerald-400 transition-colors relative p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" 
-              title="View Recent Activity"
+              onClick={handleToggleNotifications} 
+              className={`text-slate-500 dark:text-[#8b8baf] hover:text-emerald-400 transition-colors relative p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 ${isNotifOpen ? 'text-emerald-500 dark:text-emerald-400 bg-slate-100 dark:bg-slate-800' : ''}`} 
+              title="Notifications"
             >
               <Bell size={20} />
               {notifications.length > 0 && (
@@ -357,32 +377,81 @@ export default function Layout() {
             </button>
 
             {isNotifOpen && (
-              <div className="absolute top-12 right-0 w-80 bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a] rounded-xl shadow-2xl p-2 z-50">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 dark:border-[#3b3b5a]">
-                  <h4 className="text-slate-900 dark:text-white font-bold text-xs">Recent Activity</h4>
-                  {notifications.length > 0 && (
+              <>
+                {/* Desktop Backdrop to dismiss when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 hidden md:block"
+                  onClick={() => setIsNotifOpen(false)}
+                />
+
+                {/* Notifications Modal: Spans full phone boundary on Mobile, sleek anchored card on Desktop */}
+                <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-white dark:bg-[#212236] flex flex-col md:fixed md:inset-auto md:top-16 md:right-4 md:w-[420px] md:max-h-[580px] md:rounded-2xl md:shadow-2xl md:border md:border-slate-200 md:dark:border-[#3b3b5a] md:overflow-hidden animate-in fade-in duration-150">
+                  
+                  {/* Top Bar (Title & Close Button) */}
+                  <div className="relative py-3 px-4 shadow-[0_4px_10px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.3)] bg-white dark:bg-[#212236] z-10 border-b border-sky-400/50 flex items-center justify-between">
+                    <div className="w-8"></div>
+                    <h2 className="text-slate-900 dark:text-sky-400 font-bold text-xl sm:text-2xl tracking-tight text-center flex items-center justify-center gap-2">
+                      <Bell size={22} className="text-sky-500 dark:text-sky-400" />
+                      <span>Notifications</span>
+                    </h2>
+                    <button 
+                      onClick={() => setIsNotifOpen(false)} 
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 active:scale-95 transition-all"
+                      title="Close"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Sub-bar with Count and Clear Button (Exact XL Modal match) */}
+                  <div className="flex justify-between items-center px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1a1b2d]">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs sm:text-[13px]">
+                      Notifications: {notifications.length}
+                    </span>
                     <button 
                       onClick={handleClearNotifications} 
-                      className="text-[10px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded transition-colors"
+                      className="text-slate-600 dark:text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 font-semibold text-xs sm:text-[13px] flex items-center gap-1.5 active:scale-95 transition-all"
                     >
-                      Clear
+                      <span>Clear notifications</span>
+                      <Trash2 size={16} />
                     </button>
-                  )}
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-xs">No recent activity</div>
-                  ) : (
-                    notifications.map(n => (
-                      <div key={n.id} className="p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg border-b border-slate-100 dark:border-[#3b3b5a]/40 last:border-0 cursor-pointer text-left">
-                        <div className="text-xs font-bold text-sky-400">{n.type}</div>
-                        <div className="text-xs text-slate-700 dark:text-slate-200 mt-0.5">{n.message}</div>
-                        <div className="text-[10px] text-slate-400 mt-1">{new Date(n.date).toLocaleString()}</div>
+                  </div>
+
+                  {/* Notification Items List */}
+                  <div className="flex-1 p-3.5 sm:p-4 space-y-3 overflow-y-auto pb-24 md:pb-6">
+                    {notifications.length === 0 ? (
+                      <div className="text-center text-slate-400 dark:text-slate-500 mt-12 text-sm flex flex-col items-center justify-center gap-2">
+                        <Bell size={36} className="text-slate-300 dark:text-slate-600 stroke-[1.5]" />
+                        <span>No new notifications</span>
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      notifications.map((n: any) => {
+                        const { datePart, timePart } = formatNotifDate(n.date || n.createdAt);
+                        return (
+                          <div 
+                            key={n.id || n._id} 
+                            className="bg-slate-50 dark:bg-[#292a40] rounded-xl p-3 sm:p-3.5 flex gap-3 shadow-sm border border-slate-200 dark:border-slate-700/60 text-left"
+                          >
+                            <Bell className="text-emerald-500 dark:text-emerald-400 mt-1 shrink-0" size={24} fill="currentColor" />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-slate-900 dark:text-white font-bold text-xs sm:text-[13px] leading-tight">
+                                {n.title || n.type}
+                              </h3>
+                              <p className="text-slate-600 dark:text-slate-300 text-xs mt-1 leading-snug break-words">
+                                {n.message}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end justify-start shrink-0 gap-1">
+                              <span className="text-sky-600 dark:text-sky-400 text-xs font-semibold">{datePart}</span>
+                              <span className="text-sky-600 dark:text-sky-400 text-[11px] font-medium">{timePart}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
