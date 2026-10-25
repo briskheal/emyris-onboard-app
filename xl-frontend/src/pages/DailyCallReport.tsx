@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
-  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon, Trash2
+  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon, Trash2, FileText
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -54,10 +54,17 @@ export default function DailyCallReport() {
   const [hasApprovedTP, setHasApprovedTP] = useState(false);
   const [workingAreaType, setWorkingAreaType] = useState('Out-Station');
   const [workingAreas, setWorkingAreas] = useState('N/A');
+  const [todayActivityType, setTodayActivityType] = useState('Working');
   const [isLockedDay, setIsLockedDay] = useState(false);
   const [daySubmitted, setDaySubmitted] = useState(false);
   const [dayRemarks, setDayRemarks] = useState('');
   const [viewListType, setViewListType] = useState<string | null>(null);
+
+  const NON_CALLING_ACTIVITIES = [
+    'training', 'seminar', 'transit', 'meeting', 'conference', 
+    'admin', 'market survey', 'camp', 'leave'
+  ];
+  const isNonCallingDay = NON_CALLING_ACTIVITIES.includes((todayActivityType || '').toLowerCase().trim());
 
   // Form State
   const [selectedEntityId, setSelectedEntityId] = useState('');
@@ -185,18 +192,21 @@ export default function DailyCallReport() {
     }).catch(() => setIsLockedDay(locked));
     
           axios.get(`/api/xl/attendance/my?email=${USER_EMAIL}&date=${dcrDate}`)
-        .then(res => {
-           if (res.data.success && res.data.data) {
-               if (res.data.data.daySubmitted) {
-                   setDaySubmitted(true);
-                   setIsLockedDay(true);
-               }
-           }
-        }).catch(()=>{});
-
-      axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
       .then(res => {
-         if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
+         if (res.data.success && res.data.data) {
+             if (res.data.data.dayRemarks) {
+                 setDayRemarks(res.data.data.dayRemarks);
+             }
+             if (res.data.data.daySubmitted) {
+                 setDaySubmitted(true);
+                 setIsLockedDay(true);
+             }
+         }
+      }).catch(()=>{});
+
+    axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
+      .then(res => {
+         if (res.data.success && res.data.data) {
              const entries = JSON.parse(res.data.data.entries || '[]');
              const targetDateIso = new Date(dcrDate).toISOString().split('T')[0];
              const todayEntry = entries.find((e:any) => {
@@ -204,8 +214,16 @@ export default function DailyCallReport() {
                  catch(err) { return e.date === dcrDate; }
              });
              
-             if (todayEntry) {
+             // Check if THIS SPECIFIC DAY is approved:
+             const isDayApproved = todayEntry && (
+               todayEntry.status === 'Approved' || 
+               (res.data.data.status === 'Approved' && todayEntry.status !== 'Draft' && todayEntry.status !== 'Rejected' && !todayEntry.isEdited)
+             );
+
+             if (isDayApproved) {
                  const tType = (todayEntry.type || '').toLowerCase();
+                 const actType = todayEntry.activityType || 'Working';
+                 setTodayActivityType(actType);
                  if (tType === 'sunday' || tType === 'holiday') {
                      setIsLockedDay(true);
                      setWorkingAreaType(todayEntry.type);
@@ -216,7 +234,7 @@ export default function DailyCallReport() {
                  }
                  setHasApprovedTP(true);
              } else {
-                 // No entry found for this date
+                 // No approved entry found for this date
                  setHasApprovedTP(false);
                  setIsLockedDay(true);
              }
@@ -297,6 +315,44 @@ export default function DailyCallReport() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to submit day');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitNonCallingReport = async () => {
+    if (!dayRemarks.trim()) {
+      alert('Remarks are required.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post('/api/xl/dcr', {
+        employeeId: USER_EMAIL,
+        date: dcrDate,
+        entityType: 'Activity',
+        entityId: `ACT_${(todayActivityType || 'REPORT').toUpperCase().replace(/\s+/g, '_')}`,
+        entityName: todayActivityType || 'Activity Report',
+        remarks: dayRemarks.trim(),
+        activityType: todayActivityType,
+        isActivityReport: true,
+        workingAreaType: workingAreaType,
+        workingAreas: workingAreas
+      });
+
+      await axios.post('/api/xl/attendance/submit-day', {
+        employeeId: USER_EMAIL,
+        date: dcrDate,
+        dayRemarks: dayRemarks.trim()
+      });
+
+      setDaySubmitted(true);
+      setIsLockedDay(true);
+      setSuccess('Report submitted successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.error || 'Failed to submit report');
     } finally {
       setLoading(false);
     }
@@ -389,14 +445,20 @@ export default function DailyCallReport() {
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-300">Today's Working Area:</h3>
                     {hasApprovedTP ? (
-                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Working</span>
+                      <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${
+                        isNonCallingDay 
+                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
+                          : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      }`}>
+                        {todayActivityType || 'Working'}
+                      </span>
                     ) : (
                       <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Not Planned</span>
                     )}
                   </div>
                   
                   {hasApprovedTP && (
-                    <p className="text-white font-black text-lg">{workingAreas}</p>
+                    <p className="text-white font-black text-lg">{workingAreas || todayActivityType}</p>
                   )}
 
                   <div className="mt-2 border-t border-[#3b3b5a] pt-3">
@@ -411,55 +473,114 @@ export default function DailyCallReport() {
                 </div>
               </div>
 
-              <div className="mb-4 text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select an option to start report</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {['Doctor', 'Chemist', 'Stockist', 'Reminder'].map(type => (
-                  <button 
-                    key={type}
-                    disabled={isLockedDay}
-                    onClick={() => { setEntityType(type as any); loadEntities(type); setStep('form'); }}
-                    className={`bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg transition-transform ${isLockedDay ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
-                  >
-                    {isLockedDay && (
-                      <div className="absolute top-4 right-4 text-slate-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                      </div>
-                    )}
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${type==='Doctor' ? 'bg-rose-400/10 text-rose-400' : type==='Chemist' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-sky-400/10 text-sky-400'}`}>
-                      <UserRound size={32} />
+              {/* Conditional Display: Non-Calling Activities vs Calling Activities */}
+              {isNonCallingDay ? (
+                <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 shadow-lg mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                      <FileText size={20} />
                     </div>
-                    <span className="font-bold text-slate-300 text-sm">{type} Call</span>
-                  </button>
-                ))}
-              </div>
+                    <div>
+                      <h4 className="font-bold text-white text-base">{todayActivityType} Reporting</h4>
+                      <p className="text-xs text-slate-400">Non-calling activity documentation</p>
+                    </div>
+                  </div>
 
-              {/* Final Call Report List Summary */}
-              {daySubmitted ? (
-                <div className="mt-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg">
-                  <CheckCircle2 size={32} className="text-emerald-400 mb-2" />
-                  <h3 className="font-bold text-emerald-400 text-base mb-1">Day's Report Submitted</h3>
-                  <p className="text-xs text-emerald-400/80 font-medium text-center">Your final report for {dcrDate.split('-').reverse().join('-')} is securely locked.</p>
+                  {daySubmitted ? (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
+                      <CheckCircle2 size={32} className="text-emerald-400 mb-2" />
+                      <h3 className="font-bold text-emerald-400 text-sm mb-1">Report Submitted</h3>
+                      <p className="text-xs text-emerald-400/80 font-medium">Your report for {dcrDate.split('-').reverse().join('-')} is locked.</p>
+                      {dayRemarks && (
+                        <div className="mt-3 text-xs text-slate-300 bg-black/20 p-3 rounded-xl w-full text-left border border-slate-700/50">
+                          <span className="font-bold text-slate-400 block mb-1 uppercase tracking-wider text-[10px]">Submitted Remarks:</span>
+                          <p className="italic">{dayRemarks}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                          Remarks <span className="text-rose-400">*</span>
+                        </label>
+                        <textarea
+                          value={dayRemarks}
+                          onChange={(e) => setDayRemarks(e.target.value)}
+                          placeholder={`Enter details regarding your ${todayActivityType} today...`}
+                          rows={4}
+                          className="w-full bg-[#1e1e2d] border border-[#3b3b5a] rounded-2xl p-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSubmitNonCallingReport}
+                        disabled={loading || !dayRemarks.trim()}
+                        className={`w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                          loading || !dayRemarks.trim()
+                            ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white active:scale-95 shadow-sky-500/25'
+                        }`}
+                      >
+                        {loading ? 'Submitting...' : 'Submit Report'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div 
-                  onClick={() => setStep('final')} 
-                  className="mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex cursor-pointer active:scale-95 transition-transform hover:border-sky-500/50"
-                >
-                  <div className="flex-1 p-5">
-                    <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
-                    <div className="flex gap-3 text-xs font-bold">
-                      <span className="text-orange-400">Doctor: {todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
-                      <span className="text-sky-400">Chemist: {todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
-                      <span className="text-emerald-400">Stockist: {todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                <>
+                  <div className="mb-4 text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select an option to start report</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {['Doctor', 'Chemist', 'Stockist', 'Reminder'].map(type => (
+                      <button 
+                        key={type}
+                        disabled={isLockedDay}
+                        onClick={() => { setEntityType(type as any); loadEntities(type); setStep('form'); }}
+                        className={`bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg transition-transform ${isLockedDay ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                      >
+                        {isLockedDay && (
+                          <div className="absolute top-4 right-4 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                          </div>
+                        )}
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${type==='Doctor' ? 'bg-rose-400/10 text-rose-400' : type==='Chemist' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-sky-400/10 text-sky-400'}`}>
+                          <UserRound size={32} />
+                        </div>
+                        <span className="font-bold text-slate-300 text-sm">{type} Call</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Final Call Report List Summary */}
+                  {daySubmitted ? (
+                    <div className="mt-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg">
+                      <CheckCircle2 size={32} className="text-emerald-400 mb-2" />
+                      <h3 className="font-bold text-emerald-400 text-base mb-1">Day's Report Submitted</h3>
+                      <p className="text-xs text-emerald-400/80 font-medium text-center">Your final report for {dcrDate.split('-').reverse().join('-')} is securely locked.</p>
                     </div>
-                  </div>
-                  <div className="bg-[#93c54b] w-20 flex items-center justify-center border-l border-[#3b3b5a]">
-                    <span className="text-white text-3xl font-black">{todaysDcrs.length}</span>
-                  </div>
-                </div>
+                  ) : (
+                    <div 
+                      onClick={() => setStep('final')} 
+                      className="mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex cursor-pointer active:scale-95 transition-transform hover:border-sky-500/50"
+                    >
+                      <div className="flex-1 p-5">
+                        <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
+                        <div className="flex gap-3 text-xs font-bold">
+                          <span className="text-orange-400">Doctor: {todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
+                          <span className="text-sky-400">Chemist: {todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
+                          <span className="text-emerald-400">Stockist: {todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#93c54b] w-20 flex items-center justify-center border-l border-[#3b3b5a]">
+                        <span className="text-white text-3xl font-black">{todaysDcrs.length}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

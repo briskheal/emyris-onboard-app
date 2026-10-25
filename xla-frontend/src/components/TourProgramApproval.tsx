@@ -63,7 +63,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
       if (!Array.isArray(entries)) entries = Object.values(entries);
       
       entries.forEach((e: any) => {
-        if (!e.status || e.status === 'Pending' || e.status === 'Submitted') {
+        if (!e.status || e.status === 'Pending' || e.status === 'Submitted' || e.isEdited) {
           flattened.push({
             tpId: tp._id,
             date: e.date,
@@ -73,7 +73,9 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
             location: e.toMarket || '-',
             remarks: e.remarks || '-',
             activity: e.activityType || 'Working',
-            workedWith: '-'
+            workedWith: '-',
+            isEdited: !!e.isEdited,
+            status: e.status || 'Pending'
           });
         }
       });
@@ -297,8 +299,8 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                       );
                   }
 
-                  const status = entry.status || tp.status || 'Pending';
-                  const statusColor = status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  const status = entry.isEdited ? 'Edited (Pending)' : (entry.status || tp.status || 'Pending');
+                  const statusColor = (entry.status === 'Approved' && !entry.isEdited) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                                       status === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                                       'bg-amber-500/20 text-amber-400 border border-amber-500/30';
                   return (
@@ -438,7 +440,14 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                             <span className="text-[10px] font-black bg-slate-700/80 text-slate-300 px-2 py-0.5 rounded">#{idx + 1}</span>
                             <span className="text-xs font-bold text-sky-400">{d.employeeName}</span>
                          </div>
-                         <span className="text-[11px] font-bold text-white bg-slate-700 px-2 py-0.5 rounded">{formatDDMMYYYY(d.date)}</span>
+                         <div className="flex items-center gap-1.5">
+                            {d.isEdited && (
+                              <span className="text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded uppercase">
+                                EDITED
+                              </span>
+                            )}
+                            <span className="text-[11px] font-bold text-white bg-slate-700 px-2 py-0.5 rounded">{formatDDMMYYYY(d.date)}</span>
+                          </div>
                       </div>
 
                       <div className="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700/40 text-xs space-y-1">
@@ -554,7 +563,16 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                     return (
                       <tr key={rowId} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
                         <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
-                        <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
+                        <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">
+                          <div className="flex items-center gap-1.5">
+                            <span>{formatDDMMYYYY(d.date)}</span>
+                            {d.isEdited && (
+                              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-black px-1.5 py-0.5 rounded uppercase">
+                                EDITED
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName}</td>
                         <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.designation}</td>
                         <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.areaType}</td>

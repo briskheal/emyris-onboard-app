@@ -17,6 +17,24 @@ export default function Layout() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+
+  useEffect(() => {
+    const fetchAnnouncement = () => {
+      axios.get('/api/xl/admin/announcement')
+        .then(res => {
+          if (res.data?.success && res.data?.data) {
+            setAnnouncement(res.data.data.message || '');
+          } else {
+            setAnnouncement('');
+          }
+        })
+        .catch(e => console.error('Failed to fetch announcement:', e));
+    };
+    fetchAnnouncement();
+    const interval = setInterval(fetchAnnouncement, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [logoUrl, setLogoUrl] = useState('');
   const [user, setUser] = useState<any>(null);
@@ -340,6 +358,15 @@ export default function Layout() {
           </button>
         </div>
       </header>
+      
+      {/* Global Scrolling Announcement Ticker */}
+      {announcement && !showNotifMenu && (
+        <div className="bg-sky-500/20 border-b border-sky-400/30 overflow-hidden py-1.5 px-3 flex items-center shadow-sm z-30 shrink-0">
+          <marquee className="text-sky-200 text-xs font-semibold tracking-wide" scrollamount="5">
+            📢 {announcement}
+          </marquee>
+        </div>
+      )}
       
       {/* Drawer */}
       <NavigationDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} />

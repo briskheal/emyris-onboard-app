@@ -26,9 +26,11 @@ const verifyToken = (req, res, next) => {
         '/company-profile',
         '/admin/settings/typography', '/api/xl/admin/settings/typography',
         '/tile-proxy', '/api/xl/tile-proxy',
-        '/tour-program/submission-reminder', '/api/xl/tour-program/submission-reminder'
+        '/tour-program/submission-reminder', '/api/xl/tour-program/submission-reminder',
+        '/admin/announcement', '/api/xl/admin/announcement',
+        '/announcement', '/api/xl/announcement'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('submission-reminder') || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password') || req.path.includes('change-password')) {
+    if (openRoutes.includes(req.path) || req.path.includes('announcement') || req.path.includes('submission-reminder') || req.path.includes('tile-proxy') || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password') || req.path.includes('change-password')) {
         return next();
     }
     
@@ -3418,16 +3420,24 @@ router.post('/tour-program', async (req, res) => {
                     } catch(e) {}
                 }
             }
-            const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
-            const finalStatus = isAdminSender ? 'Approved' : (tp.status || 'Draft');
+            const hasPendingOrEdited = (entries || []).some(e => e.isEdited || e.status === 'Submitted' || e.status === 'Pending');
+            const hasApproved = (entries || []).some(e => e.status === 'Approved' && !e.isEdited);
+            
+            let finalStatus = tp.status || 'Draft';
+            if (isAdminSender) {
+                finalStatus = 'Approved';
+            } else if (resubmitRemark || hasPendingOrEdited) {
+                finalStatus = hasApproved ? 'Partially Approved' : 'Submitted';
+            }
             const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
-            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved' } : e);
+            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved', isEdited: false } : e);
 
             await XlTourProgram.update({ 
                 entries: JSON.stringify(processedEntries), 
                 employeeName, 
                 hq, 
                 status: finalStatus,
+                ...(hasPendingOrEdited ? { submittedAt: new Date() } : {}),
                 ...approvedFields
             }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
@@ -3435,7 +3445,7 @@ router.post('/tour-program', async (req, res) => {
             const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
             const finalStatus = isAdminSender ? 'Approved' : 'Draft';
             const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
-            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved' } : e);
+            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved', isEdited: false } : e);
 
             tp = await XlTourProgram.create({
                 _id: generateId(),
@@ -3705,7 +3715,15 @@ router.get('/tour-program/my', async (req, res) => {
 // Submit a DCR
 router.post('/dcr', async (req, res) => {
     try {
-        const { employeeId, date, entityType, entityId, entityName } = req.body;
+        let { employeeId, date, entityType, entityId, entityName } = req.body;
+        if (req.body.isActivityReport) {
+            entityType = entityType || 'Activity';
+            entityId = entityId || ('ACT_' + (req.body.activityType || 'REPORT'));
+            entityName = entityName || req.body.activityType || 'Activity Report';
+            req.body.entityType = entityType;
+            req.body.entityId = entityId;
+            req.body.entityName = entityName;
+        }
         if (!employeeId || !date || !entityType || !entityId) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -5542,20 +5560,44 @@ router.get('/approvals/pending', async (req, res) => {
             }
         }
 
-        const pending = await Model.findAll({ 
-            where: { 
-                ...userFilter, 
-                ...(status === 'History' ? {
-                    status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted'] }
-                } : {
-                    [Op.or]: [
-                        { status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] },
-                        { status: null }
-                    ]
-                })
-            }, 
+        let whereCondition;
+        if (status === 'History') {
+            whereCondition = {
+                ...userFilter,
+                status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted', 'Partially Approved'] }
+            };
+        } else if (type === 'Tour Program') {
+            whereCondition = {
+                ...userFilter,
+                [Op.or]: [
+                    { status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted', 'Partially Approved', 'Approved'] },
+                    { status: null }
+                ]
+            };
+        } else {
+            whereCondition = {
+                ...userFilter,
+                [Op.or]: [
+                    { status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] },
+                    { status: null }
+                ]
+            };
+        }
+
+        let pending = await Model.findAll({ 
+            where: whereCondition, 
             order: [['createdAt', 'DESC']] 
         });
+
+        if (type === 'Tour Program' && status !== 'History') {
+            // Only keep Tour Programs that have at least one entry needing approval (Pending, Submitted, or isEdited)
+            pending = pending.filter(p => {
+                let entries = [];
+                try { entries = JSON.parse(p.entries || '[]'); } catch(e){}
+                if (!Array.isArray(entries)) entries = Object.values(entries);
+                return entries.some(e => e && (!e.status || e.status === 'Pending' || e.status === 'Submitted' || e.isEdited));
+            });
+        }
         
         const data = [];
         const allBacklogs = type === 'Call Report' ? await require('../db').XlBacklogRequest.findAll({ where: { status: 'Approved' } }) : [];
@@ -5992,19 +6034,31 @@ router.post('/approvals/action', async (req, res) => {
             entries = entries.map(e => {
                 const eNorm = normalizeDate(e.date);
                 if (req.body.dates.includes(e.date) || (eNorm && reqDatesNorm.includes(eNorm))) {
-                    return { ...e, status: action };
+                    return { ...e, status: action, isEdited: false };
                 }
                 return e;
             });
             
             record.entries = JSON.stringify(entries);
             
-            // Optionally update root status if all days are handled
-            const allHandled = entries.every(e => e.status && e.status !== 'Pending' && e.status !== 'Submitted');
-            if (allHandled) {
-                const hasRejected = entries.some(e => e.status === 'Rejected');
-                record.status = hasRejected ? 'Rejected' : 'Approved';
-                if(!hasRejected && approvedBy) record.approvedBy = approvedBy;
+            // Check overall status of all planned entries
+            const plannedEntries = entries.filter(e => e && (e.activityType || e.type || e.toMarket));
+            const allApproved = plannedEntries.length > 0 && plannedEntries.every(e => e.status === 'Approved' && !e.isEdited);
+            const allRejected = plannedEntries.length > 0 && plannedEntries.every(e => e.status === 'Rejected');
+            const hasPendingOrEdited = plannedEntries.some(e => !e.status || e.status === 'Pending' || e.status === 'Submitted' || e.isEdited);
+            const hasApproved = plannedEntries.some(e => e.status === 'Approved' && !e.isEdited);
+
+            if (allApproved) {
+                record.status = 'Approved';
+                if (approvedBy) record.approvedBy = approvedBy;
+            } else if (allRejected) {
+                record.status = 'Rejected';
+            } else if (hasApproved && hasPendingOrEdited) {
+                record.status = 'Partially Approved';
+            } else if (hasPendingOrEdited) {
+                record.status = 'Submitted';
+            } else {
+                record.status = action;
             }
             
             record.adminRemarks = remarks || record.adminRemarks || '';
@@ -6150,7 +6204,7 @@ router.post('/approvals/action', async (req, res) => {
                 let entries = [];
                 try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
                 if (!Array.isArray(entries)) entries = Object.values(entries);
-                entries = entries.map(e => ({ ...e, status: action }));
+                entries = entries.map(e => ({ ...e, status: action, isEdited: false }));
                 record.entries = JSON.stringify(entries);
             }
 

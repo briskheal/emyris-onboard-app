@@ -88,6 +88,22 @@ export default function TourProgram() {
   
   const [tpId, setTpId] = useState<string | null>(null);
   const [tpStatus, setTpStatus] = useState<string>('Draft');
+
+  const displayStatus = useMemo(() => {
+    const entryList = Object.values(entries).filter((e: any) => e && (e.activityType || e.type || e.toMarket));
+    if (entryList.length === 0) return 'Draft';
+    const anyEditedOrSubmitted = entryList.some((e: any) => e.isEdited || e.status === 'Submitted' || e.status === 'Pending');
+    const anyApproved = entryList.some((e: any) => e.status === 'Approved' && !e.isEdited);
+    const allApproved = entryList.length > 0 && entryList.every((e: any) => e.status === 'Approved' && !e.isEdited);
+    const allRejected = entryList.length > 0 && entryList.every((e: any) => e.status === 'Rejected');
+
+    if (allApproved && tpStatus === 'Approved') return 'Approved';
+    if (anyApproved && anyEditedOrSubmitted) return 'Partially Approved';
+    if (anyApproved && !anyEditedOrSubmitted) return 'Partially Approved';
+    if (anyEditedOrSubmitted || tpStatus === 'Submitted') return 'Pending Approval';
+    if (allRejected || tpStatus === 'Rejected') return 'Rejected';
+    return tpStatus || 'Draft';
+  }, [entries, tpStatus]);
   
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -243,6 +259,36 @@ export default function TourProgram() {
     }
     setSubmitting(true);
     try {
+      // Mark all draft / edited entries as submitted
+      const updatedEntries = { ...entries };
+      let hasUpdates = false;
+      Object.keys(updatedEntries).forEach(d => {
+        if (!updatedEntries[d].status || updatedEntries[d].status === 'Draft' || updatedEntries[d].isEdited) {
+          updatedEntries[d] = { ...updatedEntries[d], status: 'Submitted' };
+          hasUpdates = true;
+        }
+      });
+      if (hasUpdates) {
+        setEntries(updatedEntries);
+        const entriesArr = Object.entries(updatedEntries).map(([date, val]) => ({
+          date, 
+          type: val.type || val.areaType, 
+          areaType: val.areaType || val.type,
+          activityType: val.activityType,
+          toMarket: val.toMarket,
+          isEdited: !!val.isEdited,
+          status: val.status
+        }));
+        await axios.post('/api/xl/tour-program', {
+          employeeId: user?.employeeId, 
+          employeeName: user ? `${user.firstName} ${user.lastName}` : '',
+          hq: user?.hq || '', 
+          month, 
+          year, 
+          entries: entriesArr,
+          resubmitRemark: 'Submitted for approval'
+        });
+      }
       await axios.put(`/api/xl/tour-program/${tpId}/submit`);
       setTpStatus('Submitted');
       showToast('Tour Program submitted for approval!');
@@ -266,11 +312,11 @@ export default function TourProgram() {
   };
 
   const applyForm = async (overrideRemark?: string) => {
-      if ((tpStatus === 'Submitted' || tpStatus === 'Approved') && overrideRemark === undefined) {
-        setShowRemarkModal(true);
-        return;
-      }
-      let resubmitRemark = overrideRemark || '';
+    if ((tpStatus === 'Submitted' || tpStatus === 'Approved' || tpStatus === 'Partially Approved') && overrideRemark === undefined) {
+      setShowRemarkModal(true);
+      return;
+    }
+    let resubmitRemark = overrideRemark || '';
     if (['Ex-Mkt', 'Out-Mkt', 'Out-Ex-Mkt', 'Out-Stn-Last-Day'].includes(formArea) && !formLocation) {
       showToast('Please select a location');
       return;
@@ -280,12 +326,19 @@ export default function TourProgram() {
     const newEntries = { ...entries };
     formDates.forEach(d => {
       const isExisting = !!entries[d];
+      const prevEntry = entries[d];
+      const wasApproved = prevEntry?.status === 'Approved' || (tpStatus === 'Approved' && isExisting && !prevEntry?.isEdited);
+      const isEdited = prevEntry?.isEdited || (isExisting && tpStatus !== 'Draft') || wasApproved;
+      const status = (tpStatus === 'Submitted' || tpStatus === 'Approved' || tpStatus === 'Partially Approved' || isEdited) ? 'Submitted' : 'Draft';
+
       newEntries[d] = { 
+        ...prevEntry,
         activityType: formActivity, 
         type: formArea, 
         areaType: formArea, 
         toMarket: formLocation,
-        isEdited: entries[d]?.isEdited || (isExisting && tpStatus !== 'Draft')
+        isEdited: isEdited,
+        status: status
       };
     });
     setEntries(newEntries);
@@ -300,7 +353,8 @@ export default function TourProgram() {
           areaType: val.areaType || val.type,
           activityType: val.activityType,
           toMarket: val.toMarket,
-          isEdited: val.isEdited
+          isEdited: !!val.isEdited,
+          status: val.status || (val.isEdited ? 'Submitted' : (tpStatus === 'Approved' ? 'Approved' : 'Draft'))
         };
       });
       const saveRes = await axios.post('/api/xl/tour-program', {
@@ -317,12 +371,15 @@ export default function TourProgram() {
       if (newTpId) {
         setTpId(newTpId);
       }
+      if (saveRes.data?.data?.status) {
+        setTpStatus(saveRes.data.data.status);
+      }
       
       setShowForm(false);
       setSelectionMode(false);
       setSelectedDates([]);
-      if (tpStatus === 'Submitted' || tpStatus === 'Approved') {
-        showToast('Tour Program updated with remark!');
+      if (tpStatus === 'Submitted' || tpStatus === 'Approved' || tpStatus === 'Partially Approved') {
+        showToast('Day plan saved & submitted for admin approval!');
       } else {
         showToast('Day plan saved to Tour Program!');
       }
@@ -362,12 +419,14 @@ export default function TourProgram() {
       <div className="px-3 py-2 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-[69px] z-30">
         <div className="flex items-center gap-1.5 px-1.5">
            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
-             tpStatus === 'Approved' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+             displayStatus === 'Approved' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+             displayStatus === 'Partially Approved' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' :
+             displayStatus === 'Pending Approval' || displayStatus === 'Submitted' ? 'bg-sky-500/15 text-sky-400 border-sky-500/30' :
              tpStatus === 'Submitted' ? 'bg-sky-500/15 text-sky-400 border-sky-500/30' :
              tpStatus === 'Rejected' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
              'bg-amber-500/15 text-amber-400 border-amber-500/30'
            }`}>
-             {tpStatus}
+             {displayStatus}
            </span>
            {tpStatus === 'Submitted' && (
              <button 
@@ -488,10 +547,26 @@ export default function TourProgram() {
                   )
                 ) : (
                   !isBlocked && entry ? (
-                    <div className="flex items-center gap-2">
-                        {entry.isEdited && (
-                          <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            Edited
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {entry.isEdited ? (
+                          <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Edited (Pending)
+                          </span>
+                        ) : entry.status === 'Approved' ? (
+                          <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Approved
+                          </span>
+                        ) : entry.status === 'Submitted' ? (
+                          <span className="bg-sky-500/20 text-sky-400 border border-sky-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Pending
+                          </span>
+                        ) : entry.status === 'Rejected' ? (
+                          <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Rejected
+                          </span>
+                        ) : (
+                          <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Draft
                           </span>
                         )}
                         {getBadge(entry.type)}
@@ -511,7 +586,7 @@ export default function TourProgram() {
           <div className="h-px bg-slate-700 flex-1"></div>
         </div>
 
-        {tpStatus === 'Draft' && Object.keys(entries).length > 0 && !selectionMode && (
+        {((displayStatus === 'Draft' || Object.values(entries).some((e: any) => !e?.status || e?.status === 'Draft' || e?.isEdited)) && Object.keys(entries).length > 0 && !selectionMode) && (
           <div className="p-4 mb-2">
             <button 
               type="button"
