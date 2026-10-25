@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  User, ChevronDown, Download, Activity, Check, Calendar, Send, ArrowRight, Clock,
+  User, ChevronDown, Download, Activity, Check, Calendar, Radio, Edit2, Plus, Clock,
   X, RefreshCw, FileSpreadsheet, ExternalLink
 } from 'lucide-react';
 import { formatDDMMYYYY } from '../utils/dateUtils';
@@ -26,9 +26,12 @@ export default function Dashboard() {
   const [activeSalesBar, setActiveSalesBar] = useState<'target' | 'primary' | 'secondary' | null>(null);
   const [activeReportsBar, setActiveReportsBar] = useState<'doctor' | 'chemist' | 'stockist' | null>(null);
 
-  // Tour Program Coming Month Submission Reminder
-  const [tpReminder, setTpReminder] = useState<any>(null);
-  const [previewReminder, setPreviewReminder] = useState<boolean>(() => localStorage.getItem('xla_simulate_25th_tp') === 'true');
+  // Broadcast Announcement State (Ticker running across all XL Portals)
+  const [activeAnnouncement, setActiveAnnouncement] = useState<any>(null);
+  const [isAnnounceModalOpen, setIsAnnounceModalOpen] = useState(false);
+  const [broadcastInput, setBroadcastInput] = useState('');
+  const [validFromInput, setValidFromInput] = useState('');
+  const [validUntilInput, setValidUntilInput] = useState('');
 
   // Modals state for Consolidated Reports & Today's Activity
   const [activeModal, setActiveModal] = useState<'CONSOLIDATED' | 'TODAY' | null>(null);
@@ -120,15 +123,60 @@ export default function Dashboard() {
   const user = userStr ? JSON.parse(userStr) : null;
   const userName = user?.name || user?.firstName || user?.businessName || 'User';
 
+  const fetchAnnouncement = () => {
+    axios.get('/api/xl/admin/announcement')
+      .then(res => {
+        if (res.data?.success && res.data?.data) {
+          setActiveAnnouncement(res.data.data);
+          setBroadcastInput(res.data.data.message || '');
+          if (res.data.data.validFrom) setValidFromInput(res.data.data.validFrom.slice(0, 16));
+          if (res.data.data.validUntil) setValidUntilInput(res.data.data.validUntil.slice(0, 16));
+        } else {
+          setActiveAnnouncement(null);
+        }
+      })
+      .catch(e => console.error('Announcement fetch error:', e));
+  };
+
   useEffect(() => {
-    const empId = user?.employeeId || user?.email || user?.uid || '';
-    const q = previewReminder ? `?employeeId=${encodeURIComponent(empId)}&preview=true` : `?employeeId=${encodeURIComponent(empId)}`;
-    axios.get(`/api/xl/tour-program/submission-reminder${q}`).then(res => {
-      if (res.data && res.data.success) {
-        setTpReminder(res.data);
+    fetchAnnouncement();
+  }, []);
+
+  const handleSaveAnnouncement = async () => {
+    if (!broadcastInput.trim()) return alert('Message cannot be empty');
+    try {
+      const res = await axios.post('/api/xl/admin/announcement', {
+        message: broadcastInput.trim(),
+        validFrom: validFromInput ? new Date(validFromInput).toISOString() : undefined,
+        validUntil: validUntilInput ? new Date(validUntilInput).toISOString() : undefined
+      });
+      if (res.data?.success) {
+        setActiveAnnouncement(res.data.data);
+        setIsAnnounceModalOpen(false);
+        alert('Broadcast message updated and running across all XL portals!');
+      } else {
+        alert('Failed to update announcement');
       }
-    }).catch(e => console.error('TP Reminder error:', e));
-  }, [previewReminder]);
+    } catch(e: any) {
+      alert('Error updating announcement: ' + (e.response ? JSON.stringify(e.response.data) : e.message));
+    }
+  };
+
+  const handleStopAnnouncement = async () => {
+    if (!confirm('Are you sure you want to stop this broadcast message from running on XL portals?')) return;
+    try {
+      await axios.post('/api/xl/admin/announcement', {
+        message: ' ',
+        validUntil: new Date(Date.now() - 1000).toISOString()
+      });
+      setActiveAnnouncement(null);
+      setBroadcastInput('');
+      setIsAnnounceModalOpen(false);
+      alert('Broadcast message stopped.');
+    } catch(e) {
+      console.error(e);
+    }
+  };
 
   const dateObj = new Date(monthInput + '-01');
   const monthName = dateObj.toLocaleString('default', { month: 'long' });
@@ -136,68 +184,70 @@ export default function Dashboard() {
   const filteredUsers = users.filter(u => ((u.name || (u.firstName ? u.firstName + ' ' + (u.lastName || '') : '') || u.businessName) || '').toLowerCase().includes(userSearchTerm.toLowerCase()) || (u.employeeId || '').toLowerCase().includes(userSearchTerm.toLowerCase()));
 
   return (
-    <div className="min-h-full flex flex-col pb-24 font-sans transition-colors bg-slate-50 dark:bg-[#1a1a2e] text-slate-900 dark:text-slate-100 p-5 md:p-6 space-y-6">
+    <div className="min-h-full flex flex-col pb-36 md:pb-12 font-sans transition-colors bg-slate-50 dark:bg-[#1a1a2e] text-slate-900 dark:text-slate-100 p-5 md:p-6 space-y-6">
       <div className="space-y-6">
         
-        {/* FLOATING TOUR PLAN REMINDER SCROLL MESSAGE (Active by 25th of every month till TP is submitted) */}
-        {tpReminder && tpReminder.shouldShow && (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-rose-500/20 border-2 border-amber-500/50 shadow-lg backdrop-blur-md p-2.5 sm:p-3 transition-all hover:border-amber-400">
+        {/* CONFIRMATION BOX: LIVE BROADCAST SCROLL MESSAGE RUNNING IN ALL XL PORTALS */}
+        {activeAnnouncement && activeAnnouncement.message && activeAnnouncement.message.trim() ? (
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500/15 via-indigo-500/10 to-emerald-500/15 border-2 border-sky-400/50 dark:border-sky-500/40 shadow-lg backdrop-blur-md p-2.5 sm:p-3 transition-all hover:border-sky-400">
             <div className="flex items-center justify-between gap-3">
               {/* Badge */}
-              <div className="flex items-center gap-1.5 shrink-0 bg-amber-500 text-slate-950 font-black px-2.5 py-1.5 rounded-xl shadow-md text-[11px] sm:text-xs uppercase tracking-wider animate-pulse">
-                <Send size={14} className="rotate-45" />
-                <span>TP REMINDER</span>
+              <div className="flex items-center gap-1.5 shrink-0 bg-sky-500 text-white font-black px-2.5 py-1.5 rounded-xl shadow-md text-[10px] sm:text-xs uppercase tracking-wider">
+                <Radio size={14} className="animate-pulse text-emerald-300" />
+                <span>XL SCROLL MESSAGE</span>
               </div>
 
-              {/* Marquee Ticker Area */}
+              {/* Live Ticker Area showing exact text running in all XL user screens */}
               <div 
-                onClick={() => navigate(tpReminder.targetUrl || '/extras/tour-program')}
+                onClick={() => setIsAnnounceModalOpen(true)}
                 className="flex-1 overflow-hidden relative cursor-pointer py-1 group"
-                title="Click to Submit your Tour Program"
+                title="Running live across all XL user screens — Click to edit or update"
               >
-                <div className="animate-marquee-scroll flex items-center gap-12 font-bold text-xs sm:text-sm md:text-base text-amber-900 dark:text-amber-200">
+                <div className="animate-marquee-scroll flex items-center gap-12 font-bold text-xs sm:text-sm text-sky-900 dark:text-sky-200">
                   <span className="flex items-center gap-2">
-                    📢 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
-                    <span className="text-xs opacity-80 font-normal ml-1">• Mandatory submission before month-end • Click here to submit now</span>
+                    📢 <strong className="underline underline-offset-4 decoration-sky-400">{activeAnnouncement.message}</strong>
+                    <span className="text-xs opacity-75 font-normal ml-2">• Confirmed running on all XL user screens • Click to edit</span>
                   </span>
                   <span className="flex items-center gap-2">
-                    🚀 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
-                    <span className="text-xs opacity-80 font-normal ml-1">• Ensure all Doctor & Market tours are scheduled</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    📢 <strong className="underline underline-offset-4 decoration-amber-500">{tpReminder.reminderMessage}</strong>
-                    <span className="text-xs opacity-80 font-normal ml-1">• Floating reminder active till TP is submitted</span>
+                    📢 <strong className="underline underline-offset-4 decoration-sky-400">{activeAnnouncement.message}</strong>
+                    <span className="text-xs opacity-75 font-normal ml-2">• Confirmed running on all XL user screens • Click to edit</span>
                   </span>
                 </div>
               </div>
 
-              {/* Right Action Button & Preview Toggle */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Quick Edit Button */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
-                  onClick={() => navigate(tpReminder.targetUrl || '/extras/tour-program')}
-                  className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-md transition-transform active:scale-95"
+                  onClick={() => setIsAnnounceModalOpen(true)}
+                  className="flex items-center gap-1 bg-sky-500 hover:bg-sky-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-md transition-transform active:scale-95"
+                  title="Edit Broadcast Message"
                 >
-                  <span>Submit Now</span>
-                  <ArrowRight size={13} />
-                </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const next = !previewReminder;
-                    setPreviewReminder(next);
-                    localStorage.setItem('xla_simulate_25th_tp', String(next));
-                  }}
-                  title={previewReminder ? "Test preview active. Click to use real calendar date." : "Click to test 25th condition right now"}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
-                    previewReminder 
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
-                      : 'bg-slate-800/40 text-slate-400 border-slate-700'
-                  }`}
-                >
-                  {previewReminder ? 'Test: ON' : 'Test 25th'}
+                  <Edit2 size={13} />
+                  <span className="hidden sm:inline">Edit Message</span>
+                  <span className="sm:hidden">Edit</span>
                 </button>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a] p-3 shadow-md">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-500 dark:text-sky-400 shrink-0">
+                  <Radio size={16} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">XL Broadcast Scroll Message</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">No message currently active. Click to broadcast across all XL user screens.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAnnounceModalOpen(true)}
+                className="flex items-center gap-1 bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md active:scale-95 transition-all shrink-0"
+              >
+                <Plus size={14} />
+                <span>Broadcast</span>
+              </button>
             </div>
           </div>
         )}
@@ -212,22 +262,6 @@ export default function Dashboard() {
            </div>
            
            <div className="flex flex-wrap items-center gap-3">
-              {/* If reminder is hidden (e.g. before 25th), allow simulating 25th condition */}
-              {(!tpReminder || !tpReminder.shouldShow) && (
-                <button 
-                  onClick={() => {
-                    const next = !previewReminder;
-                    setPreviewReminder(next);
-                    localStorage.setItem('xla_simulate_25th_tp', String(next));
-                  }}
-                  className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95"
-                  title="Simulate 25th TP Reminder Float"
-                >
-                   <Clock size={15} className="text-amber-500" />
-                   <span>Test 25th TP Reminder</span>
-                </button>
-              )}
-
               <button 
                 onClick={handleOpenConsolidated}
                 className="flex items-center gap-2 bg-slate-100 dark:bg-[#27273f] hover:bg-sky-50 dark:hover:bg-[#323252] border border-slate-200 dark:border-[#3b3b5a] text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
@@ -945,6 +979,81 @@ export default function Dashboard() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Broadcast Scroll Message Modal */}
+      {isAnnounceModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1e1e30] border border-slate-200 dark:border-[#3b3b5a] rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Radio size={20} className="text-sky-400" />
+                <span>Broadcast Message to XL Users</span>
+              </h3>
+              <button 
+                onClick={() => setIsAnnounceModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              This ticker message scrolls continuously across the top of all XL user mobile and desktop screens.
+            </p>
+            <textarea 
+              value={broadcastInput}
+              onChange={e => setBroadcastInput(e.target.value)}
+              placeholder="Enter ticker message to scroll across all XL user screens..."
+              className="w-full h-28 bg-slate-50 dark:bg-[#1a1a2e] border border-slate-200 dark:border-[#3b3b5a] rounded-xl p-3 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500 mb-4 resize-none"
+            />
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Start Time (Optional)</label>
+                <input 
+                  type="datetime-local" 
+                  value={validFromInput} 
+                  onChange={e => setValidFromInput(e.target.value)} 
+                  className="w-full bg-slate-50 dark:bg-[#1a1a2e] border border-slate-200 dark:border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">End Time (Optional)</label>
+                <input 
+                  type="datetime-local" 
+                  value={validUntilInput} 
+                  onChange={e => setValidUntilInput(e.target.value)} 
+                  className="w-full bg-slate-50 dark:bg-[#1a1a2e] border border-slate-200 dark:border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500" 
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              {activeAnnouncement?.message ? (
+                <button
+                  type="button"
+                  onClick={handleStopAnnouncement}
+                  className="px-3 py-2 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors"
+                >
+                  Stop Ticker
+                </button>
+              ) : <div />}
+              <div className="flex gap-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsAnnounceModalOpen(false)} 
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveAnnouncement} 
+                  className="px-5 py-2 rounded-lg text-sm font-bold bg-sky-500 text-white hover:bg-sky-600 transition-colors shadow-md"
+                >
+                  Publish Ticker
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -7,7 +7,7 @@ export default function Utilities() {
   const options = utilitiesOptions;
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col pb-24 md:pb-0 text-slate-100 font-sans">
+    <div className="min-h-full bg-slate-900 flex flex-col pb-36 md:pb-12 text-slate-100 font-sans">
       <div className="flex-1 px-5 md:px-8 py-6">
         
         {/* DESKTOP HEADER */}
@@ -19,7 +19,7 @@ export default function Utilities() {
         <h2 className="md:hidden text-xl font-black text-white mb-6">Utilities</h2>
         
         {/* Desktop Grid / Mobile List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-16">
           {options.map((report, idx) => (
             <div key={idx} onClick={() => report.path ? navigate(report.path) : (report.id === 'lists' && navigate('/utilities/lists/doctors'))} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden cursor-pointer">
               {/* Desktop Decorative Glow */}

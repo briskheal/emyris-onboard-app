@@ -6,7 +6,7 @@ export default function AdminMenu() {
   const items = adminItems;
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-24 text-slate-100">
+    <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-36 md:pb-12 text-slate-100">
       <div className="px-5 mt-6 md:p-8 space-y-8">
         
         {/* Desktop Banner */}
@@ -21,7 +21,7 @@ export default function AdminMenu() {
         <h2 className="md:hidden text-xl font-black text-white mb-6 uppercase tracking-wide">Admin Panel</h2>
         
         {/* Grid Layout */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6 pb-16">
           {items.map((item, idx) => (
             <button 
               key={idx} 

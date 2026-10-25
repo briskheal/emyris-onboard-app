@@ -6,11 +6,11 @@ export default function Extras() {
   const options = extrasOptions;
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col pb-24 text-slate-100 font-sans">
+    <div className="min-h-full bg-slate-900 flex flex-col pb-36 md:pb-12 text-slate-100 font-sans">
       <div className="px-5 mt-6">
         <h2 className="text-xl font-black text-white mb-6">Extras</h2>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pb-16">
           {options.map((item, idx) => (
             <button 
               key={idx}
