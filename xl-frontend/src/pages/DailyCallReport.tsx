@@ -149,23 +149,31 @@ export default function DailyCallReport() {
   }, [step, dcrDate, entityType]);;
 
   const sortedEntities = React.useMemo(() => {
-    let filtered = entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    if (dcrDate === today) {
-      if (myLat && myLng) {
-        filtered = filtered.map(e => {
-          const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
-          const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
-          const minDist = Math.min(dist1, dist2);
-          return { ...e, _dist: minDist };
-        }).filter(e => e._dist <= 300).sort((a, b) => a._dist - b._dist);
-      } else {
-        // If GPS is not yet acquired for today's report, show empty list
-        filtered = [];
-      }
+    const q = searchQuery.toLowerCase().trim();
+    let filtered = entities.filter(e => {
+      const name = (e.name || e.businessName || '').toLowerCase();
+      const hq = (e.headquarter || '').toLowerCase();
+      const area = (e.workingArea || '').toLowerCase();
+      const spec = (e.specialization || '').toLowerCase();
+      return !q || name.includes(q) || hq.includes(q) || area.includes(q) || spec.includes(q);
+    });
+
+    if (myLat && myLng) {
+      filtered = filtered.map(e => {
+        const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
+        const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
+        const minDist = Math.min(dist1, dist2);
+        return { ...e, _dist: isFinite(minDist) ? minDist : null };
+      }).sort((a, b) => {
+        if (a._dist !== null && b._dist !== null) return a._dist - b._dist;
+        if (a._dist !== null) return -1;
+        if (b._dist !== null) return 1;
+        return (a.name || a.businessName || '').localeCompare(b.name || b.businessName || '');
+      });
     }
+
     return filtered;
-  }, [entities, searchQuery, myLat, myLng, dcrDate]);
+  }, [entities, searchQuery, myLat, myLng]);
 
   useEffect(() => {
     let dObj;
@@ -268,7 +276,14 @@ export default function DailyCallReport() {
       return;
     }
 
-    axios.get(`/api/xl/${type.toLowerCase()}s?hq=${hq}&designation=${desig}`)
+    const params = new URLSearchParams({
+      hq,
+      designation: desig,
+      workingAreas: workingAreas || '',
+      division: user?.division || ''
+    });
+
+    axios.get(`/api/xl/${type.toLowerCase()}s?${params.toString()}`)
       .then(res => setEntities(res.data.data || []))
       .catch(() => setError('Failed to load entities'))
       .finally(() => setLoading(false));
@@ -708,14 +723,34 @@ export default function DailyCallReport() {
                       </div>
                       <div className="overflow-y-auto max-h-60">
                         {sortedEntities.length > 0 ? sortedEntities.map(e => (
-                          <div key={e._id} onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm flex justify-between items-center">
-                            <span>{e.name || e.businessName}</span>
+                          <div 
+                            key={e._id} 
+                            onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} 
+                            className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm flex justify-between items-center transition-colors"
+                          >
+                            <div className="flex flex-col pr-2">
+                              <span className="font-semibold text-white">{e.name || e.businessName}</span>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                                {e.specialization && <span>{e.specialization}</span>}
+                                {e.headquarter && <span className="bg-slate-700/80 px-1.5 py-0.2 rounded text-[10px] text-slate-300 uppercase">{e.headquarter}</span>}
+                                {e.workingArea && <span className="text-slate-400">({e.workingArea})</span>}
+                              </div>
+                            </div>
+                            {e._dist !== null && e._dist !== undefined && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                e._dist <= 300 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                  : 'bg-slate-700 text-slate-400'
+                              }`}>
+                                {e._dist < 1000 ? `${Math.round(e._dist)}m` : `${(e._dist/1000).toFixed(1)}km`}
+                              </span>
+                            )}
                           </div>
                         )) : (
                           <div className="p-4 text-center text-sm text-slate-400">
-                            {dcrDate === today 
-                              ? (geoLoading ? "Acquiring GPS..." : "No tagged doctors found within 300m of your location. You must be at the clinic to report.")
-                              : "No results found."}
+                            {entities.length === 0 
+                              ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
+                              : "No matches found for search query."}
                           </div>
                         )}
                       </div>

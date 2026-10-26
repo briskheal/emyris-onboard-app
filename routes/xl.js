@@ -1121,9 +1121,25 @@ async function getAllTeamMembers(managerUser, allUsers = null) {
         allUsers = await XlUser.findAll({ where: { status: 'Active' }, raw: true });
     }
 
+    const mgrDesigUpper = (managerUser.designation || '').trim().toUpperCase();
+    const isCompanyWideExecutive = mgrDesigUpper === 'ADMIN' || 
+        mgrDesigUpper.includes('GM') || 
+        mgrDesigUpper.includes('GENERAL MANAGER') || 
+        mgrDesigUpper.includes('PRESIDENT') || 
+        mgrDesigUpper.includes('DIRECTOR') || 
+        managerUser.isAdmin;
+
+    // GM and top corporate executives cover the entire company downline
+    if (isCompanyWideExecutive) {
+        const mgrEmpId = managerUser.employeeId || managerUser._id;
+        return allUsers.filter(u => (u.employeeId || u._id) !== mgrEmpId);
+    }
+
     const team = [];
     const queue = [managerUser];
     const visited = new Set([managerUser.employeeId || managerUser._id]);
+
+    const normalizeHq = (h) => (h || '').replace(/-pst-\d+/i, '').replace(/[\s\-_]+/g, '').toLowerCase().trim();
 
     while (queue.length > 0) {
         const currentMgr = queue.shift();
@@ -1158,6 +1174,14 @@ async function getAllTeamMembers(managerUser, allUsers = null) {
                     }
                     if (baseHq) {
                         if (rmLower === `${d} (${baseHq})` || rmLower === `${d} - ${baseHq}` || rmLower.startsWith(`${d} (${baseHq}`)) {
+                            isMatch = true;
+                            break;
+                        }
+                    }
+                    // Flexible HQ match stripping PST / special characters (e.g. HYDERABAD matching HYDERABAD-PST-1)
+                    if (rmLower.startsWith(d)) {
+                        const rmHqPart = rmLower.replace(d, '').replace(/[()\-]/g, '').trim();
+                        if (rmHqPart && (normalizeHq(rmHqPart) === normalizeHq(mgrHq) || normalizeHq(rmHqPart) === normalizeHq(baseHq))) {
                             isMatch = true;
                             break;
                         }
@@ -1233,6 +1257,19 @@ async function findReportingManagers(reportingManagerStr) {
 async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set(), managerUser = null) {
     if (!designation || designation.toUpperCase() === 'ADMIN') return userList;
     const { XlUser } = require('../db');
+
+    const desigUpper = (designation || '').trim().toUpperCase();
+    const isCompanyWideExecutive = desigUpper.includes('GM') || 
+        desigUpper.includes('GENERAL MANAGER') || 
+        desigUpper.includes('PRESIDENT') || 
+        desigUpper.includes('DIRECTOR') || 
+        (managerUser && managerUser.isAdmin);
+
+    if (isCompanyWideExecutive) {
+        const allUsers = await XlUser.findAll({ where: { status: 'Active' }, raw: true });
+        const mgrEmpId = managerUser ? (managerUser.employeeId || managerUser._id) : null;
+        return allUsers.filter(u => !mgrEmpId || (u.employeeId || u._id) !== mgrEmpId);
+    }
     
     let resolvedMgr = managerUser;
     if (!resolvedMgr) {
@@ -1255,8 +1292,39 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
 }
 
 async function getSubordinateHQs(designation, hq, division, hqSet = new Set()) {
-    if (!designation || designation === 'ADMIN') return Array.from(hqSet);
-    const { XlHQ } = require('../db');
+    const desigUpper = (designation || '').trim().toUpperCase();
+    const isCompanyWide = !designation || 
+        desigUpper === 'ADMIN' || 
+        desigUpper.includes('GM') || 
+        desigUpper.includes('GENERAL MANAGER') || 
+        desigUpper.includes('PRESIDENT') || 
+        desigUpper.includes('DIRECTOR');
+
+    const { XlHQ, XlUser } = require('../db');
+
+    if (isCompanyWide) {
+        try {
+            const allHqs = await XlHQ.findAll({ raw: true });
+            allHqs.forEach(h => {
+                if (h.hqName) {
+                    const clean = h.hqName.trim();
+                    hqSet.add(clean);
+                    hqSet.add(clean.toUpperCase());
+                    hqSet.add(clean.toLowerCase());
+                }
+            });
+            const allUsers = await XlUser.findAll({ attributes: ['hq'], raw: true });
+            allUsers.forEach(u => {
+                if (u.hq) {
+                    const clean = u.hq.trim();
+                    hqSet.add(clean);
+                    hqSet.add(clean.toUpperCase());
+                    hqSet.add(clean.toLowerCase());
+                }
+            });
+        } catch (e) {}
+        return Array.from(hqSet);
+    }
 
     // 1. Permanent Territory Hierarchy Traversal via XlHQ.parentHq
     if (hq) {
@@ -1784,104 +1852,66 @@ router.get('/user/hierarchy', async (req, res) => {
             });
         }
 
-        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        const reporteeOrConditions = [
-            { reportingManager: user.employeeId },
-            { reportingManager: user.employeeId.trim() }
-        ];
+        const userDesigInfo = getDesignationInfo(user.designation);
+        const userAddress = [user.streetAddress1, user.streetAddress2, user.city, user.state].filter(Boolean).join(', ') || user.hq || 'Corporate';
 
-        if (user.uid) {
-            reporteeOrConditions.push({ reportingManager: user.uid });
-        }
+        // Retrieve full recursive team downline (GM covers entire company, NSM covers their zone, etc.)
+        const downlineTeam = await getAllTeamMembers(user);
 
-        if (fullName) {
-            reporteeOrConditions.push({ reportingManager: fullName });
-            reporteeOrConditions.push(sequelize.where(
-                sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                fullName.toLowerCase()
-            ));
-        }
-
-        // Designation & HQ based matching for subordinates
-        if (user.designation) {
-            const desigAliases = getDesignationAliases(user.designation);
-            const hqClean = (user.hq || '').trim();
-            const baseHq = hqClean.split('-')[0].trim();
-
-            for (const d of desigAliases) {
-                // Match designation alone (when reportingManager does not specify an HQ)
-                reporteeOrConditions.push(sequelize.where(
-                    sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                    d
-                ));
-
-                // Match designation + exact HQ / base HQ
-                if (hqClean) {
-                    const hqLower = hqClean.toLowerCase();
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        `${d} (${hqLower})`
-                    ));
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        `${d} - ${hqLower}`
-                    ));
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        { [Op.like]: `${d} (${hqLower}%` }
-                    ));
-                }
-                if (baseHq && baseHq.toLowerCase() !== hqClean.toLowerCase()) {
-                    const baseLower = baseHq.toLowerCase();
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        `${d} (${baseLower})`
-                    ));
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        `${d} - ${baseLower}`
-                    ));
-                    reporteeOrConditions.push(sequelize.where(
-                        sequelize.fn('LOWER', sequelize.col('reportingManager')),
-                        { [Op.like]: `${d} (${baseLower}%` }
-                    ));
-                }
-            }
-        }
-
-        const rawReportees = await XlUser.findAll({
-            where: {
-                [Op.or]: reporteeOrConditions,
-                status: 'Active'
-            },
-            attributes: ['firstName', 'lastName', 'designation', 'hq', 'division', 'phone', 'email', 'employeeId'],
-            raw: true
+        // Sort by hierarchy level descending (NSM -> ZSM -> RSM -> ASM -> TBM), then alphabetically
+        const sortedTeam = downlineTeam.map(t => {
+            const dInfo = getDesignationInfo(t.designation);
+            const addr = [t.streetAddress1, t.streetAddress2, t.city, t.state].filter(Boolean).join(', ') || t.hq || '-';
+            return {
+                _id: t._id,
+                employeeId: t.employeeId,
+                name: `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.employeeId,
+                firstName: t.firstName,
+                lastName: t.lastName,
+                designation: t.designation || 'TBM',
+                level: dInfo.level,
+                badge: dInfo.badge,
+                hq: t.hq || '-',
+                division: t.division || user.division || 'CRITIZA',
+                phone: t.phone || '-',
+                email: t.email || '-',
+                reportingManager: t.reportingManager || manager?.name || '-',
+                dailyAllowance: t.dailyAllowance || 350,
+                exStationAllowance: t.exStationAllowance || 370,
+                outStationAllowance: t.outStationAllowance ? `₹${t.outStationAllowance}` : 'N/A',
+                address: addr,
+                status: t.status || 'Active'
+            };
+        }).sort((a, b) => {
+            if (b.level !== a.level) return b.level - a.level;
+            return a.name.localeCompare(b.name);
         });
-
-        // Deduplicate and filter out self
-        const reportees = [];
-        const seen = new Set();
-        for (const r of rawReportees) {
-            const key = r.employeeId || `${r.firstName}_${r.lastName}_${r.hq}`;
-            if (r.employeeId !== user.employeeId && !seen.has(key)) {
-                seen.add(key);
-                reportees.push(r);
-            }
-        }
 
         res.json({
             success: true,
             user: {
+                _id: user._id,
                 name: fullName,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 designation: user.designation,
+                level: userDesigInfo.level,
+                badge: userDesigInfo.badge,
                 employeeId: user.employeeId,
                 hq: user.hq,
-                division: user.division,
+                division: user.division || 'CRITIZA',
                 phone: user.phone,
-                email: user.email
+                email: user.email,
+                reportingManager: user.reportingManager || (manager ? `${manager.firstName} ${manager.lastName}` : 'Corporate Management'),
+                dailyAllowance: user.dailyAllowance || 350,
+                exStationAllowance: user.exStationAllowance || 370,
+                outStationAllowance: user.outStationAllowance ? `₹${user.outStationAllowance}` : 'N/A',
+                address: userAddress,
+                status: user.status || 'Active'
             },
             manager,
-            reportees
+            reportees: sortedTeam,
+            totalTeamCount: sortedTeam.length
         });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
@@ -3257,22 +3287,64 @@ router.get('/reports/call-plans', async (req, res) => {
     }
 });
 
+function isExecutiveDesignation(designation) {
+    if (!designation) return false;
+    const d = designation.toUpperCase().trim();
+    return d === 'ADMIN' || 
+           d.includes('GM') || 
+           d.includes('GENERAL MANAGER') || 
+           d.includes('VICE PRESIDENT') || 
+           d.includes('VP') || 
+           d.includes('DIRECTOR') || 
+           d.includes('MANAGING DIRECTOR') || 
+           d.includes('MD') || 
+           d.includes('CEO') || 
+           d.includes('NATIONAL SALES MANAGER') || 
+           d.includes('NSM');
+}
+
+async function resolveEntityHQs(req) {
+    const { designation, hq, division, workingAreas, toMarket } = req.query;
+    const isExecutive = isExecutiveDesignation(designation);
+
+    if (isExecutive) {
+        // Executive has access to all locations / all HQs across the company/division
+        return { isExecutive: true, hqList: [] };
+    }
+
+    let hqList = [];
+    if (hq) hqList.push(hq.trim().toLowerCase());
+    
+    // Add working areas or tour destination market from approved TP if present
+    const tourLocations = [workingAreas, toMarket].filter(Boolean);
+    for (const loc of tourLocations) {
+        if (typeof loc === 'string') {
+            loc.split(/[,;\-\/]+/).forEach(part => {
+                const clean = part.trim().toLowerCase();
+                if (clean && clean.length > 2) {
+                    hqList.push(clean);
+                }
+            });
+        }
+    }
+
+    if (designation) {
+        const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
+        hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
+    }
+
+    return { isExecutive: false, hqList: [...new Set(hqList)] };
+}
+
 router.get('/doctors', async (req, res) => {
     try {
-        const { designation, hq, division } = req.query;
-        let hqList = [];
-        if (hq) hqList.push(hq.trim().toLowerCase());
-        
-        if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
-            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
-        }
-
+        const { isExecutive, hqList } = await resolveEntityHQs(req);
         let where = {};
-        if (hqList.length > 0) {
+        
+        if (!isExecutive && hqList.length > 0) {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
-        } else if (req.query.hq) {
+        } else if (!isExecutive && req.query.hq) {
             // fallback
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
@@ -3289,20 +3361,13 @@ router.get('/doctors', async (req, res) => {
 // Fetch all chemists
 router.get('/chemists', async (req, res) => {
     try {
-        const { designation, hq, division } = req.query;
-        let hqList = [];
-        if (hq) hqList.push(hq.trim().toLowerCase());
-        
-        if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
-            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
-        }
-
+        const { isExecutive, hqList } = await resolveEntityHQs(req);
         let where = {};
-        if (hqList.length > 0) {
+        
+        if (!isExecutive && hqList.length > 0) {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
-        } else if (req.query.hq) {
+        } else if (!isExecutive && req.query.hq) {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
@@ -3317,20 +3382,13 @@ router.get('/chemists', async (req, res) => {
 
 router.get('/stockists', async (req, res) => {
     try {
-        const { designation, hq, division } = req.query;
-        let hqList = [];
-        if (hq) hqList.push(hq.trim().toLowerCase());
-        
-        if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
-            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
-        }
-
+        const { isExecutive, hqList } = await resolveEntityHQs(req);
         let where = {};
-        if (hqList.length > 0) {
+        
+        if (!isExecutive && hqList.length > 0) {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
-        } else if (req.query.hq) {
+        } else if (!isExecutive && req.query.hq) {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
@@ -5307,9 +5365,15 @@ router.get('/approvals/counts', async (req, res) => {
         const effectiveDesig = (mgrUser && mgrUser.designation) || designation || '';
         const effectiveHq = (mgrUser && mgrUser.hq) || hq || '';
         const effectiveDiv = (mgrUser && mgrUser.division) || division || '';
-        const isAdmin = effectiveDesig.toUpperCase() === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+        const desigUpper = effectiveDesig.toUpperCase();
+        const isAdmin = desigUpper === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+        const isUniversalApprover = isAdmin || 
+            desigUpper.includes('GM') || 
+            desigUpper.includes('GENERAL MANAGER') || 
+            desigUpper.includes('PRESIDENT') || 
+            desigUpper.includes('DIRECTOR');
 
-        if (!isAdmin) {
+        if (!isUniversalApprover) {
             const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
             const reporteeIdentifiers = [];
             for (const u of reportees) {
@@ -5331,7 +5395,7 @@ router.get('/approvals/counts', async (req, res) => {
 
         const baseStatus = ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'];
         const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
-        const empCondition = isAdmin 
+        const empCondition = isUniversalApprover 
             ? { status: baseStatus } 
             : { status: baseStatus, employeeId: empIn };
         
@@ -5347,7 +5411,7 @@ router.get('/approvals/counts', async (req, res) => {
             }
         };
 
-        const tourProgramCond = isAdmin ? { status: baseStatus } : {
+        const tourProgramCond = isUniversalApprover ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
                 { employeeId: empIn },
@@ -5355,7 +5419,7 @@ router.get('/approvals/counts', async (req, res) => {
             ]
         };
 
-        const chemistCond = isAdmin ? { status: baseStatus } : {
+        const chemistCond = isUniversalApprover ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
                 { userAllotted: empIn },
@@ -5363,7 +5427,7 @@ router.get('/approvals/counts', async (req, res) => {
             ]
         };
 
-        const stockistCond = isAdmin ? { status: baseStatus } : {
+        const stockistCond = isUniversalApprover ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
                 { employeeId: empIn },
@@ -5372,7 +5436,7 @@ router.get('/approvals/counts', async (req, res) => {
             ]
         };
 
-        const locationCond = isAdmin ? { status: baseStatus } : {
+        const locationCond = isUniversalApprover ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
                 { employeeId: empIn },
@@ -5452,9 +5516,15 @@ router.get('/approvals/pending', async (req, res) => {
         const effectiveDesig = (mgrUser && mgrUser.designation) || designation || '';
         const effectiveHq = (mgrUser && mgrUser.hq) || hq || '';
         const effectiveDiv = (mgrUser && mgrUser.division) || division || '';
-        const isAdmin = effectiveDesig.toUpperCase() === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+        const desigUpper = effectiveDesig.toUpperCase();
+        const isAdmin = desigUpper === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+        const isUniversalApprover = isAdmin || 
+            desigUpper.includes('GM') || 
+            desigUpper.includes('GENERAL MANAGER') || 
+            desigUpper.includes('PRESIDENT') || 
+            desigUpper.includes('DIRECTOR');
 
-        if (!isAdmin) {
+        if (!isUniversalApprover) {
             const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
             const reporteeIdentifiers = [];
             for (const u of reportees) {
@@ -5478,7 +5548,7 @@ router.get('/approvals/pending', async (req, res) => {
             const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
             const perfs = await XlPerformanceAnalysis.findAll({
                 where: {
-                    ...(isAdmin ? {} : { employeeId: empIn }),
+                    ...(isUniversalApprover ? {} : { employeeId: empIn }),
                     planningSubmittedAt: { [Op.ne]: null }
                 },
                 raw: true
@@ -5531,7 +5601,7 @@ router.get('/approvals/pending', async (req, res) => {
         }
 
         let userFilter = {};
-        if (!isAdmin) {
+        if (!isUniversalApprover) {
             const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
             if (type === 'Chemists') {
                 userFilter = {

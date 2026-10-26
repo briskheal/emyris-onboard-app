@@ -211,16 +211,8 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
 
   // --- HIERARCHY ACTION ---
   const handleOpenHierarchy = () => {
-    setActiveModal('HIERARCHY');
-    setHierarchyLoading(true);
-    axios.get(`/api/xl/user/hierarchy?employeeId=${encodeURIComponent(user?.employeeId || '')}`)
-      .then(res => {
-        setHierarchyLoading(false);
-        if (res.data.success) {
-          setHierarchyData(res.data);
-        }
-      })
-      .catch(() => setHierarchyLoading(false));
+    onClose();
+    navigate('/hierarchy');
   };
 
   // --- CONSOLIDATED ACTIVITY ACTION ---

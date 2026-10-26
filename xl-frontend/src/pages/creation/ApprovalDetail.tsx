@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, ChevronDown, ChevronUp, CheckCircle, XCircle, MapPin, Navigation, UserRound, ShoppingBag, Building2, Banknote, FileSignature, Calendar, CalendarDays, Target, ShieldCheck, Truck, Gift, Filter, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, ChevronUp, ChevronRight, CheckCircle, XCircle, MapPin, Navigation, UserRound, ShoppingBag, Building2, Banknote, FileSignature, Calendar, CalendarDays, Target, ShieldCheck, Truck, Gift, Filter, Search, X } from 'lucide-react';
 
 function formatDDMMYYYY(dateStr: string) {
   if (!dateStr) return '-';
@@ -572,7 +572,9 @@ export default function ApprovalDetail() {
               Submitted By - {drillDownItem.employeeName || drillDownItem.employeeId || 'Rep'}
             </h1>
             <p className="text-xs text-slate-400 truncate">
-              Date: {formatDisplayDate(drillDownItem.date)} • HQ: {drillDownItem.hq || 'HQ'}
+              {type === 'Tour Program' 
+                ? `Tour Program: ${drillDownItem.month} ${drillDownItem.year} • HQ: ${drillDownItem.hq || drillDownItem.headquarter || 'HQ'}`
+                : `Date: ${formatDisplayDate(drillDownItem.date || drillDownItem.createdAt)} • HQ: ${drillDownItem.hq || drillDownItem.headquarter || 'HQ'}`}
             </p>
           </div>
         </div>
@@ -1009,20 +1011,32 @@ export default function ApprovalDetail() {
           )}
 
           {/* Action buttons at bottom of drill-down */}
-          <div className="flex gap-2 pt-4 mt-6 border-t border-slate-700">
+          <div className="flex gap-2 pt-4 mt-6 border-t border-slate-700 sticky bottom-4 bg-slate-800/95 backdrop-blur-md p-2 rounded-2xl border border-slate-700/80 shadow-2xl z-20">
             <button
               type="button"
-              onClick={() => handleAction(drillDownItem, 'Rejected')}
+              onClick={() => {
+                const selected = type === 'Tour Program' ? (selectedDatesMap[drillDownItem._id] || []) : [];
+                handleAction(drillDownItem, 'Rejected', selected.length > 0 ? selected : undefined);
+              }}
               className="flex-1 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
             >
-              <XCircle size={16} /> Reject
+              <XCircle size={16} /> 
+              {type === 'Tour Program' && (selectedDatesMap[drillDownItem._id] || []).length > 0
+                ? `Reject Selected (${selectedDatesMap[drillDownItem._id].length})`
+                : 'Reject'}
             </button>
             <button
               type="button"
-              onClick={() => handleAction(drillDownItem, 'Approved')}
+              onClick={() => {
+                const selected = type === 'Tour Program' ? (selectedDatesMap[drillDownItem._id] || []) : [];
+                handleAction(drillDownItem, 'Approved', selected.length > 0 ? selected : undefined);
+              }}
               className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
             >
-              <CheckCircle size={16} /> Approve
+              <CheckCircle size={16} /> 
+              {type === 'Tour Program' && (selectedDatesMap[drillDownItem._id] || []).length > 0
+                ? `Approve Selected (${selectedDatesMap[drillDownItem._id].length})`
+                : 'Approve'}
             </button>
           </div>
         </div>
@@ -1361,7 +1375,8 @@ export default function ApprovalDetail() {
                 return (
                   <div
                     key={item._id}
-                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg transition-all"
+                    onClick={() => setDrillDownItem(item)}
+                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
@@ -1388,23 +1403,34 @@ export default function ApprovalDetail() {
                           {item.hq || 'HQ'} • {item.startDate} {item.endDate && item.endDate !== item.startDate ? `to ${item.endDate}` : ''}
                         </div>
                       </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                          Details <ChevronRight size={13} className="text-sky-400" />
+                        </span>
+                      </div>
                     </div>
                     {item.reason && (
-                      <p className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl mt-2.5 border border-slate-700/60 italic">
+                      <p className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl mt-2.5 border border-slate-700/60 italic truncate">
                         "{item.reason}"
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
                       <button
                         type="button"
-                        onClick={() => handleAction(item, 'Approved')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Approved');
+                        }}
                         className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
                       >
                         <CheckCircle size={16} /> Approve
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAction(item, 'Rejected')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Rejected');
+                        }}
                         className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
                         title="Reject"
                       >
@@ -1415,52 +1441,96 @@ export default function ApprovalDetail() {
                 );
               }
 
-              // Tour Program specialized day-wise approval layout
+              // Tour Program Card Layout (tap card opens full day-wise itinerary in next page)
               if (type === 'Tour Program') {
-                return (
-                  <div key={item._id} className="bg-slate-700/90 border border-slate-600 rounded-2xl p-4 shadow-lg">
-                    <div className="flex justify-between items-start mb-2.5 pb-2 border-b border-slate-600/50">
-                      <div>
-                        <h3 className="text-white font-bold text-sm">
-                          {item.employeeName || item.userAllotted || item.employeeId || 'MR'}
-                        </h3>
-                        <p className="text-[11px] text-sky-400 font-semibold">{item.hq || item.headquarter || 'HQ'}</p>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                        {item.status || 'Pending'}
-                      </span>
-                    </div>
-                    
-                    <div className="py-1">
-                      {renderDetails(item)}
-                    </div>
+                let entries: any[] = [];
+                try {
+                  entries = typeof item.entries === 'string' ? JSON.parse(item.entries || '[]') : (item.entries || []);
+                } catch (e) {}
+                if (!Array.isArray(entries)) entries = Object.values(entries || {});
+                const approvedCount = entries.filter((e: any) => e.status === 'Approved').length;
+                const pendingCount = entries.filter((e: any) => !e.status || e.status === 'Pending' || e.status === 'Submitted' || e.isEdited).length;
+                const editedCount = entries.filter((e: any) => e.isEdited).length;
 
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-slate-600/50">
-                      <button 
+                return (
+                  <div
+                    key={item._id}
+                    onClick={() => setDrillDownItem(item)}
+                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.employeeName || 'MR')}&background=1e293b&color=38bdf8&bold=true`}
+                          alt={item.employeeName}
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-white text-sm truncate flex items-center gap-2">
+                          <span>{item.employeeName || item.userAllotted || item.employeeId || 'MR'}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 uppercase">
+                            {item.month} {item.year}
+                          </span>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-300 truncate mt-0.5">
+                          HQ: {item.hq || item.headquarter || 'HQ'}
+                        </div>
+                        <div className="text-[11px] text-sky-400 font-medium flex items-center gap-1.5 mt-1">
+                          <span>{entries.length} days planned</span>
+                          {editedCount > 0 && (
+                            <span className="px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 text-[10px] font-bold border border-orange-500/30">
+                              {editedCount} Edited
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                          <span>{pendingCount} Pending</span>
+                        </div>
+                        {approvedCount > 0 && (
+                          <span className="text-[10px] text-emerald-400 font-medium">
+                            {approvedCount} Approved
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-1">
+                          View details <ChevronRight size={13} className="text-sky-400" />
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                      <button
                         type="button"
-                        onClick={() => {
-                          const selected = selectedDatesMap[item._id] || [];
-                          handleAction(item, 'Rejected', selected.length > 0 ? selected : undefined);
-                        }} 
-                        className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDrillDownItem(item);
+                        }}
+                        className="flex-1 bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95"
                       >
-                        <XCircle size={15} /> 
-                        {(selectedDatesMap[item._id] || []).length > 0 
-                          ? `Reject Selected (${selectedDatesMap[item._id].length})` 
-                          : 'Reject Entire Plan'}
+                        <CalendarDays size={15} /> View Schedule
                       </button>
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => {
-                          const selected = selectedDatesMap[item._id] || [];
-                          handleAction(item, 'Approved', selected.length > 0 ? selected : undefined);
-                        }} 
-                        className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Approved');
+                        }}
+                        className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95"
                       >
-                        <CheckCircle size={15} /> 
-                        {(selectedDatesMap[item._id] || []).length > 0 
-                          ? `Approve Selected (${selectedDatesMap[item._id].length})` 
-                          : 'Approve Entire Plan'}
+                        <CheckCircle size={15} /> Approve Plan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Rejected');
+                        }}
+                        className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                        title="Reject Entire Plan"
+                      >
+                        <XCircle size={18} />
                       </button>
                     </div>
                   </div>

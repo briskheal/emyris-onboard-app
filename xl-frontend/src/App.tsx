@@ -29,6 +29,7 @@ import GeoFencingTagged from './pages/extras/GeoFencingTagged';
 import PerformanceMenu from './pages/extras/performance/PerformanceMenu';
 import TargetAnalysisReport from './pages/extras/performance/TargetAnalysisReport';
 import EffortAnalysisReport from './pages/extras/performance/EffortAnalysisReport';
+import Hierarchy from './pages/Hierarchy';
 import Utilities from './pages/Utilities';
 import DailyCallReport from './pages/DailyCallReport';
 import QuickReports from './pages/utilities/QuickReports';
@@ -76,6 +77,7 @@ function App() {
           <Route path="creation/route" element={<RouteForm />} />
           <Route path="creation/approvals" element={<ApprovalsLanding />} />
           <Route path="creation/approvals/:type" element={<ApprovalDetail />} />
+          <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="extras" element={<Extras />} />
           <Route path="extras/tour-program" element={<TourProgram />} />
           <Route path="extras/attendance" element={<Attendance />} />
