@@ -1114,6 +1114,49 @@ async function getFullOrganizationHierarchy() {
 }
 
 // Robust recursive team collector resolving all direct and downline subordinates across any hierarchy level
+function normalizeRM(str) {
+    return (str || '').toLowerCase().replace(/-pst-\d+/gi, '').replace(/[^a-z0-9]/g, '').trim();
+}
+
+function isReporteeOf(u, mgr) {
+    if (!u || !u.reportingManager || !mgr) return false;
+    const rm = u.reportingManager.trim();
+    const rmNorm = normalizeRM(rm);
+
+    // 1. EmployeeId / UID match
+    if (mgr.employeeId && rm.toLowerCase() === mgr.employeeId.toLowerCase()) return true;
+    if (mgr.uid && rm.toLowerCase() === mgr.uid.toLowerCase()) return true;
+
+    // 2. Full Name match (e.g. "Jnana Dash", "Jameel Khan")
+    const mgrFullName = ((mgr.firstName || '') + ' ' + (mgr.lastName || '')).trim();
+    if (mgrFullName && normalizeRM(mgrFullName) === rmNorm) return true;
+
+    // 3. Designation + HQ match (e.g. "National Sales Manager (N+W) (DURG)")
+    const mgrDesig = (mgr.designation || '').trim();
+    const mgrHq = (mgr.hq || '').trim();
+    const desigHq = `${mgrDesig} (${mgrHq})`;
+    if (normalizeRM(desigHq) === rmNorm) return true;
+
+    // Match base HQ (e.g. "Sr. Product Manager (HYDERABAD)" vs "HYDERABAD-PST-1")
+    const baseHq = mgrHq.replace(/-pst-\d+/gi, '').trim();
+    const desigBaseHq = `${mgrDesig} (${baseHq})`;
+    if (normalizeRM(desigBaseHq) === rmNorm) return true;
+
+    // Match designation aliases + HQ
+    const aliases = getDesignationAliases(mgrDesig);
+    for (const a of aliases) {
+        if (normalizeRM(`${a} (${mgrHq})`) === rmNorm) return true;
+        if (baseHq && normalizeRM(`${a} (${baseHq})`) === rmNorm) return true;
+        // Match designation alone if reporting manager does not specify an HQ
+        if (normalizeRM(a) === rmNorm) return true;
+    }
+
+    // Match designation alone
+    if (normalizeRM(mgrDesig) === rmNorm) return true;
+
+    return false;
+}
+
 async function getAllTeamMembers(managerUser, allUsers = null) {
     if (!managerUser) return [];
     const { XlUser } = require('../db');
@@ -1121,81 +1164,38 @@ async function getAllTeamMembers(managerUser, allUsers = null) {
         allUsers = await XlUser.findAll({ where: { status: 'Active' }, raw: true });
     }
 
-    const mgrDesigUpper = (managerUser.designation || '').trim().toUpperCase();
-    const isCompanyWideExecutive = mgrDesigUpper === 'ADMIN' || 
-        mgrDesigUpper.includes('GM') || 
-        mgrDesigUpper.includes('GENERAL MANAGER') || 
-        mgrDesigUpper.includes('PRESIDENT') || 
-        mgrDesigUpper.includes('DIRECTOR') || 
-        managerUser.isAdmin;
-
-    // GM and top corporate executives cover the entire company downline
-    if (isCompanyWideExecutive) {
-        const mgrEmpId = managerUser.employeeId || managerUser._id;
-        return allUsers.filter(u => (u.employeeId || u._id) !== mgrEmpId);
-    }
-
     const team = [];
-    const queue = [managerUser];
+    const queue = [{ user: managerUser, depth: 0 }];
     const visited = new Set([managerUser.employeeId || managerUser._id]);
 
-    const normalizeHq = (h) => (h || '').replace(/-pst-\d+/i, '').replace(/[\s\-_]+/g, '').toLowerCase().trim();
-
     while (queue.length > 0) {
-        const currentMgr = queue.shift();
-        const mgrFullName = ((currentMgr.firstName || '') + ' ' + (currentMgr.lastName || '')).trim().toLowerCase();
-        const mgrDesig = (currentMgr.designation || '').trim();
-        const mgrHq = (currentMgr.hq || '').trim();
-        const baseHq = mgrHq.replace(/-pst-\d+/i, '').split('-')[0].trim().toLowerCase();
-        const desigAliases = getDesignationAliases(mgrDesig);
-
+        const { user: currentMgr, depth } = queue.shift();
         for (const u of allUsers) {
             const uId = u.employeeId || u._id;
             if (visited.has(uId)) continue;
             if (u.status !== 'Active') continue;
-            const rm = (u.reportingManager || '').trim();
-            if (!rm) continue;
-            const rmLower = rm.toLowerCase();
 
-            let isMatch = false;
-            if (currentMgr.employeeId && rmLower === currentMgr.employeeId.toLowerCase()) isMatch = true;
-            if (currentMgr.uid && rmLower === currentMgr.uid.toLowerCase()) isMatch = true;
-            if (mgrFullName && rmLower === mgrFullName) isMatch = true;
-
-            if (!isMatch && mgrDesig) {
-                for (const d of desigAliases) {
-                    if (rmLower === d) { isMatch = true; break; }
-                    if (mgrHq) {
-                        const hqLower = mgrHq.toLowerCase();
-                        if (rmLower === `${d} (${hqLower})` || rmLower === `${d} - ${hqLower}` || rmLower.startsWith(`${d} (${hqLower}`)) {
-                            isMatch = true;
-                            break;
-                        }
-                    }
-                    if (baseHq) {
-                        if (rmLower === `${d} (${baseHq})` || rmLower === `${d} - ${baseHq}` || rmLower.startsWith(`${d} (${baseHq}`)) {
-                            isMatch = true;
-                            break;
-                        }
-                    }
-                    // Flexible HQ match stripping PST / special characters (e.g. HYDERABAD matching HYDERABAD-PST-1)
-                    if (rmLower.startsWith(d)) {
-                        const rmHqPart = rmLower.replace(d, '').replace(/[()\-]/g, '').trim();
-                        if (rmHqPart && (normalizeHq(rmHqPart) === normalizeHq(mgrHq) || normalizeHq(rmHqPart) === normalizeHq(baseHq))) {
-                            isMatch = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (isMatch) {
+            if (isReporteeOf(u, currentMgr)) {
                 visited.add(uId);
-                team.push(u);
-                queue.push(u);
+                team.push({ ...u, depth: depth + 1, managerUser: currentMgr });
+                queue.push({ user: u, depth: depth + 1 });
             }
         }
     }
+
+    // Top GM/Admin coverage: include any active users reporting at top corporate level
+    const mgrDesigUpper = (managerUser.designation || '').trim().toUpperCase();
+    if (managerUser.isAdmin || mgrDesigUpper === 'ADMIN' || mgrDesigUpper.includes('GM') || mgrDesigUpper.includes('GENERAL MANAGER') || mgrDesigUpper.includes('PRESIDENT') || mgrDesigUpper.includes('DIRECTOR')) {
+        const mgrEmpId = managerUser.employeeId || managerUser._id;
+        for (const u of allUsers) {
+            const uId = u.employeeId || u._id;
+            if (uId !== mgrEmpId && !visited.has(uId)) {
+                visited.add(uId);
+                team.push({ ...u, depth: 99 });
+            }
+        }
+    }
+
     return team;
 }
 
@@ -1852,13 +1852,14 @@ router.get('/user/hierarchy', async (req, res) => {
             });
         }
 
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.employeeId;
         const userDesigInfo = getDesignationInfo(user.designation);
         const userAddress = [user.streetAddress1, user.streetAddress2, user.city, user.state].filter(Boolean).join(', ') || user.hq || 'Corporate';
 
-        // Retrieve full recursive team downline (GM covers entire company, NSM covers their zone, etc.)
+        // Retrieve full recursive team downline based strictly on reportingManager and HQ
         const downlineTeam = await getAllTeamMembers(user);
 
-        // Sort by hierarchy level descending (NSM -> ZSM -> RSM -> ASM -> TBM), then alphabetically
+        // Sort by reporting chain depth (depth 1 direct reportees, then depth 2, etc.)
         const sortedTeam = downlineTeam.map(t => {
             const dInfo = getDesignationInfo(t.designation);
             const addr = [t.streetAddress1, t.streetAddress2, t.city, t.state].filter(Boolean).join(', ') || t.hq || '-';
@@ -1869,13 +1870,14 @@ router.get('/user/hierarchy', async (req, res) => {
                 firstName: t.firstName,
                 lastName: t.lastName,
                 designation: t.designation || 'TBM',
+                depth: t.depth || 1,
                 level: dInfo.level,
                 badge: dInfo.badge,
                 hq: t.hq || '-',
                 division: t.division || user.division || 'CRITIZA',
                 phone: t.phone || '-',
                 email: t.email || '-',
-                reportingManager: t.reportingManager || manager?.name || '-',
+                reportingManager: t.reportingManager || (manager ? `${manager.firstName} ${manager.lastName}` : '-'),
                 dailyAllowance: t.dailyAllowance || 350,
                 exStationAllowance: t.exStationAllowance || 370,
                 outStationAllowance: t.outStationAllowance ? `₹${t.outStationAllowance}` : 'N/A',
@@ -1883,7 +1885,7 @@ router.get('/user/hierarchy', async (req, res) => {
                 status: t.status || 'Active'
             };
         }).sort((a, b) => {
-            if (b.level !== a.level) return b.level - a.level;
+            if ((a.depth || 1) !== (b.depth || 1)) return (a.depth || 1) - (b.depth || 1);
             return a.name.localeCompare(b.name);
         });
 
@@ -6302,15 +6304,57 @@ router.post('/approvals/action', async (req, res) => {
 router.get('/notifications', async (req, res) => {
     try {
         const { email } = req.query;
-        const notifications = await XlNotification.findAll({ where: { employeeId: email }, order: [['createdAt', 'DESC']], limit: 50 });
+        if (!email) return res.json({ success: true, data: [] });
+
+        const { Op } = require('sequelize');
+        const queryUser = await XlUser.findOne({
+            where: {
+                [Op.or]: [{ employeeId: email }, { email: email }, { uid: email }]
+            }
+        });
+
+        let ids = [email];
+        if (queryUser) {
+            if (queryUser.employeeId) ids.push(queryUser.employeeId);
+            if (queryUser.email) ids.push(queryUser.email);
+            if (queryUser.uid) ids.push(queryUser.uid);
+            const desigUpper = (queryUser.designation || '').toUpperCase();
+            if (queryUser.isAdmin || desigUpper === 'ADMIN' || desigUpper.includes('GM') || desigUpper.includes('GENERAL MANAGER') || desigUpper.includes('PRESIDENT')) {
+                ids.push('ADMIN');
+            }
+        }
+        ids = Array.from(new Set(ids));
+
+        const notifications = await XlNotification.findAll({
+            where: { employeeId: { [Op.in]: ids } },
+            order: [['createdAt', 'DESC']],
+            limit: 50
+        });
         res.json({ success: true, data: notifications });
-    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+    } catch(e) {
+        console.error('Fetch notifications error:', e);
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 router.post('/notifications/clear', async (req, res) => {
     try {
         const { email } = req.body;
-        await XlNotification.destroy({ where: { employeeId: email } });
+        if (!email) return res.json({ success: true });
+        const { Op } = require('sequelize');
+        const queryUser = await XlUser.findOne({
+            where: {
+                [Op.or]: [{ employeeId: email }, { email: email }, { uid: email }]
+            }
+        });
+        let ids = [email];
+        if (queryUser) {
+            if (queryUser.employeeId) ids.push(queryUser.employeeId);
+            if (queryUser.email) ids.push(queryUser.email);
+            if (queryUser.uid) ids.push(queryUser.uid);
+        }
+        ids = Array.from(new Set(ids));
+        await XlNotification.destroy({ where: { employeeId: { [Op.in]: ids } } });
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -6318,7 +6362,25 @@ router.post('/notifications/clear', async (req, res) => {
 router.post('/notifications/read', async (req, res) => {
     try {
         const { email } = req.body;
-        await XlNotification.update({ isRead: true }, { where: { employeeId: email, isRead: false } });
+        if (!email) return res.json({ success: true });
+        const { Op } = require('sequelize');
+        const queryUser = await XlUser.findOne({
+            where: {
+                [Op.or]: [{ employeeId: email }, { email: email }, { uid: email }]
+            }
+        });
+        let ids = [email];
+        if (queryUser) {
+            if (queryUser.employeeId) ids.push(queryUser.employeeId);
+            if (queryUser.email) ids.push(queryUser.email);
+            if (queryUser.uid) ids.push(queryUser.uid);
+            const desigUpper = (queryUser.designation || '').toUpperCase();
+            if (queryUser.isAdmin || desigUpper === 'ADMIN' || desigUpper.includes('GM') || desigUpper.includes('GENERAL MANAGER')) {
+                ids.push('ADMIN');
+            }
+        }
+        ids = Array.from(new Set(ids));
+        await XlNotification.update({ isRead: true }, { where: { employeeId: { [Op.in]: ids }, isRead: false } });
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -6687,19 +6749,44 @@ router.post('/call-plan/bulk', async (req, res) => {
             }
         }
         
-        // Notify manager of call plan update
+        // Notify manager of call plan update (like Medorn ERP)
         const mgrUser = userForId || await XlUser.findOne({ where: { employeeId } });
         const senderName = mgrUser ? (((mgrUser.firstName || '') + ' ' + (mgrUser.lastName || '')).trim() || mgrUser.name || employeeId) : employeeId;
+        const approverEmpIds = new Set();
         if (mgrUser && mgrUser.reportingManager) {
             const managers = await findReportingManagers(mgrUser.reportingManager);
             for (const m of managers) {
-                await XlNotification.create({
-                    _id: generateId(),
-                    employeeId: m.employeeId,
-                    title: 'Call Plan Updated',
-                    message: `${senderName} has submitted their Call Plan.`
-                }).catch(() => {});
+                if (m.employeeId) approverEmpIds.add(m.employeeId);
             }
+        }
+
+        // Add GM / Executive / Admin approvers so top corporate leadership gets notified
+        const topApprovers = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { isAdmin: true },
+                    sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), { [Op.like]: '%gm%' }),
+                    sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), { [Op.like]: '%general manager%' })
+                ],
+                status: 'Active'
+            },
+            attributes: ['employeeId'],
+            raw: true
+        });
+        topApprovers.forEach(u => {
+            if (u.employeeId && (!mgrUser || u.employeeId !== mgrUser.employeeId)) {
+                approverEmpIds.add(u.employeeId);
+            }
+        });
+        approverEmpIds.add('ADMIN');
+
+        for (const emp of approverEmpIds) {
+            await XlNotification.create({
+                _id: generateId(),
+                employeeId: emp,
+                title: 'New Call Plan For Approval',
+                message: `${senderName} added a new Call Plan`
+            }).catch(() => {});
         }
         
         // Notify the submitter
@@ -6708,13 +6795,6 @@ router.post('/call-plan/bulk', async (req, res) => {
             employeeId,
             title: 'Call Plan Submitted',
             message: `You have successfully submitted your Call Plan. It has been sent to your manager.`
-        }).catch(() => {});
-        
-        await XlNotification.create({
-            _id: generateId(),
-            employeeId: 'ADMIN',
-            title: 'Call Plan Updated',
-            message: `Call Plan submitted by ${senderName}.`
         }).catch(() => {});
 
         res.json({ success: true });
@@ -6818,26 +6898,42 @@ router.post('/call-plan/submit-all', async (req, res) => {
 
         const senderName = userForId ? (((userForId.firstName || '') + ' ' + (userForId.lastName || '')).trim() || userForId.name || employeeId) : employeeId;
 
-        // Notify reporting manager
+        // Notify reporting managers & GM / Executive approvers (like Medorn ERP)
+        const approverEmpIds = new Set();
         if (userForId && userForId.reportingManager) {
             const managers = await findReportingManagers(userForId.reportingManager);
             for (const m of managers) {
-                await XlNotification.create({
-                    _id: generateId(),
-                    employeeId: m.employeeId,
-                    title: 'Monthly Call Plan Submitted',
-                    message: `${senderName} has submitted their complete Call Plan for ${monthLong} ${yNum} (${plannedRecords.length} working days, ${totalPlannedCalls} doctor calls) for approval.`
-                }).catch(() => {});
+                if (m.employeeId) approverEmpIds.add(m.employeeId);
             }
         }
 
-        // Notify Admin
-        await XlNotification.create({
-            _id: generateId(),
-            employeeId: 'ADMIN',
-            title: 'Monthly Call Plan Submitted',
-            message: `${senderName} has submitted their complete Call Plan for ${monthLong} ${yNum} (${plannedRecords.length} working days, ${totalPlannedCalls} doctor calls).`
-        }).catch(() => {});
+        const topApprovers = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { isAdmin: true },
+                    sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), { [Op.like]: '%gm%' }),
+                    sequelize.where(sequelize.fn('LOWER', sequelize.col('designation')), { [Op.like]: '%general manager%' })
+                ],
+                status: 'Active'
+            },
+            attributes: ['employeeId'],
+            raw: true
+        });
+        topApprovers.forEach(u => {
+            if (u.employeeId && (!userForId || u.employeeId !== userForId.employeeId)) {
+                approverEmpIds.add(u.employeeId);
+            }
+        });
+        approverEmpIds.add('ADMIN');
+
+        for (const emp of approverEmpIds) {
+            await XlNotification.create({
+                _id: generateId(),
+                employeeId: emp,
+                title: 'New Call Plan For Approval',
+                message: `${senderName} added a new Call Plan`
+            }).catch(() => {});
+        }
 
         // Notify Submitter
         await XlNotification.create({

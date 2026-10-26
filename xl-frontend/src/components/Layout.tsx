@@ -72,10 +72,73 @@ export default function Layout() {
       .catch(err => console.error("Failed to load company profile", err));
   }, [navigate]);
 
+  // Mobile Push & System Tray Notification Sync (like Medorn ERP)
   useEffect(() => {
-    if (user?.uid) {
-        axios.get('/api/xl/notifications?email=' + user.employeeId).then(r => setNotifications(r.data.data || [])).catch(e => console.error(e));
+    if (!user) return;
+    const empId = user.employeeId || user.email || user.uid;
+    if (!empId) return;
+
+    // Prompt for browser notification permission on first load
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
     }
+
+    const checkAndTriggerNotifications = async () => {
+      try {
+        const res = await axios.get('/api/xl/notifications?email=' + encodeURIComponent(empId));
+        const list = res.data.data || [];
+        setNotifications(list);
+
+        // Check for new unread notifications to display in Android notification drawer
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          const storageKey = `xl_notified_${empId}`;
+          let notifiedIds = new Set<string>();
+          try {
+            const raw = localStorage.getItem(storageKey);
+            if (raw) notifiedIds = new Set(JSON.parse(raw));
+          } catch (e) {}
+
+          const unnotified = list.filter((n: any) => !n.isRead && !notifiedIds.has(n._id));
+          if (unnotified.length > 0) {
+            for (const item of unnotified) {
+              notifiedIds.add(item._id);
+
+              const notifTitle = item.title || 'New Call Plan For Approval';
+              const notifOptions: NotificationOptions = {
+                body: item.message,
+                icon: '/xl/favicon.svg',
+                badge: '/xl/favicon.svg',
+                vibrate: [200, 100, 200] as any,
+                tag: item._id,
+                data: { url: '/xl/approvals' }
+              };
+
+              if ('serviceWorker' in navigator) {
+                try {
+                  const reg = await navigator.serviceWorker.ready;
+                  await reg.showNotification(notifTitle, notifOptions);
+                } catch (swErr) {
+                  new Notification(notifTitle, notifOptions);
+                }
+              } else {
+                new Notification(notifTitle, notifOptions);
+              }
+            }
+
+            const cleanList = Array.from(notifiedIds).slice(-100);
+            localStorage.setItem(storageKey, JSON.stringify(cleanList));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll notifications:', err);
+      }
+    };
+
+    checkAndTriggerNotifications();
+    const notifTimer = setInterval(checkAndTriggerNotifications, 30000);
+    return () => clearInterval(notifTimer);
   }, [user]);
 
   
@@ -436,13 +499,37 @@ export default function Layout() {
             </button>
           </div>
           <div className="flex-1 p-3 space-y-3 pb-24">
+            {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
+              <div className="bg-gradient-to-r from-sky-500/20 to-emerald-500/20 border border-sky-400/30 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={18} className="text-sky-400" />
+                  <span className="text-xs text-white font-medium">Enable Android push alerts</span>
+                </div>
+                <button
+                  onClick={() => Notification.requestPermission()}
+                  className="text-xs bg-sky-500 hover:bg-sky-400 text-white font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                >
+                  Allow
+                </button>
+              </div>
+            )}
             {notifications.length === 0 ? (
               <div className="text-center text-slate-500 mt-10 text-sm">No new notifications</div>
             ) : (
               notifications.map((n:any) => {
                 const { datePart, timePart } = formatNotifDate(n.createdAt);
                 return (
-                  <div key={n._id} className="bg-[#292a40] rounded-xl p-3 flex gap-3 shadow-md border border-slate-700/50">
+                  <div
+                    key={n._id}
+                    onClick={() => {
+                      setShowNotifMenu(false);
+                      const text = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
+                      if (text.includes('approval') || text.includes('plan') || text.includes('tour') || text.includes('leave') || text.includes('expense')) {
+                        navigate('/approvals');
+                      }
+                    }}
+                    className="bg-[#292a40] hover:bg-[#343552] active:scale-[0.98] transition-all cursor-pointer rounded-xl p-3 flex gap-3 shadow-md border border-slate-700/50"
+                  >
                     <Bell className="text-emerald-400 mt-1 shrink-0" size={24} fill="currentColor" />
                     <div className="flex-1">
                       <h3 className="text-white font-bold text-[13px] leading-tight">{n.title}</h3>

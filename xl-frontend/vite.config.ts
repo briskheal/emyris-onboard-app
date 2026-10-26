@@ -12,7 +12,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         skipWaiting: true,
         clientsClaim: true,
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        importScripts: ['custom-sw.js']
       },
       manifest: {
         name: 'Emyris XL',
