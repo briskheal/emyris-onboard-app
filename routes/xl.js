@@ -15184,6 +15184,10 @@ router.post('/reminders', async (req, res) => {
         // Send Email(s) via Zoho SMTP if recipients exist
         let emailSent = false;
         let emailCount = 0;
+        let emailError = '';
+        const isOnlyMail = meetingMode === 'Only Mail' || meetingMode === 'Mail Only';
+        const isMeet = meetingMode === 'Google Meet';
+
         if (recipientEmails.length > 0 && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
                 const nodemailer = require('nodemailer');
@@ -15197,30 +15201,33 @@ router.post('/reminders', async (req, res) => {
                     }
                 });
 
+                const modeLabel = isOnlyMail ? '✉️ Email Reminder / Notice' : (isMeet ? '🎥 Google Meet Invite' : '📞 Conference Call (Concall)');
+                const modeTitleText = isOnlyMail ? 'Email Notice / Reminder' : meetingMode;
+
                 const buildHtml = (greetingName) => `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff;">
                         <div style="background: linear-gradient(135deg, #0f172a, #1e293b); color: #ffffff; padding: 20px 24px;">
                             <div style="font-size: 11px; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
-                                Emyris Biolifesciences • ${meetingMode === 'Google Meet' ? '🎥 Google Meet Invite' : '📞 Conference Call (Concall)'}
+                                Emyris Biolifesciences • ${modeLabel}
                             </div>
-                            <h2 style="margin: 6px 0 0; font-size: 20px;">${resolvedTitle}</h2>
+                            <h2 style="margin: 6px 0 0; font-size: 20px; color: #ffffff;">${resolvedTitle}</h2>
                         </div>
                         <div style="padding: 24px; background: #ffffff; color: #334155;">
-                            <p style="margin-top: 0;">Hello <strong>${greetingName}</strong>,</p>
-                            <p>You have been scheduled for a <strong>${meetingMode}</strong> reminder/meeting:</p>
+                            <p style="margin-top: 0; font-size: 15px;">Hello <strong>${greetingName}</strong>,</p>
+                            <p style="font-size: 14px; line-height: 1.5;">${isOnlyMail ? 'You have received an official reminder / notification from Emyris Biolifesciences:' : `You have been scheduled for a <strong>${meetingMode}</strong> reminder/meeting:`}</p>
                             <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 16px; border-radius: 6px; margin: 16px 0;">
-                                <p style="margin: 4px 0;"><strong>📅 Date:</strong> ${displayDate}</p>
-                                <p style="margin: 4px 0;"><strong>⏰ Time:</strong> ${time || '09:45'}</p>
-                                <p style="margin: 4px 0;"><strong>📌 Mode:</strong> ${meetingMode}</p>
-                                <p style="margin: 4px 0;"><strong>👥 Participants:</strong> ${participants.map(p => p.name).join(', ')}</p>
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>📅 Date:</strong> ${displayDate}</p>
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>⏰ Time:</strong> ${time || '09:45'}</p>
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>📌 Mode:</strong> ${modeTitleText}</p>
+                                <p style="margin: 4px 0; font-size: 13px;"><strong>👥 Participants:</strong> ${participants.map(p => p.name).join(', ')}</p>
                             </div>
                             ${resolvedRemarks ? `
                                 <div style="margin: 16px 0;">
                                     <div style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Message / Agenda:</div>
-                                    <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 12px 14px; border-radius: 8px; color: #1e293b; white-space: pre-line;">${resolvedRemarks}</div>
+                                    <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 12px 14px; border-radius: 8px; color: #1e293b; white-space: pre-line; font-size: 14px; line-height: 1.5;">${resolvedRemarks}</div>
                                 </div>
                             ` : ''}
-                            ${meetingMode === 'Google Meet' ? `
+                            ${isMeet ? `
                                 <div style="margin-top: 22px; text-align: center;">
                                     <a href="${finalMeetLink}" style="display: inline-block; background: #0284c7; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 8px; margin-right: 8px;">
                                         🎥 Join Google Meet
@@ -15232,19 +15239,31 @@ router.post('/reminders', async (req, res) => {
                                 <p style="font-size: 12px; color: #64748b; margin-top: 14px; text-align: center;">
                                     Google Meet Link: <a href="${finalMeetLink}" style="color: #0284c7;">${finalMeetLink}</a>
                                 </p>
-                            ` : ''}
+                            ` : (calendarLink ? `
+                                <div style="margin-top: 20px; text-align: center;">
+                                    <a href="${calendarLink}" style="display: inline-block; background: #0284c7; color: #ffffff; text-decoration: none; font-weight: bold; padding: 10px 20px; border-radius: 8px; font-size: 13px;">
+                                        📅 Add to Google Calendar
+                                    </a>
+                                </div>
+                            ` : '')}
+                        </div>
+                        <div style="padding: 12px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center;">
+                            Emyris XL Notification System
                         </div>
                     </div>
                 `;
 
                 const fromAddr = process.env.EMAIL_FROM || `"Emyris Biolifesciences" <${process.env.EMAIL_USER}>`;
+                const subjectPrefix = isOnlyMail ? '[Email Notice]' : (isMeet ? '[Google Meet]' : '[Concall]');
+                const emailSubject = `${subjectPrefix} ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`;
+
                 if (emailDeliveryMode === 'individual') {
                     for (const p of participants) {
                         if (!p.email || !p.email.includes('@')) continue;
                         await transporter.sendMail({
                             from: fromAddr,
                             to: p.email.trim(),
-                            subject: `[${meetingMode}] ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`,
+                            subject: emailSubject,
                             html: buildHtml(p.name)
                         });
                         emailCount++;
@@ -15253,7 +15272,7 @@ router.post('/reminders', async (req, res) => {
                     await transporter.sendMail({
                         from: fromAddr,
                         to: recipientEmails.join(', '),
-                        subject: `[${meetingMode}] ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`,
+                        subject: emailSubject,
                         html: buildHtml('Team')
                     });
                     emailCount = recipientEmails.length;
@@ -15307,8 +15326,8 @@ router.post('/reminders', async (req, res) => {
                 for (const nt of notifTargets) {
                     await XlNotification.create({
                         employeeId: nt,
-                        title: `${meetingMode}: ${resolvedTitle}`,
-                        message: `${displayDate} at ${time || '09:45'} — ${resolvedRemarks || 'Scheduled meeting'}${meetingMode === 'Google Meet' && finalMeetLink ? ` | Meet: ${finalMeetLink}` : ''}`
+                        title: `${isOnlyMail ? 'Email Notice' : meetingMode}: ${resolvedTitle}`,
+                        message: `${displayDate} at ${time || '09:45'} — ${resolvedRemarks || 'Scheduled notification'}${isMeet && finalMeetLink ? ` | Meet: ${finalMeetLink}` : ''}`
                     });
                 }
             } catch (nErr) {}

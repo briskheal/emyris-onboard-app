@@ -5076,7 +5076,13 @@ router.delete('/locations/designations/:id', async (req, res) => {
 // ---- Users ----
 router.get('/users', async (req, res) => {
     try {
-        const users = await XlUser.findAll({ order: [['createdAt', 'DESC']] });
+        const { activeOnly, status } = req.query;
+        const where = {};
+        if (activeOnly === 'true' || status === 'Active') {
+            const { Op } = require('sequelize');
+            where.status = { [Op.notIn]: ['Deactivated', 'Inactive', 'Blocked', 'deactivated', 'inactive'] };
+        }
+        const users = await XlUser.findAll({ where, order: [['createdAt', 'DESC']] });
         res.json({ success: true, users });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });

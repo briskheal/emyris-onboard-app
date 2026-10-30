@@ -489,9 +489,17 @@ app.use((req, res) => {
         console.error(`[404] API route not found: ${req.method} ${req.url}`);
         res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
     } else if (req.url.startsWith('/xla')) {
+        const urlWithoutQuery = req.url.split('?')[0];
+        if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
+            return res.status(404).send('Not Found');
+        }
         // SPA fallback for /xla admin module
         res.sendFile(path.join(__dirname, 'xla-frontend', 'dist', 'index.html'));
     } else if (req.url.startsWith('/xl')) {
+        const urlWithoutQuery = req.url.split('?')[0];
+        if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
+            return res.status(404).send('Not Found');
+        }
         // SPA fallback for /xl module (React Router)
         res.sendFile(path.join(__dirname, 'xl-frontend', 'dist', 'index.html'));
     } else if (req.url.startsWith('/admin')) {

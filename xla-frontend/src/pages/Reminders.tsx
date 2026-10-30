@@ -36,7 +36,7 @@ export default function Reminders() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const DEFAULT_MEET_LINK = 'https://meet.google.com/gzo-dhjh-okf';
-  const [meetingMode, setMeetingMode] = useState<'Google Meet' | 'Concall'>('Google Meet');
+  const [meetingMode, setMeetingMode] = useState<'Google Meet' | 'Concall' | 'Only Mail'>('Google Meet');
   const [meetLink, setMeetLink] = useState(() => localStorage.getItem('xla_saved_meet_link') || DEFAULT_MEET_LINK);
   const [emailDeliveryMode, setEmailDeliveryMode] = useState<'group' | 'individual'>('group');
   const [time, setTime] = useState('09:45');
@@ -88,19 +88,30 @@ export default function Reminders() {
   };
 
   useEffect(() => {
+    const isUserActive = (u: any) => {
+      if (!u) return false;
+      const status = String(u.status || '').toLowerCase().trim();
+      if (status === 'deactivated' || status === 'de-activated' || status === 'inactive' || status === 'blocked') {
+        return false;
+      }
+      if (u.isLocked || u.locked) return false;
+      if (u.controls && (u.controls.locked || u.controls.isLocked)) return false;
+      return true;
+    };
+
     const loadUsers = async () => {
       try {
-        const res = await axios.get('/api/admin/users', {
+        const res = await axios.get('/api/admin/users?activeOnly=true', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const list = Array.isArray(res.data) ? res.data : (res.data?.users || res.data?.data || []);
-        const active = list.filter((u: any) => u.status !== 'Blocked');
+        const active = list.filter(isUserActive);
         setUsers(active);
       } catch (err) {
         try {
           const fallback = await axios.get('/api/xl/admin/users');
           const list = Array.isArray(fallback.data) ? fallback.data : (fallback.data?.users || fallback.data?.data || []);
-          setUsers(list.filter((u: any) => u.status !== 'Blocked'));
+          setUsers(list.filter(isUserActive));
         } catch (e2) {
           console.error(e2);
         }
@@ -260,6 +271,8 @@ export default function Reminders() {
   };
 
   const handleAddReminder = async () => {
+    if (submitting) return;
+
     if (!title.trim()) {
       showToast('Please enter a Reminder Title.', 'error');
       return;
@@ -268,12 +281,13 @@ export default function Reminders() {
       showToast('Please select at least one user from the dropdown.', 'error');
       return;
     }
+
     const cleanedMeetLink = extractMeetUrl(meetLink);
-    if (meetingMode === 'Google Meet' && (!cleanedMeetLink || !/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(cleanedMeetLink))) {
-      showToast('Please click "Create Room" to open Google Meet, copy the real room link, and paste it into the Google Meet Link box.', 'error');
-      return;
-    }
-    if (cleanedMeetLink && /meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(cleanedMeetLink)) {
+    if (meetingMode === 'Google Meet') {
+      if (!cleanedMeetLink || !/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(cleanedMeetLink)) {
+        showToast('Please click "New Room" to open Google Meet, copy the real room link, and paste it into the Google Meet Link box.', 'error');
+        return;
+      }
       localStorage.setItem('xla_saved_meet_link', cleanedMeetLink);
     }
 
@@ -294,13 +308,13 @@ export default function Reminders() {
       if (res.data?.success) {
         if (res.data.emailSent) {
           const recList = (res.data.recipientEmails || []).join(', ');
-          showToast(`Reminder scheduled & email sent to ${res.data.emailCount} user(s)${recList ? `: ${recList}` : ''}!`, 'success');
+          showToast(`Reminder scheduled & email successfully delivered to ${res.data.emailCount} recipient(s)${recList ? `: ${recList}` : ''}!`, 'success');
         } else {
-          showToast(`Reminder scheduled, but email could not be delivered: ${res.data.emailError || 'No email recipients found'}`, 'error');
+          showToast(`Reminder scheduled successfully${res.data.emailError ? ` (Mail notice: ${res.data.emailError})` : ''}.`, res.data.emailError ? 'error' : 'success');
         }
         setTitle('');
         setDescription('');
-        setMeetLink(cleanedMeetLink);
+        if (cleanedMeetLink) setMeetLink(cleanedMeetLink);
         setSelectedUserIds([]);
         fetchReminders();
       }
@@ -629,38 +643,51 @@ export default function Reminders() {
                   )}
                 </div>
 
-                {/* TWO MODE BOX OPTIONS: Option 1 Google Meet | Option 2 Concall */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* 3 MODE OPTIONS: Google Meet | Concall | Only Mail */}
+                <div className="grid grid-cols-3 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setMeetingMode('Google Meet')}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 font-bold text-xs transition-all ${
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 font-bold text-xs transition-all ${
                       meetingMode === 'Google Meet'
                         ? 'bg-sky-500/15 border-sky-500 text-white shadow-md shadow-sky-500/10'
                         : 'bg-[#2c2f45] border-slate-700/60 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <Video size={16} className={meetingMode === 'Google Meet' ? 'text-sky-400' : 'text-slate-400'} />
+                    <Video size={15} className={meetingMode === 'Google Meet' ? 'text-sky-400' : 'text-slate-400'} />
                     <span>Google Meet</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setMeetingMode('Concall')}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 font-bold text-xs transition-all ${
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 font-bold text-xs transition-all ${
                       meetingMode === 'Concall'
                         ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
                         : 'bg-[#2c2f45] border-slate-700/60 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <PhoneCall size={16} className={meetingMode === 'Concall' ? 'text-emerald-400' : 'text-slate-400'} />
+                    <PhoneCall size={15} className={meetingMode === 'Concall' ? 'text-emerald-400' : 'text-slate-400'} />
                     <span>Concall</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMeetingMode('Only Mail')}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 font-bold text-xs transition-all ${
+                      meetingMode === 'Only Mail'
+                        ? 'bg-amber-500/15 border-amber-500 text-white shadow-md shadow-amber-500/10'
+                        : 'bg-[#2c2f45] border-slate-700/60 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Mail size={15} className={meetingMode === 'Only Mail' ? 'text-amber-400' : 'text-slate-400'} />
+                    <span>Only Mail</span>
                   </button>
                 </div>
 
-                {/* GOOGLE MEET LINK & EMAIL SELECTION PANEL */}
+                {/* GOOGLE MEET LINK PANEL (ONLY WHEN GOOGLE MEET SELECTED) */}
                 {meetingMode === 'Google Meet' && (
-                  <div className="bg-[#1b1d2b] border border-sky-500/30 rounded-xl p-3 space-y-2.5">
+                  <div className="bg-[#1b1d2b] border border-sky-500/30 rounded-xl p-3 space-y-2">
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
@@ -673,7 +700,7 @@ export default function Reminders() {
                         type="button"
                         onClick={handleGenerateMeetLink}
                         className="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 shrink-0 transition-colors"
-                        title="Open meet.google.com/new to create another room if needed"
+                        title="Open meet.google.com/new to create a fresh room"
                       >
                         <ExternalLink size={12} />
                         <span>New Room</span>
@@ -688,91 +715,123 @@ export default function Reminders() {
                         <span>Paste</span>
                       </button>
                     </div>
-
-                    {/* Email Delivery Mode & Recipient Tick-boxes */}
-                    <div className="space-y-1.5 pt-1.5 border-t border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
-                          <Mail size={13} className="text-sky-400" />
-                          Share via Email ({selectedEmails.length} selected):
-                        </span>
-                        <div className="flex items-center gap-1.5 text-[11px]">
-                          <button
-                            type="button"
-                            onClick={() => setEmailDeliveryMode('group')}
-                            className={`px-2.5 py-0.5 rounded-md font-bold transition ${
-                              emailDeliveryMode === 'group'
-                                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            One Group Email
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEmailDeliveryMode('individual')}
-                            className={`px-2.5 py-0.5 rounded-md font-bold transition ${
-                              emailDeliveryMode === 'individual'
-                                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Individual Emails
-                          </button>
-                        </div>
-                      </div>
-
-                      {selectedUsersList.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pt-1">
-                          {selectedUsersList.map(u => {
-                            const hasEmail = Boolean(u.email && u.email.includes('@'));
-                            const isEmailChecked = hasEmail && selectedEmails.includes(u.email);
-                            return (
-                              <button
-                                key={u.id}
-                                type="button"
-                                disabled={!hasEmail}
-                                onClick={() => hasEmail && toggleEmailSelection(u.email)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold border transition ${
-                                  !hasEmail
-                                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-500 cursor-not-allowed'
-                                    : isEmailChecked
-                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                                    : 'bg-slate-800 border-slate-700 text-slate-400'
-                                }`}
-                              >
-                                {isEmailChecked ? <CheckSquare size={11} /> : <Square size={11} />}
-                                <span>{u.firstName}: {u.email || 'No email'}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
+
+                {/* EMAIL RECIPIENT & DISPATCH PANEL (ACTIVE FOR ALL MODES) */}
+                <div className="bg-[#1b1d2b] border border-slate-700/60 rounded-xl p-3 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                      <Mail size={13} className={meetingMode === 'Only Mail' ? 'text-amber-400' : 'text-sky-400'} />
+                      <span>{meetingMode === 'Only Mail' ? 'Email Recipients' : 'Share via Email'} ({selectedEmails.length} selected):</span>
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setEmailDeliveryMode('group')}
+                        className={`px-2.5 py-0.5 rounded-md font-bold transition ${
+                          emailDeliveryMode === 'group'
+                            ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        One Group Email
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEmailDeliveryMode('individual')}
+                        className={`px-2.5 py-0.5 rounded-md font-bold transition ${
+                          emailDeliveryMode === 'individual'
+                            ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Individual Emails
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedUsersList.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">Select users above to include their email addresses.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-1">
+                      {selectedUsersList.map(u => {
+                        const hasEmail = Boolean(u.email && u.email.includes('@'));
+                        const isEmailChecked = hasEmail && selectedEmails.includes(u.email);
+                        return (
+                          <button
+                            key={u.id}
+                            type="button"
+                            disabled={!hasEmail}
+                            onClick={() => hasEmail && toggleEmailSelection(u.email)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold border transition ${
+                              !hasEmail
+                                ? 'bg-slate-800/50 border-slate-700/50 text-slate-500 cursor-not-allowed'
+                                : isEmailChecked
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                : 'bg-slate-800 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            {isEmailChecked ? <CheckSquare size={11} /> : <Square size={11} />}
+                            <span>{u.firstName}: {u.email || 'No email'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Integrated Footer with Default Room Link + Add Reminder Button */}
+              {/* Active Sending Feedback Banner */}
+              {submitting && (
+                <div className="bg-sky-500/15 border border-sky-500/40 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                  <div className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-bold text-sky-300">Dispatching Email & Scheduling Reminder...</p>
+                    <p className="text-slate-400 text-[11px]">Connecting to mail server & delivering invitations to {selectedEmails.length > 0 ? selectedEmails.length : selectedUserIds.length} participant(s). Please do not click again.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Integrated Footer with Mode Badge + Add Reminder Button */}
               <div className="pt-3 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
-                <a
-                  href={meetLink || DEFAULT_MEET_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-bold text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/30 px-3 py-2 rounded-xl transition-colors"
-                >
-                  <Video size={14} />
-                  <span>Active Room: {(meetLink || DEFAULT_MEET_LINK).replace('https://', '')}</span>
-                  <ExternalLink size={12} />
-                </a>
+                {meetingMode === 'Google Meet' ? (
+                  <a
+                    href={meetLink || DEFAULT_MEET_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/30 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    <Video size={14} />
+                    <span>Active Room: {(meetLink || DEFAULT_MEET_LINK).replace('https://', '')}</span>
+                    <ExternalLink size={12} />
+                  </a>
+                ) : meetingMode === 'Only Mail' ? (
+                  <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-2 rounded-xl">
+                    <Mail size={14} />
+                    <span>Only Mail Mode (No Google Meet Link)</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 rounded-xl">
+                    <PhoneCall size={14} />
+                    <span>Conference Call (Concall)</span>
+                  </div>
+                )}
 
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={handleAddReminder}
-                  className="border border-emerald-500/80 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs uppercase tracking-wider px-8 py-2.5 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                  className="border border-emerald-500/80 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-xs uppercase tracking-wider px-8 py-2.5 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {submitting ? 'Scheduling & Sending...' : '+ Add Reminder'}
+                  {submitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <span>Sending Mails ({selectedEmails.length})...</span>
+                    </>
+                  ) : (
+                    <span>+ Add Reminder</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -858,11 +917,13 @@ export default function Reminders() {
                               </span>
                             )}
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
-                              rem.meetingMode === 'Concall'
+                              rem.meetingMode === 'Only Mail'
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                : rem.meetingMode === 'Concall'
                                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                                 : 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                             }`}>
-                              {rem.meetingMode === 'Concall' ? <PhoneCall size={10} /> : <Video size={10} />}
+                              {rem.meetingMode === 'Only Mail' ? <Mail size={10} /> : (rem.meetingMode === 'Concall' ? <PhoneCall size={10} /> : <Video size={10} />)}
                               {rem.meetingMode || 'Google Meet'}
                             </span>
 
@@ -954,6 +1015,10 @@ export default function Reminders() {
                             <span>{copiedId === gId ? 'Copied' : 'Copy'}</span>
                           </button>
                         </div>
+                      ) : rem.meetingMode === 'Only Mail' ? (
+                        <span className="text-[11px] font-semibold text-amber-400 flex items-center gap-1">
+                          <Mail size={12} /> Email Notice Sent
+                        </span>
                       ) : (
                         <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
                           <PhoneCall size={12} /> Audio Concall Scheduled
