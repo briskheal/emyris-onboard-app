@@ -14931,7 +14931,13 @@ router.get('/profit-center/analytics', async (req, res) => {
 router.get('/admin/users', async (req, res) => {
     try {
         const { XlUser } = require('../db');
-        const users = await XlUser.findAll({ order: [['firstName', 'ASC']] });
+        const { Op } = require('sequelize');
+        const { includeDeactivated, all } = req.query;
+        const where = {};
+        if (includeDeactivated !== 'true' && all !== 'true') {
+            where.status = { [Op.notIn]: ['Deactivated', 'Inactive', 'Blocked', 'deactivated', 'inactive'] };
+        }
+        const users = await XlUser.findAll({ where, order: [['firstName', 'ASC']] });
         res.json({ success: true, users });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
@@ -14941,7 +14947,13 @@ router.get('/admin/users', async (req, res) => {
 router.get('/users', async (req, res) => {
     try {
         const { XlUser } = require('../db');
-        const users = await XlUser.findAll({ order: [['firstName', 'ASC']] });
+        const { Op } = require('sequelize');
+        const { includeDeactivated, all } = req.query;
+        const where = {};
+        if (includeDeactivated !== 'true' && all !== 'all' && all !== 'true') {
+            where.status = { [Op.notIn]: ['Deactivated', 'Inactive', 'Blocked', 'deactivated', 'inactive'] };
+        }
+        const users = await XlUser.findAll({ where, order: [['firstName', 'ASC']] });
         res.json({ success: true, users });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
@@ -15108,7 +15120,8 @@ router.post('/reminders', async (req, res) => {
             meetingMode = 'Google Meet',
             meetLink = '',
             emailDeliveryMode = 'group',
-            selectedEmails = []
+            selectedEmails = [],
+            attachments = []
         } = req.body;
 
         const resolvedTitle = title || doctorName || entityName;
@@ -15227,6 +15240,12 @@ router.post('/reminders', async (req, res) => {
                                     <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 12px 14px; border-radius: 8px; color: #1e293b; white-space: pre-line; font-size: 14px; line-height: 1.5;">${resolvedRemarks}</div>
                                 </div>
                             ` : ''}
+                            ${Array.isArray(attachments) && attachments.length > 0 ? `
+                                <div style="margin: 16px 0; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 14px; border-radius: 8px;">
+                                    <div style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase; margin-bottom: 6px;">📎 Attached Documents / Files:</div>
+                                    ${attachments.map(a => `<div style="font-size: 13px; color: #15803d; font-weight: 600; margin: 3px 0;">• ${a.filename}</div>`).join('')}
+                                </div>
+                            ` : ''}
                             ${isMeet ? `
                                 <div style="margin-top: 22px; text-align: center;">
                                     <a href="${finalMeetLink}" style="display: inline-block; background: #0284c7; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 8px; margin-right: 8px;">
@@ -15257,6 +15276,15 @@ router.post('/reminders', async (req, res) => {
                 const subjectPrefix = isOnlyMail ? '[Email Notice]' : (isMeet ? '[Google Meet]' : '[Concall]');
                 const emailSubject = `${subjectPrefix} ${resolvedTitle} — ${displayDate} at ${time || '09:45'}`;
 
+                const mailAttachments = (Array.isArray(attachments) ? attachments : []).map(a => {
+                    const cleanBase64 = String(a.content || '').replace(/^data:[^;]+;base64,/, '');
+                    return {
+                        filename: a.filename || 'attachment',
+                        content: Buffer.from(cleanBase64, 'base64'),
+                        contentType: a.contentType || undefined
+                    };
+                });
+
                 if (emailDeliveryMode === 'individual') {
                     for (const p of participants) {
                         if (!p.email || !p.email.includes('@')) continue;
@@ -15264,7 +15292,8 @@ router.post('/reminders', async (req, res) => {
                             from: fromAddr,
                             to: p.email.trim(),
                             subject: emailSubject,
-                            html: buildHtml(p.name)
+                            html: buildHtml(p.name),
+                            attachments: mailAttachments
                         });
                         emailCount++;
                     }
@@ -15273,7 +15302,8 @@ router.post('/reminders', async (req, res) => {
                         from: fromAddr,
                         to: recipientEmails.join(', '),
                         subject: emailSubject,
-                        html: buildHtml('Team')
+                        html: buildHtml('Team'),
+                        attachments: mailAttachments
                     });
                     emailCount = recipientEmails.length;
                 }
@@ -15300,7 +15330,8 @@ router.post('/reminders', async (req, res) => {
             emailCount,
             emailError,
             recipientEmails,
-            emailDeliveryMode
+            emailDeliveryMode,
+            attachments: (Array.isArray(attachments) ? attachments : []).map(a => ({ filename: a.filename, size: a.size, contentType: a.contentType }))
         });
 
         const createdRecords = [];

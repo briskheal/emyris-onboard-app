@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Clock, Trash2, CheckSquare, Square,
-  Video, PhoneCall, Mail, ExternalLink, CheckCircle2, AlarmClock, X, Copy, Check
+  Video, PhoneCall, Mail, ExternalLink, CheckCircle2, AlarmClock, X, Copy, Check, Paperclip
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -43,6 +43,47 @@ export default function Reminders() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<{ filename: string; content: string; contentType: string; size: number }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      if (file.size > 15 * 1024 * 1024) {
+        showToast(`File "${file.name}" exceeds 15MB limit.`, 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setAttachments(prev => [
+          ...prev,
+          {
+            filename: file.name,
+            content: base64,
+            contentType: file.type || 'application/octet-stream',
+            size: file.size
+          }
+        ]);
+        showToast(`Attached: ${file.name}`, 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
+  };
 
   // Reminders List & Live Clock for Auto-Expiring Completed Meetings
   const [reminders, setReminders] = useState<any[]>([]);
@@ -302,7 +343,8 @@ export default function Reminders() {
         meetingMode,
         meetLink: meetingMode === 'Google Meet' ? cleanedMeetLink : '',
         emailDeliveryMode,
-        selectedEmails
+        selectedEmails,
+        attachments
       });
 
       if (res.data?.success) {
@@ -314,6 +356,7 @@ export default function Reminders() {
         }
         setTitle('');
         setDescription('');
+        setAttachments([]);
         if (cleanedMeetLink) setMeetLink(cleanedMeetLink);
         setSelectedUserIds([]);
         fetchReminders();
@@ -517,6 +560,60 @@ export default function Reminders() {
                   onChange={e => setDescription(e.target.value)}
                   className="w-full bg-[#2c2f45] border border-slate-700/60 focus:border-sky-500 rounded-xl px-4 py-2.5 text-sm font-medium text-white placeholder:text-slate-400 focus:outline-none transition-colors resize-y"
                 />
+
+                {/* Email Attachment Section */}
+                <div className="bg-[#1b1d2b] border border-slate-700/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Paperclip size={15} className="text-sky-400" />
+                      <span className="text-xs font-bold text-slate-300">
+                        Email Attachments {attachments.length > 0 && `(${attachments.length})`}
+                      </span>
+                      <span className="text-[10px] text-slate-500 hidden sm:inline">
+                        • Send files directly with the email (PDF, Excel, Word, Images, etc.)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors active:scale-95"
+                    >
+                      <Paperclip size={12} />
+                      <span>Attach File</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.zip,.txt"
+                    />
+                  </div>
+
+                  {attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {attachments.map((att, idx) => (
+                        <div
+                          key={idx}
+                          className="inline-flex items-center gap-2 bg-[#25283c] border border-sky-500/40 text-sky-200 text-xs px-2.5 py-1 rounded-lg shadow-sm"
+                        >
+                          <Paperclip size={12} className="text-sky-400 shrink-0" />
+                          <span className="max-w-[180px] truncate font-medium">{att.filename}</span>
+                          <span className="text-[10px] text-slate-400">({formatFileSize(att.size)})</span>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(idx)}
+                            className="text-slate-400 hover:text-rose-400 transition-colors ml-0.5"
+                            title="Remove attachment"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Multi-Select User Dropdown with Inline Search & Tick-boxes */}
                 <div className="relative" ref={dropdownRef}>
@@ -927,7 +1024,16 @@ export default function Reminders() {
                               {rem.meetingMode || 'Google Meet'}
                             </span>
 
-                            {rem.emailSent ? (
+                            {rem.attachments && rem.attachments.length > 0 && (
+                                <span 
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                                  title={rem.attachments.map((a:any) => a.filename).join(', ')}
+                                >
+                                  <Paperclip size={10} className="text-sky-400" />
+                                  <span>{rem.attachments.length} File{rem.attachments.length > 1 ? 's' : ''}</span>
+                                </span>
+                              )}
+                              {rem.emailSent ? (
                               <span 
                                 className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm cursor-help"
                                 title={`Email delivered to: ${(rem.recipientEmails || []).join(', ') || 'recipients'}`}

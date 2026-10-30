@@ -131,7 +131,7 @@ function AccessControlTab() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/admin/users');
+      const res = await axios.get('/api/admin/users?includeDeactivated=true');
       if (res.data.success) {
         setUsers(res.data.users || []);
       }
@@ -778,7 +778,7 @@ function UploadTargetTab() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/admin/users');
+      const res = await axios.get('/api/admin/users?includeDeactivated=true');
       if (res.data.success) {
         setUsers(res.data.users || []);
       }
@@ -1129,7 +1129,7 @@ useEffect(() => {
       axios.get('/api/admin/locations/designations'),
       axios.get('/api/admin/locations/divisions'),
       axios.get('/api/admin/applicants'),
-      axios.get('/api/admin/users'),
+      axios.get('/api/admin/users?includeDeactivated=true'),
       axios.get('/api/admin/admins')
     ]).then(([hqRes, dsgRes, divRes, appRes, usersRes, adminsRes]) => {
       if (hqRes.data.success) setHqs(hqRes.data.hqs);
@@ -2931,7 +2931,7 @@ function EditDeleteTab() {
     try {
       const [adminsRes, usersRes] = await Promise.all([
         axios.get('/api/admin/admins'),
-        axios.get('/api/admin/users')
+        axios.get('/api/admin/users?includeDeactivated=true')
       ]);
       let all: any[] = [];
       if (adminsRes.data && adminsRes.data.success) all = [...all, ...adminsRes.data.admins.map((x:any) => ({...x, isAdmin: true}))];

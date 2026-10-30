@@ -5076,9 +5076,10 @@ router.delete('/locations/designations/:id', async (req, res) => {
 // ---- Users ----
 router.get('/users', async (req, res) => {
     try {
-        const { activeOnly, status } = req.query;
+        const { includeDeactivated, all, status, activeOnly } = req.query;
         const where = {};
-        if (activeOnly === 'true' || status === 'Active') {
+        // Default to active users only unless explicitly asked to include deactivated
+        if (includeDeactivated !== 'true' && all !== 'true' && status !== 'All') {
             const { Op } = require('sequelize');
             where.status = { [Op.notIn]: ['Deactivated', 'Inactive', 'Blocked', 'deactivated', 'inactive'] };
         }
