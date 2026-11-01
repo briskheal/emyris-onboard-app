@@ -114,6 +114,11 @@ await XlTarget.sync({ alter: true });
         try { await sequelize.query('ALTER TABLE xl_users ADD COLUMN IF NOT EXISTS "deactivateDate" VARCHAR(255);'); } catch(e) {}
         try { await sequelize.query('ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "deactivateReason" VARCHAR(255);'); } catch(e) {}
         try { await sequelize.query('ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "deactivateDate" VARCHAR(255);'); } catch(e) {}
+                try { await sequelize.query('ALTER TABLE xl_performance_analyses ADD COLUMN IF NOT EXISTS "status" VARCHAR(50) DEFAULT \'Pending\';'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_performance_analyses ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_performance_analyses ADD COLUMN IF NOT EXISTS "approvedBy" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_performance_analyses ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;'); } catch(e) {}
+        await XlPerformanceAnalysis.sync({ alter: true }).catch(() => {});
         await XlStockist.sync({ alter: true }).catch(() => {});
         await XlProduct.sync({ alter: true }).catch(() => {});
         try {

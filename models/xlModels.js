@@ -535,6 +535,10 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         
         planningSubmittedAt: { type: DataTypes.DATE },
         unlockRequested: { type: DataTypes.BOOLEAN, defaultValue: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        approvedAt: { type: DataTypes.DATE },
+        approvedBy: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.TEXT },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 

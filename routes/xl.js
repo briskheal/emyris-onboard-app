@@ -5073,14 +5073,43 @@ router.post('/performance/request-unlock', async (req, res) => {
     }
 });
 
+// Approve the plan (Admin)
+router.post('/performance/approve', async (req, res) => {
+    try {
+        const { id, remarks, approvedBy } = req.body;
+        const perf = await XlPerformanceAnalysis.findByPk(id);
+        if (!perf) return res.status(404).json({ error: 'Performance plan not found' });
+        perf.status = 'Approved';
+        perf.approvedAt = new Date();
+        perf.approvedBy = approvedBy || (req.user && req.user.name) || 'Admin';
+        perf.adminRemarks = remarks || '';
+        perf.unlockRequested = false;
+        await perf.save();
+        res.json({ success: true, message: 'Plan approved successfully!' });
+    } catch (e) {
+        console.error('Failed to approve plan:', e);
+        res.status(500).json({ error: 'Failed to approve plan' });
+    }
+});
+
 // Release / unlock the plan (Admin)
 router.post('/performance/release', async (req, res) => {
     try {
-        const { id } = req.body;
-        await XlPerformanceAnalysis.update({ 
-            planningSubmittedAt: null,
-            unlockRequested: false
-        }, { where: { _id: id } });
+        const { id, remarks } = req.body;
+        const perf = await XlPerformanceAnalysis.findByPk(id);
+        if (perf) {
+            perf.planningSubmittedAt = null;
+            perf.unlockRequested = false;
+            perf.status = 'Unlocked';
+            if (remarks) perf.adminRemarks = remarks;
+            await perf.save();
+        } else {
+            await XlPerformanceAnalysis.update({ 
+                planningSubmittedAt: null,
+                unlockRequested: false,
+                status: 'Unlocked'
+            }, { where: { _id: id } });
+        }
         res.json({ success: true, message: 'Plan unlocked successfully!' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to unlock plan' });
@@ -5489,9 +5518,14 @@ router.get('/approvals/counts', async (req, res) => {
         await safeCount('Geo Fencing', () => XlGeoFencing.count({ where: empCondition }));
 
         await safeCount('Performance KPI', () => XlPerformanceAnalysis.count({
-            where: isAdmin 
-                ? { planningSubmittedAt: { [Op.ne]: null } } 
-                : { planningSubmittedAt: { [Op.ne]: null }, employeeId: empIn }
+            where: {
+                ...(isAdmin ? {} : { employeeId: empIn }),
+                planningSubmittedAt: { [Op.ne]: null },
+                [Op.or]: [
+                    { status: null },
+                    { status: { [Op.notIn]: ['Approved', 'Rejected'] } }
+                ]
+            }
         }));
         
         res.json({ success: true, counts, ...(Object.keys(countErrors).length > 0 ? { countErrors } : {}) });
@@ -5548,24 +5582,51 @@ router.get('/approvals/pending', async (req, res) => {
 
         if (type === 'Performance KPI') {
             const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
+            const reqStatus = req.query.status || 'Pending';
+            let statusCondition = {};
+            if (reqStatus === 'History') {
+                statusCondition = {
+                    [Op.or]: [
+                        { status: { [Op.in]: ['Approved', 'Rejected', 'Unlocked'] } },
+                        { planningSubmittedAt: null }
+                    ]
+                };
+            } else {
+                statusCondition = {
+                    planningSubmittedAt: { [Op.ne]: null },
+                    [Op.or]: [
+                        { status: null },
+                        { status: { [Op.notIn]: ['Approved', 'Rejected'] } }
+                    ]
+                };
+            }
+
             const perfs = await XlPerformanceAnalysis.findAll({
                 where: {
                     ...(isUniversalApprover ? {} : { employeeId: empIn }),
-                    planningSubmittedAt: { [Op.ne]: null }
+                    ...statusCondition
                 },
+                order: [['updatedAt', 'DESC']],
                 raw: true
             });
             const allUsers = await XlUser.findAll({ raw: true });
             const userMap = {};
             allUsers.forEach(u => {
-                userMap[u.employeeId] = { name: (u.firstName + ' ' + (u.lastName || '')).trim(), hq: u.hq };
+                userMap[u.employeeId] = { 
+                    name: (u.firstName + ' ' + (u.lastName || '')).trim(), 
+                    hq: u.hq,
+                    designation: u.designation || '',
+                    email: u.email || ''
+                };
             });
 
             const formatted = perfs.map(p => ({
                 ...p,
-                status: 'Submitted',
+                status: p.status || (p.planningSubmittedAt ? 'Submitted' : 'Pending'),
                 employeeName: userMap[p.employeeId]?.name || p.employeeId,
-                hq: userMap[p.employeeId]?.hq || 'Unknown HQ'
+                hq: userMap[p.employeeId]?.hq || 'Unknown HQ',
+                designation: userMap[p.employeeId]?.designation || '',
+                email: userMap[p.employeeId]?.email || ''
             }));
             return res.json({ success: true, data: formatted });
         }
@@ -6028,6 +6089,35 @@ router.get('/approvals/pending', async (req, res) => {
 router.post('/approvals/action', async (req, res) => {
     try {
         const { recordId, type, action, remarks, approvedBy } = req.body;
+
+        if (type === 'Performance KPI') {
+            const perf = await XlPerformanceAnalysis.findByPk(recordId);
+            if (!perf) return res.status(404).json({ error: 'Performance plan not found' });
+            
+            if (action === 'Approved' || action === 'Approve') {
+                perf.status = 'Approved';
+                perf.approvedAt = new Date();
+                perf.approvedBy = approvedBy || (req.user && req.user.name) || 'Admin';
+                perf.adminRemarks = remarks || '';
+                perf.unlockRequested = false;
+                await perf.save();
+                return res.json({ success: true, message: 'Performance KPI plan approved successfully!' });
+            } else if (action === 'Rejected' || action === 'Reject') {
+                perf.status = 'Rejected';
+                perf.planningSubmittedAt = null;
+                perf.unlockRequested = false;
+                perf.adminRemarks = remarks || '';
+                await perf.save();
+                return res.json({ success: true, message: 'Performance KPI plan rejected and unlocked for editing.' });
+            } else if (action === 'Release' || action === 'Unlock') {
+                perf.status = 'Unlocked';
+                perf.planningSubmittedAt = null;
+                perf.unlockRequested = false;
+                perf.adminRemarks = remarks || '';
+                await perf.save();
+                return res.json({ success: true, message: 'Performance KPI plan unlocked successfully.' });
+            }
+        }
         let Model;
         if (type === 'Call Report') Model = XlDCR;
         else if (type === 'Tour Program') Model = XlTourProgram;
