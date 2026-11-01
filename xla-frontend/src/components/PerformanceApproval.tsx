@@ -190,48 +190,51 @@ export default function PerformanceApproval({
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="flex-1 overflow-auto custom-scrollbar p-3 md:p-6">
-        <div className="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="text-[10px] uppercase font-black tracking-widest text-slate-400 bg-slate-900/90 border-b border-slate-800">
-                <th className="p-3.5 pl-4 font-bold text-sky-400">Employee</th>
-                <th className="p-3.5 font-bold">Month / Year</th>
-                <th className="p-3.5 font-bold">Submitted Date</th>
-                <th className="p-3.5 font-bold">Plan Summary</th>
-                <th className="p-3.5 font-bold">Status</th>
-                <th className="p-3.5 pr-4 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/80 text-xs">
-              {filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-10 text-center text-slate-400 font-bold uppercase tracking-wider">
-                    {viewMode === 'Pending' 
-                      ? 'No pending performance KPI submissions found.' 
-                      : 'No approved or past performance KPI records found.'}
-                  </td>
-                </tr>
+      {/* Content Container */}
+      <div className="flex-1 overflow-auto custom-scrollbar p-3 md:p-6 flex flex-col">
+        {filteredItems.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-900/40 rounded-2xl border border-slate-800/80 my-auto">
+            <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center mb-3.5 shadow-xl">
+              {viewMode === 'Pending' ? (
+                <CheckCircle size={28} className="text-emerald-400" />
               ) : (
-                filteredItems.map((item: any) => {
-                  const brands = parseJsonArray(item.brandData);
-                  const keyCusts = parseJsonArray(item.keyCustomerData);
-                  const accounts = parseJsonArray(item.accountData);
-                  const isApproved = item.status === 'Approved';
-                  const isUnlockReq = !!item.unlockRequested;
+                <FileText size={28} className="text-sky-400" />
+              )}
+            </div>
+            <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider mb-1">
+              {viewMode === 'Pending' 
+                ? 'No Pending Performance KPI Submissions' 
+                : 'No Approved Performance KPI Records'}
+            </h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+              {viewMode === 'Pending'
+                ? 'All monthly performance plans have been reviewed and approved.'
+                : 'Approved monthly plans will appear here once finalized.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Cards (shown on small / narrow split screens) */}
+            <div className="block md:hidden space-y-3">
+              {filteredItems.map((item: any) => {
+                const brands = parseJsonArray(item.brandData);
+                const keyCusts = parseJsonArray(item.keyCustomerData);
+                const accounts = parseJsonArray(item.accountData);
+                const isApproved = item.status === 'Approved';
+                const isUnlockReq = !!item.unlockRequested;
 
-                  return (
-                    <tr 
-                      key={item._id} 
-                      className="hover:bg-slate-800/40 transition-colors group cursor-pointer"
-                      onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
-                    >
-                      <td className="p-3.5 pl-4">
-                        <div className="font-bold text-white group-hover:text-sky-300 transition-colors">
+                return (
+                  <div
+                    key={item._id}
+                    onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
+                    className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-lg hover:border-sky-500/50 transition-all cursor-pointer space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-white text-sm">
                           {item.employeeName || item.employeeId}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <div className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <span className="text-sky-400 font-mono">{item.employeeId}</span>
                           <span>&bull;</span>
                           <span>{item.hq || 'HQ'}</span>
@@ -242,100 +245,226 @@ export default function PerformanceApproval({
                             </>
                           )}
                         </div>
-                      </td>
-                      <td className="p-3.5 font-semibold text-slate-200">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={13} className="text-sky-400" />
-                          <span className="capitalize">{item.month}</span> {item.year}
-                        </div>
-                      </td>
-                      <td className="p-3.5 text-slate-300">
+                      </div>
+
+                      {isApproved ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                          <CheckCircle size={11} />
+                          Approved
+                        </span>
+                      ) : isUnlockReq ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 animate-pulse">
+                          <ShieldAlert size={11} />
+                          Unlock Req
+                        </span>
+                      ) : item.planningSubmittedAt ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0">
+                          <FileText size={11} />
+                          Submitted
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-400 border border-slate-600/50 shrink-0">
+                          Unlocked
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-300 pt-1 border-t border-slate-800/80">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+                        <Calendar size={13} className="text-sky-400" />
+                        <span className="capitalize">{item.month}</span> {item.year}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
                         {formatDateTime(item.planningSubmittedAt || item.updatedAt)}
-                      </td>
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
-                            {brands.length} Brands
-                          </span>
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
-                            {keyCusts.length} Key Cust
-                          </span>
-                          {accounts.length > 0 && (
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                        {brands.length} Brands
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                        {keyCusts.length} Key Customers
+                      </span>
+                      {accounts.length > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                          {accounts.length} Accounts
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold rounded-lg transition-colors"
+                      >
+                        <Eye size={13} />
+                        <span>View</span>
+                      </button>
+
+                      {!isApproved && (
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(item)}
+                          disabled={isActionLoading === item._id}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                        >
+                          <CheckCircle size={13} />
+                          <span>Approve</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleRelease(item)}
+                        disabled={isActionLoading === item._id}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                        title="Release plan"
+                      >
+                        <RefreshCcw size={13} className={isActionLoading === item._id ? 'animate-spin' : ''} />
+                        <span>Release</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table (hidden on mobile) */}
+            <div className="hidden md:block bg-slate-900/60 rounded-xl border border-slate-800 overflow-x-auto shadow-xl">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] uppercase font-black tracking-widest text-slate-400 bg-slate-900/90 border-b border-slate-800">
+                    <th className="p-3.5 pl-4 font-bold text-sky-400">Employee</th>
+                    <th className="p-3.5 font-bold">Month / Year</th>
+                    <th className="p-3.5 font-bold">Submitted Date</th>
+                    <th className="p-3.5 font-bold">Plan Summary</th>
+                    <th className="p-3.5 font-bold">Status</th>
+                    <th className="p-3.5 pr-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80 text-xs">
+                  {filteredItems.map((item: any) => {
+                    const brands = parseJsonArray(item.brandData);
+                    const keyCusts = parseJsonArray(item.keyCustomerData);
+                    const accounts = parseJsonArray(item.accountData);
+                    const isApproved = item.status === 'Approved';
+                    const isUnlockReq = !!item.unlockRequested;
+
+                    return (
+                      <tr 
+                        key={item._id} 
+                        className="hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                        onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
+                      >
+                        <td className="p-3.5 pl-4">
+                          <div className="font-bold text-white group-hover:text-sky-300 transition-colors">
+                            {item.employeeName || item.employeeId}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sky-400 font-mono">{item.employeeId}</span>
+                            <span>&bull;</span>
+                            <span>{item.hq || 'HQ'}</span>
+                            {item.designation && (
+                              <>
+                                <span>&bull;</span>
+                                <span className="text-slate-500">{item.designation}</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3.5 font-semibold text-slate-200">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={13} className="text-sky-400" />
+                            <span className="capitalize">{item.month}</span> {item.year}
+                          </div>
+                        </td>
+                        <td className="p-3.5 text-slate-300">
+                          {formatDateTime(item.planningSubmittedAt || item.updatedAt)}
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
-                              {accounts.length} Accounts
+                              {brands.length} Brands
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                              {keyCusts.length} Key Cust
+                            </span>
+                            {accounts.length > 0 && (
+                              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                                {accounts.length} Accounts
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          {isApproved ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle size={12} />
+                              Approved
+                            </span>
+                          ) : isUnlockReq ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
+                              <ShieldAlert size={12} />
+                              Unlock Requested
+                            </span>
+                          ) : item.planningSubmittedAt ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                              <FileText size={12} />
+                              Final Submitted
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-700/60 text-slate-400 border border-slate-600/50">
+                              Unlocked
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        {isApproved ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            <CheckCircle size={12} />
-                            Approved
-                          </span>
-                        ) : isUnlockReq ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
-                            <ShieldAlert size={12} />
-                            Unlock Requested
-                          </span>
-                        ) : item.planningSubmittedAt ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
-                            <FileText size={12} />
-                            Final Submitted
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-700/60 text-slate-400 border border-slate-600/50">
-                            Unlocked
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3.5 pr-4 text-right">
-                        <div className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {/* View Button */}
-                          <button
-                            type="button"
-                            onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
-                            title="Inspect submitted targets"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 hover:text-sky-300 border border-sky-500/30 text-xs font-bold rounded-lg transition-colors"
-                          >
-                            <Eye size={13} />
-                            <span>View</span>
-                          </button>
-
-                          {/* Approve Button */}
-                          {!isApproved && (
+                        </td>
+                        <td className="p-3.5 pr-4 text-right">
+                          <div className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              onClick={() => handleApprove(item)}
-                              disabled={isActionLoading === item._id}
-                              title="Approve this KPI plan"
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
+                              onClick={() => { setSelectedPlan(item); setAdminRemarks(item.adminRemarks || ''); }}
+                              title="Inspect submitted targets"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 hover:text-sky-300 border border-sky-500/30 text-xs font-bold rounded-lg transition-colors"
                             >
-                              <CheckCircle size={13} />
-                              <span>Approve</span>
+                              <Eye size={13} />
+                              <span>View</span>
                             </button>
-                          )}
 
-                          {/* Release Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleRelease(item)}
-                            disabled={isActionLoading === item._id}
-                            title="Unlock / release plan back to employee"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                          >
-                            <RefreshCcw size={13} className={isActionLoading === item._id ? 'animate-spin' : ''} />
-                            <span>Release</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                            {!isApproved && (
+                              <button
+                                type="button"
+                                onClick={() => handleApprove(item)}
+                                disabled={isActionLoading === item._id}
+                                title="Approve this KPI plan"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
+                              >
+                                <CheckCircle size={13} />
+                                <span>Approve</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleRelease(item)}
+                              disabled={isActionLoading === item._id}
+                              title="Unlock / release plan back to employee"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <RefreshCcw size={13} className={isActionLoading === item._id ? 'animate-spin' : ''} />
+                              <span>Release</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Plan Details & Inspection Modal */}
