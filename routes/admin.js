@@ -2148,8 +2148,14 @@ router.post('/send-letter', async (req, res) => {
 
         const letterLabel = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
         const fileName = `${letterLabel.replace(/\s+/g, '_')}_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`;
-        const pdfContent = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
-        const pdfBuffer = Buffer.from(pdfContent, 'base64');
+        let pdfBuffer;
+        if (pdfBase64) {
+            const pdfContent = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
+            pdfBuffer = Buffer.from(pdfContent, 'base64');
+        } else {
+            const { generateAppointmentPdf } = require('../utils/pdfGenerator');
+            pdfBuffer = await generateAppointmentPdf({ applicant, company, letterType });
+        }
 
         // Resolve CC: Admin + Reporting Manager
         const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
@@ -2264,11 +2270,19 @@ router.post('/save-letter-snapshot', async (req, res) => {
             const label = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
 
             let attachments = [];
+            let pdfBuffer;
             if (pdfBase64) {
                 const pdfClean = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
+                pdfBuffer = Buffer.from(pdfClean, 'base64');
+            } else {
+                const { generateAppointmentPdf } = require('../utils/pdfGenerator');
+                pdfBuffer = await generateAppointmentPdf({ applicant, company, letterType, letterData });
+            }
+
+            if (pdfBuffer && pdfBuffer.length > 0) {
                 attachments.push({
                     filename: `${label.replace(/\s+/g, '_')}_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`,
-                    content: Buffer.from(pdfClean, 'base64'),
+                    content: pdfBuffer,
                     contentType: 'application/pdf'
                 });
             }
