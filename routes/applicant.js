@@ -248,6 +248,62 @@ router.all(['/profile/:email', '/profile', '/applicant-profile/:email'], async (
     }
 });
 
+// --- DELETE ISSUED LETTER TO FREE DATABASE STORAGE ---
+router.post('/delete-issued-letter', async (req, res) => {
+    try {
+        const email = (req.body.email || req.query.email || '').trim().toLowerCase();
+        const { index, issuedAt, type } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Applicant email is required.' });
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found.' });
+
+        let letters = Array.isArray(applicant.issuedLetters) ? [...applicant.issuedLetters] : [];
+        const originalCount = letters.length;
+
+        if (typeof index === 'number' && index >= 0 && index < letters.length) {
+            letters.splice(index, 1);
+        } else if (issuedAt) {
+            const targetTime = new Date(issuedAt).getTime();
+            const idx = letters.findIndex(l => {
+                const t = new Date(l.issuedAt).getTime();
+                return Math.abs(t - targetTime) < 1000 || String(l.issuedAt) === String(issuedAt);
+            });
+            if (idx !== -1) {
+                letters.splice(idx, 1);
+            } else {
+                return res.status(404).json({ success: false, message: 'Letter not found with matching timestamp.' });
+            }
+        } else {
+            return res.status(400).json({ success: false, message: 'Valid letter index or issuedAt timestamp is required.' });
+        }
+
+        if (letters.length === originalCount) {
+            return res.status(404).json({ success: false, message: 'Letter could not be located for deletion.' });
+        }
+
+        // If all appointment letters were deleted, we can also clear apptLetterData to free up MongoDB/Postgres space
+        const updateObj = { issuedLetters: letters };
+        const hasAppt = letters.some(l => l.type === 'appt');
+        if (!hasAppt && applicant.apptLetterData) {
+            updateObj.apptLetterData = null;
+        }
+
+        await Applicant.findOneAndUpdate({ email: applicant.email }, { $set: updateObj });
+        console.log(`[DELETE LETTER] Removed letter from ${applicant.email}. Letters remaining: ${letters.length}`);
+
+        return res.json({
+            success: true,
+            message: 'Letter deleted successfully.',
+            remainingCount: letters.length,
+            issuedLetters: letters
+        });
+    } catch (err) {
+        console.error('Delete issued letter error:', err);
+        return res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+    }
+});
+
 router.all(['/test-questions', '/start-rapid-fire', '/start-rapid-fire/:email'], async (req, res) => {
     try {
         const email = req.params.email || req.query.email || req.body?.email;

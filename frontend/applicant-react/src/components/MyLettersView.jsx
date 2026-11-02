@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const styles = {
   container: {
@@ -6,17 +6,31 @@ const styles = {
     color: '#fff'
   },
   header: {
-    marginBottom: '30px'
+    marginBottom: '24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '12px'
   },
   title: {
     fontSize: '2rem',
-    margin: '0 0 10px 0',
-    color: 'var(--primary)'
+    margin: '0 0 8px 0',
+    color: 'var(--primary, #38bdf8)'
   },
   subtitle: {
-    color: 'var(--text-muted)',
+    color: 'var(--text-muted, #94a3b8)',
     margin: 0,
-    fontSize: '1.1rem'
+    fontSize: '1rem'
+  },
+  badge: {
+    background: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    color: '#38bdf8',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '0.85rem',
+    fontWeight: '600'
   },
   emptyBox: {
     background: 'rgba(255,255,255,0.02)',
@@ -27,26 +41,70 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
     gap: '20px'
   },
   card: {
     background: 'rgba(255,255,255,0.03)',
     border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '12px',
-    padding: '20px',
+    padding: '18px 20px',
     cursor: 'pointer',
-    transition: 'all 0.2s'
+    transition: 'all 0.2s',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    position: 'relative'
+  },
+  cardMain: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    marginBottom: '14px'
   },
   cardTitle: {
-    margin: '0 0 10px 0',
-    fontSize: '1.2rem',
-    color: '#fff'
+    margin: '0 0 6px 0',
+    fontSize: '1.15rem',
+    color: '#fff',
+    fontWeight: '600'
   },
   cardDate: {
     margin: '0',
     fontSize: '0.85rem',
-    color: 'var(--text-muted)'
+    color: 'var(--text-muted, #94a3b8)'
+  },
+  cardFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+    paddingTop: '12px',
+    marginTop: 'auto'
+  },
+  viewBtn: {
+    background: 'rgba(56, 189, 248, 0.1)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    color: '#38bdf8',
+    borderRadius: '6px',
+    padding: '6px 14px',
+    fontSize: '0.82rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  deleteBtn: {
+    background: 'rgba(239, 68, 68, 0.12)',
+    border: '1px solid rgba(239, 68, 68, 0.35)',
+    color: '#f87171',
+    borderRadius: '6px',
+    padding: '6px 12px',
+    fontSize: '0.82rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    transition: 'all 0.2s'
   },
   viewerOverlay: {
     position: 'fixed',
@@ -61,14 +119,29 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '15px',
+    maxWidth: '900px',
+    width: '100%',
+    margin: '0 auto 15px auto'
+  },
+  modalActionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
   },
   closeBtn: {
-    background: 'transparent',
+    background: 'rgba(255,255,255,0.1)',
     border: 'none',
     color: '#fff',
-    fontSize: '2rem',
-    cursor: 'pointer'
+    fontSize: '1.5rem',
+    lineHeight: '1',
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   viewerContent: {
     flex: 1,
@@ -83,41 +156,129 @@ const styles = {
   }
 };
 
-export default function MyLettersView({ applicant, companyData }) {
+export default function MyLettersView({ applicant, companyData, onRefresh }) {
+  const [lettersList, setLettersList] = useState(applicant?.issuedLetters || []);
   const [viewingLetter, setViewingLetter] = useState(null);
+  const [viewingIndex, setViewingIndex] = useState(null);
+  const [deletingIndex, setDeletingIndex] = useState(null);
 
-  const letters = applicant?.issuedLetters || [];
+  useEffect(() => {
+    setLettersList(applicant?.issuedLetters || []);
+  }, [applicant?.issuedLetters]);
 
   const formatType = (type) => {
     if (!type) return 'Document';
+    if (type === 'appt') return 'Appointment Letter';
+    if (type === 'offer') return 'Offer Letter';
     return type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  const handleDeleteLetter = async (e, idx) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const letter = lettersList[idx];
+    if (!letter) return;
+
+    const label = formatType(letter.type);
+    const dateStr = letter.issuedAt ? new Date(letter.issuedAt).toLocaleDateString() : '';
+    const confirmMsg = `Are you sure you want to delete this ${label} (issued on ${dateStr})?\n\nThis will remove this upload permanently from the database to save space.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setDeletingIndex(idx);
+      const email = applicant?.email;
+      const res = await fetch('/api/applicant/delete-issued-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          index: idx,
+          issuedAt: letter.issuedAt,
+          type: letter.type
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        const updated = lettersList.filter((_, i) => i !== idx);
+        setLettersList(updated);
+        if (viewingIndex === idx || viewingLetter === letter) {
+          setViewingLetter(null);
+          setViewingIndex(null);
+        } else if (viewingIndex !== null && viewingIndex > idx) {
+          setViewingIndex(viewingIndex - 1);
+        }
+        if (typeof onRefresh === 'function') {
+          onRefresh();
+        }
+      } else {
+        alert(data.message || 'Failed to delete letter');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Error deleting letter: ' + err.message);
+    } finally {
+      setDeletingIndex(null);
+    }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>My Official Letters</h2>
-        <p style={styles.subtitle}>View and download your official documents and letters issued by HR.</p>
+        <div>
+          <h2 style={styles.title}>My Official Letters</h2>
+          <p style={styles.subtitle}>View, download, and manage your official documents and letters issued by HR.</p>
+        </div>
+        {lettersList.length > 0 && (
+          <div style={styles.badge}>
+            {lettersList.length} {lettersList.length === 1 ? 'Letter' : 'Letters'} Available
+          </div>
+        )}
       </div>
 
-      {letters.length === 0 ? (
+      {lettersList.length === 0 ? (
         <div style={styles.emptyBox}>
           <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📄</div>
-          <h3 style={{ margin: '0 0 10px 0', color: '#fff' }}>No Letters Issued Yet</h3>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Your official documents will appear here once HR publishes them.</p>
+          <h3 style={{ margin: '0 0 10px 0', color: '#fff' }}>No Letters Found</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted, #94a3b8)' }}>No letters or issued documents are currently in your portal.</p>
         </div>
       ) : (
         <div style={styles.grid}>
-          {letters.map((letter, i) => (
-            <div key={i} style={styles.card} onClick={() => setViewingLetter(letter)}
-                 onMouseOver={e => e.currentTarget.style.borderColor='var(--primary)'}
-                 onMouseOut={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
-                <div style={{ fontSize: '2rem' }}>📄</div>
-                <div>
+          {lettersList.map((letter, i) => (
+            <div 
+              key={i} 
+              style={styles.card} 
+              onClick={() => { setViewingLetter(letter); setViewingIndex(i); }}
+              onMouseOver={e => e.currentTarget.style.borderColor='var(--primary, #38bdf8)'}
+              onMouseOut={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}
+            >
+              <div style={styles.cardMain}>
+                <div style={{ fontSize: '2.2rem' }}>📄</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <h4 style={styles.cardTitle}>{formatType(letter.type)}</h4>
-                  <p style={styles.cardDate}>Issued: {new Date(letter.issuedAt).toLocaleDateString()}</p>
+                  <p style={styles.cardDate}>Issued: {letter.issuedAt ? new Date(letter.issuedAt).toLocaleDateString() : 'N/A'}</p>
                 </div>
+              </div>
+
+              <div style={styles.cardFooter}>
+                <button 
+                  style={styles.viewBtn}
+                  onClick={(e) => { e.stopPropagation(); setViewingLetter(letter); setViewingIndex(i); }}
+                >
+                  👁️ View Letter
+                </button>
+                <button
+                  style={{
+                    ...styles.deleteBtn,
+                    opacity: deletingIndex === i ? 0.6 : 1,
+                    cursor: deletingIndex === i ? 'not-allowed' : 'pointer'
+                  }}
+                  disabled={deletingIndex === i}
+                  onClick={(e) => handleDeleteLetter(e, i)}
+                  title="Delete this letter to free up database storage"
+                >
+                  {deletingIndex === i ? '⏳ Deleting...' : '🗑️ Delete'}
+                </button>
               </div>
             </div>
           ))}
@@ -127,8 +288,23 @@ export default function MyLettersView({ applicant, companyData }) {
       {viewingLetter && (
         <div style={styles.viewerOverlay}>
           <div style={styles.viewerHeader}>
-            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.5rem' }}>{formatType(viewingLetter.type)}</h3>
-            <button style={styles.closeBtn} onClick={() => setViewingLetter(null)}>&times;</button>
+            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.4rem' }}>{formatType(viewingLetter.type)}</h3>
+            <div style={styles.modalActionRow}>
+              <button
+                style={{
+                  ...styles.deleteBtn,
+                  background: 'rgba(239, 68, 68, 0.25)',
+                  color: '#fff',
+                  border: '1px solid #ef4444',
+                  padding: '7px 14px'
+                }}
+                onClick={(e) => handleDeleteLetter(e, viewingIndex)}
+                title="Delete this document from database"
+              >
+                🗑️ Delete Letter
+              </button>
+              <button style={styles.closeBtn} onClick={() => { setViewingLetter(null); setViewingIndex(null); }}>&times;</button>
+            </div>
           </div>
           <div style={styles.viewerContent}>
             <style>

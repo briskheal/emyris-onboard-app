@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { sendEmail } = require('./mailer');
 const { Company, Applicant, ExamResult, XlNotification } = require('../db');
 const { syncActiveExamForApplicant } = require('./examSync');
+const { getSystemAdminEmail } = require('./adminHelper');
 
 function parseDateRobust(dateStr) {
     if (!dateStr) return null;
@@ -80,7 +81,7 @@ async function runExamReminderCron() {
         }
 
         // Send admin report
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in';
+        const adminEmail = await getSystemAdminEmail();
         const reportHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto;">
                 <h2 style="color: #6366f1;">48-Hourly Exam Status Report</h2>
@@ -176,7 +177,7 @@ async function runBirthdayCron() {
             }
         }
 
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in';
+        const adminEmail = await getSystemAdminEmail();
         const adminHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
                 <h2 style="color: #4f46e5;">🎂 Daily Birthday Report</h2>
@@ -203,7 +204,8 @@ async function runLifecycleCron() {
     try {
         console.log('⏰ Running daily lifecycle compliance cron job (Appointment & Confirmation alerts)...');
         const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
-        const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+        // Dynamically resolve admin email from DB / Company Profile
+        const adminEmail = await getSystemAdminEmail();
 
         const applicants = await Applicant.find({
             offerAccepted: true,
@@ -215,6 +217,15 @@ async function runLifecycleCron() {
         const confirmAlerts = [];
 
         for (const app of applicants) {
+            // STRICT ACCESS BUTTON CHECK:
+            // Only process employees whose access button is ACTIVE (canLogin !== false).
+            // If canLogin === false, the user access button is closed in Applicant Manager page,
+            // which signifies the employee is not in system (resigned or terminated within 6 months of ADOJ).
+            if (app.canLogin === false) {
+                console.log(`[LIFECYCLE CRON] Skipping ${app.fullName} (${app.email}) - Access button is closed (resigned/terminated within 6 months).`);
+                continue;
+            }
+
             const adoj = parseDateRobust(app.actualJoiningDate);
             if (!adoj || isNaN(adoj.getTime())) continue;
 

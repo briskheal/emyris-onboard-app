@@ -1282,7 +1282,7 @@ function renderApplicantDashboard() {
                                 <h4 style="margin: 0; color: var(--text-main); font-size: 0.95rem;">${letterLabel}</h4>
                                 <p style="margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted);">Issued on: ${date}</p>
                             </div>
-                            <button class="btn btn-sm btn-outline" onclick="previewApplicantIssuedLetter(${idx})">👁️ View PDF</button>
+                            <div style="display:flex; gap:8px; align-items:center;"><button class="btn btn-sm btn-outline" onclick="previewApplicantIssuedLetter(${idx})">👁️ View PDF</button><button class="btn btn-sm btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="deleteApplicantIssuedLetter(${idx})">🗑️ Delete</button></div>
                         </div>
                     `;
                 }).join('');
@@ -1739,6 +1739,53 @@ function toggleOfferPreview() {
 function closeOfferModal() {
     document.getElementById('offerModal').classList.add('hidden');
 }
+
+
+window.deleteApplicantIssuedLetter = async function(idx) {
+    const app = currentApplicant;
+    if (!app || !app.issuedLetters || !app.issuedLetters[idx]) return;
+    const letter = app.issuedLetters[idx];
+    const typeLabel = (letter.type || 'Document').replace('_', ' ').toUpperCase();
+    if (!confirm(`Are you sure you want to delete this ${typeLabel} letter? This will remove it permanently to save database storage.`)) return;
+
+    try {
+        const res = await fetch('/api/applicant/delete-issued-letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: app.email, index: idx, issuedAt: letter.issuedAt })
+        });
+        const data = await res.json();
+        if (data.success) {
+            app.issuedLetters.splice(idx, 1);
+            if (typeof showToast === 'function') showToast('Letter deleted successfully', 'success');
+            // Re-render
+            const issuedList = document.getElementById('issuedLettersList');
+            if (issuedList) {
+                if (app.issuedLetters.length === 0) {
+                    const issuedSection = document.getElementById('issuedLettersSection');
+                    if (issuedSection) issuedSection.classList.add('hidden');
+                } else {
+                    issuedList.innerHTML = app.issuedLetters.map((l, i) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--text-main); font-size: 0.95rem;">${(l.type || 'Document').replace('_', ' ').toUpperCase()}</h4>
+                                <p style="margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted);">Issued on: ${new Date(l.issuedAt).toLocaleDateString()}</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button class="btn btn-sm btn-outline" onclick="previewApplicantIssuedLetter(${i})">👁️ View PDF</button>
+                                <button class="btn btn-sm btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="deleteApplicantIssuedLetter(${i})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        } else {
+            alert(data.message || 'Failed to delete letter');
+        }
+    } catch (e) {
+        alert('Error deleting letter: ' + e.message);
+    }
+};
 
 window.previewApplicantIssuedLetter = function(idx) {
     const app = currentApplicant;

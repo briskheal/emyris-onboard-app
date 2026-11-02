@@ -66,6 +66,7 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { XlDivision, XlDesignation, XlUser, XlAdmin, XlState, XlHQ, XlCity, XlRoute, XlTarget, Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
+const { getSystemAdminEmail } = require('../utils/adminHelper');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -283,6 +284,7 @@ router.get('/company', async (req, res) => {
             delete optimizedCompany.confirmLetterBody;
             delete optimizedCompany.revisedSalaryBody;
             delete optimizedCompany.incentiveCircularBody;
+            optimizedCompany.adminEmail = await getSystemAdminEmail();
             res.json({ success: true, company: optimizedCompany });
         } else {
             res.json({ success: true, company: {} });
@@ -2157,8 +2159,8 @@ router.post('/send-letter', async (req, res) => {
             pdfBuffer = await generateAppointmentPdf({ applicant, company, letterType });
         }
 
-        // Resolve CC: Admin + Reporting Manager
-        const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+        // Resolve CC: Admin + Reporting Manager dynamically
+        const adminEmail = await getSystemAdminEmail();
         const managerEmail = await resolveReportingManager(applicant);
         const ccSet = new Set();
         if (adminEmail && adminEmail !== email.toLowerCase()) ccSet.add(adminEmail);
@@ -2172,6 +2174,13 @@ router.post('/send-letter', async (req, res) => {
         }
         const ccList = Array.from(ccSet);
 
+        // Enforce access button condition:
+        if (letterType === 'appt' && applicant.canLogin === false) {
+            return res.status(400).json({ 
+                error: 'Cannot issue or dispatch Appointment Letter: Employee access is marked as CLOSED in Applicant Manager (resigned or terminated within 6 months of ADOJ).' 
+            });
+        }
+
         // Update task tracking if appointment letter
         if (letterType === 'appt') {
             const tasks = applicant.tasks || {};
@@ -2183,37 +2192,81 @@ router.post('/send-letter', async (req, res) => {
             await Applicant.updateOne({ _id: applicant._id }, { $set: { tasks } });
         }
 
-        await sendEmail({
-            to: email,
-            cc: ccList.length > 0 ? ccList.join(', ') : undefined,
-            subject: `${letterLabel} – ${company.name}`,
-            html: `
+        let targetEmail = email;
+        let finalCc = ccList.length > 0 ? ccList.join(', ') : undefined;
+        let emailSubject = `${letterLabel} – ${company.name}`;
+        let emailBodyHtml = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
+                    <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
+                    <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
+                </div>
+                <div style="padding: 28px 24px;">
+                    <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
+                    <p style="font-size: 14px;">Please find your official <strong>${letterLabel}</strong> attached to this email.</p>
+                    <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                        <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
+                        <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                        <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                        <strong>Document:</strong> ${letterLabel}
+                    </div>
+                    <p style="font-size: 13px; color: #64748b;">For any queries or assistance, please contact the HR department.</p>
+                    <br>
+                    <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                </div>
+                <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                    This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
+                </div>
+            </div>`;
+
+        // If Appointment Letter: Send ONLY to dynamically resolved adminEmail for review
+        if (letterType === 'appt') {
+            targetEmail = adminEmail;
+            finalCc = undefined;
+            emailSubject = `[HR Review & Dispatch] Official Appointment Letter: ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${company.name}`;
+            emailBodyHtml = `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                     <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
                         <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
-                        <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
+                        <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Review & Dispatch Hub</p>
                     </div>
                     <div style="padding: 28px 24px;">
-                        <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
-                        <p style="font-size: 14px;">Please find your official <strong>${letterLabel}</strong> attached to this email.</p>
+                        <p style="font-size: 15px; margin-top: 0;">Dear <strong>HR Administrator</strong>,</p>
+                        <p style="font-size: 14px;">Please find attached the official <strong>Appointment Letter</strong> for <strong>${applicant.fullName}</strong> for your administrative review.</p>
                         <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                            <strong>Employee:</strong> ${applicant.fullName}<br>
+                            <strong>Employee Email:</strong> ${applicant.email}<br>
                             <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
                             <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
                             <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
-                            <strong>Document:</strong> ${letterLabel}
+                            <strong>Date of Joining:</strong> ${applicant.actualJoiningDate || 'N/A'}<br>
+                            <strong>Portal Login Access:</strong> ${applicant.canLogin !== false ? 'Active' : 'Closed'}
                         </div>
-                        <p style="font-size: 13px; color: #64748b;">For any queries or assistance, please contact the HR department.</p>
+                        <p style="font-size: 13px; color: #ea580c; font-weight: 600;">
+                            🛡️ Safety Protocol: As per company policy, this appointment letter has been routed to the official admin email (${adminEmail}) only. Once verified, please manually forward this official letter to the employee (${applicant.email}) to prevent any incorrect communication.
+                        </p>
                         <br>
                         <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
                         <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
                     </div>
                     <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-                        This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
+                        Administrative Dispatch · Emyris HRMS
                     </div>
-                </div>`,
+                </div>`;
+        }
+
+        await sendEmail({
+            to: targetEmail,
+            cc: finalCc,
+            subject: emailSubject,
+            html: emailBodyHtml,
             attachments: [{ filename: fileName, content: pdfBuffer, contentType: 'application/pdf' }]
         });
-        res.json({ success: true, message: `${letterLabel} sent successfully to ${email} (CC: ${ccList.join(', ') || 'None'})` });
+        const successMsg = letterType === 'appt'
+            ? `Appointment Letter sent to admin (${adminEmail}) for review before manual forward to employee.`
+            : `${letterLabel} sent successfully to ${email} (CC: ${ccList.join(', ') || 'None'})`;
+        res.json({ success: true, message: successMsg });
     } catch (e) {
         console.error('Send letter error:', e);
         res.status(500).json({ error: 'Email failed', detail: e.message });
@@ -2265,6 +2318,13 @@ router.post('/save-letter-snapshot', async (req, res) => {
             });
         }
 
+        // Enforce access button condition:
+        if (letterType === 'appt' && applicant.canLogin === false) {
+            return res.status(400).json({ 
+                error: 'Cannot issue or dispatch Appointment Letter: Employee access is marked as CLOSED in Applicant Manager (resigned or terminated within 6 months of ADOJ).' 
+            });
+        }
+
         let ccList = [];
         if (notifyByEmail) {
             const label = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
@@ -2287,8 +2347,8 @@ router.post('/save-letter-snapshot', async (req, res) => {
                 });
             }
 
-            // Resolve CC: Admin + Reporting Manager
-            const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+            // Resolve CC: Admin + Reporting Manager dynamically
+            const adminEmail = await getSystemAdminEmail();
             const managerEmail = await resolveReportingManager(applicant);
             const ccSet = new Set();
             if (adminEmail && adminEmail !== email.toLowerCase()) ccSet.add(adminEmail);
@@ -2302,46 +2362,133 @@ router.post('/save-letter-snapshot', async (req, res) => {
             }
             ccList = Array.from(ccSet);
 
-            await sendEmail({
-                to: email,
-                cc: ccList.length > 0 ? ccList.join(', ') : undefined,
-                subject: `Official Document: ${label} - ${company.name}`,
-                html: `
+            let targetEmail = email;
+            let finalCc = ccList.length > 0 ? ccList.join(', ') : undefined;
+            let emailSubject = `Official Document: ${label} - ${company.name}`;
+            let emailBodyHtml = `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
+                        <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
+                        <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
+                    </div>
+                    <div style="padding: 28px 24px;">
+                        <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
+                        <p style="font-size: 14px;">Please find attached your official <strong>${label}</strong> from ${company.name}.</p>
+                        <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                            <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
+                            <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                            <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                            <strong>Document:</strong> ${label}
+                        </div>
+                        <p style="font-size: 13px; color: #64748b;">The document has also been published to your official onboarding hub for future reference.</p>
+                        <br>
+                        <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
+                        <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                    </div>
+                    <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                        This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
+                    </div>
+                </div>`;
+
+            // If Appointment Letter: Forward ONLY to dynamically resolved adminEmail for review
+            if (letterType === 'appt') {
+                targetEmail = adminEmail;
+                finalCc = undefined;
+                emailSubject = `[HR Review & Dispatch] Official Appointment Letter: ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${company.name}`;
+                emailBodyHtml = `
                     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                         <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
                             <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
-                            <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
+                            <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Review & Dispatch Hub</p>
                         </div>
                         <div style="padding: 28px 24px;">
-                            <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
-                            <p style="font-size: 14px;">Please find attached your official <strong>${label}</strong> from ${company.name}.</p>
+                            <p style="font-size: 15px; margin-top: 0;">Dear <strong>HR Administrator</strong>,</p>
+                            <p style="font-size: 14px;">Please find attached the official <strong>Appointment Letter</strong> for <strong>${applicant.fullName}</strong> for administrative review.</p>
                             <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                                <strong>Employee:</strong> ${applicant.fullName}<br>
+                                <strong>Employee Email:</strong> ${applicant.email}<br>
                                 <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
                                 <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
                                 <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
-                                <strong>Document:</strong> ${label}
+                                <strong>Date of Joining:</strong> ${applicant.actualJoiningDate || 'N/A'}<br>
+                                <strong>Portal Login Access:</strong> ${applicant.canLogin !== false ? 'Active' : 'Closed'}
                             </div>
-                            <p style="font-size: 13px; color: #64748b;">The document has also been published to your official onboarding hub for future reference.</p>
+                            <p style="font-size: 13px; color: #ea580c; font-weight: 600;">
+                                🛡️ Safety Protocol: As per company policy, this appointment letter has been routed to the official admin email (${adminEmail}) only. Once verified, please manually forward this official letter to the employee (${applicant.email}) to prevent any incorrect communication.
+                            </p>
                             <br>
                             <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
                             <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
                         </div>
                         <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-                            This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
+                            Administrative Dispatch · Emyris HRMS
                         </div>
-                    </div>
-                `,
+                    </div>`;
+            }
+
+            await sendEmail({
+                to: targetEmail,
+                cc: finalCc,
+                subject: emailSubject,
+                html: emailBodyHtml,
                 attachments
             });
         }
 
+        const successMessage = (notifyByEmail && letterType === 'appt')
+            ? `Letter saved to hub and forwarded to admin (${await getSystemAdminEmail()}) for review before manual forward to employee.`
+            : `Letter saved to applicant hub${notifyByEmail ? ` and sent directly to ${email} (CC: ${ccList.join(', ') || 'None'})` : ''}.`;
+
         res.json({ 
             success: true, 
-            message: `Letter saved to applicant hub${notifyByEmail ? ` and sent directly to ${email} (CC: ${ccList.join(', ') || 'None'})` : ''}.` 
+            message: successMessage 
         });
     } catch (e) { 
         console.error("Save snapshot error:", e);
         res.status(500).json({ error: 'Save failed' }); 
+    }
+});
+
+// --- NEW: DELETE INDIVIDUAL APPLICANT LETTER ---
+router.post('/delete-applicant-letter', async (req, res) => {
+    try {
+        const { email, index, issuedAt } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        let letters = Array.isArray(applicant.issuedLetters) ? [...applicant.issuedLetters] : [];
+        const originalCount = letters.length;
+
+        if (typeof index === 'number' && index >= 0 && index < letters.length) {
+            letters.splice(index, 1);
+        } else if (issuedAt) {
+            const targetTime = new Date(issuedAt).getTime();
+            const idx = letters.findIndex(l => {
+                const t = new Date(l.issuedAt).getTime();
+                return Math.abs(t - targetTime) < 1000 || String(l.issuedAt) === String(issuedAt);
+            });
+            if (idx !== -1) {
+                letters.splice(idx, 1);
+            }
+        }
+
+        if (letters.length === originalCount) {
+            return res.status(404).json({ error: 'Letter not found' });
+        }
+
+        const updateObj = { issuedLetters: letters };
+        const hasAppt = letters.some(l => l.type === 'appt');
+        if (!hasAppt && applicant.apptLetterData) {
+            updateObj.apptLetterData = null;
+        }
+
+        await Applicant.findOneAndUpdate({ email }, { $set: updateObj });
+        res.json({ success: true, message: 'Letter deleted successfully.', remainingCount: letters.length });
+    } catch (e) {
+        console.error('Delete applicant letter error:', e);
+        res.status(500).json({ error: 'Failed to delete letter' });
     }
 });
 
