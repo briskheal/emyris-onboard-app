@@ -304,6 +304,27 @@ app.get('/api/debug-data', async (req, res) => {
 app.use('/api/xl', xlRouter);
 app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
+// Public asset router alias to ensure /api/public/asset/:assetId resolves without 404
+app.get(['/api/public/asset/:assetId', '/public/asset/:assetId'], async (req, res) => {
+    try {
+        const { Asset } = require('./db');
+        const asset = await Asset.findById(req.params.assetId);
+        if (!asset || !asset.data) return res.status(404).send('Asset not found');
+
+        const matches = asset.data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return res.status(400).send('Invalid asset format');
+
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+
+        res.set('Content-Type', mimeType);
+        res.set('Cache-Control', 'public, max-age=31536000');
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).send('Failed to fetch static asset');
+    }
+});
+
 // Legacy Route Aliases for original HTML portal (script.js)
 app.get('/api/company-data', (req, res, next) => {
     req.url = '/api/company-data';
