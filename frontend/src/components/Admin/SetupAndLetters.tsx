@@ -789,9 +789,11 @@ export default function SetupAndLetters() {
                       position: 'relative', 
                       width: '210mm', 
                       minHeight: '297mm', 
-                      background: activeAssets.letterheadImage 
-                        ? `#fff url(/api/public/asset/${activeAssets.letterheadImage}) top left / 210mm 297mm repeat-y` 
-                        : '#fff',
+                      backgroundColor: '#ffffff',
+                      backgroundImage: activeAssets.letterheadImage ? `url('/api/public/asset/${activeAssets.letterheadImage}')` : 'none',
+                      backgroundPosition: 'top left',
+                      backgroundSize: '210mm 297mm',
+                      backgroundRepeat: 'repeat-y',
                       transform: `scale(${zoom})`,
                       transformOrigin: 'top center',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
