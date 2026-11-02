@@ -38,13 +38,16 @@ export default function SetupAndLetters() {
   }, []);
 
   useEffect(() => {
+    let isCurrent = true;
     if (targetApplicant) {
+      setTargetApplicantData(null);
       api.get(`/admin/applicant/${targetApplicant}`).then(res => {
-        if(res.data.success) setTargetApplicantData(res.data.applicant);
+        if (isCurrent && res.data.success) setTargetApplicantData(res.data.applicant);
       });
     } else {
       setTargetApplicantData(null);
     }
+    return () => { isCurrent = false; };
   }, [targetApplicant]);
   const [zoom, setZoom] = useState('1.0');
   const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
@@ -174,25 +177,30 @@ export default function SetupAndLetters() {
     }
   };
 
-  // Auto-populate editor when target applicant is selected
+  // Auto-populate editor when target applicant is selected without corrupting master or overlapping stale candidates
   useEffect(() => {
     if (!editorRef.current) return;
     
+    const cleanMaster = allTemplatesMap[activeTemplate] || masterContentRef.current || '';
+    
     if (targetApplicant) {
       const applicant = applicants.find(a => a.email === targetApplicant);
-      if (applicant) {
-        const filled = fillLetterPlaceholders(masterContentRef.current, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
-        if (document.activeElement !== editorRef.current && editorRef.current.innerHTML !== filled) {
+      const candidateToUse = (targetApplicantData && targetApplicantData.email === targetApplicant)
+        ? targetApplicantData
+        : (applicant && applicant.email === targetApplicant ? applicant : null);
+
+      if (candidateToUse) {
+        const filled = fillLetterPlaceholders(cleanMaster, candidateToUse, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
+        if (editorRef.current.innerHTML !== filled) {
           editorRef.current.innerHTML = filled;
         }
       }
     } else {
-      // Revert back to master template
-      if (document.activeElement !== editorRef.current && editorRef.current.innerHTML !== masterContentRef.current) {
-        editorRef.current.innerHTML = masterContentRef.current;
+      if (editorRef.current.innerHTML !== cleanMaster) {
+        editorRef.current.innerHTML = cleanMaster;
       }
     }
-  }, [targetApplicant, targetApplicantData, applicants, companyData, signatoryName, signatoryDesg]);
+  }, [targetApplicant, targetApplicantData, applicants, companyData, signatoryName, signatoryDesg, activeTemplate, allTemplatesMap]);
   const fetchDbStats = async () => {
     try {
       const res = await api.get('/admin/db-stats');
@@ -800,7 +808,7 @@ export default function SetupAndLetters() {
                           pointerEvents: 'none',
                           objectFit: 'fill'
                         }}
-                        alt="Letterhead"
+                        alt="" onError={(e) => { (e.currentTarget as HTMLElement).style.display = "none"; }}
                       />
                     )}
                     <div 
