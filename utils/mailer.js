@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 
-async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
+async function sendEmail({ to, cc, bcc, subject, html, attachments = [], replyTo }) {
     const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
     const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
@@ -13,7 +13,7 @@ async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
     const secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true') : (port === 465);
     const fromAddr = process.env.EMAIL_FROM || `"Emyris HR" <${emailUser}>`;
 
-    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject} | Via: ${host}`);
+    console.log(`📡 [OUTGOING] To: ${to} | CC: ${cc || 'none'} | Subject: ${subject} | Via: ${host}`);
 
     // STRATEGY 1: SMTP Delivery (Zoho / Gmail / Custom Host)
     if (isZoho || !bridgeUrl) {
@@ -29,10 +29,9 @@ async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
 
         try {
             console.log(`📧 [INFO] Attempting SMTP delivery via ${host}...`);
-            const info = await transporter.sendMail({
+            const mailOptions = {
                 from: fromAddr,
                 to,
-                replyTo: replyTo || undefined,
                 subject, 
                 html,
                 attachments: attachments.map(a => ({
@@ -40,7 +39,12 @@ async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
                     content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content, 'base64'),
                     contentType: a.contentType
                 }))
-            });
+            };
+            if (cc) mailOptions.cc = cc;
+            if (bcc) mailOptions.bcc = bcc;
+            if (replyTo) mailOptions.replyTo = replyTo;
+
+            const info = await transporter.sendMail(mailOptions);
             console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
             return info;
         } catch (smtpErr) {
@@ -60,7 +64,7 @@ async function sendEmail({ to, subject, html, attachments = [], replyTo }) {
             }));
 
             const response = await axios.post(bridgeUrl, {
-                to, subject, html,
+                to, cc: cc || undefined, bcc: bcc || undefined, subject, html,
                 attachments: bridgeAttachments
             }, { timeout: 25000 });
 

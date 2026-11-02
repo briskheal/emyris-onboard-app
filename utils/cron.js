@@ -1,7 +1,33 @@
 const cron = require('node-cron');
 const { sendEmail } = require('./mailer');
-const { Company, Applicant, ExamResult } = require('../db');
+const { Company, Applicant, ExamResult, XlNotification } = require('../db');
 const { syncActiveExamForApplicant } = require('./examSync');
+
+function parseDateRobust(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr).trim();
+    if (!str || str === 'undefined' || str === 'null') return null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+        const parts = str.substring(0, 10).split('-');
+        const y = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        const p2 = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+        const parts = str.split('-');
+        const p1 = parseInt(parts[0], 10);
+        const p2 = parseInt(parts[1], 10);
+        const y = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+}
 
 async function runExamReminderCron() {
     try {
@@ -173,6 +199,164 @@ async function runBirthdayCron() {
     }
 }
 
+async function runLifecycleCron() {
+    try {
+        console.log('⏰ Running daily lifecycle compliance cron job (Appointment & Confirmation alerts)...');
+        const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
+        const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+
+        const applicants = await Applicant.find({
+            offerAccepted: true,
+            actualJoiningDate: { $exists: true }
+        });
+
+        const now = new Date();
+        const apptAlerts = [];
+        const confirmAlerts = [];
+
+        for (const app of applicants) {
+            const adoj = parseDateRobust(app.actualJoiningDate);
+            if (!adoj || isNaN(adoj.getTime())) continue;
+
+            const diffTime = Math.abs(now - adoj);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
+
+            // 1. Appointment Letter Logic (Send within 30 days of joining)
+            if (diffDays >= 30 && !app.apptLetterData) {
+                apptAlerts.push({
+                    name: app.fullName,
+                    email: app.email,
+                    designation: app.designation || 'Staff',
+                    hq: app.hq || 'N/A',
+                    adoj: app.actualJoiningDate,
+                    days: diffDays
+                });
+
+                // Create in-portal notification for ADMIN
+                if (XlNotification) {
+                    await XlNotification.create({
+                        employeeId: 'ADMIN',
+                        title: `Appointment Letter Due: ${app.fullName}`,
+                        message: `${app.fullName} (${app.designation || 'Staff'} - ${app.hq || 'N/A'}) joined on ${app.actualJoiningDate} and has completed ${diffDays} days. Please issue the Appointment Letter.`
+                    }).catch(e => console.error('Lifecycle notif error:', e.message));
+                }
+            }
+
+            // 2. Probation to Confirmation (Review at 5th month)
+            if (diffMonths >= 5 && (!app.status || app.status.toLowerCase().includes('probation'))) {
+                confirmAlerts.push({
+                    name: app.fullName,
+                    email: app.email,
+                    designation: app.designation || 'Staff',
+                    hq: app.hq || 'N/A',
+                    adoj: app.actualJoiningDate,
+                    months: diffMonths
+                });
+
+                if (XlNotification) {
+                    await XlNotification.create({
+                        employeeId: 'ADMIN',
+                        title: `Confirmation Review Due: ${app.fullName}`,
+                        message: `${app.fullName} (${app.designation || 'Staff'} - ${app.hq || 'N/A'}) has completed ${diffMonths} months since joining on ${app.actualJoiningDate}. Please initiate confirmation or extension review.`
+                    }).catch(e => console.error('Lifecycle notif error:', e.message));
+                }
+            }
+        }
+
+        if (apptAlerts.length > 0 || confirmAlerts.length > 0) {
+            let emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 750px; margin: auto; padding: 20px; color: #334155;">
+                    <div style="background: linear-gradient(135deg, #0ea5e9, #4f46e5); padding: 20px; border-radius: 10px; color: white; text-align: center;">
+                        <h2 style="margin: 0;">Employee Lifecycle Compliance Alert</h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">${company.name}</p>
+                    </div>
+            `;
+
+            if (apptAlerts.length > 0) {
+                emailHtml += `
+                    <h3 style="color: #0f172a; margin-top: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                        ⚠️ Appointment Letters Due (30+ Days Since Joining) - ${apptAlerts.length}
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: left;">
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Employee</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Designation / HQ</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">ADOJ</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Days Active</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${apptAlerts.map(a => `
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>${a.name}</strong><br><span style="color:#64748b;font-size:11px;">${a.email}</span></td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;">${a.designation}<br><span style="color:#64748b;font-size:11px;">${a.hq}</span></td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;">${a.adoj}</td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #ea580c;">${a.days} days</td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;"><a href="https://emyrishr.in/admin" style="color: #4f46e5; font-weight: 600;">Issue Letter</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            if (confirmAlerts.length > 0) {
+                emailHtml += `
+                    <h3 style="color: #0f172a; margin-top: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                        🔔 Confirmation / Probation Reviews Due (5+ Months) - ${confirmAlerts.length}
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: left;">
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Employee</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Designation / HQ</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">ADOJ</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Tenure</th>
+                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${confirmAlerts.map(c => `
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>${c.name}</strong><br><span style="color:#64748b;font-size:11px;">${c.email}</span></td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;">${c.designation}<br><span style="color:#64748b;font-size:11px;">${c.hq}</span></td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;">${c.adoj}</td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #7c3aed;">${c.months} months</td>
+                                    <td style="padding: 8px; border: 1px solid #e2e8f0;"><a href="https://emyrishr.in/admin" style="color: #4f46e5; font-weight: 600;">Review Status</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            emailHtml += `
+                    <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                        Automated Daily Lifecycle Compliance Notice · Emyris HRMS
+                    </div>
+                </div>
+            `;
+
+            await sendEmail({
+                to: adminEmail,
+                subject: `⚠️ Daily HR Action Required: ${apptAlerts.length} Appt Letter(s), ${confirmAlerts.length} Confirmation(s) Due`,
+                html: emailHtml
+            });
+            console.log(`✅ Lifecycle alerts sent to admin: ${adminEmail}`);
+        } else {
+            console.log('ℹ️ No lifecycle alerts due today.');
+        }
+
+        return { success: true, apptCount: apptAlerts.length, confirmCount: confirmAlerts.length, apptAlerts, confirmAlerts };
+    } catch (e) {
+        console.error('Lifecycle cron error:', e);
+        return { success: false, error: e.message };
+    }
+}
+
 function startCronJobs() {
     // Run exam reminder every 48 hours (every 2 days at 8:00 AM)
     cron.schedule('0 8 */2 * *', async () => {
@@ -182,6 +366,14 @@ function startCronJobs() {
     // Run every day at 8:00 AM IST for birthdays
     cron.schedule('0 8 * * *', async () => {
         await runBirthdayCron();
+    }, {
+        scheduled: true,
+        timezone: "Asia/Kolkata"
+    });
+
+    // Run daily at 8:15 AM IST for employee lifecycle compliance (30-day Appointment & 5-month Confirmation)
+    cron.schedule('15 8 * * *', async () => {
+        await runLifecycleCron();
     }, {
         scheduled: true,
         timezone: "Asia/Kolkata"
@@ -201,4 +393,4 @@ function startCronJobs() {
     });
 }
 
-module.exports = { startCronJobs, runExamReminderCron, runBirthdayCron };
+module.exports = { startCronJobs, runExamReminderCron, runBirthdayCron, runLifecycleCron };

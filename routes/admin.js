@@ -2091,33 +2091,123 @@ router.post('/verify-and-activate', async (req, res) => {
     }
 });
 
+// --- HELPER: RESOLVE REPORTING MANAGER EMAIL ---
+async function resolveReportingManager(applicant) {
+    if (!applicant) return null;
+    try {
+        const { XlUser } = require('../db');
+        if (!XlUser) return null;
+        const { Op } = require('sequelize');
+
+        // Check by employee email or empCode in XlUser
+        const xlUser = await XlUser.findOne({
+            where: {
+                [Op.or]: [
+                    { email: applicant.email },
+                    ...(applicant.empCode ? [{ employeeId: applicant.empCode }] : [])
+                ]
+            }
+        });
+
+        if (xlUser && xlUser.reportingManager) {
+            const match = xlUser.reportingManager.match(/^([^(]+)(?:\(([^)]+)\))?/);
+            const mDesig = match ? match[1].trim() : xlUser.reportingManager.trim();
+            const mHq = match && match[2] ? match[2].trim() : null;
+
+            let mgr = null;
+            if (mHq) {
+                mgr = await XlUser.findOne({ where: { designation: mDesig, hq: mHq } });
+            }
+            if (!mgr) {
+                mgr = await XlUser.findOne({ where: { designation: mDesig } });
+            }
+            if (mgr && mgr.email && mgr.email.toLowerCase() !== applicant.email.toLowerCase()) {
+                return mgr.email.toLowerCase();
+            }
+        }
+
+        if (applicant.reportingTo) {
+            const mgr = await XlUser.findOne({ where: { designation: applicant.reportingTo.trim() } });
+            if (mgr && mgr.email && mgr.email.toLowerCase() !== applicant.email.toLowerCase()) {
+                return mgr.email.toLowerCase();
+            }
+        }
+    } catch (e) {
+        console.error('Error resolving reporting manager:', e.message);
+    }
+    return null;
+}
+
 // --- SEND LETTER VIA EMAIL ---
 router.post('/send-letter', async (req, res) => {
     try {
-        const { email, letterType, pdfBase64 } = req.body;
+        const { email, letterType, pdfBase64, cc } = req.body;
         const applicant = await Applicant.findOne({ email });
         const company = await Company.findOne();
         if (!applicant || !company) return res.status(404).json({ error: 'Not found' });
 
-        const letterLabel = letterType === 'offer' ? 'Offer Letter' : 'Appointment Letter';
-        const fileName = `${letterLabel.replace(/ /g, '_')}_${applicant.fullName.replace(/ /g, '_')}.pdf`;
-        const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
+        const letterLabel = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
+        const fileName = `${letterLabel.replace(/\s+/g, '_')}_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`;
+        const pdfContent = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
+        const pdfBuffer = Buffer.from(pdfContent, 'base64');
+
+        // Resolve CC: Admin + Reporting Manager
+        const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+        const managerEmail = await resolveReportingManager(applicant);
+        const ccSet = new Set();
+        if (adminEmail && adminEmail !== email.toLowerCase()) ccSet.add(adminEmail);
+        if (managerEmail && managerEmail !== email.toLowerCase()) ccSet.add(managerEmail);
+        if (cc) {
+            const manualCcs = Array.isArray(cc) ? cc : cc.split(',');
+            manualCcs.forEach(c => {
+                const clean = (c || '').trim().toLowerCase();
+                if (clean && clean !== email.toLowerCase()) ccSet.add(clean);
+            });
+        }
+        const ccList = Array.from(ccSet);
+
+        // Update task tracking if appointment letter
+        if (letterType === 'appt') {
+            const tasks = applicant.tasks || {};
+            tasks.appointmentLetter = true;
+            await Applicant.updateOne({ _id: applicant._id }, { $set: { tasks } });
+        } else if (letterType === 'offer') {
+            const tasks = applicant.tasks || {};
+            tasks.offerLetter = true;
+            await Applicant.updateOne({ _id: applicant._id }, { $set: { tasks } });
+        }
 
         await sendEmail({
             to: email,
-            subject: `${letterLabel} ΓÇô ${company.name}`,
+            cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+            subject: `${letterLabel} – ${company.name}`,
             html: `
-                <div style="font-family:Arial,sans-serif;padding:24px;">
-                    <h2 style="color:#0f172a">Dear ${applicant.fullName},</h2>
-                    <p>Please find your <strong>${letterLabel}</strong> attached to this email.</p>
-                    <p>For any queries, please contact HR.</p>
-                    <br>
-                    <p><strong>${company.signatoryName || 'HR Team'}</strong><br>
-                    ${company.signatoryDesignation || ''}</p>
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
+                        <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
+                        <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
+                    </div>
+                    <div style="padding: 28px 24px;">
+                        <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
+                        <p style="font-size: 14px;">Please find your official <strong>${letterLabel}</strong> attached to this email.</p>
+                        <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                            <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
+                            <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                            <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                            <strong>Document:</strong> ${letterLabel}
+                        </div>
+                        <p style="font-size: 13px; color: #64748b;">For any queries or assistance, please contact the HR department.</p>
+                        <br>
+                        <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
+                        <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                    </div>
+                    <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                        This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
+                    </div>
                 </div>`,
             attachments: [{ filename: fileName, content: pdfBuffer, contentType: 'application/pdf' }]
         });
-        res.json({ success: true });
+        res.json({ success: true, message: `${letterLabel} sent successfully to ${email} (CC: ${ccList.join(', ') || 'None'})` });
     } catch (e) {
         console.error('Send letter error:', e);
         res.status(500).json({ error: 'Email failed', detail: e.message });
@@ -2127,12 +2217,22 @@ router.post('/send-letter', async (req, res) => {
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
 router.post('/save-letter-snapshot', async (req, res) => {
     try {
-        const { email, letterType, letterData, pdfBase64, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
-        const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
+        const { email, letterType, letterData, pdfBase64, notifyByEmail, cc } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        const update = { canLogin: true };
         if (letterType === 'confirm') update.status = 'Confirmed Employee';
         else if (letterType === 'confirm_delayed') update.status = 'Confirmation Extended';
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
+
+        // Update task completion
+        const tasks = applicant.tasks || {};
+        if (letterType === 'offer') tasks.offerLetter = true;
+        else if (letterType === 'appt') tasks.appointmentLetter = true;
+        update.tasks = tasks;
 
         const letterObj = {
             type: letterType,
@@ -2159,42 +2259,61 @@ router.post('/save-letter-snapshot', async (req, res) => {
             });
         }
 
+        let ccList = [];
         if (notifyByEmail) {
-            const applicant = await Applicant.findOne({ email });
-            const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
-            const label = letterType.toUpperCase().replace('_', ' ');
+            const label = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
 
             let attachments = [];
             if (pdfBase64) {
+                const pdfClean = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
                 attachments.push({
-                    filename: `Emyris_Letter.pdf`,
-                    content: pdfBase64,
+                    filename: `${label.replace(/\s+/g, '_')}_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`,
+                    content: Buffer.from(pdfClean, 'base64'),
                     contentType: 'application/pdf'
                 });
             }
 
+            // Resolve CC: Admin + Reporting Manager
+            const adminEmail = (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase();
+            const managerEmail = await resolveReportingManager(applicant);
+            const ccSet = new Set();
+            if (adminEmail && adminEmail !== email.toLowerCase()) ccSet.add(adminEmail);
+            if (managerEmail && managerEmail !== email.toLowerCase()) ccSet.add(managerEmail);
+            if (cc) {
+                const manualCcs = Array.isArray(cc) ? cc : cc.split(',');
+                manualCcs.forEach(c => {
+                    const clean = (c || '').trim().toLowerCase();
+                    if (clean && clean !== email.toLowerCase()) ccSet.add(clean);
+                });
+            }
+            ccList = Array.from(ccSet);
+
             await sendEmail({
-                to: `${email}, hradmin@emyrishr.in`,
-                subject: `Important Document Update: ${label} - ${company.name}`,
+                to: email,
+                cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+                subject: `Official Document: ${label} - ${company.name}`,
                 html: `
-                    <div style="font-family: sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                        <div style="background: #6366f1; padding: 20px; text-align: center;">
-                            <h2 style="color: white; margin: 0;">Document Notification</h2>
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
+                            <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
+                            <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Issuance</p>
                         </div>
-                        <div style="padding: 30px;">
-                            <p>Dear ${applicant.fullName},</p>
-                            <p>We are pleased to inform you that a new document has been issued and published to your official onboarding hub.</p>
-                            <div style="background: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0;">
-                                <strong>Document Type:</strong> ${label}<br>
-                                <strong>Status:</strong> Published to Hub
+                        <div style="padding: 28px 24px;">
+                            <p style="font-size: 15px; margin-top: 0;">Dear <strong>${applicant.fullName}</strong>,</p>
+                            <p style="font-size: 14px;">Please find attached your official <strong>${label}</strong> from ${company.name}.</p>
+                            <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
+                                <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
+                                <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                                <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                                <strong>Document:</strong> ${label}
                             </div>
-                            <p>Please log in to the portal to view, download, or accept the document.</p>
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="${BASE_URL}" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
-                            </div>
+                            <p style="font-size: 13px; color: #64748b;">The document has also been published to your official onboarding hub for future reference.</p>
+                            <br>
+                            <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
                         </div>
-                        <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
-                            This is an automated notification from ${company.name}. Please do not reply to this email.
+                        <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                            This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
                         </div>
                     </div>
                 `,
@@ -2202,7 +2321,10 @@ router.post('/save-letter-snapshot', async (req, res) => {
             });
         }
 
-        res.json({ success: true, message: `Letter saved to applicant hub${notifyByEmail ? ' and applicant notified' : ''}.` });
+        res.json({ 
+            success: true, 
+            message: `Letter saved to applicant hub${notifyByEmail ? ` and sent directly to ${email} (CC: ${ccList.join(', ') || 'None'})` : ''}.` 
+        });
     } catch (e) { 
         console.error("Save snapshot error:", e);
         res.status(500).json({ error: 'Save failed' }); 
@@ -2275,6 +2397,13 @@ router.post('/accept-offer', async (req, res) => {
 // --- NEW: LIFECYCLE CHECKS (Admins can poll this or call on load) ---
 router.get('/lifecycle-check', async (req, res) => {
     try {
+        const { trigger } = req.query;
+        if (trigger === 'true') {
+            const { runLifecycleCron } = require('../utils/cron');
+            const cronResult = await runLifecycleCron();
+            return res.json({ success: true, triggered: true, cronResult });
+        }
+
         const applicants = await Applicant.find({
             offerAccepted: true,
             actualJoiningDate: { $exists: true }
@@ -2283,7 +2412,7 @@ router.get('/lifecycle-check', async (req, res) => {
         const alerts = [];
         const now = new Date();
 
-        applicants.forEach(app => {
+        for (const app of applicants) {
             const adoj = safeParseDateServer(app.actualJoiningDate) || new Date();
             const diffTime = Math.abs(now - adoj);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -2291,29 +2420,42 @@ router.get('/lifecycle-check', async (req, res) => {
 
             // 1. Appointment Letter Logic (Send within 30 days of joining)
             if (diffDays >= 30 && !app.apptLetterData) {
+                const mgrEmail = await resolveReportingManager(app);
                 alerts.push({
                     type: 'APPOINTMENT_PENDING',
                     email: app.email,
                     name: app.fullName,
+                    designation: app.designation || 'Staff',
+                    hq: app.hq || 'N/A',
+                    adoj: app.actualJoiningDate,
+                    reportingManagerEmail: mgrEmail,
                     days: diffDays,
-                    message: `${app.fullName} has completed 30 days. Appointment Letter should be issued.`
+                    message: `${app.fullName} has completed ${diffDays} days. Appointment Letter should be issued.`
                 });
             }
 
             // 2. Probation to Confirmation (Review at 5th month)
-            if (diffMonths >= 5 && !app.probationReminderSent) {
+            if (diffMonths >= 5 && (!app.status || app.status.toLowerCase().includes('probation'))) {
+                const mgrEmail = await resolveReportingManager(app);
                 alerts.push({
-                    type: 'PROBATION_REVIEW',
+                    type: 'CONFIRMATION_DUE',
                     email: app.email,
                     name: app.fullName,
+                    designation: app.designation || 'Staff',
+                    hq: app.hq || 'N/A',
+                    adoj: app.actualJoiningDate,
+                    reportingManagerEmail: mgrEmail,
                     months: diffMonths,
-                    message: `${app.fullName} is approaching 5 months of tenure. Initiate Probation Review.`
+                    message: `${app.fullName} has completed 5 months. Due for Confirmation / Extension review.`
                 });
             }
-        });
+        }
 
         res.json(alerts);
-    } catch (e) { res.status(500).json({ error: 'Check failed' }); }
+    } catch (e) { 
+        console.error('Lifecycle check error:', e);
+        res.status(500).json({ error: 'Check failed' }); 
+    }
 });
 
 // Company Profile Fetching (With latest Assets)
@@ -2849,83 +2991,6 @@ router.post('/verify-and-activate', async (req, res) => {
         console.error('Activation error:', e);
         res.status(500).json({ error: 'Activation failed' });
     }
-});
-
-router.post('/send-letter', async (req, res) => {
-    try {
-        const { email, letterType, pdfBase64 } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        const company = await Company.findOne();
-        if (!applicant || !company) return res.status(404).json({ error: 'Not found' });
-
-        const letterLabel = letterType === 'offer' ? 'Offer Letter' : 'Appointment Letter';
-        const fileName = `${letterLabel.replace(/ /g, '_')}_${applicant.fullName.replace(/ /g, '_')}.pdf`;
-        const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
-
-        await sendEmail({
-            to: email,
-            subject: `${letterLabel} ΓÇô ${company.name}`,
-            html: `
-                <div style="font-family:Arial,sans-serif;padding:24px;">
-                    <h2 style="color:#0f172a">Dear ${applicant.fullName},</h2>
-                    <p>Please find your <strong>${letterLabel}</strong> attached to this email.</p>
-                    <p>For any queries, please contact HR.</p>
-                    <br>
-                    <p><strong>${company.signatoryName || 'HR Team'}</strong><br>
-                    ${company.signatoryDesignation || ''}</p>
-                </div>`,
-            attachments: [{ filename: fileName, content: pdfBuffer, contentType: 'application/pdf' }]
-        });
-        res.json({ success: true });
-    } catch (e) {
-        console.error('Send letter error:', e);
-        res.status(500).json({ error: 'Email failed', detail: e.message });
-    }
-});
-
-
-
-router.get('/lifecycle-check', async (req, res) => {
-    try {
-        const applicants = await Applicant.find({
-            offerAccepted: true,
-            actualJoiningDate: { $exists: true }
-        });
-
-        const alerts = [];
-        const now = new Date();
-
-        applicants.forEach(app => {
-            const adoj = safeParseDateServer(app.actualJoiningDate) || new Date();
-            const diffTime = Math.abs(now - adoj);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
-
-            // 1. Appointment Letter Logic (Send within 30 days of joining)
-            if (diffDays >= 30 && !app.apptLetterData) {
-                alerts.push({
-                    type: 'APPOINTMENT_PENDING',
-                    email: app.email,
-                    name: app.fullName,
-                    days: diffDays,
-                    message: `${app.fullName} has completed 30 days. Appointment Letter should be issued.`
-                });
-            }
-
-            // 2. Probation to Confirmation (Review at 5th month)
-            if (diffMonths >= 5 && !app.probationReminderSent) {
-                alerts.push({
-                    type: 'PROBATION_REVIEW',
-                    email: app.email,
-                    name: app.fullName,
-                    months: diffMonths,
-                    message: `${app.fullName} is approaching 5 months of tenure. Initiate Probation Review.`
-                });
-            }
-        });
-
-        res.json(alerts);
-    } catch (e) { res.status(500).json({ error: 'Check failed' }); }
 });
 
 router.get('/asset-library', async (req, res) => {
