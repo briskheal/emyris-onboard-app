@@ -13,7 +13,7 @@ async function sendEmail({ to, cc, bcc, subject, html, attachments = [], replyTo
     const secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true') : (port === 465);
     const fromAddr = process.env.EMAIL_FROM || `"Emyris HR" <${emailUser}>`;
 
-    console.log(`📡 [OUTGOING] To: ${to} | CC: ${cc || 'none'} | Subject: ${subject} | Via: ${host}`);
+    console.log(`📡 [OUTGOING] To: ${to} | CC: ${cc || 'none'} | Subject: ${subject} | Attachments: ${attachments.length} (${attachments.map(a => a.filename).join(', ')}) | Via: ${host}`);
 
     // STRATEGY 1: SMTP Delivery (Zoho / Gmail / Custom Host)
     if (isZoho || !bridgeUrl) {
