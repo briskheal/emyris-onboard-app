@@ -1,152 +1,128 @@
 const PDFDocument = require('pdfkit');
+const { fillLetterPlaceholders } = require('./letterUtils');
+
+/**
+ * Builds the exact 5-page official Appointment Letter HTML conforming to Setup & Letters,
+ * complete with official letterhead, embedded digital signature, and circular digital stamp.
+ */
+function buildOfficialLetterHtml({ applicant, company, letterType, letterData, lhData, stampData, sigData }) {
+    let rawHtml = letterData || company.apptLetterBody || '';
+    rawHtml = rawHtml.replace(/<img[^>]+class="a4-branding-layer"[^>]*>/gi, '');
+    rawHtml = rawHtml.replace(/\{\{COMPANY_NAME\}\}\s*Pvt\.\s*Ltd\./gi, '{{COMPANY_NAME}}');
+    rawHtml = rawHtml.replace(/Dear\s*\{\{TITLE\}\}\.\./gi, 'Dear {{TITLE}}.');
+    rawHtml = rawHtml.replace(/Dear\s*\{\{TITLE\}\}\./gi, 'Dear {{TITLE}}');
+
+    const p1EndIdx = rawHtml.indexOf('{{SIGNATORY_DESG}}') + '{{SIGNATORY_DESG}}'.length;
+    const p1CloseIdx = rawHtml.indexOf('</p>', p1EndIdx) + 4;
+
+    const p2StartSearch = rawHtml.indexOf('Place of Work', p1CloseIdx);
+    const p2StartIdx = p2StartSearch !== -1 ? rawHtml.lastIndexOf('<p', p2StartSearch) : p1CloseIdx;
+
+    const p3StartSearch = rawHtml.indexOf('11. General', p2StartIdx);
+    const p3StartIdx = p3StartSearch !== -1 ? rawHtml.lastIndexOf('<p', p3StartSearch) : rawHtml.indexOf('<p', rawHtml.indexOf('11.1', p2StartIdx));
+
+    const p4StartSearch = rawHtml.indexOf('Employee Non-Disclosure Agreement', p3StartIdx);
+    const p4StartIdx = p4StartSearch !== -1 ? rawHtml.lastIndexOf('<p', p4StartSearch) : p3StartIdx;
+
+    const p5StartSearch = rawHtml.indexOf('Annexure-', p4StartIdx);
+    const p5StartIdx = p5StartSearch !== -1 ? rawHtml.lastIndexOf('<p', p5StartSearch) : p4StartIdx;
+
+    let sec1 = rawHtml.substring(0, p1CloseIdx);
+    let sec2 = rawHtml.substring(p2StartIdx, p3StartIdx);
+    let sec3 = rawHtml.substring(p3StartIdx, p4StartIdx);
+    let sec4 = rawHtml.substring(p4StartIdx, p5StartIdx);
+    let sec5 = rawHtml.substring(p5StartIdx);
+
+    function cleanSection(html) {
+        html = html.replace(/<v:shapetype[\s\S]*?<\/v:shape>/gi, '');
+        html = html.replace(/<v:shape[\s\S]*?<\/v:shape>/gi, '');
+        html = html.replace(/<o:p><\/o:p>/gi, '');
+        html = html.replace(/(<p[^>]*>(\s*<[^>]+>)*\s*(<br\/?>|&nbsp;|\s)*\s*(<\/[^>]+>)*<\/p>\s*){2,}/gi, '');
+        return html.trim();
+    }
+
+    sec1 = cleanSection(sec1).replace(/^(<div[^>]*><b><span[^>]*><br><\/span><\/b><\/div>\s*)+/i, '');
+    sec2 = cleanSection(sec2);
+    sec3 = cleanSection(sec3);
+    sec4 = cleanSection(sec4);
+    sec5 = cleanSection(sec5);
+
+    if (sigData && stampData) {
+        const sigStampHtml = `
+<div style="position: relative; height: 75px; margin: 6px 0 2px 0;">
+  <img src="${sigData}" style="position: absolute; left: 0px; top: 10px; height: 46px; z-index: 2; mix-blend-mode: multiply;" alt="Signature" />
+  <img src="${stampData}" style="position: absolute; left: 65px; top: 0px; height: 70px; opacity: 0.95; z-index: 1;" alt="Digital Stamp" />
+</div>
+`;
+        sec1 = sec1.replace(/(<p[^>]*>\s*<b[^>]*>{{SIGNATORY_NAME}}<\/b>)/i, `${sigStampHtml}$1`);
+    }
+
+    sec1 = fillLetterPlaceholders(sec1, applicant, company);
+    sec2 = fillLetterPlaceholders(sec2, applicant, company);
+    sec3 = fillLetterPlaceholders(sec3, applicant, company);
+    sec4 = fillLetterPlaceholders(sec4, applicant, company);
+    sec5 = fillLetterPlaceholders(sec5, applicant, company);
+
+    const pages = [sec1, sec2, sec3, sec4, sec5].map(s => s.replace(/MR\.\./g, 'MR.').replace(/MS\.\./g, 'MS.'));
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Appointment Letter - ${applicant.fullName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; background: white;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    }
+    .a4-page {
+      position: relative; width: 210mm; height: 297mm;
+      page-break-after: always; break-after: page;
+      overflow: hidden; background: white;
+    }
+    .a4-letterhead-bg {
+      position: absolute; top: 0; left: 0; width: 210mm; height: 297mm;
+      z-index: 0; pointer-events: none;
+    }
+    .a4-content {
+      position: relative; z-index: 1; padding: 35mm 18mm 22mm 18mm;
+      font-size: 9.7pt; line-height: 1.30; color: #111;
+    }
+    p { margin-top: 0; margin-bottom: 2px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { font-size: 9pt; padding: 4px 6px; }
+  </style>
+</head>
+<body>
+  ${pages.map(p => `
+  <div class="a4-page">
+    ${lhData ? `<img src="${lhData}" class="a4-letterhead-bg" alt="Letterhead" />` : ''}
+    <div class="a4-content">${p}</div>
+  </div>
+  `).join('\n')}
+</body>
+</html>`;
+}
 
 function generateAppointmentPdf({ applicant, company = {}, letterType = 'appt', letterData = '' }) {
-    return new Promise((resolve, reject) => {
-        try {
-            const doc = new PDFDocument({
-                size: 'A4',
-                margins: { top: 40, bottom: 40, left: 45, right: 45 }
-            });
+    // If pdfkit fallback is used:
+    return new Promise((resolve) => {
+        const doc = new PDFDocument({ size: 'A4', margins: { top: 40, bottom: 40, left: 45, right: 45 } });
+        const buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-            const buffers = [];
-            doc.on('data', buffers.push.bind(buffers));
-            doc.on('end', () => {
-                const pdfBuffer = Buffer.concat(buffers);
-                resolve(pdfBuffer);
-            });
-
-            const isAppt = letterType === 'appt';
-            const letterLabel = isAppt ? 'LETTER OF APPOINTMENT' : (letterType === 'offer' ? 'OFFER OF EMPLOYMENT' : 'OFFICIAL APPOINTMENT LETTER');
-
-            // 1. Company Header
-            doc.fontSize(16).font('Helvetica-Bold').fillColor('#1e293b').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT. LTD.', { align: 'center' });
-            doc.moveDown(0.2);
-            doc.fontSize(8.5).font('Helvetica').fillColor('#64748b').text(company.address || 'Corporate Office, Vadodara, Gujarat', { align: 'center' });
-            doc.moveDown(0.2);
-            doc.text(`Phone: ${company.phone || '7993163300'} | Email: ${company.email || 'hradmin@emyrishr.in'} | Website: ${company.website || 'www.emyrisbio.com'}`, { align: 'center' });
-            doc.moveDown(0.5);
-
-            // Divider Line
-            doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(45, doc.y).lineTo(550, doc.y).stroke();
-            doc.moveDown(0.8);
-
-            // 2. Ref No and Date
-            const curY = doc.y;
-            const prefix = isAppt ? 'APNT/EMY' : 'OFR/EMY';
-            const counter = isAppt ? (company.apptCounter || 1016) : (company.offerCounter || 1001);
-            const refNo = `Ref: ${prefix}/${counter}`;
-            const dateStr = `Date: ${new Date().toLocaleDateString('en-GB')}`;
-            doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#0f172a').text(refNo, 45, curY);
-            doc.text(dateStr, 400, curY, { align: 'right', width: 150 });
-            doc.moveDown(1.2);
-
-            // 3. Recipient
-            doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#0f172a').text('To,');
-            doc.text(`${applicant.title || 'Mr.'} ${applicant.fullName || ''}`);
-            doc.font('Helvetica').fillColor('#334155');
-            if (applicant.address) doc.text(applicant.address);
-            if (applicant.state || applicant.pin || applicant.pincode) {
-                doc.text(`${applicant.state || ''} - ${applicant.pincode || applicant.pin || ''}`);
-            }
-            if (applicant.phone) doc.text(`Contact: ${applicant.phone}`);
-            doc.moveDown(0.8);
-
-            // 4. Subject
-            doc.fontSize(10.5).font('Helvetica-Bold').fillColor('#1e293b').text(`SUBJECT: ${letterLabel}`, { align: 'center', underline: true });
-            doc.moveDown(0.8);
-
-            // 5. Body Text
-            doc.fontSize(9.5).font('Helvetica').fillColor('#334155');
-            doc.text(`Dear ${applicant.fullName},`);
-            doc.moveDown(0.5);
-            doc.text(`With reference to your application and subsequent interview with us, we are pleased to appoint you as `, { continued: true });
-            doc.font('Helvetica-Bold').text(`${(applicant.designation || 'Staff').toUpperCase()}`, { continued: true });
-            doc.font('Helvetica').text(` in our `, { continued: true });
-            doc.font('Helvetica-Bold').text(`${(applicant.division || 'CRITIZA').toUpperCase()}`, { continued: true });
-            doc.font('Helvetica').text(` Division, based at `, { continued: true });
-            doc.font('Helvetica-Bold').text(`${(applicant.hq || 'Vadodara').toUpperCase()}`, { continued: true });
-            doc.font('Helvetica').text(`, effective from your confirmed date of joining `, { continued: true });
-            doc.font('Helvetica-Bold').text(`${applicant.actualJoiningDate || '01-10-2026'}.`);
-            doc.moveDown(0.8);
-
-            doc.font('Helvetica').text(`You will be reporting directly to `, { continued: true });
-            doc.font('Helvetica-Bold').text(`${(applicant.reportingTo || 'Management').toUpperCase()}.`);
-            doc.moveDown(0.8);
-
-            // 6. Compensation Section
-            const sal = applicant.salaryBreakup || {};
-            const annualCtc = Number(applicant.salary || 1080000);
-            doc.font('Helvetica').text('1. Compensation & Benefits Structure:', { underline: true });
-            doc.text(`Your Annual Gross Cost to Company (CTC) will be Rs. ${annualCtc.toLocaleString('en-IN')}/- as per the earnings structure enclosed below:`);
-            doc.moveDown(0.5);
-
-            // Salary Breakup Table
-            const tableTop = doc.y;
-            const col1 = 45, col2 = 270, col3 = 410, tableW = 505;
-
-            // Table Header
-            doc.rect(col1, tableTop, tableW, 18).fillAndStroke('#f1f5f9', '#94a3b8');
-            doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#0f172a');
-            doc.text('Earnings Components', col1 + 8, tableTop + 5);
-            doc.text('Monthly (Rs.)', col2, tableTop + 5, { width: 130, align: 'right' });
-            doc.text('Annual (Rs.)', col3, tableTop + 5, { width: 130, align: 'right' });
-
-            const items = [
-                ['Basic Salary', sal.basic || Math.round(annualCtc * 0.5 / 12)],
-                ['House Rent Allowance (HRA)', sal.hra || Math.round(annualCtc * 0.2 / 12)],
-                ['Leave Travel Allowance (LTA)', sal.lta || 0],
-                ['Conveyance Allowance', sal.conveyance || 0],
-                ['Medical Allowance', sal.medical || 0],
-                ['Special Allowance', sal.special || 0],
-                ['Education Allowance', sal.edu || 0],
-                ['Fixed Allowance', sal.fixed || 0]
-            ];
-
-            let rowY = tableTop + 18;
-            doc.font('Helvetica').fillColor('#334155');
-            let totalMonthly = 0;
-
-            for (const [label, val] of items) {
-                const mVal = Number(val) || 0;
-                if (mVal === 0 && !['Basic Salary', 'House Rent Allowance (HRA)'].includes(label)) continue;
-                totalMonthly += mVal;
-                doc.rect(col1, rowY, tableW, 16).stroke('#cbd5e1');
-                doc.text(label, col1 + 8, rowY + 4);
-                doc.text(mVal.toLocaleString('en-IN'), col2, rowY + 4, { width: 130, align: 'right' });
-                doc.text((mVal * 12).toLocaleString('en-IN'), col3, rowY + 4, { width: 130, align: 'right' });
-                rowY += 16;
-            }
-
-            // Total row
-            const totalAnnual = totalMonthly * 12;
-            doc.rect(col1, rowY, tableW, 18).fillAndStroke('#e2e8f0', '#94a3b8');
-            doc.font('Helvetica-Bold').fillColor('#0f172a');
-            doc.text('Gross Total CTC', col1 + 8, rowY + 5);
-            doc.text(totalMonthly.toLocaleString('en-IN'), col2, rowY + 5, { width: 130, align: 'right' });
-            doc.text(totalAnnual.toLocaleString('en-IN'), col3, rowY + 5, { width: 130, align: 'right' });
-
-            doc.y = rowY + 28;
-
-            // 7. Terms & Conditions
-            doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#1e293b').text('2. Probation & Confirmation:');
-            doc.font('Helvetica').fillColor('#334155').text('You will be on probation for an initial period of six months from your date of joining. Subject to satisfactory performance and successful completion of probation, your appointment will be confirmed in writing.');
-            doc.moveDown(0.5);
-
-            doc.font('Helvetica-Bold').fillColor('#1e293b').text('3. Code of Conduct & Operational Guidelines:');
-            doc.font('Helvetica').fillColor('#334155').text('You shall devote your whole time and attention to the business of the Company and maintain strict confidentiality regarding all official information, client records, and proprietary operational procedures.');
-            doc.moveDown(1.2);
-
-            // 8. Signatures
-            doc.font('Helvetica-Bold').fillColor('#0f172a').text(`For ${company.name || 'EMYRIS BIOLIFESCIENCES PVT. LTD.'}`);
-            doc.moveDown(1.8);
-            doc.text(company.signatoryName || 'HR DEPT');
-            doc.font('Helvetica').fillColor('#64748b').text(company.signatoryDesignation || 'HR BUSINESS PARTNER');
-
-            doc.end();
-        } catch (err) {
-            reject(err);
-        }
+        doc.fontSize(16).font('Helvetica-Bold').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(11).font('Helvetica').text(`Official Appointment Letter for ${applicant.fullName}`, { align: 'center' });
+        doc.end();
     });
 }
 
-module.exports = { generateAppointmentPdf };
+module.exports = {
+    buildOfficialLetterHtml,
+    generateAppointmentPdf
+};
