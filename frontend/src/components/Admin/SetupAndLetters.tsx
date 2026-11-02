@@ -789,28 +789,14 @@ export default function SetupAndLetters() {
                       position: 'relative', 
                       width: '210mm', 
                       minHeight: '297mm', 
-                      background: 'white',
+                      background: activeAssets.letterheadImage 
+                        ? `#fff url(/api/public/asset/${activeAssets.letterheadImage}) top left / 210mm 297mm repeat-y` 
+                        : '#fff',
                       transform: `scale(${zoom})`,
                       transformOrigin: 'top center',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
                     }}
                   >
-                    {activeAssets.letterheadImage && (
-                      <img 
-                        src={`/api/public/asset/${activeAssets.letterheadImage}`}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: '100%',
-                          zIndex: 0,
-                          pointerEvents: 'none',
-                          objectFit: 'fill'
-                        }}
-                        alt="" onError={(e) => { (e.currentTarget as HTMLElement).style.display = "none"; }}
-                      />
-                    )}
                     <div 
                       ref={editorRef}
                       className="letter-editor"
