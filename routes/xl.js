@@ -873,6 +873,56 @@ router.use(async (req, res, next) => {
     next();
 });
 
+// ─── USER CONTROLS & AUTO-APPROVAL HELPERS ──────────────────────────────────
+async function getUserControls(userOrEmployeeId) {
+    try {
+        let user = null;
+        if (userOrEmployeeId && typeof userOrEmployeeId === 'object' && userOrEmployeeId.controls !== undefined) {
+            user = userOrEmployeeId;
+        } else if (userOrEmployeeId && typeof userOrEmployeeId === 'string') {
+            user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { employeeId: userOrEmployeeId },
+                        { email: userOrEmployeeId },
+                        { uid: userOrEmployeeId },
+                        { _id: userOrEmployeeId }
+                    ]
+                }
+            });
+        }
+        if (!user) return {};
+
+        let controls = user.controls || {};
+        if (typeof controls === 'string') {
+            try { controls = JSON.parse(controls); } catch(e) { controls = {}; }
+        }
+        if (!controls || typeof controls !== 'object') controls = {};
+
+        return {
+            ...controls,
+            workInMandatory: controls.workInMandatory !== undefined ? Boolean(controls.workInMandatory) : (controls.WORKIN_MANDATORY !== undefined ? Boolean(controls.WORKIN_MANDATORY) : true),
+            callPlanningMandatory: Boolean(controls.callPlanningMandatory ?? controls.CALL_PLANNING_MANDATORY),
+            callReportMandatoryForExpense: Boolean(controls.callReportMandatoryForExpense ?? controls.CALL_REPORT_MANDATORY_FOR_EXPENSE),
+            blockBacklogReporting: Boolean(controls.blockBacklogReporting ?? controls.BLOCK_BACKLOG_REPORTING),
+            geoFencing: controls.geoFencing !== undefined ? Boolean(controls.geoFencing) : (controls.GEO_FENCING !== undefined ? Boolean(controls.GEO_FENCING) : true),
+            tourLimit: Boolean(controls.tourLimit ?? controls.TOUR_LIMIT),
+            deletionRequest: Boolean(controls.deletionRequest ?? controls.DELETION_REQUEST),
+            dcsListFilter: Boolean(controls.dcsListFilter ?? controls.DCS_LIST_FILTER),
+            autoApproval: Boolean(controls.autoApproval ?? controls.AUTO_APPROVAL),
+            autoApprovals: (controls.autoApprovals && typeof controls.autoApprovals === 'object') ? controls.autoApprovals : {}
+        };
+    } catch(err) {
+        console.error('Error fetching user controls:', err);
+        return {};
+    }
+}
+
+function shouldAutoApprove(userControls, moduleKey) {
+    if (!userControls || !userControls.autoApproval) return false;
+    const subApprovals = userControls.autoApprovals || {};
+    return Boolean(subApprovals[moduleKey]);
+}
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
 // Returns distance in metres between two GPS coordinates
@@ -2248,8 +2298,18 @@ router.post('/user/contact-support', async (req, res) => {
 
 router.post('/doctor', async (req, res) => {
     try {
-        const doctor = await XlDoctor.create(req.body);
-        res.json({ success: true, message: 'Doctor created successfully!', data: doctor });
+        const userControls = await getUserControls(req.body.employeeId || req.body.createdBy || req.body.userAllotted);
+        const autoApprove = shouldAutoApprove(userControls, 'doctor');
+        const data = { ...req.body };
+        if (autoApprove) {
+            data.status = 'Approved';
+            data.approvedAt = new Date();
+            data.approvedBy = 'Auto-Approved (System)';
+        } else if (!data.status) {
+            data.status = 'Pending';
+        }
+        const doctor = await XlDoctor.create(data);
+        res.json({ success: true, message: autoApprove ? 'Doctor created and auto-approved!' : 'Doctor created successfully!', data: doctor });
     } catch (e) {
         res.status(500).json({ error: 'Failed to create doctor' });
     }
@@ -2274,6 +2334,9 @@ router.put('/doctor/:id/geo', async (req, res) => {
         }
         await doctor.save();
 
+        const userControls = await getUserControls(employeeId);
+        const autoApproveGeo = shouldAutoApprove(userControls, 'geoFencing');
+
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
             entityType: 'Doctor',
@@ -2281,7 +2344,9 @@ router.put('/doctor/:id/geo', async (req, res) => {
             latitude: lat1,
             longitude: lng1,
             geoAddress: geoAddress1,
-            status: 'Submitted'
+            status: autoApproveGeo ? 'Approved' : 'Submitted',
+            approvedAt: autoApproveGeo ? new Date() : undefined,
+            approvedBy: autoApproveGeo ? 'Auto-Approved (System)' : undefined
         });
         res.json({ success: true, message: 'Doctor location tagged successfully!' });
     } catch (e) {
@@ -2309,6 +2374,9 @@ router.put('/chemist/:id/geo', async (req, res) => {
         }
         await chemist.save();
         
+        const userControls = await getUserControls(employeeId);
+        const autoApproveGeo = shouldAutoApprove(userControls, 'geoFencing');
+
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
             entityType: 'Chemist',
@@ -2316,7 +2384,9 @@ router.put('/chemist/:id/geo', async (req, res) => {
             latitude: lat1,
             longitude: lng1,
             geoAddress: geoAddress1,
-            status: 'Submitted'
+            status: autoApproveGeo ? 'Approved' : 'Submitted',
+            approvedAt: autoApproveGeo ? new Date() : undefined,
+            approvedBy: autoApproveGeo ? 'Auto-Approved (System)' : undefined
         });
         res.json({ success: true, message: 'Chemist location tagged successfully!' });
     } catch (e) {
@@ -2340,6 +2410,9 @@ router.put('/stockist/:id/geo', async (req, res) => {
         }
         await stockist.save();
         
+        const userControls = await getUserControls(employeeId);
+        const autoApproveGeo = shouldAutoApprove(userControls, 'geoFencing');
+
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
             entityType: 'Stockist',
@@ -2347,7 +2420,9 @@ router.put('/stockist/:id/geo', async (req, res) => {
             latitude: lat1,
             longitude: lng1,
             geoAddress: geoAddress1,
-            status: 'Submitted'
+            status: autoApproveGeo ? 'Approved' : 'Submitted',
+            approvedAt: autoApproveGeo ? new Date() : undefined,
+            approvedBy: autoApproveGeo ? 'Auto-Approved (System)' : undefined
         });
         res.json({ success: true, message: 'Stockist location tagged successfully!' });
     } catch (e) {
@@ -2367,7 +2442,16 @@ router.post('/chemist', async (req, res) => {
         if (!data.extraInformation && data.extraInfo) data.extraInformation = data.extraInfo;
         if (!data.userAllotted && data.employeeId) data.userAllotted = data.employeeId;
         if (!data.employeeId && data.userAllotted) data.employeeId = data.userAllotted;
-        if (!data.status) data.status = 'Pending';
+        
+        const userControls = await getUserControls(data.employeeId || data.userAllotted);
+        const autoApproveChemist = shouldAutoApprove(userControls, 'chemist');
+        if (autoApproveChemist) {
+            data.status = 'Approved';
+            data.approvedAt = new Date();
+            data.approvedBy = 'Auto-Approved (System)';
+        } else if (!data.status) {
+            data.status = 'Pending';
+        }
         if (!data.uid) {
             try {
                 const max = await getMaxUID(XlChemist, 'CHM');
@@ -2380,6 +2464,7 @@ router.post('/chemist', async (req, res) => {
         const chemist = await XlChemist.create(data);
 
         if (chemist.lat1 && chemist.lng1) {
+            const autoApproveGeo = shouldAutoApprove(userControls, 'geoFencing');
             await XlGeoFencing.create({
                 employeeId: chemist.userAllotted || chemist.employeeId || 'SYSTEM',
                 entityType: 'Chemist',
@@ -2387,11 +2472,13 @@ router.post('/chemist', async (req, res) => {
                 latitude: chemist.lat1,
                 longitude: chemist.lng1,
                 geoAddress: chemist.geoAddress1 || '',
-                status: 'Submitted'
+                status: autoApproveGeo ? 'Approved' : 'Submitted',
+                approvedAt: autoApproveGeo ? new Date() : undefined,
+                approvedBy: autoApproveGeo ? 'Auto-Approved (System)' : undefined
             });
         }
 
-        res.json({ success: true, message: 'Chemist created successfully!', data: chemist });
+        res.json({ success: true, message: autoApproveChemist ? 'Chemist created and auto-approved!' : 'Chemist created successfully!', data: chemist });
     } catch (e) {
         console.error('Chemist create error:', e);
         res.status(500).json({ error: 'Failed to create chemist: ' + e.message });
@@ -2413,7 +2500,16 @@ router.post('/stockist', async (req, res) => {
         if (!data.extraInformation && data.extraInfo) data.extraInformation = data.extraInfo;
         if (!data.userAllotted && data.employeeId) data.userAllotted = data.employeeId;
         if (!data.employeeId && data.userAllotted) data.employeeId = data.userAllotted;
-        if (!data.status) data.status = 'Pending';
+        
+        const userControls = await getUserControls(data.employeeId || data.userAllotted);
+        const autoApproveStockist = shouldAutoApprove(userControls, 'stockist');
+        if (autoApproveStockist) {
+            data.status = 'Approved';
+            data.approvedAt = new Date();
+            data.approvedBy = 'Auto-Approved (System)';
+        } else if (!data.status) {
+            data.status = 'Pending';
+        }
         if (!data.uid) {
             try {
                 const max = await getMaxUID(XlStockist, 'STK');
@@ -2427,6 +2523,7 @@ router.post('/stockist', async (req, res) => {
 
         if (stockist.lat1 && stockist.lng1) {
             try {
+                const autoApproveGeo = shouldAutoApprove(userControls, 'geoFencing');
                 await XlGeoFencing.create({
                     employeeId: stockist.userAllotted || stockist.employeeId || 'SYSTEM',
                     entityType: 'Stockist',
@@ -2434,12 +2531,14 @@ router.post('/stockist', async (req, res) => {
                     latitude: stockist.lat1,
                     longitude: stockist.lng1,
                     geoAddress: stockist.geoAddress1 || '',
-                    status: 'Submitted'
+                    status: autoApproveGeo ? 'Approved' : 'Submitted',
+                    approvedAt: autoApproveGeo ? new Date() : undefined,
+                    approvedBy: autoApproveGeo ? 'Auto-Approved (System)' : undefined
                 });
             } catch(e) {}
         }
 
-        res.json({ success: true, message: 'Stockist created successfully!', data: stockist });
+        res.json({ success: true, message: autoApproveStockist ? 'Stockist created and auto-approved!' : 'Stockist created successfully!', data: stockist });
     } catch (e) {
         console.error('Stockist create error:', e);
         res.status(500).json({ error: 'Failed to create stockist: ' + e.message });
@@ -2601,6 +2700,9 @@ router.post('/city', async (req, res) => {
             }
         }
 
+        const userControls = await getUserControls(employeeId || req.body.userAllotted);
+        const autoApproveCity = shouldAutoApprove(userControls, 'city');
+
         const city = await XlCity.create({
             ...req.body,
             cityName: cleanName,
@@ -2610,10 +2712,12 @@ router.post('/city', async (req, res) => {
             areaType: areaType || 'City',
             employeeId: employeeId || req.body.userAllotted || '',
             employeeName: req.body.employeeName || '',
-            status: 'Pending'
+            status: autoApproveCity ? 'Approved' : 'Pending',
+            approvedAt: autoApproveCity ? new Date() : undefined,
+            approvedBy: autoApproveCity ? 'Auto-Approved (System)' : undefined
         });
 
-        res.json({ success: true, message: 'City created successfully!', data: city });
+        res.json({ success: true, message: autoApproveCity ? 'City created and auto-approved!' : 'City created successfully!', data: city });
     } catch (e) {
         console.error('Create city error:', e);
         res.status(500).json({ success: false, error: 'Failed to create city: ' + e.message });
@@ -2932,6 +3036,9 @@ router.post('/route', async (req, res) => {
             }
         }
 
+        const userControls = await getUserControls(employeeId || req.body.userAllotted);
+        const autoApproveRoute = shouldAutoApprove(userControls, 'route');
+
         const route = await XlRoute.create({
             state,
             hq,
@@ -2941,10 +3048,12 @@ router.post('/route', async (req, res) => {
             distance,
             uid,
             employeeId: employeeId || req.body.userAllotted || '',
-            status: 'Pending'
+            status: autoApproveRoute ? 'Approved' : 'Pending',
+            approvedAt: autoApproveRoute ? new Date() : undefined,
+            approvedBy: autoApproveRoute ? 'Auto-Approved (System)' : undefined
         });
 
-        res.json({ success: true, message: 'Route submitted for approval successfully!', data: route });
+        res.json({ success: true, message: autoApproveRoute ? 'Route created and auto-approved!' : 'Route submitted for approval successfully!', data: route });
     } catch (e) {
         console.error('Create route error:', e);
         res.status(500).json({ success: false, error: 'Failed to create route: ' + e.message, message: e.message });
@@ -3338,6 +3447,29 @@ async function resolveEntityHQs(req) {
     return { isExecutive: false, hqList: [...new Set(hqList)] };
 }
 
+async function applyDCSListFilter(where, req) {
+    const empParam = req.query.employeeId || req.query.email || req.query.user;
+    if (empParam) {
+        const userControls = await getUserControls(empParam);
+        if (userControls.dcsListFilter) {
+            const user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [{ employeeId: empParam }, { email: empParam }, { uid: empParam }]
+                }
+            });
+            const repName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+            const repIds = [empParam, user?.employeeId, user?.email, user?.uid, repName].filter(Boolean);
+            const { sequelize } = require('../db');
+            const allottedConditions = repIds.map(val => sequelize.where(
+                sequelize.fn('lower', sequelize.col('userAllotted')),
+                { [Op.like]: `%${val.toLowerCase()}%` }
+            ));
+            where[Op.and] = where[Op.and] || [];
+            where[Op.and].push({ [Op.or]: allottedConditions });
+        }
+    }
+}
+
 router.get('/doctors', async (req, res) => {
     try {
         const { isExecutive, hqList } = await resolveEntityHQs(req);
@@ -3351,6 +3483,8 @@ router.get('/doctors', async (req, res) => {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
+
+        await applyDCSListFilter(where, req);
 
         const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'userAllotted', 'lat1', 'lng1', 'lat2', 'lng2'], order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
@@ -3374,6 +3508,8 @@ router.get('/chemists', async (req, res) => {
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
+        await applyDCSListFilter(where, req);
+
         const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
@@ -3394,6 +3530,8 @@ router.get('/stockists', async (req, res) => {
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
+
+        await applyDCSListFilter(where, req);
 
         const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'name', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: stockists });
@@ -3462,6 +3600,28 @@ router.post('/tour-program', async (req, res) => {
         let tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray3 }, month, year } });
         const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
 
+        const userControls = await getUserControls(userForId || employeeId);
+
+        // Tour Limit Check
+        if (userControls.tourLimit && entries && entries.length > 0) {
+            const routeCounts = {};
+            const MAX_ALLOWED_ROUTE_DAYS = 4;
+            for (const entry of entries) {
+                const rName = entry.routeName || entry.route || entry.toCity;
+                if (rName && entry.type !== 'Holiday' && entry.type !== 'Sunday' && entry.type !== 'SUNDAY') {
+                    routeCounts[rName] = (routeCounts[rName] || 0) + 1;
+                    if (routeCounts[rName] > MAX_ALLOWED_ROUTE_DAYS) {
+                        return res.status(403).json({
+                            error: `Tour Limit exceeded: Route "${rName}" is planned ${routeCounts[rName]} times (maximum allowed is ${MAX_ALLOWED_ROUTE_DAYS} times per month).`
+                        });
+                    }
+                }
+            }
+        }
+
+        const autoApproveTP = shouldAutoApprove(userControls, 'tp');
+        const isApprovedState = isAdminSender || autoApproveTP;
+
         if (tp) {
             if ((tp.status === 'Submitted' || tp.status === 'Approved') && resubmitRemark) {
                 const u = await XlUser.findOne({ where: { employeeId } });
@@ -3485,13 +3645,13 @@ router.post('/tour-program', async (req, res) => {
             const hasApproved = (entries || []).some(e => e.status === 'Approved' && !e.isEdited);
             
             let finalStatus = tp.status || 'Draft';
-            if (isAdminSender) {
+            if (isApprovedState) {
                 finalStatus = 'Approved';
             } else if (resubmitRemark || hasPendingOrEdited) {
                 finalStatus = hasApproved ? 'Partially Approved' : 'Submitted';
             }
-            const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
-            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved', isEdited: false } : e);
+            const approvedFields = isApprovedState ? { approvedBy: isAdminSender ? 'Admin' : 'Auto-Approved (System)', approvedAt: new Date() } : {};
+            const processedEntries = (entries || []).map(e => isApprovedState ? { ...e, status: 'Approved', isEdited: false } : e);
 
             await XlTourProgram.update({ 
                 entries: JSON.stringify(processedEntries), 
@@ -3503,9 +3663,9 @@ router.post('/tour-program', async (req, res) => {
             }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
         } else {
-            const finalStatus = isAdminSender ? 'Approved' : 'Draft';
-            const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
-            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved', isEdited: false } : e);
+            const finalStatus = isApprovedState ? 'Approved' : 'Draft';
+            const approvedFields = isApprovedState ? { approvedBy: isAdminSender ? 'Admin' : 'Auto-Approved (System)', approvedAt: new Date() } : {};
+            const processedEntries = (entries || []).map(e => isApprovedState ? { ...e, status: 'Approved', isEdited: false } : e);
 
             tp = await XlTourProgram.create({
                 _id: generateId(),
@@ -3515,7 +3675,7 @@ router.post('/tour-program', async (req, res) => {
                 ...approvedFields
             });
         }
-        res.json({ success: true, message: 'Tour Program saved!', data: tp });
+        res.json({ success: true, message: isApprovedState ? 'Tour Program auto-approved!' : 'Tour Program saved!', data: tp });
     } catch (e) {
         console.error('TP save error:', e);
         res.status(500).json({ error: 'Failed to save Tour Program: ' + e.message });
@@ -3528,7 +3688,15 @@ router.put('/tour-program/:id/submit', async (req, res) => {
         const tp = await XlTourProgram.findOne({ where: { _id: req.params.id } });
         if (!tp) return res.status(404).json({ error: 'Not found' });
 
-        await XlTourProgram.update({ status: 'Submitted', submittedAt: new Date() }, { where: { _id: req.params.id } });
+        const userControls = await getUserControls(tp.employeeId);
+        const autoApproveTP = shouldAutoApprove(userControls, 'tp');
+        const nextStatus = autoApproveTP ? 'Approved' : 'Submitted';
+
+        await XlTourProgram.update({
+            status: nextStatus,
+            submittedAt: new Date(),
+            ...(autoApproveTP ? { approvedAt: new Date(), approvedBy: 'Auto-Approved (System)' } : {})
+        }, { where: { _id: req.params.id } });
 
         // Non-blocking notifications
         try {
@@ -3837,25 +4005,42 @@ router.post('/dcr', async (req, res) => {
             return res.status(403).json({ error: `Date ${date} is not in your approved Tour Program.` });
         }
 
+        // ── Retrieve User Controls ────────────────────────────────────────
+        const userControls = await getUserControls(userForId || employeeId);
+
         // ── Phase 3: Check Attendance & Backlog Rules ──────────────────────
         const todayStr = new Date().toISOString().split('T')[0];
         if (date === todayStr) {
-            // Current day -> MUST be punched in
-            const att = await XlAttendance.findOne({ where: { employeeId, date } });
-            if (!att || !att.punchInTime) {
-                return res.status(403).json({ error: 'You must punch in your Attendance for today before submitting a call report.' });
+            // Check Work-In Mandatory control (only require punch-in if workInMandatory is true)
+            if (userControls.workInMandatory) {
+                const att = await XlAttendance.findOne({ where: { employeeId: { [Op.in]: idArray }, date } });
+                if (!att || !att.punchInTime) {
+                    return res.status(403).json({ error: 'You must punch in your Attendance for today before submitting a call report.' });
+                }
             }
         } else {
+            // Past day -> Check if backlog reporting is blocked
+            if (userControls.blockBacklogReporting) {
+                return res.status(403).json({ error: 'Backlog reporting has been disabled for your account by Admin.' });
+            }
             // Past day -> MUST have an approved Backlog Request
-            const backlog = await XlBacklogRequest.findOne({ where: { employeeId, date, status: 'Approved' } });
+            const backlog = await XlBacklogRequest.findOne({ where: { employeeId: { [Op.in]: idArray }, date, status: 'Approved' } });
             if (!backlog) {
                 return res.status(403).json({ error: `Reporting for ${date} is locked. You must submit a Backlog Request and get Admin approval to report for past dates.` });
             }
         }
 
+        // ── Check Call Planning Mandatory ──────────────────────────────────
+        if (userControls.callPlanningMandatory) {
+            const plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date: normDate } });
+            if (!plan) {
+                return res.status(403).json({ error: `Call Planning is mandatory for your account. Please submit your Call Plan for ${date} before reporting visits.` });
+            }
+        }
+
         // ── Geo-fence check for Doctor, Chemist, and Stockist visits ────────────
         const todayStr2 = new Date().toISOString().split('T')[0];
-        if (date === todayStr2 && (entityType === 'Doctor' || entityType === 'Chemist' || entityType === 'Stockist')) {
+        if (userControls.geoFencing !== false && date === todayStr2 && (entityType === 'Doctor' || entityType === 'Chemist' || entityType === 'Stockist')) {
             const { latitude: mrLat, longitude: mrLng } = req.body;
 
             if (!mrLat || !mrLng) {
@@ -3886,19 +4071,23 @@ router.post('/dcr', async (req, res) => {
             }
         }
 
+        const autoApproveDCR = shouldAutoApprove(userControls, 'callReport');
         const hqToRecord = (req.body.headquarter || req.body.hq || userForId?.hq || tp?.hq || '').toUpperCase().trim();
         const dcr = await XlDCR.create({
             _id: generateId(),
             ...req.body,
             headquarter: hqToRecord,
             tourProgramId: tp._id,
+            status: autoApproveDCR ? 'Approved' : (req.body.status || 'Submitted'),
+            approvedAt: autoApproveDCR ? new Date() : undefined,
+            approvedBy: autoApproveDCR ? 'Auto-Approved (System)' : undefined,
             samplesGiven: JSON.stringify(req.body.samplesGiven || []),
             gifts: JSON.stringify(req.body.gifts || []),
             productsDetailed: JSON.stringify(req.body.productsDetailed || []),
             pobItems: JSON.stringify(req.body.pobItems || []),
             workedWith: JSON.stringify(req.body.workedWith || []),
         });
-        res.json({ success: true, message: 'Call Report submitted!', data: dcr });
+        res.json({ success: true, message: autoApproveDCR ? 'Call Report submitted and auto-approved!' : 'Call Report submitted!', data: dcr });
     } catch (e) {
         console.error('DCR error:', e);
         res.status(500).json({ error: 'Failed to submit Call Report' });
@@ -4749,8 +4938,16 @@ router.post('/leave', async (req, res) => {
         const { XlLeave, XlAssignedLeave } = require('../db');
         const { startDate, endDate, leaveType, status, employeeId } = req.body;
         
-        const finalStatus = status || 'Pending';
-        const leave = await XlLeave.create({ _id: generateId(), ...req.body, status: finalStatus });
+        const userControls = await getUserControls(employeeId);
+        const autoApproveLeave = shouldAutoApprove(userControls, 'leaveRequest');
+        const finalStatus = autoApproveLeave ? 'Approved' : (status || 'Pending');
+        const leave = await XlLeave.create({
+            _id: generateId(),
+            ...req.body,
+            status: finalStatus,
+            approvedAt: autoApproveLeave ? new Date() : undefined,
+            approvedBy: autoApproveLeave ? 'Auto-Approved (System)' : undefined
+        });
         
         if (finalStatus === 'Approved' && leaveType !== 'Leave Without Pay' && leaveType !== 'LWP') {
             const sd = new Date(startDate);
@@ -4884,8 +5081,43 @@ router.delete('/expense', async (req, res) => {
 
 router.post('/expense', async (req, res) => {
     try {
-        const exp = await XlExpense.create({ _id: generateId(), ...req.body });
-        res.json({ success: true, message: 'Expense submitted!', data: exp });
+        const { employeeId, date } = req.body;
+        const userControls = await getUserControls(employeeId);
+
+        // Check Call Report Mandatory For Expense
+        if (userControls.callReportMandatoryForExpense) {
+            const user = await XlUser.findOne({ where: { employeeId } }) || 
+                         await XlUser.findOne({ where: { email: employeeId } }) || 
+                         await XlUser.findOne({ where: { uid: employeeId } });
+            let idArray = [employeeId];
+            if (user) {
+                if (user.employeeId) idArray.push(user.employeeId);
+                if (user.email) idArray.push(user.email);
+                if (user.uid) idArray.push(user.uid);
+            }
+            const dcrExists = await XlDCR.findOne({
+                where: {
+                    employeeId: { [Op.in]: idArray },
+                    date
+                }
+            });
+            if (!dcrExists) {
+                return res.status(403).json({
+                    error: `Call Report Mandatory for Expense is enabled. Please submit your Daily Call Report for ${date} before claiming expenses.`
+                });
+            }
+        }
+
+        const autoApproveExp = shouldAutoApprove(userControls, 'expense');
+        const expData = {
+            _id: generateId(),
+            ...req.body,
+            status: autoApproveExp ? 'Approved' : (req.body.status || 'Pending'),
+            approvedAt: autoApproveExp ? new Date() : undefined,
+            approvedBy: autoApproveExp ? 'Auto-Approved (System)' : undefined
+        };
+        const exp = await XlExpense.create(expData);
+        res.json({ success: true, message: autoApproveExp ? 'Expense auto-approved!' : 'Expense submitted!', data: exp });
     } catch (e) {
         res.status(500).json({ error: 'Failed to submit expense' });
     }
@@ -4915,6 +5147,11 @@ router.get('/expense/my', async (req, res) => {
 router.post('/backlog', async (req, res) => {
     try {
         const { employeeId, dates, reason } = req.body;
+        
+        const userControls = await getUserControls(employeeId);
+        if (userControls.blockBacklogReporting) {
+            return res.status(403).json({ error: 'Backlog reporting has been disabled for your account by Admin.' });
+        }
         
         let datesArray = dates;
         if (!dates && req.body.date) datesArray = [req.body.date];
@@ -5631,6 +5868,14 @@ router.get('/approvals/pending', async (req, res) => {
             return res.json({ success: true, data: formatted });
         }
 
+        if (type && type.startsWith('Deletion Request')) {
+            const controls = await getUserControls(mgrUser || empIdentifier);
+            const hasDeletionPerm = isUniversalApprover || controls.deletionRequest;
+            if (!hasDeletionPerm) {
+                return res.status(403).json({ error: 'You do not have permission to view Deletion Requests.' });
+            }
+        }
+
         let Model;
         if (type === 'Call Report') Model = XlDCR;
         else if (type === 'Tour Program') Model = XlTourProgram;
@@ -6089,6 +6334,14 @@ router.get('/approvals/pending', async (req, res) => {
 router.post('/approvals/action', async (req, res) => {
     try {
         const { recordId, type, action, remarks, approvedBy } = req.body;
+
+        if (type && type.startsWith('Deletion Request')) {
+            const controls = await getUserControls(approvedBy);
+            const hasDeletionPerm = approvedBy === 'Admin' || controls.deletionRequest;
+            if (!hasDeletionPerm) {
+                return res.status(403).json({ error: 'You do not have permission to process Deletion Requests.' });
+            }
+        }
 
         if (type === 'Performance KPI') {
             const perf = await XlPerformanceAnalysis.findByPk(recordId);
@@ -6746,7 +6999,9 @@ router.post('/call-plan/bulk', async (req, res) => {
         // -----------------------
         
         const isAdminCallPlan = !!req.body.fromAdmin || req.body.status === 'Approved';
-        const planStatus = isAdminCallPlan ? 'Approved' : 'Submitted';
+        const userControls = await getUserControls(userForId || employeeId);
+        const autoApproveCP = shouldAutoApprove(userControls, 'callPlanning');
+        const planStatus = (isAdminCallPlan || autoApproveCP) ? 'Approved' : 'Submitted';
 
         const { XlDoctor: BDoctor, XlChemist: BChemist, XlStockist: BStockist } = require('../db');
         const inDocIds = (doctors || []).map(d => typeof d === 'string' ? d : (d.id || d._id)).filter(id => id && !String(id).startsWith('slot_open_'));
@@ -6979,9 +7234,15 @@ router.post('/call-plan/submit-all', async (req, res) => {
             });
         }
 
+        const userControls = await getUserControls(userForId || employeeId);
+        const autoApproveCP = shouldAutoApprove(userControls, 'callPlanning');
         let totalPlannedCalls = 0;
         for (const p of plannedRecords) {
-            p.status = 'Submitted';
+            p.status = autoApproveCP ? 'Approved' : 'Submitted';
+            if (autoApproveCP) {
+                p.approvedAt = new Date();
+                p.approvedBy = 'Auto-Approved (System)';
+            }
             await p.save();
             totalPlannedCalls += parseSafe(p.doctors).length;
         }
@@ -7649,8 +7910,10 @@ router.post('/primary-sales/save', async (req, res) => {
             }
         }
 
-        // Rule 1: Admin submissions must be immediately Approved
-        const finalStatus = (isAdminSender || status === 'Approved') ? 'Approved' : (status || 'Pending');
+        // Rule 1: Admin submissions or Auto-Approved users must be immediately Approved
+        const userControls = await getUserControls(finalEmpId || employeeId);
+        const autoApprovePS = shouldAutoApprove(userControls, 'primarySale');
+        const finalStatus = (isAdminSender || status === 'Approved' || autoApprovePS) ? 'Approved' : (status || 'Pending');
 
         const newSale = await XlPrimarySales.create({
             employeeId: finalEmpId || 'ADMIN',
@@ -7668,7 +7931,9 @@ router.post('/primary-sales/save', async (req, res) => {
             month,
             year,
             productsData: JSON.stringify(productsData),
-            status: finalStatus
+            status: finalStatus,
+            approvedAt: (isAdminSender || autoApprovePS) ? new Date() : undefined,
+            approvedBy: autoApprovePS ? 'Auto-Approved (System)' : (isAdminSender ? 'Admin' : undefined)
         });
 
         if (productsData && Array.isArray(productsData) && productsData.length > 0) {
@@ -10712,7 +10977,9 @@ router.post('/secondary-sales/save', async (req, res) => {
             }
         }
 
-        const finalStatus = (isAdminSender || status === 'Approved') ? 'Approved' : (status || 'Pending');
+        const userControls = await getUserControls(finalEmpId || employeeId);
+        const autoApproveSS = shouldAutoApprove(userControls, 'secondarySale');
+        const finalStatus = (isAdminSender || status === 'Approved' || autoApproveSS) ? 'Approved' : (status || 'Pending');
 
         const sale = await XlSecondarySales.create({
             employeeId: finalEmpId,
@@ -10726,7 +10993,9 @@ router.post('/secondary-sales/save', async (req, res) => {
             stockist,
             amount,
             productsData: JSON.stringify(products),
-            status: finalStatus
+            status: finalStatus,
+            approvedAt: (isAdminSender || autoApproveSS) ? new Date() : undefined,
+            approvedBy: autoApproveSS ? 'Auto-Approved (System)' : (isAdminSender ? 'Admin' : undefined)
         });
 
         if (products.length > 0) {
@@ -13359,12 +13628,18 @@ router.post('/samples/allot', async (req, res) => {
             deAllottedQty: Number(deAllottedQty || 0),
             remarks: remarks || ''
         });
+        const userControls = await getUserControls(employeeId);
+        const autoApproveSample = shouldAutoApprove(userControls, 'sample');
+        const sampleStatus = (req.body.status === 'Pending' && !autoApproveSample) ? 'Pending' : 'Approved';
+
         const record = await XlSample.create({
             employeeId,
             month: month || now.toLocaleString('en-US', { month: 'short' }),
             year: year || String(now.getFullYear()),
             details,
-            status: 'Approved',
+            status: sampleStatus,
+            approvedAt: sampleStatus === 'Approved' ? new Date() : undefined,
+            approvedBy: autoApproveSample ? 'Auto-Approved (System)' : undefined,
             adminRemarks: remarks || ''
         });
         res.json({ success: true, data: record });
@@ -13605,12 +13880,18 @@ router.post('/gifts/allot', async (req, res) => {
             deAllottedQty: Number(deAllottedQty || 0),
             remarks: remarks || ''
         });
+        const userControls = await getUserControls(employeeId);
+        const autoApproveGift = shouldAutoApprove(userControls, 'gift');
+        const giftStatus = (req.body.status === 'Pending' && !autoApproveGift) ? 'Pending' : 'Approved';
+
         const record = await XlGift.create({
             employeeId,
             month: month || now.toLocaleString('en-US', { month: 'short' }),
             year: year || String(now.getFullYear()),
             details,
-            status: 'Approved',
+            status: giftStatus,
+            approvedAt: giftStatus === 'Approved' ? new Date() : undefined,
+            approvedBy: autoApproveGift ? 'Auto-Approved (System)' : undefined,
             adminRemarks: remarks || ''
         });
         res.json({ success: true, data: record });

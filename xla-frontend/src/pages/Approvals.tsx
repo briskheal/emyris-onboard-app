@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { 
   ArrowLeft, PanelLeftClose, PanelLeftOpen,
@@ -45,6 +45,40 @@ export default function Approvals() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [viewMode, setViewMode] = useState<'Pending'|'History'>('Pending');
 
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('xla_user') || localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const hasDeletionPermission = useMemo(() => {
+    if (!user) return false;
+    const role = (user.role || '').toLowerCase();
+    const designation = (user.designation || '').toLowerCase();
+    if (role === 'admin' || designation === 'admin') return true;
+    let controls = user.controls;
+    if (typeof controls === 'string') {
+      try { controls = JSON.parse(controls); } catch { controls = {}; }
+    }
+    return Boolean(controls?.deletionRequest ?? controls?.DELETION_REQUEST);
+  }, [user]);
+
+  const visibleSidebarItems = useMemo(() => {
+    return sidebarItems.filter(item => {
+      if (item.path === 'Deletion Request') return hasDeletionPermission;
+      return true;
+    });
+  }, [hasDeletionPermission]);
+
+  useEffect(() => {
+    if (selectedModule === 'Deletion Request' && !hasDeletionPermission) {
+      setSelectedModule('Tour Program');
+      sessionStorage.setItem('adminApprovalModule', 'Tour Program');
+    }
+  }, [selectedModule, hasDeletionPermission]);
+
   const fetchCounts = async () => {
     try {
       const res = await axios.get('/api/xl/approvals/counts?designation=ADMIN');
@@ -86,13 +120,13 @@ export default function Approvals() {
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const currentIndex = sidebarItems.findIndex(i => i.path === selectedModule);
+        const currentIndex = visibleSidebarItems.findIndex(i => i.path === selectedModule);
         
-        if (e.key === 'ArrowDown' && currentIndex < sidebarItems.length - 1) {
-          const p = sidebarItems[currentIndex + 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
+        if (e.key === 'ArrowDown' && currentIndex < visibleSidebarItems.length - 1) {
+          const p = visibleSidebarItems[currentIndex + 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
           setSelectedRows([]);
         } else if (e.key === 'ArrowUp' && currentIndex > 0) {
-          const p = sidebarItems[currentIndex - 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
+          const p = visibleSidebarItems[currentIndex - 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
           setSelectedRows([]);
         }
       }
@@ -199,7 +233,7 @@ export default function Approvals() {
           </div>
           {/* Horizontal Category Pills */}
           <div className="flex items-center gap-2 overflow-x-auto px-3 py-2 no-scrollbar">
-             {sidebarItems.map(item => {
+             {visibleSidebarItems.map(item => {
                 const count = counts[item.path] || 0;
                 const isSelected = selectedModule === item.path;
                 const Icon = item.icon;
@@ -263,7 +297,7 @@ export default function Approvals() {
              </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-             {sidebarItems.map(item => {
+             {visibleSidebarItems.map(item => {
                 const count = counts[item.path] || 0;
                 const isSelected = selectedModule === item.path;
                 const Icon = item.icon;
