@@ -572,43 +572,76 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                     <div style={{ marginTop: '12px', overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', color: '#f8fafc' }}>
                         <thead>
+                          <tr style={{ background: '#090e1a', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                            <th colSpan={6} style={{ padding: '6px 8px', borderRight: '1px solid #334155' }}>Activity</th>
+                            <th colSpan={3} style={{ padding: '6px 8px', borderRight: '1px solid #334155', color: '#38bdf8' }}>Secondary Sales</th>
+                            <th colSpan={3} style={{ padding: '6px 8px', color: '#34d399' }}>Collection</th>
+                          </tr>
                           <tr style={{ background: '#0f172a', textAlign: 'left' }}>
                             <th style={{ padding: '6px' }}>Month</th>
+                            <th style={{ padding: '6px' }}>Days</th>
                             <th style={{ padding: '6px' }}>Dr Visits</th>
-                            <th style={{ padding: '6px' }}>Tot Calls</th>
+                            <th style={{ padding: '6px' }}>Calls</th>
                             <th style={{ padding: '6px' }}>Call Avg</th>
-                            <th style={{ padding: '6px' }}>POB (₹)</th>
-                            <th style={{ padding: '6px' }}>Sec Obj (₹)</th>
-                            <th style={{ padding: '6px' }}>Sec Ach (₹)</th>
-                            <th style={{ padding: '6px' }}>% Ach</th>
+                            <th style={{ padding: '6px', borderRight: '1px solid #334155' }}>POB (₹)</th>
+                            <th style={{ padding: '6px', color: '#38bdf8' }}>Sec Obj (₹)</th>
+                            <th style={{ padding: '6px', color: '#38bdf8' }}>Sec Ach (₹)</th>
+                            <th style={{ padding: '6px', borderRight: '1px solid #334155', color: '#38bdf8' }}>% Sec</th>
+                            <th style={{ padding: '6px', color: '#34d399' }}>Coll Obj (₹)</th>
+                            <th style={{ padding: '6px', color: '#34d399' }}>Coll Ach (₹)</th>
+                            <th style={{ padding: '6px', color: '#34d399' }}>% Coll</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {(applicant.confirmationData.months || []).map((m: any, idx: number) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              <td style={{ padding: '6px', fontWeight: 'bold' }}>{m.monthLabel}</td>
-                              <td style={{ padding: '6px' }}>{m.drVisits}</td>
-                              <td style={{ padding: '6px' }}>{m.totCalls}</td>
-                              <td style={{ padding: '6px', color: '#38bdf8' }}>{m.callAvg}</td>
-                              <td style={{ padding: '6px' }}>₹{(m.pob || 0).toLocaleString()}</td>
-                              <td style={{ padding: '6px' }}>₹{(m.secObj || 0).toLocaleString()}</td>
-                              <td style={{ padding: '6px' }}>₹{(m.secAchieved || 0).toLocaleString()}</td>
-                              <td style={{ padding: '6px', fontWeight: 'bold', color: (m.achievementPct || 0) >= 100 ? '#34d399' : ((m.achievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
-                                {m.achievementPct}%
-                              </td>
-                            </tr>
-                          ))}
+                          {(applicant.confirmationData.months || []).map((m: any, idx: number) => {
+                            const isProj = m.isProjection || idx === 5;
+                            return (
+                              <tr key={idx} style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                background: isProj ? 'rgba(14, 165, 233, 0.1)' : 'transparent'
+                              }}>
+                                <td style={{ padding: '6px', fontWeight: 'bold', color: isProj ? '#38bdf8' : '#f8fafc' }}>
+                                  {m.monthLabel} {isProj ? <span style={{ fontSize: '0.62rem', background: '#0284c7', color: '#fff', padding: '1px 4px', borderRadius: '3px' }}>PROJ</span> : ''}
+                                </td>
+                                <td style={{ padding: '6px', color: '#f8fafc' }}>{m.daysWorked || '-'}</td>
+                                <td style={{ padding: '6px' }}>{m.drVisits}</td>
+                                <td style={{ padding: '6px' }}>{m.totCalls}</td>
+                                <td style={{ padding: '6px', color: '#38bdf8' }}>{m.callAvg}</td>
+                                <td style={{ padding: '6px', borderRight: '1px solid #334155' }}>₹{(m.pob || 0).toLocaleString()}</td>
+                                
+                                <td style={{ padding: '6px' }}>₹{(m.secObj || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px' }}>₹{(m.secAchieved || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px', borderRight: '1px solid #334155', fontWeight: 'bold', color: (m.achievementPct || 0) >= 100 ? '#34d399' : ((m.achievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
+                                  {m.achievementPct}%
+                                </td>
+
+                                <td style={{ padding: '6px' }}>₹{(m.collObj || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px' }}>₹{(m.collAchieved || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px', fontWeight: 'bold', color: (m.collAchievementPct || 0) >= 100 ? '#34d399' : ((m.collAchievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
+                                  {m.collAchievementPct || 0}%
+                                </td>
+                              </tr>
+                            );
+                          })}
                           {applicant.confirmationData.summary && (
                             <tr style={{ background: '#090d16', fontWeight: 'bold', borderTop: '2px solid #334155' }}>
-                              <td style={{ padding: '6px' }}>Total / Avg</td>
-                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.totalDrVisits}</td>
-                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.totalCalls}</td>
-                              <td style={{ padding: '6px', color: '#38bdf8' }}>{applicant.confirmationData.summary.overallCallAvg}</td>
-                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalPob?.toLocaleString()}</td>
-                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalSecObj?.toLocaleString()}</td>
-                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalSecAchieved?.toLocaleString()}</td>
-                              <td style={{ padding: '6px', color: (applicant.confirmationData.summary.overallAchievementPct || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
-                                {applicant.confirmationData.summary.overallAchievementPct}%
+                              <td style={{ padding: '6px' }}>5-Mo. Actuals Total</td>
+                              <td style={{ padding: '6px', color: '#f8fafc' }}>{applicant.confirmationData.summary.actualDaysWorked ?? applicant.confirmationData.summary.totalDaysWorked ?? '-'}</td>
+                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.actualDrVisits ?? applicant.confirmationData.summary.totalDrVisits}</td>
+                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.actualCalls ?? applicant.confirmationData.summary.totalCalls}</td>
+                              <td style={{ padding: '6px', color: '#38bdf8' }}>{applicant.confirmationData.summary.actualCallAvg ?? applicant.confirmationData.summary.overallCallAvg}</td>
+                              <td style={{ padding: '6px', borderRight: '1px solid #334155' }}>₹{(applicant.confirmationData.summary.actualPob ?? applicant.confirmationData.summary.totalPob)?.toLocaleString()}</td>
+                              
+                              <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualSecObj ?? applicant.confirmationData.summary.totalSecObj)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualSecAchieved ?? applicant.confirmationData.summary.totalSecAchieved)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px', borderRight: '1px solid #334155', color: ((applicant.confirmationData.summary.actualAchievementPct ?? applicant.confirmationData.summary.overallAchievementPct) || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
+                                {applicant.confirmationData.summary.actualAchievementPct ?? applicant.confirmationData.summary.overallAchievementPct}%
+                              </td>
+
+                              <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualCollObj ?? applicant.confirmationData.summary.totalCollObj ?? 0)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualCollAchieved ?? applicant.confirmationData.summary.totalCollAchieved ?? 0)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px', color: ((applicant.confirmationData.summary.actualCollAchievementPct ?? applicant.confirmationData.summary.overallCollAchievementPct) || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
+                                {applicant.confirmationData.summary.actualCollAchievementPct ?? applicant.confirmationData.summary.overallCollAchievementPct ?? 0}%
                               </td>
                             </tr>
                           )}

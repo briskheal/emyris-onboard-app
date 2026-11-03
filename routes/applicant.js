@@ -1983,15 +1983,18 @@ router.get('/confirmation-process', async (req, res) => {
 
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        // 5 consecutive months starting from the ADOJ month
+        // 6 consecutive months starting from ADOJ:
+        // Months 1-5: Completed Field Performance (Actuals)
+        // Month 6: Forward Projection / Territory Commitment for Confirmation
         const calculatedMonths = [];
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
             const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
             calculatedMonths.push({
                 monthIndex: i + 1,
                 monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
                 year: mDate.getFullYear(),
-                monthNum: mDate.getMonth() + 1
+                monthNum: mDate.getMonth() + 1,
+                isProjection: i === 5
             });
         }
 
@@ -2027,13 +2030,27 @@ router.post('/confirmation-process', async (req, res) => {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
 
+        let totalDaysWorked = 0;
         let totalDrVisits = 0;
         let totalCalls = 0;
         let totalPob = 0;
         let totalSecObj = 0;
         let totalSecAchieved = 0;
+        let totalCollObj = 0;
+        let totalCollAchieved = 0;
+
+        let actualDaysWorked = 0;
+        let actualDrVisits = 0;
+        let actualCalls = 0;
+        let actualPob = 0;
+        let actualSecObj = 0;
+        let actualSecAchieved = 0;
+        let actualCollObj = 0;
+        let actualCollAchieved = 0;
 
         const sanitizedMonths = months.map((m, idx) => {
+            const isProjection = idx === 5 || m.isProjection === true;
+            const daysWorked = Math.max(0, Number(m.daysWorked) || 0);
             const drVisits = Math.max(0, Number(m.drVisits) || 0);
             const totCalls = Math.max(0, Number(m.totCalls) || 0);
             const callAvg = Number(m.callAvg) || (drVisits > 0 ? Number((totCalls / drVisits).toFixed(1)) : 0);
@@ -2041,37 +2058,79 @@ router.post('/confirmation-process', async (req, res) => {
             const secObj = Math.max(0, Number(m.secObj) || 0);
             const secAchieved = Math.max(0, Number(m.secAchieved) || 0);
             const achievementPct = secObj > 0 ? Number(((secAchieved / secObj) * 100).toFixed(1)) : 0;
+            const collObj = Math.max(0, Number(m.collObj) || 0);
+            const collAchieved = Math.max(0, Number(m.collAchieved) || 0);
+            const collAchievementPct = collObj > 0 ? Number(((collAchieved / collObj) * 100).toFixed(1)) : 0;
 
+            if (!isProjection) {
+                actualDaysWorked += daysWorked;
+                actualDrVisits += drVisits;
+                actualCalls += totCalls;
+                actualPob += pob;
+                actualSecObj += secObj;
+                actualSecAchieved += secAchieved;
+                actualCollObj += collObj;
+                actualCollAchieved += collAchieved;
+            }
+
+            totalDaysWorked += daysWorked;
             totalDrVisits += drVisits;
             totalCalls += totCalls;
             totalPob += pob;
             totalSecObj += secObj;
             totalSecAchieved += secAchieved;
+            totalCollObj += collObj;
+            totalCollAchieved += collAchieved;
 
             return {
                 monthIndex: idx + 1,
                 monthLabel: m.monthLabel || `Month ${idx + 1}`,
+                isProjection,
+                daysWorked: m.daysWorked !== undefined && m.daysWorked !== '' ? daysWorked : '',
                 drVisits,
                 totCalls,
                 callAvg,
                 pob,
                 secObj,
                 secAchieved,
-                achievementPct
+                achievementPct,
+                collObj,
+                collAchieved,
+                collAchievementPct
             };
         });
 
+        const actualCallAvg = actualDrVisits > 0 ? Number((actualCalls / actualDrVisits).toFixed(1)) : 0;
+        const actualAchievementPct = actualSecObj > 0 ? Number(((actualSecAchieved / actualSecObj) * 100).toFixed(1)) : 0;
+        const actualCollAchievementPct = actualCollObj > 0 ? Number(((actualCollAchieved / actualCollObj) * 100).toFixed(1)) : 0;
+
         const overallCallAvg = totalDrVisits > 0 ? Number((totalCalls / totalDrVisits).toFixed(1)) : 0;
         const overallAchievementPct = totalSecObj > 0 ? Number(((totalSecAchieved / totalSecObj) * 100).toFixed(1)) : 0;
+        const overallCollAchievementPct = totalCollObj > 0 ? Number(((totalCollAchieved / totalCollObj) * 100).toFixed(1)) : 0;
 
         const summary = {
+            actualDaysWorked,
+            actualDrVisits,
+            actualCalls,
+            actualCallAvg,
+            actualPob,
+            actualSecObj,
+            actualSecAchieved,
+            actualAchievementPct,
+            actualCollObj,
+            actualCollAchieved,
+            actualCollAchievementPct,
+            totalDaysWorked,
             totalDrVisits,
             totalCalls,
             overallCallAvg,
             totalPob,
             totalSecObj,
             totalSecAchieved,
-            overallAchievementPct
+            overallAchievementPct,
+            totalCollObj,
+            totalCollAchieved,
+            overallCollAchievementPct
         };
 
         // Sanitize 6 Core Evaluation Pillars (Self Ratings - max whole marks)

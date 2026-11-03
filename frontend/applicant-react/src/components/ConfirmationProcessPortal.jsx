@@ -39,6 +39,29 @@ const EVALUATION_PILLARS = [
     }
 ];
 
+// Strictly format date as DD-MM-YYYY
+const formatDDMMYYYY = (dateVal) => {
+    if (!dateVal) return 'N/A';
+    const s = String(dateVal).trim();
+    if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(s)) {
+        return s.replace(/\//g, '-');
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const parts = s.substring(0, 10).split('-');
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+    } catch (e) {}
+    return s;
+};
+
 export default function ConfirmationProcessPortal({ applicant, onBack }) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -104,22 +127,30 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                 const initialList = calcMonths.map((cm, idx) => {
                     const saved = savedMonthsMap[cm.monthIndex || (idx + 1)] || {};
+                    const isProjection = cm.isProjection || idx === 5;
+                    const daysWorked = saved.daysWorked !== undefined ? saved.daysWorked : '';
                     const drVisits = saved.drVisits !== undefined ? saved.drVisits : '';
                     const totCalls = saved.totCalls !== undefined ? saved.totCalls : '';
                     const callAvg = saved.callAvg !== undefined ? saved.callAvg : '';
                     const pob = saved.pob !== undefined ? saved.pob : '';
                     const secObj = saved.secObj !== undefined ? saved.secObj : '';
                     const secAchieved = saved.secAchieved !== undefined ? saved.secAchieved : '';
+                    const collObj = saved.collObj !== undefined ? saved.collObj : '';
+                    const collAchieved = saved.collAchieved !== undefined ? saved.collAchieved : '';
 
                     return {
                         monthIndex: cm.monthIndex || (idx + 1),
                         monthLabel: cm.monthLabel || `Month ${idx + 1}`,
+                        isProjection,
+                        daysWorked,
                         drVisits,
                         totCalls,
                         callAvg,
                         pob,
                         secObj,
-                        secAchieved
+                        secAchieved,
+                        collObj,
+                        collAchieved
                     };
                 });
 
@@ -162,49 +193,95 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
         }));
     };
 
-    // Calculate row % and cumulative totals for Part A
-    const { rowsCalculated, totals } = useMemo(() => {
-        let totalDr = 0;
-        let totalCalls = 0;
-        let totalPob = 0;
-        let totalSecObj = 0;
-        let totalSecAch = 0;
+    // Calculate row % (Sec + Coll) and separate Actuals (M1-M5) vs Projection (M6) totals
+    const { rowsCalculated, actualsTotals, projectionRow, combinedTotals } = useMemo(() => {
+        let actDays = 0, actDr = 0, actCalls = 0, actPob = 0, actSecObj = 0, actSecAch = 0, actCollObj = 0, actCollAch = 0;
+        let totDays = 0, totDr = 0, totCalls = 0, totPob = 0, totSecObj = 0, totSecAch = 0, totCollObj = 0, totCollAch = 0;
+        let projRow = null;
 
-        const rows = monthsData.map(m => {
+        const rows = monthsData.map((m, idx) => {
+            const isProjection = m.isProjection || idx === 5;
+            const days = parseFloat(m.daysWorked) || 0;
             const dr = parseFloat(m.drVisits) || 0;
             const calls = parseFloat(m.totCalls) || 0;
             const pob = parseFloat(m.pob) || 0;
-            const obj = parseFloat(m.secObj) || 0;
-            const ach = parseFloat(m.secAchieved) || 0;
+            const sObj = parseFloat(m.secObj) || 0;
+            const sAch = parseFloat(m.secAchieved) || 0;
+            const cObj = parseFloat(m.collObj) || 0;
+            const cAch = parseFloat(m.collAchieved) || 0;
+
             const callAvg = parseFloat(m.callAvg) || (dr > 0 ? parseFloat((calls / dr).toFixed(1)) : 0);
+            const secPct = sObj > 0 ? ((sAch / sObj) * 100).toFixed(1) : 0;
+            const collPct = cObj > 0 ? ((cAch / cObj) * 100).toFixed(1) : 0;
 
-            totalDr += dr;
-            totalCalls += calls;
-            totalPob += pob;
-            totalSecObj += obj;
-            totalSecAch += ach;
-
-            const pct = obj > 0 ? ((ach / obj) * 100).toFixed(1) : 0;
-
-            return {
+            const calculatedRow = {
                 ...m,
-                computedPct: parseFloat(pct)
+                isProjection,
+                computedSecPct: parseFloat(secPct),
+                computedCollPct: parseFloat(collPct)
             };
+
+            if (isProjection) {
+                projRow = calculatedRow;
+            } else {
+                actDays += days;
+                actDr += dr;
+                actCalls += calls;
+                actPob += pob;
+                actSecObj += sObj;
+                actSecAch += sAch;
+                actCollObj += cObj;
+                actCollAch += cAch;
+            }
+
+            totDays += days;
+            totDr += dr;
+            totCalls += calls;
+            totPob += pob;
+            totSecObj += sObj;
+            totSecAch += sAch;
+            totCollObj += cObj;
+            totCollAch += cAch;
+
+            return calculatedRow;
         });
 
-        const overallCallAvg = totalDr > 0 ? (totalCalls / totalDr).toFixed(1) : 0;
-        const overallPct = totalSecObj > 0 ? ((totalSecAch / totalSecObj) * 100).toFixed(1) : 0;
+        const actCallAvg = actDr > 0 ? (actCalls / actDr).toFixed(1) : 0;
+        const actSecPct = actSecObj > 0 ? ((actSecAch / actSecObj) * 100).toFixed(1) : 0;
+        const actCollPct = actCollObj > 0 ? ((actCollAch / actCollObj) * 100).toFixed(1) : 0;
+
+        const combCallAvg = totDr > 0 ? (totCalls / totDr).toFixed(1) : 0;
+        const combSecPct = totSecObj > 0 ? ((totSecAch / totSecObj) * 100).toFixed(1) : 0;
+        const combCollPct = totCollObj > 0 ? ((totCollAch / totCollObj) * 100).toFixed(1) : 0;
 
         return {
             rowsCalculated: rows,
-            totals: {
-                totalDr,
-                totalCalls,
-                overallCallAvg,
-                totalPob,
-                totalSecObj,
-                totalSecAch,
-                overallPct: parseFloat(overallPct)
+            actualsTotals: {
+                totalDays: actDays,
+                totalDr: actDr,
+                totalCalls: actCalls,
+                overallCallAvg: actCallAvg,
+                totalPob: actPob,
+                totalSecObj: actSecObj,
+                totalSecAch: actSecAch,
+                overallSecPct: parseFloat(actSecPct),
+                totalCollObj: actCollObj,
+                totalCollAch: actCollAch,
+                overallCollPct: parseFloat(actCollPct)
+            },
+            projectionRow: projRow,
+            combinedTotals: {
+                totalDays: totDays,
+                totalDr: totDr,
+                totalCalls: totCalls,
+                overallCallAvg: combCallAvg,
+                totalPob: totPob,
+                totalSecObj: totSecObj,
+                totalSecAch: totSecAch,
+                overallSecPct: parseFloat(combSecPct),
+                totalCollObj: totCollObj,
+                totalCollAch: totCollAch,
+                overallCollPct: parseFloat(combCollPct)
             }
         };
     }, [monthsData]);
@@ -239,7 +316,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     return;
                 }
             } else {
-                if (!window.confirm(`🚀 Submit your 5-month field data and Self-Assessment (${totalSelfMarks}/100) to Reporting Manager for Confirmation Review?`)) {
+                if (!window.confirm(`🚀 Submit your 5-month field actuals, 6th-month projection, and Self-Assessment (${totalSelfMarks}/100) to Reporting Manager for Confirmation Review?`)) {
                     return;
                 }
             }
@@ -295,9 +372,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🔄</div>
-                <p>Loading Confirmation Evaluation Process...</p>
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8', fontFamily: "'Montserrat', sans-serif" }}>
+                <div style={{ fontSize: '2.2rem', marginBottom: '14px' }}>🔄</div>
+                <p style={{ fontSize: '1rem', fontWeight: 600 }}>Loading Confirmation Evaluation Process...</p>
             </div>
         );
     }
@@ -305,58 +382,68 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
     const isSubmitted = status === 'submitted';
 
     return (
-        <div style={{ maxWidth: '1150px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{
+            maxWidth: '1380px',
+            margin: '0 auto',
+            fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+            color: '#e2e8f0',
+            padding: '6px'
+        }}>
             {/* Header Card */}
             <div style={{
-                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-                border: '1px solid #334155',
+                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '16px',
-                padding: '24px',
-                marginBottom: '20px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                padding: '24px 28px',
+                marginBottom: '22px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.35)'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                             <span style={{ fontSize: '1.8rem' }}>📋</span>
-                            <h2 style={{ margin: 0, color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>
+                            <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.3px' }}>
                                 Confirmation Evaluation Process
                             </h2>
                         </div>
-                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.5' }}>
-                            5-Month Field Performance records &amp; 100-Mark Dual-Assessment Evaluation (Employee Self-Rating + Reporting Manager Assessment).
+                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.5', fontWeight: 500 }}>
+                            5-Month Field Performance (Actuals) + 6th-Month Forward Projection (Commitment) with Sales vs. Cash Flow Analysis.
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {isSubmitted ? (
                             <span style={{
                                 background: 'rgba(16, 185, 129, 0.15)',
                                 border: '1px solid #10b981',
                                 color: '#34d399',
-                                padding: '6px 14px',
-                                borderRadius: '20px',
+                                padding: '8px 16px',
+                                borderRadius: '24px',
                                 fontSize: '0.82rem',
                                 fontWeight: 700,
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px'
+                                gap: '8px',
+                                letterSpacing: '0.3px'
                             }}>
                                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-                                Submitted on {submittedAt ? new Date(submittedAt).toLocaleDateString('en-GB') : 'Review'}
+                                Submitted on {submittedAt ? formatDDMMYYYY(submittedAt) : 'Review'}
                             </span>
                         ) : (
                             <span style={{
                                 background: 'rgba(245, 158, 11, 0.15)',
                                 border: '1px solid #f59e0b',
                                 color: '#fbbf24',
-                                padding: '6px 14px',
-                                borderRadius: '20px',
+                                padding: '8px 16px',
+                                borderRadius: '24px',
                                 fontSize: '0.82rem',
                                 fontWeight: 700,
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px'
+                                gap: '8px',
+                                letterSpacing: '0.3px'
                             }}>
                                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
                                 Draft Mode (Pending Submission)
@@ -366,13 +453,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             <button
                                 onClick={onBack}
                                 style={{
-                                    background: 'transparent',
+                                    background: 'rgba(255, 255, 255, 0.05)',
                                     border: '1px solid #475569',
                                     color: '#cbd5e1',
-                                    padding: '6px 12px',
+                                    padding: '8px 14px',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
-                                    fontSize: '0.82rem'
+                                    fontSize: '0.84rem',
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit',
+                                    transition: 'all 0.15s ease'
                                 }}
                             >
                                 ✕ Close
@@ -381,30 +471,47 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </div>
                 </div>
 
-                {/* Candidate Info Grid */}
+                {/* Candidate Info Grid with DD-MM-YYYY ADOJ */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: '12px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '14px',
                     marginTop: '20px',
-                    padding: '14px 18px',
-                    background: 'rgba(15, 23, 42, 0.6)',
+                    padding: '16px 20px',
+                    background: 'rgba(15, 23, 42, 0.65)',
                     borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    fontSize: '0.85rem'
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    fontSize: '0.88rem'
                 }}>
-                    <div><span style={{ color: '#94a3b8' }}>Employee:</span> <strong style={{ color: '#f8fafc' }}>{applicant?.fullName}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>Emp Code:</span> <strong style={{ color: '#38bdf8' }}>{applicant?.empCode || 'N/A'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>Designation:</span> <strong style={{ color: '#f8fafc' }}>{applicant?.designation || 'Medical Representative'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>HQ:</span> <strong style={{ color: '#f8fafc' }}>{applicant?.hq || 'N/A'}</strong></div>
-                    <div><span style={{ color: '#94a3b8' }}>ADOJ:</span> <strong style={{ color: '#facc15' }}>{applicant?.actualJoiningDate || 'N/A'}</strong></div>
+                    <div>
+                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Employee: </span>
+                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.fullName}</strong>
+                    </div>
+                    <div>
+                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Emp Code: </span>
+                        <strong style={{ color: '#38bdf8', fontWeight: 700 }}>{applicant?.empCode || 'N/A'}</strong>
+                    </div>
+                    <div>
+                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Designation: </span>
+                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.designation || 'Medical Representative'}</strong>
+                    </div>
+                    <div>
+                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>HQ: </span>
+                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.hq || 'N/A'}</strong>
+                    </div>
+                    <div>
+                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>ADOJ: </span>
+                        <strong style={{ color: '#facc15', fontWeight: 700, letterSpacing: '0.5px' }}>
+                            {formatDDMMYYYY(applicant?.actualJoiningDate)}
+                        </strong>
+                    </div>
                 </div>
 
                 {/* Dual-Score Comparison Banner (When Manager has evaluated) */}
                 {totalManagerMarks !== null && (
                     <div style={{
                         marginTop: '18px',
-                        padding: '16px 20px',
+                        padding: '16px 22px',
                         background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))',
                         border: '1px solid #0284c7',
                         borderRadius: '12px',
@@ -415,26 +522,26 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         gap: '14px'
                     }}>
                         <div>
-                            <div style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.95rem' }}>
+                            <div style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.98rem' }}>
                                 🎯 Final Confirmation Assessment Summary
                             </div>
-                            <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginTop: '4px' }}>
+                            <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginTop: '4px' }}>
                                 Recommendation: <strong style={{ color: totalManagerMarks >= 75 ? '#34d399' : '#fbbf24' }}>{managerRecommendation || (totalManagerMarks >= 75 ? 'Confirmed' : 'Probation Extension')}</strong>
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
                             <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Self Score</div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>{totalSelfMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Self Score</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>{totalSelfMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
                             </div>
                             <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Manager Score</div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38bdf8' }}>{totalManagerMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Manager Score</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38bdf8' }}>{totalManagerMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
                             </div>
                             <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Variance Gap</div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: Math.abs(totalSelfMarks - totalManagerMarks) <= 10 ? '#34d399' : '#f87171' }}>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Variance Gap</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: Math.abs(totalSelfMarks - totalManagerMarks) <= 10 ? '#34d399' : '#f87171' }}>
                                     {totalSelfMarks - totalManagerMarks > 0 ? `+${totalSelfMarks - totalManagerMarks}` : totalSelfMarks - totalManagerMarks}
                                 </div>
                             </div>
@@ -449,10 +556,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     background: 'rgba(16, 185, 129, 0.15)',
                     border: '1px solid #10b981',
                     color: '#6ee7b7',
-                    padding: '12px 16px',
+                    padding: '12px 18px',
                     borderRadius: '10px',
-                    marginBottom: '16px',
-                    fontSize: '0.9rem'
+                    marginBottom: '18px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600
                 }}>
                     ✅ {successMsg}
                 </div>
@@ -462,182 +570,464 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     background: 'rgba(239, 68, 68, 0.15)',
                     border: '1px solid #ef4444',
                     color: '#fca5a5',
-                    padding: '12px 16px',
+                    padding: '12px 18px',
                     borderRadius: '10px',
-                    marginBottom: '16px',
-                    fontSize: '0.9rem'
+                    marginBottom: '18px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600
                 }}>
                     ⚠️ {errorMsg}
                 </div>
             )}
 
-            {/* SECTION 1: 5-Month Field Performance Table */}
+            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (with Sales vs Cash Flow) */}
             <div style={{
-                background: '#1e293b',
+                background: '#131b2e',
                 border: '1px solid #334155',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
             }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: 700 }}>
-                        📊 Section 1: 5-Month Field Activity &amp; Sales Numbers
-                    </h3>
-                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                        * Call Avg auto-calculated: Tot Calls / Dr Visits | % Achvmnt: (Sec Achivd / Sec Obj) × 100
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
+                            📊 Section 1: 5-Month Field Activity (Actuals) &amp; 6th-Month Projection (Commitment)
+                        </h3>
+                        <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.84rem', fontWeight: 500 }}>
+                            Sales vs. Cash Flow Analysis: Secondary Sales (Demand Generation) paired with Collection Recovery (Working Capital).
+                        </p>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
+                        * Call Avg: Tot Calls / Dr Visits | % Achvmnt: (Achieved / Objective) × 100
                     </span>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', minWidth: '780px' }}>
+                {/* Stable, non-jumping Table with locked column widths */}
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '6px' }}>
+                    <table style={{
+                        width: '100%',
+                        tableLayout: 'fixed',
+                        borderCollapse: 'collapse',
+                        fontSize: '0.88rem',
+                        minWidth: '1340px'
+                    }}>
+                        <colgroup>
+                            <col style={{ width: '175px' }} /> {/* Month */}
+                            <col style={{ width: '95px' }} />  {/* Days Worked */}
+                            <col style={{ width: '95px' }} />  {/* Dr Visite */}
+                            <col style={{ width: '95px' }} />  {/* Tot Calls */}
+                            <col style={{ width: '85px' }} />  {/* Call Avg */}
+                            <col style={{ width: '110px' }} /> {/* POB (₹) */}
+                            {/* Secondary Sales Group */}
+                            <col style={{ width: '125px' }} /> {/* Sec Obj (₹) */}
+                            <col style={{ width: '125px' }} /> {/* Sec Achivd (₹) */}
+                            <col style={{ width: '95px' }} />  {/* % Sec Ach */}
+                            {/* Collection / Cash Flow Group */}
+                            <col style={{ width: '125px' }} /> {/* Coll Obj (₹) */}
+                            <col style={{ width: '125px' }} /> {/* Coll Achvd (₹) */}
+                            <col style={{ width: '95px' }} />  {/* % Coll Ach */}
+                        </colgroup>
                         <thead>
-                            <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Month</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Dr Visite</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Tot Calls</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Call Avg</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>POB (₹)</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Sec Obj (₹)</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600 }}>Sec Achivd (₹)</th>
-                                <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>% of Achvmnt</th>
+                            {/* Grouping Header */}
+                            <tr style={{ background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th colSpan={6} style={{ padding: '8px 14px', borderRight: '1px solid #334155' }}>
+                                    Field Activity &amp; Coverage
+                                </th>
+                                <th colSpan={3} style={{ padding: '8px 14px', borderRight: '1px solid #334155', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
+                                    💼 Secondary Sales (Demand Generation)
+                                </th>
+                                <th colSpan={3} style={{ padding: '8px 14px', color: '#34d399', background: 'rgba(16, 185, 129, 0.05)' }}>
+                                    💰 Collection (Cash Flow Recovery)
+                                </th>
+                            </tr>
+                            {/* Column Header */}
+                            <tr style={{ background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
+                                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>MONTH</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>DAYS WORKED</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>DR VISITE</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>TOT CALLS</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>CALL AVG</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', borderRight: '1px solid #334155' }}>POB (₹)</th>
+                                
+                                {/* Secondary Columns */}
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC OBJ (₹)</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC ACHIVD (₹)</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#38bdf8' }}>% SEC ACH</th>
+
+                                {/* Collection Columns */}
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL OBJ (₹)</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL ACHVD (₹)</th>
+                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', textAlign: 'center', color: '#34d399' }}>% COLL ACH</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {rowsCalculated.map((row, idx) => (
-                                <tr
-                                    key={row.monthIndex || idx}
-                                    style={{
-                                        borderBottom: '1px solid rgba(51, 65, 85, 0.6)',
-                                        background: idx % 2 === 1 ? 'rgba(15, 23, 42, 0.3)' : 'transparent'
-                                    }}
-                                >
-                                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap' }}>
-                                        <div style={{ fontSize: '0.88rem' }}>{row.monthLabel}</div>
-                                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Month {idx + 1} of 5</div>
-                                    </td>
+                            {rowsCalculated.map((row, idx) => {
+                                const isProj = row.isProjection || idx === 5;
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={row.drVisits}
-                                            onChange={(e) => handleFieldChange(idx, 'drVisits', e.target.value)}
-                                            placeholder="0"
-                                            style={inputStyle}
-                                        />
-                                    </td>
+                                return (
+                                    <tr
+                                        key={row.monthIndex || idx}
+                                        style={{
+                                            borderBottom: '1px solid rgba(51, 65, 85, 0.6)',
+                                            background: isProj
+                                                ? 'rgba(14, 165, 233, 0.08)'
+                                                : (idx % 2 === 1 ? 'rgba(15, 23, 42, 0.45)' : 'transparent'),
+                                            borderLeft: isProj ? '3px solid #38bdf8' : 'none'
+                                        }}
+                                    >
+                                        {/* Month Header / Type Label */}
+                                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                                            <div style={{ fontSize: '0.9rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
+                                                {row.monthLabel}
+                                            </div>
+                                            <div style={{ marginTop: '3px' }}>
+                                                {isProj ? (
+                                                    <span style={{
+                                                        background: 'rgba(56, 189, 248, 0.2)',
+                                                        color: '#38bdf8',
+                                                        border: '1px solid #0284c7',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.66rem',
+                                                        fontWeight: 800,
+                                                        letterSpacing: '0.3px'
+                                                    }}>
+                                                        🌟 6TH MO. PROJECTION
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                                                        Month {idx + 1} of 5 (Actual)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={row.totCalls}
-                                            onChange={(e) => handleFieldChange(idx, 'totCalls', e.target.value)}
-                                            placeholder="0"
-                                            style={inputStyle}
-                                        />
-                                    </td>
+                                        {/* Days Worked */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="31"
+                                                value={row.daysWorked}
+                                                onChange={(e) => handleFieldChange(idx, 'daysWorked', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder={isProj ? "Target" : "0"}
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            min="0"
-                                            value={row.callAvg}
-                                            onChange={(e) => handleFieldChange(idx, 'callAvg', e.target.value)}
-                                            placeholder="0.0"
-                                            style={{ ...inputStyle, background: 'rgba(30, 41, 59, 0.8)', color: '#38bdf8' }}
-                                        />
-                                    </td>
+                                        {/* Dr Visite */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.drVisits}
+                                                onChange={(e) => handleFieldChange(idx, 'drVisits', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder={isProj ? "Target" : "0"}
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={row.pob}
-                                            onChange={(e) => handleFieldChange(idx, 'pob', e.target.value)}
-                                            placeholder="0"
-                                            style={inputStyle}
-                                        />
-                                    </td>
+                                        {/* Tot Calls */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.totCalls}
+                                                onChange={(e) => handleFieldChange(idx, 'totCalls', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder={isProj ? "Target" : "0"}
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={row.secObj}
-                                            onChange={(e) => handleFieldChange(idx, 'secObj', e.target.value)}
-                                            placeholder="0"
-                                            style={inputStyle}
-                                        />
-                                    </td>
+                                        {/* Call Avg */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                value={row.callAvg}
+                                                onChange={(e) => handleFieldChange(idx, 'callAvg', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0.0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    background: '#0c1527',
+                                                    color: '#38bdf8',
+                                                    fontWeight: '700'
+                                                }}
+                                            />
+                                        </td>
 
-                                    <td style={{ padding: '8px 10px' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={row.secAchieved}
-                                            onChange={(e) => handleFieldChange(idx, 'secAchieved', e.target.value)}
-                                            placeholder="0"
-                                            style={inputStyle}
-                                        />
-                                    </td>
+                                        {/* POB */}
+                                        <td style={{ padding: '6px 8px', borderRight: '1px solid #334155' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.pob}
+                                                onChange={(e) => handleFieldChange(idx, 'pob', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
 
-                                    <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                                        <span style={{
-                                            display: 'inline-block',
-                                            padding: '4px 10px',
-                                            borderRadius: '12px',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 800,
-                                            background: `rgba(${row.computedPct >= 100 ? '16, 185, 129' : (row.computedPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
-                                            color: getPctColor(row.computedPct),
-                                            border: `1px solid ${getPctColor(row.computedPct)}`
-                                        }}>
-                                            {row.computedPct}%
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                                        {/* Sec Obj */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.secObj}
+                                                onChange={(e) => handleFieldChange(idx, 'secObj', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
 
-                            <tr style={{ background: '#090d16', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                <td style={{ padding: '14px', color: '#f8fafc', fontSize: '0.92rem' }}>
-                                    📈 Cumulative Total
+                                        {/* Sec Achivd */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.secAchieved}
+                                                onChange={(e) => handleFieldChange(idx, 'secAchieved', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder={isProj ? "Commitment" : "0"}
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
+
+                                        {/* % Sec Ach */}
+                                        <td style={{ padding: '10px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '5px 8px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.84rem',
+                                                fontWeight: 800,
+                                                background: `rgba(${row.computedSecPct >= 100 ? '16, 185, 129' : (row.computedSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
+                                                color: getPctColor(row.computedSecPct),
+                                                border: `1px solid ${getPctColor(row.computedSecPct)}`
+                                            }}>
+                                                {row.computedSecPct}%
+                                            </span>
+                                        </td>
+
+                                        {/* Coll Obj */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.collObj}
+                                                onChange={(e) => handleFieldChange(idx, 'collObj', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #059669' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
+
+                                        {/* Coll Achvd */}
+                                        <td style={{ padding: '6px 8px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.collAchieved}
+                                                onChange={(e) => handleFieldChange(idx, 'collAchieved', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder={isProj ? "Recovery" : "0"}
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: isProj ? '1.5px solid #059669' : '1.5px solid #334155'
+                                                }}
+                                            />
+                                        </td>
+
+                                        {/* % Coll Ach */}
+                                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '5px 8px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.84rem',
+                                                fontWeight: 800,
+                                                background: `rgba(${row.computedCollPct >= 100 ? '16, 185, 129' : (row.computedCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
+                                                color: getPctColor(row.computedCollPct),
+                                                border: `1px solid ${getPctColor(row.computedCollPct)}`
+                                            }}>
+                                                {row.computedCollPct}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+
+                            {/* Row 1: 5-Month Actuals Total / Average */}
+                            <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
+                                <td style={{ padding: '14px', color: '#f8fafc', fontSize: '0.86rem' }}>
+                                    📈 5-Mo. Actuals
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc' }}>
-                                    {totals.totalDr.toLocaleString('en-IN')}
+                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
+                                    {actualsTotals.totalDays} <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>d</span>
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc' }}>
-                                    {totals.totalCalls.toLocaleString('en-IN')}
+                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
+                                    {actualsTotals.totalDr.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#38bdf8' }}>
-                                    {totals.overallCallAvg} <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>avg</span>
+                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
+                                    {actualsTotals.totalCalls.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc' }}>
-                                    {formatCurrency(totals.totalPob)}
+                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    {actualsTotals.overallCallAvg}
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc' }}>
-                                    {formatCurrency(totals.totalSecObj)}
+                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #334155' }}>
+                                    {formatCurrency(actualsTotals.totalPob)}
                                 </td>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc' }}>
-                                    {formatCurrency(totals.totalSecAch)}
+                                
+                                {/* Secondary Actuals */}
+                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    {formatCurrency(actualsTotals.totalSecObj)}
                                 </td>
-                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    {formatCurrency(actualsTotals.totalSecAch)}
+                                </td>
+                                <td style={{ padding: '14px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '5px 12px',
-                                        borderRadius: '14px',
-                                        fontSize: '0.92rem',
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.82rem',
                                         fontWeight: 900,
-                                        background: `rgba(${totals.overallPct >= 100 ? '16, 185, 129' : (totals.overallPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
-                                        color: getPctColor(totals.overallPct),
-                                        border: `1px solid ${getPctColor(totals.overallPct)}`
+                                        background: `rgba(${actualsTotals.overallSecPct >= 100 ? '16, 185, 129' : (actualsTotals.overallSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
+                                        color: getPctColor(actualsTotals.overallSecPct),
+                                        border: `1px solid ${getPctColor(actualsTotals.overallSecPct)}`
                                     }}>
-                                        {totals.overallPct}% Overall
+                                        {actualsTotals.overallSecPct}%
+                                    </span>
+                                </td>
+
+                                {/* Collection Actuals */}
+                                <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                    {formatCurrency(actualsTotals.totalCollObj)}
+                                </td>
+                                <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                    {formatCurrency(actualsTotals.totalCollAch)}
+                                </td>
+                                <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 900,
+                                        background: `rgba(${actualsTotals.overallCollPct >= 100 ? '16, 185, 129' : (actualsTotals.overallCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
+                                        color: getPctColor(actualsTotals.overallCollPct),
+                                        border: `1px solid ${getPctColor(actualsTotals.overallCollPct)}`
+                                    }}>
+                                        {actualsTotals.overallCollPct}%
                                     </span>
                                 </td>
                             </tr>
+
+                            {/* Row 2: 6th-Month Forward Commitment Highlight */}
+                            {projectionRow && (
+                                <tr style={{ background: 'rgba(14, 165, 233, 0.12)', borderTop: '1px solid #0284c7', fontWeight: 800 }}>
+                                    <td style={{ padding: '14px', color: '#38bdf8', fontSize: '0.86rem' }}>
+                                        🎯 6th-Mo. Commit
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.daysWorked || 0} <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>d</span>
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.drVisits || 0}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.totCalls || 0}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.callAvg || '0.0'}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #334155' }}>
+                                        {formatCurrency(projectionRow.pob)}
+                                    </td>
+                                    
+                                    {/* Secondary Projection */}
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.secObj)}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.secAchieved)}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.82rem',
+                                            fontWeight: 900,
+                                            background: 'rgba(56, 189, 248, 0.25)',
+                                            color: '#38bdf8',
+                                            border: '1px solid #38bdf8'
+                                        }}>
+                                            {projectionRow.computedSecPct}%
+                                        </span>
+                                    </td>
+
+                                    {/* Collection Projection */}
+                                    <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.collObj)}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.collAchieved)}
+                                    </td>
+                                    <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.82rem',
+                                            fontWeight: 900,
+                                            background: 'rgba(52, 211, 153, 0.25)',
+                                            color: '#34d399',
+                                            border: '1px solid #34d399'
+                                        }}>
+                                            {projectionRow.computedCollPct}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -645,19 +1035,19 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
             {/* SECTION 2: 6 Core Confirmation Pillars (100 Marks Evaluation) */}
             <div style={{
-                background: '#1e293b',
+                background: '#131b2e',
                 border: '1px solid #334155',
                 borderRadius: '16px',
-                padding: '24px',
+                padding: '24px 28px',
                 marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
                     <div>
-                        <h3 style={{ margin: 0, color: '#fff', fontSize: '1.15rem', fontWeight: 800 }}>
+                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
                             🎯 Section 2: Confirmation Parameters (100 Marks Evaluation)
                         </h3>
-                        <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                        <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
                             Rate your performance across the 6 parameters. Marks must be whole numbers without decimals.
                         </p>
                     </div>
@@ -665,15 +1055,15 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     <div style={{
                         background: 'rgba(14, 165, 233, 0.15)',
                         border: '1px solid #0284c7',
-                        padding: '8px 16px',
+                        padding: '10px 18px',
                         borderRadius: '12px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '10px'
                     }}>
-                        <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Total Self-Score:</span>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#38bdf8' }}>{totalSelfMarks}</span>
-                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/ 100</span>
+                        <span style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 600 }}>Total Self-Score:</span>
+                        <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#38bdf8' }}>{totalSelfMarks}</span>
+                        <span style={{ fontSize: '0.86rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
                     </div>
                 </div>
 
@@ -686,10 +1076,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             <div
                                 key={pillar.id}
                                 style={{
-                                    background: '#0f172a',
-                                    border: '1px solid rgba(255,255,255,0.06)',
+                                    background: '#090e1a',
+                                    border: '1px solid rgba(255,255,255,0.07)',
                                     borderRadius: '12px',
-                                    padding: '16px 20px',
+                                    padding: '18px 22px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
@@ -697,15 +1087,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     gap: '16px'
                                 }}
                             >
-                                <div style={{ flex: '1 1 350px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <h4 style={{ margin: 0, color: '#f8fafc', fontSize: '0.98rem', fontWeight: 700 }}>
+                                <div style={{ flex: '1 1 360px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                        <h4 style={{ margin: 0, color: '#ffffff', fontSize: '1rem', fontWeight: 700 }}>
                                             {pillar.title}
                                         </h4>
                                         <span style={{
-                                            background: '#334155',
+                                            background: '#1e293b',
+                                            border: '1px solid #334155',
                                             color: '#38bdf8',
-                                            fontSize: '0.72rem',
+                                            fontSize: '0.74rem',
                                             fontWeight: 700,
                                             padding: '2px 8px',
                                             borderRadius: '6px'
@@ -713,18 +1104,18 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             Max {pillar.weight} Marks
                                         </span>
                                     </div>
-                                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.84rem', lineHeight: '1.5', fontWeight: 500 }}>
                                         {pillar.desc}
                                     </p>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
                                     {/* MR Self-Rating Input */}
                                     <div style={{ textAlign: 'center' }}>
-                                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', fontWeight: 700 }}>
                                             Self Rating
                                         </label>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -732,30 +1123,37 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 step="1"
                                                 value={val}
                                                 onChange={(e) => handleRatingChange(pillar.id, pillar.weight, e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#475569'; e.target.style.boxShadow = 'none'; }}
                                                 style={{
-                                                    width: '64px',
-                                                    padding: '8px',
+                                                    width: '75px',
+                                                    height: '42px',
+                                                    padding: '6px 8px',
                                                     textAlign: 'center',
-                                                    background: '#1e293b',
-                                                    border: '1px solid #475569',
+                                                    background: '#131b2e',
+                                                    border: '1.5px solid #475569',
                                                     borderRadius: '8px',
-                                                    color: '#f8fafc',
+                                                    color: '#ffffff',
                                                     fontWeight: 800,
-                                                    fontSize: '1rem'
+                                                    fontSize: '1.05rem',
+                                                    fontFamily: 'inherit',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box',
+                                                    transition: 'all 0.15s ease'
                                                 }}
                                             />
-                                            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>/ {pillar.weight}</span>
+                                            <span style={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>/ {pillar.weight}</span>
                                         </div>
                                     </div>
 
                                     {/* Manager Assigned Rating (if available) */}
                                     {mgrVal !== null && (
-                                        <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '16px' }}>
-                                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                        <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '18px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', marginBottom: '6px', textTransform: 'uppercase', fontWeight: 700 }}>
                                                 Manager Rating
                                             </label>
-                                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8' }}>
-                                                {mgrVal} <span style={{ color: '#64748b', fontSize: '0.8rem' }}>/{pillar.weight}</span>
+                                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#38bdf8' }}>
+                                                {mgrVal} <span style={{ color: '#64748b', fontSize: '0.82rem', fontWeight: 600 }}>/{pillar.weight}</span>
                                             </div>
                                         </div>
                                     )}
@@ -768,32 +1166,38 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
             {/* Remarks & Notes */}
             <div style={{
-                background: '#1e293b',
+                background: '#131b2e',
                 border: '1px solid #334155',
                 borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px'
+                padding: '22px 26px',
+                marginBottom: '24px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
             }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: '#f8fafc', fontWeight: 600, fontSize: '0.9rem' }}>
-                    📝 Employee Remarks / Justification (Optional)
+                <label style={{ display: 'block', marginBottom: '10px', color: '#ffffff', fontWeight: 700, fontSize: '0.92rem' }}>
+                    📝 Employee Remarks / Justification &amp; 6th-Month Strategy (Optional)
                 </label>
                 <textarea
                     rows={3}
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Provide any context on sales performance, doctor support, new product feedback, or market opportunities..."
+                    placeholder="Provide context on your 5-month sales performance, territory development, key doctor conversions, and your action plan to achieve the 6th-month projection..."
                     style={{
                         width: '100%',
-                        padding: '10px 14px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
+                        padding: '12px 16px',
+                        background: '#090e1a',
+                        border: '1.5px solid #334155',
                         borderRadius: '8px',
-                        color: '#f8fafc',
-                        fontSize: '0.88rem',
+                        color: '#ffffff',
+                        fontSize: '0.9rem',
+                        fontFamily: 'inherit',
                         lineHeight: '1.5',
                         resize: 'vertical',
-                        boxSizing: 'border-box'
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        transition: 'border-color 0.15s ease'
                     }}
+                    onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#334155'; }}
                 />
             </div>
 
@@ -804,32 +1208,35 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: '16px',
-                padding: '16px 20px',
-                background: '#0f172a',
+                padding: '18px 24px',
+                background: '#090e1a',
                 border: '1px solid #334155',
-                borderRadius: '14px'
+                borderRadius: '14px',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.3)'
             }}>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
                     {isSubmitted ? (
                         <span>🔒 Submitted for Reporting Manager Evaluation. You can make adjustments and re-save if needed.</span>
                     ) : (
-                        <span>💡 Enter both Section 1 (Numbers) and Section 2 (Self-Rating) before submitting to Manager.</span>
+                        <span>💡 Enter Section 1 (Months 1–5 Actuals + Month 6 Projection) and Section 2 (Self-Rating) before submitting to Manager.</span>
                     )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '14px' }}>
                     <button
                         onClick={() => handleSaveOrSubmit(false)}
                         disabled={saving || submitting}
                         style={{
-                            background: '#334155',
-                            color: '#f8fafc',
+                            background: '#1e293b',
+                            color: '#ffffff',
                             border: '1px solid #475569',
-                            padding: '10px 18px',
+                            padding: '11px 20px',
                             borderRadius: '8px',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
-                            fontSize: '0.88rem'
+                            fontSize: '0.88rem',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.15s ease'
                         }}
                     >
                         {saving ? 'Saving Draft...' : '💾 Save Draft'}
@@ -839,15 +1246,17 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         onClick={() => handleSaveOrSubmit(true)}
                         disabled={saving || submitting}
                         style={{
-                            background: 'linear-gradient(135deg, #0ea5e9, #4f46e5)',
+                            background: 'linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)',
                             color: '#ffffff',
                             border: 'none',
-                            padding: '10px 22px',
+                            padding: '11px 24px',
                             borderRadius: '8px',
-                            fontWeight: 700,
+                            fontWeight: 800,
                             cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
-                            fontSize: '0.9rem'
+                            boxShadow: '0 4px 16px rgba(79, 70, 229, 0.45)',
+                            fontSize: '0.92rem',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.15s ease'
                         }}
                     >
                         {submitting ? 'Submitting...' : '🚀 Submit to Manager for Confirmation Review'}
@@ -860,12 +1269,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
 const inputStyle = {
     width: '100%',
-    padding: '8px 10px',
-    background: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    color: '#f8fafc',
-    fontSize: '0.88rem',
+    height: '40px',
+    padding: '6px 10px',
+    background: '#090e1a',
+    borderRadius: '8px',
+    color: '#ffffff',
+    fontSize: '0.9rem',
+    fontFamily: "'Montserrat', sans-serif",
     fontWeight: '600',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    textAlign: 'right',
+    outline: 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
 };
