@@ -391,6 +391,19 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             color: '#e2e8f0',
             padding: '6px'
         }}>
+            {/* Remove number input spinner up/down arrows completely */}
+            <style>{`
+                input[type=number]::-webkit-inner-spin-button,
+                input[type=number]::-webkit-outer-spin-button {
+                    -webkit-appearance: none !important;
+                    margin: 0 !important;
+                }
+                input[type=number] {
+                    -moz-appearance: textfield !important;
+                    appearance: textfield !important;
+                }
+            `}</style>
+
             {/* Header Card */}
             <div style={{
                 background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
