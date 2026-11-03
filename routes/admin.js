@@ -2612,12 +2612,21 @@ router.get('/lifecycle-check', async (req, res) => {
         const now = new Date();
 
         for (const app of applicants) {
-            const adoj = safeParseDateServer(app.actualJoiningDate) || new Date();
-            const diffTime = Math.abs(now - adoj);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
+            if (app.canLogin === false) continue; // Closed/resigned employee safeguard
 
-            // 1. Appointment Letter Logic (Send within 30 days of joining)
+            const adoj = safeParseDateServer(app.actualJoiningDate);
+            if (!adoj || isNaN(adoj.getTime())) continue;
+
+            const diffTime = now.getTime() - adoj.getTime();
+            if (diffTime < 0) continue; // Future joining date, skip
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            let completedMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
+            if (now.getDate() < adoj.getDate()) {
+                completedMonths--;
+            }
+
+            // 1. Appointment Letter Logic (Strictly 30+ days from ADOJ)
             if (diffDays >= 30 && !app.apptLetterData) {
                 const mgrEmail = await resolveReportingManager(app);
                 alerts.push({
@@ -2633,8 +2642,8 @@ router.get('/lifecycle-check', async (req, res) => {
                 });
             }
 
-            // 2. Probation to Confirmation (Review at 5th month)
-            if (diffMonths >= 5 && (!app.status || app.status.toLowerCase().includes('probation'))) {
+            // 2. Probation to Confirmation (Review strictly at completed 5th month from ADOJ)
+            if (completedMonths >= 5 && (!app.status || app.status.toLowerCase().includes('probation'))) {
                 const mgrEmail = await resolveReportingManager(app);
                 alerts.push({
                     type: 'CONFIRMATION_DUE',
@@ -2644,8 +2653,8 @@ router.get('/lifecycle-check', async (req, res) => {
                     hq: app.hq || 'N/A',
                     adoj: app.actualJoiningDate,
                     reportingManagerEmail: mgrEmail,
-                    months: diffMonths,
-                    message: `${app.fullName} has completed 5 months. Due for Confirmation / Extension review.`
+                    months: completedMonths,
+                    message: `${app.fullName} has strictly completed ${completedMonths} months. Due for Confirmation / Extension review.`
                 });
             }
         }
