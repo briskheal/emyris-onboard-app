@@ -2220,38 +2220,57 @@ router.post('/send-letter', async (req, res) => {
                 </div>
             </div>`;
 
-        // If Appointment Letter: Send ONLY to dynamically resolved adminEmail for review
+        // If Appointment Letter: Forward to adminEmail in candidate-addressed format ready for review & forward
         if (letterType === 'appt') {
             targetEmail = adminEmail;
             finalCc = undefined;
-            emailSubject = `[HR Review & Dispatch] Official Appointment Letter: ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${company.name}`;
+            emailSubject = `Appointment Letter - ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${applicant.designation || 'Staff'} | ${company.name}`;
             emailBodyHtml = `
-                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                    <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
-                        <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
-                        <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Review & Dispatch Hub</p>
+                <div style="font-family: Arial, 'Segoe UI', sans-serif; line-height: 1.6; color: #1e293b; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background-color: #ffffff;">
+                    <div style="background: linear-gradient(135deg, #0284c7, #1e3a8a); padding: 22px 28px; text-align: left;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</h2>
+                        <p style="color: #e0e7ff; margin: 4px 0 0 0; font-size: 13px;">Official Appointment Letter</p>
                     </div>
-                    <div style="padding: 28px 24px;">
-                        <p style="font-size: 15px; margin-top: 0;">Dear <strong>HR Administrator</strong>,</p>
-                        <p style="font-size: 14px;">Please find attached the official <strong>Appointment Letter</strong> for <strong>${applicant.fullName}</strong> for your administrative review.</p>
-                        <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
-                            <strong>Employee:</strong> ${applicant.fullName}<br>
-                            <strong>Employee Email:</strong> ${applicant.email}<br>
+                    <div style="padding: 26px 28px;">
+                        <p style="font-size: 15px; margin-top: 0; color: #0f172a;">Dear <strong>${applicant.fullName}</strong>,</p>
+                        <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                            Congratulations on your appointment with <strong>${company.name || 'Emyris Biolifesciences Pvt Ltd'}</strong>! We are pleased to formally issue your <strong>Appointment Letter</strong> for the position of <strong>${applicant.designation || 'Staff'}</strong>.
+                        </p>
+                        <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 18px; margin: 18px 0; border-radius: 4px; font-size: 13.5px; line-height: 1.6;">
+                            <strong>Employee Name:</strong> ${applicant.fullName}<br>
                             <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
                             <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                            <strong>Division:</strong> ${applicant.division || 'CRITIZA'}<br>
                             <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
-                            <strong>Date of Joining:</strong> ${applicant.actualJoiningDate || 'N/A'}<br>
-                            <strong>Portal Login Access:</strong> ${applicant.canLogin !== false ? 'Active' : 'Closed'}
+                            <strong>Effective Date of Appointment:</strong> ${applicant.actualJoiningDate || applicant.adoj || applicant.joiningDate || 'As per letter'}
                         </div>
-                        <p style="font-size: 13px; color: #ea580c; font-weight: 600;">
-                            🛡️ Safety Protocol: As per company policy, this appointment letter has been routed to the official admin email (${adminEmail}) only. Once verified, please manually forward this official letter to the employee (${applicant.email}) to prevent any incorrect communication.
+                        <p style="font-size: 14px; color: #334155; margin-bottom: 12px;">
+                            Please find attached your official 5-page <strong>Appointment Letter</strong>, which includes:
                         </p>
-                        <br>
-                        <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
-                        <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                        <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; margin-bottom: 16px; line-height: 1.6;">
+                            <li><b>Section 1 - 10:</b> Terms &amp; Conditions of Employment, Scale, and Probationary Period</li>
+                            <li><b>Section 11:</b> General Working Guidelines and Company Governance</li>
+                            <li><b>Section 12:</b> Employee Non-Disclosure Agreement (NDA)</li>
+                            <li><b>Annexure-I:</b> Detailed Monthly &amp; Annual Salary Structure Breakdown</li>
+                        </ul>
+                        <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                            Kindly review the document thoroughly, sign the duplicate copy along with the Non-Disclosure Agreement and Annexure-I, and return the signed scanned copies to HR Operations at <a href="mailto:hradmin@emyrishr.in" style="color: #0284c7; text-decoration: none; font-weight: bold;">hradmin@emyrishr.in</a> for our official records.
+                        </p>
+                        <p style="font-size: 14px; color: #334155; margin-bottom: 24px;">
+                            We welcome you to the Emyris family and wish you a successful and rewarding journey with us!
+                        </p>
+                        <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 20px;">
+                            <p style="margin: 0; font-size: 14px; font-weight: bold; color: #0f172a;">${company.signatoryName || 'HR Operations'}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'HR BUSINESS PARTNER'}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 13px; font-weight: bold; color: #334155;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">
+                                Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana - 500003<br>
+                                Email: hradmin@emyrishr.in | Web: www.emyrisbio.com | Toll Free: 1800 889 1217
+                            </p>
+                        </div>
                     </div>
-                    <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-                        Administrative Dispatch · Emyris HRMS
+                    <div style="background: #f1f5f9; padding: 12px 24px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                        This is an official document from ${company.name || 'Emyris Biolifesciences Pvt Ltd'}. Confidentiality applies.
                     </div>
                 </div>`;
         }
@@ -2390,38 +2409,57 @@ router.post('/save-letter-snapshot', async (req, res) => {
                     </div>
                 </div>`;
 
-            // If Appointment Letter: Forward ONLY to dynamically resolved adminEmail for review
+            // If Appointment Letter: Forward to adminEmail in candidate-addressed format ready for review & forward
             if (letterType === 'appt') {
                 targetEmail = adminEmail;
                 finalCc = undefined;
-                emailSubject = `[HR Review & Dispatch] Official Appointment Letter: ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${company.name}`;
+                emailSubject = `Appointment Letter - ${applicant.fullName} (${applicant.empCode || 'N/A'}) - ${applicant.designation || 'Staff'} | ${company.name}`;
                 emailBodyHtml = `
-                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                        <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
-                            <h2 style="color: white; margin: 0; font-size: 20px;">${company.name}</h2>
-                            <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 14px;">Official Document Review & Dispatch Hub</p>
+                    <div style="font-family: Arial, 'Segoe UI', sans-serif; line-height: 1.6; color: #1e293b; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background-color: #ffffff;">
+                        <div style="background: linear-gradient(135deg, #0284c7, #1e3a8a); padding: 22px 28px; text-align: left;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</h2>
+                            <p style="color: #e0e7ff; margin: 4px 0 0 0; font-size: 13px;">Official Appointment Letter</p>
                         </div>
-                        <div style="padding: 28px 24px;">
-                            <p style="font-size: 15px; margin-top: 0;">Dear <strong>HR Administrator</strong>,</p>
-                            <p style="font-size: 14px;">Please find attached the official <strong>Appointment Letter</strong> for <strong>${applicant.fullName}</strong> for administrative review.</p>
-                            <div style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-size: 13px;">
-                                <strong>Employee:</strong> ${applicant.fullName}<br>
-                                <strong>Employee Email:</strong> ${applicant.email}<br>
+                        <div style="padding: 26px 28px;">
+                            <p style="font-size: 15px; margin-top: 0; color: #0f172a;">Dear <strong>${applicant.fullName}</strong>,</p>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                                Congratulations on your appointment with <strong>${company.name || 'Emyris Biolifesciences Pvt Ltd'}</strong>! We are pleased to formally issue your <strong>Appointment Letter</strong> for the position of <strong>${applicant.designation || 'Staff'}</strong>.
+                            </p>
+                            <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 18px; margin: 18px 0; border-radius: 4px; font-size: 13.5px; line-height: 1.6;">
+                                <strong>Employee Name:</strong> ${applicant.fullName}<br>
                                 <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
                                 <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                                <strong>Division:</strong> ${applicant.division || 'CRITIZA'}<br>
                                 <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
-                                <strong>Date of Joining:</strong> ${applicant.actualJoiningDate || 'N/A'}<br>
-                                <strong>Portal Login Access:</strong> ${applicant.canLogin !== false ? 'Active' : 'Closed'}
+                                <strong>Effective Date of Appointment:</strong> ${applicant.actualJoiningDate || applicant.adoj || applicant.joiningDate || 'As per letter'}
                             </div>
-                            <p style="font-size: 13px; color: #ea580c; font-weight: 600;">
-                                🛡️ Safety Protocol: As per company policy, this appointment letter has been routed to the official admin email (${adminEmail}) only. Once verified, please manually forward this official letter to the employee (${applicant.email}) to prevent any incorrect communication.
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 12px;">
+                                Please find attached your official 5-page <strong>Appointment Letter</strong>, which includes:
                             </p>
-                            <br>
-                            <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Team HR'}</p>
-                            <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                            <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; margin-bottom: 16px; line-height: 1.6;">
+                                <li><b>Section 1 - 10:</b> Terms &amp; Conditions of Employment, Scale, and Probationary Period</li>
+                                <li><b>Section 11:</b> General Working Guidelines and Company Governance</li>
+                                <li><b>Section 12:</b> Employee Non-Disclosure Agreement (NDA)</li>
+                                <li><b>Annexure-I:</b> Detailed Monthly &amp; Annual Salary Structure Breakdown</li>
+                            </ul>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                                Kindly review the document thoroughly, sign the duplicate copy along with the Non-Disclosure Agreement and Annexure-I, and return the signed scanned copies to HR Operations at <a href="mailto:hradmin@emyrishr.in" style="color: #0284c7; text-decoration: none; font-weight: bold;">hradmin@emyrishr.in</a> for our official records.
+                            </p>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 24px;">
+                                We welcome you to the Emyris family and wish you a successful and rewarding journey with us!
+                            </p>
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 20px;">
+                                <p style="margin: 0; font-size: 14px; font-weight: bold; color: #0f172a;">${company.signatoryName || 'HR Operations'}</p>
+                                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'HR BUSINESS PARTNER'}</p>
+                                <p style="margin: 2px 0 0 0; font-size: 13px; font-weight: bold; color: #334155;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</p>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">
+                                    Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana - 500003<br>
+                                    Email: hradmin@emyrishr.in | Web: www.emyrisbio.com | Toll Free: 1800 889 1217
+                                </p>
+                            </div>
                         </div>
-                        <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-                            Administrative Dispatch · Emyris HRMS
+                        <div style="background: #f1f5f9; padding: 12px 24px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                            This is an official document from ${company.name || 'Emyris Biolifesciences Pvt Ltd'}. Confidentiality applies.
                         </div>
                     </div>`;
             }
