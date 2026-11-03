@@ -2666,6 +2666,102 @@ router.get('/lifecycle-check', async (req, res) => {
     }
 });
 
+// Admin Review of 5-Month Confirmation Scorecard
+router.get('/applicant/:email/confirmation-process', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        res.json({
+            success: true,
+            applicant: {
+                fullName: applicant.fullName,
+                empCode: applicant.empCode,
+                designation: applicant.designation,
+                hq: applicant.hq,
+                actualJoiningDate: applicant.actualJoiningDate
+            },
+            confirmationData: applicant.confirmationData || null
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/applicant/:email/confirmation-process/review', async (req, res) => {
+    try {
+        const { status, adminRemarks } = req.body;
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        const existing = applicant.confirmationData || {};
+        existing.status = status || existing.status;
+        existing.adminRemarks = adminRemarks !== undefined ? adminRemarks : (existing.adminRemarks || '');
+        existing.reviewedAt = new Date();
+
+        await Applicant.findOneAndUpdate(
+            { email: req.params.email },
+            { $set: { confirmationData: existing } }
+        );
+
+        res.json({ success: true, confirmationData: existing });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Reporting Manager Assessment (100-Mark Dual Evaluation)
+router.post('/applicant/:email/confirmation-process/manager-evaluate', async (req, res) => {
+    try {
+        const { managerRatings, managerRecommendation, managerRemarks, evaluatedBy } = req.body;
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        const existing = applicant.confirmationData || {};
+
+        const sanitizedManagerRatings = {
+            sales: Math.min(40, Math.max(0, parseInt(managerRatings?.sales, 10) || 0)),
+            fieldWork: Math.min(20, Math.max(0, parseInt(managerRatings?.fieldWork, 10) || 0)),
+            quality: Math.min(15, Math.max(0, parseInt(managerRatings?.quality, 10) || 0)),
+            knowledge: Math.min(10, Math.max(0, parseInt(managerRatings?.knowledge, 10) || 0)),
+            discipline: Math.min(10, Math.max(0, parseInt(managerRatings?.discipline, 10) || 0)),
+            attitude: Math.min(5, Math.max(0, parseInt(managerRatings?.attitude, 10) || 0))
+        };
+        const totalManagerScore = Object.values(sanitizedManagerRatings).reduce((a, b) => a + b, 0);
+
+        let finalGrade = 'Grade D (Unsatisfactory)';
+        if (totalManagerScore >= 85) finalGrade = 'Grade A (Distinction)';
+        else if (totalManagerScore >= 75) finalGrade = 'Grade B (Satisfactory)';
+        else if (totalManagerScore >= 60) finalGrade = 'Grade C (Probation Extension with PIP)';
+
+        existing.managerRatings = sanitizedManagerRatings;
+        existing.totalManagerScore = totalManagerScore;
+        existing.finalGrade = finalGrade;
+        existing.managerRecommendation = managerRecommendation || (totalManagerScore >= 75 ? 'Confirmed' : 'Probation Extension');
+        existing.managerRemarks = managerRemarks || '';
+        existing.evaluatedBy = evaluatedBy || 'Reporting Manager';
+        existing.evaluatedAt = new Date();
+        existing.status = 'manager_evaluated';
+
+        await Applicant.findOneAndUpdate(
+            { email: req.params.email },
+            { $set: { confirmationData: existing } }
+        );
+
+        const { XlNotification } = require('../db');
+        if (XlNotification) {
+            await XlNotification.create({
+                employeeId: 'ADMIN',
+                title: `Manager Confirmation Review Complete: ${applicant.fullName}`,
+                message: `Reporting Manager completed confirmation assessment for ${applicant.fullName}. Manager Score: ${totalManagerScore}/100 (${finalGrade}). Recommendation: ${existing.managerRecommendation}.`
+            }).catch(e => console.error('Notif error:', e.message));
+        }
+
+        res.json({ success: true, confirmationData: existing });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Company Profile Fetching (With latest Assets)
 router.get('/company-profile', async (req, res) => {
     try {

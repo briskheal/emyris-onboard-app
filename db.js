@@ -129,6 +129,7 @@ await XlTarget.sync({ alter: true });
         } catch(e) {}
 
         // --- Company Code & Identity Upgrades ---
+        try { await sequelize.query('ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "confirmationData" JSONB DEFAULT NULL;'); } catch(e) {}
         try { await sequelize.query('ALTER TABLE onboard_companies ADD COLUMN IF NOT EXISTS "companyCode" VARCHAR(100) DEFAULT \'EMYRIS\';'); } catch(e) {}
         try { await sequelize.query('UPDATE onboard_companies SET "companyCode" = \'EMYRIS\' WHERE "companyCode" IS NULL OR "companyCode" = \'\';'); } catch(e) {}
 

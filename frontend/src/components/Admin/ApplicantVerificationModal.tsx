@@ -91,6 +91,13 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [divisionsList, setDivisionsList] = useState<any[]>([]);
   const [hqsList, setHqsList] = useState<any[]>([]);
   const [requiredDocsList, setRequiredDocsList] = useState<string[]>([]);
+  const [showConfirmationScorecard, setShowConfirmationScorecard] = useState(false);
+  const [mgrRatings, setMgrRatings] = useState<any>({
+    sales: 0, fieldWork: 0, quality: 0, knowledge: 0, discipline: 0, attitude: 0
+  });
+  const [mgrRec, setMgrRec] = useState('Confirmed');
+  const [mgrRemarks, setMgrRemarks] = useState('');
+  const [evaluating, setEvaluating] = useState(false);
   
   // Track verified documents
   const [verificationChecks, setVerificationChecks] = useState<Record<string, boolean>>(initialApplicant.verificationChecks || {});
@@ -536,6 +543,182 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 <Switch label="📱 App Link Sent to Applicant" checked={tasks.appLinkSent} onChange={(v) => handleTaskToggle('appLinkSent', v)} />
                 <Switch label="🔑 Login Details Sent" checked={tasks.loginDetailsSent} onChange={(v) => handleTaskToggle('loginDetailsSent', v)} />
               </div>
+
+              {applicant.confirmationData && (
+                <div style={{ marginTop: '14px', padding: '12px', background: 'rgba(14, 165, 233, 0.08)', border: '1px solid #0284c7', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ color: '#38bdf8', fontSize: '0.9rem' }}>📋 5-Month Confirmation Scorecard</strong>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
+                        Status: <span style={{ fontWeight: 'bold', color: applicant.confirmationData.status === 'submitted' ? '#34d399' : '#fbbf24' }}>
+                          {applicant.confirmationData.status === 'submitted' ? `Submitted on ${new Date(applicant.confirmationData.submittedAt || Date.now()).toLocaleDateString()}` : 'Draft Saved'}
+                        </span>
+                        {applicant.confirmationData.summary && (
+                          <span style={{ marginLeft: '8px' }}>| Overall Ach: <strong>{applicant.confirmationData.summary.overallAchievementPct}%</strong></span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      style={{ background: '#0284c7', color: '#fff', fontSize: '0.75rem', padding: '4px 10px', borderRadius: '4px' }}
+                      onClick={() => setShowConfirmationScorecard(!showConfirmationScorecard)}
+                    >
+                      {showConfirmationScorecard ? 'Hide Scorecard' : 'View Scorecard'}
+                    </button>
+                  </div>
+
+                  {showConfirmationScorecard && (
+                    <div style={{ marginTop: '12px', overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', color: '#f8fafc' }}>
+                        <thead>
+                          <tr style={{ background: '#0f172a', textAlign: 'left' }}>
+                            <th style={{ padding: '6px' }}>Month</th>
+                            <th style={{ padding: '6px' }}>Dr Visits</th>
+                            <th style={{ padding: '6px' }}>Tot Calls</th>
+                            <th style={{ padding: '6px' }}>Call Avg</th>
+                            <th style={{ padding: '6px' }}>POB (₹)</th>
+                            <th style={{ padding: '6px' }}>Sec Obj (₹)</th>
+                            <th style={{ padding: '6px' }}>Sec Ach (₹)</th>
+                            <th style={{ padding: '6px' }}>% Ach</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(applicant.confirmationData.months || []).map((m: any, idx: number) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '6px', fontWeight: 'bold' }}>{m.monthLabel}</td>
+                              <td style={{ padding: '6px' }}>{m.drVisits}</td>
+                              <td style={{ padding: '6px' }}>{m.totCalls}</td>
+                              <td style={{ padding: '6px', color: '#38bdf8' }}>{m.callAvg}</td>
+                              <td style={{ padding: '6px' }}>₹{(m.pob || 0).toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{(m.secObj || 0).toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{(m.secAchieved || 0).toLocaleString()}</td>
+                              <td style={{ padding: '6px', fontWeight: 'bold', color: (m.achievementPct || 0) >= 100 ? '#34d399' : ((m.achievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
+                                {m.achievementPct}%
+                              </td>
+                            </tr>
+                          ))}
+                          {applicant.confirmationData.summary && (
+                            <tr style={{ background: '#090d16', fontWeight: 'bold', borderTop: '2px solid #334155' }}>
+                              <td style={{ padding: '6px' }}>Total / Avg</td>
+                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.totalDrVisits}</td>
+                              <td style={{ padding: '6px' }}>{applicant.confirmationData.summary.totalCalls}</td>
+                              <td style={{ padding: '6px', color: '#38bdf8' }}>{applicant.confirmationData.summary.overallCallAvg}</td>
+                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalPob?.toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalSecObj?.toLocaleString()}</td>
+                              <td style={{ padding: '6px' }}>₹{applicant.confirmationData.summary.totalSecAchieved?.toLocaleString()}</td>
+                              <td style={{ padding: '6px', color: (applicant.confirmationData.summary.overallAchievementPct || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
+                                {applicant.confirmationData.summary.overallAchievementPct}%
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                      {applicant.confirmationData.remarks && (
+                        <div style={{ marginTop: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.25)', borderRadius: '4px', fontSize: '0.75rem' }}>
+                          <span style={{ color: '#94a3b8' }}>Employee Remarks:</span> {applicant.confirmationData.remarks}
+                        </div>
+                      )}
+
+                      {/* 6 Core Pillars Dual Evaluation */}
+                      <div style={{ marginTop: '14px', borderTop: '1px solid #334155', paddingTop: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <strong style={{ color: '#38bdf8', fontSize: '0.82rem' }}>🎯 6 Core Parameters (100 Marks Evaluation)</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            Self Score: <strong style={{ color: '#fff' }}>{applicant.confirmationData.totalSelfScore || 0}/100</strong>
+                            {applicant.confirmationData.totalManagerScore !== undefined && (
+                              <span style={{ marginLeft: '10px' }}>| Mgr Score: <strong style={{ color: '#38bdf8' }}>{applicant.confirmationData.totalManagerScore}/100 ({applicant.confirmationData.finalGrade || ''})</strong></span>
+                            )}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '8px', fontSize: '0.72rem' }}>
+                          {[
+                            { key: 'sales', label: '1. Sales Performance', max: 40 },
+                            { key: 'fieldWork', label: '2. Field Work & Coverage', max: 20 },
+                            { key: 'quality', label: '3. Quality (Joint Work & RCPA)', max: 15 },
+                            { key: 'knowledge', label: '4. Knowledge & Training', max: 10 },
+                            { key: 'discipline', label: '5. Reporting & Discipline', max: 10 },
+                            { key: 'attitude', label: '6. Attitude & Teamwork', max: 5 }
+                          ].map(p => {
+                            const selfMark = applicant.confirmationData?.selfRatings ? applicant.confirmationData.selfRatings[p.key] : 0;
+                            return (
+                              <div key={p.key} style={{ background: '#090d16', padding: '8px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                  <span style={{ fontWeight: 600, color: '#f8fafc' }}>{p.label}</span>
+                                  <span style={{ color: '#64748b' }}>/{p.max}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ color: '#94a3b8' }}>Self: <strong style={{ color: '#f8fafc' }}>{selfMark}</strong></span>
+                                  <span style={{ color: '#64748b' }}>|</span>
+                                  <span style={{ color: '#38bdf8' }}>Mgr: </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={p.max}
+                                    step="1"
+                                    value={mgrRatings[p.key] !== undefined ? mgrRatings[p.key] : (applicant.confirmationData?.managerRatings ? applicant.confirmationData.managerRatings[p.key] : 0)}
+                                    onChange={(e) => setMgrRatings({ ...mgrRatings, [p.key]: Math.min(p.max, Math.max(0, parseInt(e.target.value, 10) || 0)) })}
+                                    style={{ width: '42px', padding: '2px 4px', background: '#1e293b', border: '1px solid #475569', borderRadius: '4px', color: '#38bdf8', fontWeight: 'bold', textAlign: 'center', fontSize: '0.75rem' }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <select
+                            value={mgrRec}
+                            onChange={(e) => setMgrRec(e.target.value)}
+                            style={{ padding: '4px 8px', background: '#090d16', border: '1px solid #475569', color: '#f8fafc', borderRadius: '4px', fontSize: '0.75rem' }}
+                          >
+                            <option value="Confirmed">Recommend for Confirmation (Service Confirmed)</option>
+                            <option value="Probation Extension (3 Months with PIP)">Probation Extension (3 Months with PIP)</option>
+                            <option value="Non-Confirmation">Critical Review / Non-Confirmation</option>
+                          </select>
+
+                          <input
+                            type="text"
+                            placeholder="Manager remarks / feedback..."
+                            value={mgrRemarks}
+                            onChange={(e) => setMgrRemarks(e.target.value)}
+                            style={{ flex: 1, minWidth: '160px', padding: '4px 8px', background: '#090d16', border: '1px solid #475569', color: '#f8fafc', borderRadius: '4px', fontSize: '0.75rem' }}
+                          />
+
+                          <button
+                            type="button"
+                            disabled={evaluating}
+                            onClick={async () => {
+                              try {
+                                setEvaluating(true);
+                                const res = await api.post(`/applicant/${encodeURIComponent(applicant.email)}/confirmation-process/manager-evaluate`, {
+                                  managerRatings: mgrRatings,
+                                  managerRecommendation: mgrRec,
+                                  managerRemarks: mgrRemarks,
+                                  evaluatedBy: 'Line Manager / HR Admin'
+                                });
+                                if (res.data.success) {
+                                  alert('✅ Manager confirmation assessment submitted successfully!');
+                                  onSuccess();
+                                }
+                              } catch (err: any) {
+                                alert('Error: ' + (err.response?.data?.error || err.message));
+                              } finally {
+                                setEvaluating(false);
+                              }
+                            }}
+                            className="btn btn-sm btn-primary"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                          >
+                            {evaluating ? 'Submitting...' : '💾 Submit Evaluation'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>

@@ -4,7 +4,7 @@ const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateSta
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, LeaveRequest, LeaveBalance, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, LeaveRequest, LeaveBalance, XlNotification, sequelize } = require('../db');
 const { z } = require('zod');
 
 const submitExamSchema = z.object({
@@ -1946,6 +1946,185 @@ router.post('/leave-requests', async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to submit leave request' });
+    }
+});
+
+// =========================================================================
+// CONFIRMATION PROCESS (Employee 5-Month Field Performance Submission)
+// =========================================================================
+router.get('/confirmation-process', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
+
+        // Calculate the 5 months dynamically based on actualJoiningDate
+        const adojStr = applicant.actualJoiningDate;
+        let adoj = null;
+        if (adojStr) {
+            if (/^\d{4}-\d{1,2}-\d{1,2}/.test(adojStr)) {
+                const parts = adojStr.substring(0, 10).split('-');
+                adoj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(adojStr)) {
+                const parts = adojStr.split('-');
+                const p1 = parseInt(parts[0], 10);
+                const p2 = parseInt(parts[1], 10);
+                const y = parseInt(parts[2], 10);
+                const m = p1 > 12 ? p2 : p1;
+                const d = p1 > 12 ? p1 : p2;
+                adoj = new Date(y, m - 1, d);
+            } else {
+                adoj = new Date(adojStr);
+            }
+        }
+        if (!adoj || isNaN(adoj.getTime())) adoj = new Date();
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        // 5 consecutive months starting from the ADOJ month
+        const calculatedMonths = [];
+        for (let i = 0; i < 5; i++) {
+            const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
+            calculatedMonths.push({
+                monthIndex: i + 1,
+                monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
+                year: mDate.getFullYear(),
+                monthNum: mDate.getMonth() + 1
+            });
+        }
+
+        const existingData = applicant.confirmationData || null;
+
+        res.json({
+            success: true,
+            applicant: {
+                fullName: applicant.fullName,
+                empCode: applicant.empCode,
+                designation: applicant.designation,
+                hq: applicant.hq,
+                division: applicant.division,
+                actualJoiningDate: applicant.actualJoiningDate
+            },
+            calculatedMonths,
+            confirmationData: existingData
+        });
+    } catch (e) {
+        console.error('Confirmation process fetch error:', e);
+        res.status(500).json({ success: false, message: 'Failed to fetch confirmation details' });
+    }
+});
+
+router.post('/confirmation-process', async (req, res) => {
+    try {
+        const { email, months, selfRatings, isSubmit, remarks } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+        if (!Array.isArray(months) || months.length === 0) {
+            return res.status(400).json({ success: false, message: 'Valid 5 months data is required' });
+        }
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
+
+        let totalDrVisits = 0;
+        let totalCalls = 0;
+        let totalPob = 0;
+        let totalSecObj = 0;
+        let totalSecAchieved = 0;
+
+        const sanitizedMonths = months.map((m, idx) => {
+            const drVisits = Math.max(0, Number(m.drVisits) || 0);
+            const totCalls = Math.max(0, Number(m.totCalls) || 0);
+            const callAvg = Number(m.callAvg) || (drVisits > 0 ? Number((totCalls / drVisits).toFixed(1)) : 0);
+            const pob = Math.max(0, Number(m.pob) || 0);
+            const secObj = Math.max(0, Number(m.secObj) || 0);
+            const secAchieved = Math.max(0, Number(m.secAchieved) || 0);
+            const achievementPct = secObj > 0 ? Number(((secAchieved / secObj) * 100).toFixed(1)) : 0;
+
+            totalDrVisits += drVisits;
+            totalCalls += totCalls;
+            totalPob += pob;
+            totalSecObj += secObj;
+            totalSecAchieved += secAchieved;
+
+            return {
+                monthIndex: idx + 1,
+                monthLabel: m.monthLabel || `Month ${idx + 1}`,
+                drVisits,
+                totCalls,
+                callAvg,
+                pob,
+                secObj,
+                secAchieved,
+                achievementPct
+            };
+        });
+
+        const overallCallAvg = totalDrVisits > 0 ? Number((totalCalls / totalDrVisits).toFixed(1)) : 0;
+        const overallAchievementPct = totalSecObj > 0 ? Number(((totalSecAchieved / totalSecObj) * 100).toFixed(1)) : 0;
+
+        const summary = {
+            totalDrVisits,
+            totalCalls,
+            overallCallAvg,
+            totalPob,
+            totalSecObj,
+            totalSecAchieved,
+            overallAchievementPct
+        };
+
+        // Sanitize 6 Core Evaluation Pillars (Self Ratings - max whole marks)
+        const sanitizedSelfRatings = {
+            sales: Math.min(40, Math.max(0, parseInt(selfRatings?.sales, 10) || 0)),
+            fieldWork: Math.min(20, Math.max(0, parseInt(selfRatings?.fieldWork, 10) || 0)),
+            quality: Math.min(15, Math.max(0, parseInt(selfRatings?.quality, 10) || 0)),
+            knowledge: Math.min(10, Math.max(0, parseInt(selfRatings?.knowledge, 10) || 0)),
+            discipline: Math.min(10, Math.max(0, parseInt(selfRatings?.discipline, 10) || 0)),
+            attitude: Math.min(5, Math.max(0, parseInt(selfRatings?.attitude, 10) || 0))
+        };
+        const totalSelfScore = Object.values(sanitizedSelfRatings).reduce((a, b) => a + b, 0);
+
+        const currentStatus = applicant.confirmationData?.status;
+        const newStatus = isSubmit ? 'submitted' : (currentStatus === 'submitted' ? 'submitted' : 'draft');
+
+        const confirmationPayload = {
+            months: sanitizedMonths,
+            summary,
+            selfRatings: sanitizedSelfRatings,
+            totalSelfScore,
+            managerRatings: applicant.confirmationData?.managerRatings || null,
+            totalManagerScore: applicant.confirmationData?.totalManagerScore || null,
+            finalGrade: applicant.confirmationData?.finalGrade || null,
+            managerRecommendation: applicant.confirmationData?.managerRecommendation || '',
+            managerRemarks: applicant.confirmationData?.managerRemarks || '',
+            status: newStatus,
+            remarks: remarks || '',
+            lastUpdated: new Date(),
+            submittedAt: isSubmit ? new Date() : (applicant.confirmationData?.submittedAt || null)
+        };
+
+        await Applicant.findOneAndUpdate(
+            { email },
+            { $set: { confirmationData: confirmationPayload } }
+        );
+
+        if (isSubmit && XlNotification) {
+            await XlNotification.create({
+                employeeId: 'ADMIN',
+                title: `Confirmation Performance Submitted: ${applicant.fullName}`,
+                message: `${applicant.fullName} (${applicant.empCode || 'N/A'} - ${applicant.designation || 'Staff'}) submitted 5-month field data & Self-Score (${totalSelfScore}/100) for Confirmation Review.`
+            }).catch(e => console.error('Notif error:', e.message));
+        }
+
+        res.json({
+            success: true,
+            message: isSubmit ? 'Performance details submitted for Confirmation Review successfully!' : 'Draft saved successfully.',
+            confirmationData: confirmationPayload
+        });
+    } catch (e) {
+        console.error('Confirmation process save error:', e);
+        res.status(500).json({ success: false, message: 'Failed to save confirmation details' });
     }
 });
 

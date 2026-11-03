@@ -7,6 +7,7 @@ import { OfferLetterView } from './OfferLetterView';
 import VoiceStudio from './VoiceStudio';
 import MyLettersView from './MyLettersView';
 import ManageLeavePortal from './ManageLeavePortal';
+import ConfirmationProcessPortal from './ConfirmationProcessPortal';
 
 const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [applicant, setApplicant] = useState(initialApplicant);
@@ -177,6 +178,20 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
         );
     }
 
+    // If viewing Confirmation Process full screen
+    if (activeTab === 'confirmation-process') {
+        return (
+            <div style={styles.dashboardContainer}>
+                <div style={{ marginBottom: '16px' }}>
+                    <button onClick={() => setActiveTab('overview')} style={styles.backButton}>
+                        ⬅️ Back to Dashboard Overview
+                    </button>
+                </div>
+                <ConfirmationProcessPortal applicant={applicant} onBack={() => setActiveTab('overview')} />
+            </div>
+        );
+    }
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)', flexDirection: 'column' }}>
             {/* Mobile Hamburger Header */}
@@ -229,6 +244,9 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                                 </button>
                                 <button style={{ ...(activeTab === 'manage-leave' ? styles.sidebarBtnActive : styles.sidebarBtn), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }} onClick={() => handleTabClick('manage-leave')}>
                                     📅 <span style={styles.sidebarBtnText}>Manage Leave</span> {isScreeningPending ? '🔒' : ''}
+                                </button>
+                                <button style={{ ...(activeTab === 'confirmation-process' ? styles.sidebarBtnActive : styles.sidebarBtn), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }} onClick={() => handleTabClick('confirmation-process')}>
+                                    📋 <span style={styles.sidebarBtnText}>Confirmation Process</span> {isScreeningPending ? '🔒' : ''}
                                 </button>
                             </nav>
                             {onLogout && (
@@ -382,6 +400,21 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                         </div>
                     )}
 
+                    {/* Step 3.5: 5-Month Confirmation Performance Evaluation */}
+                    {(applicant.actualJoiningDate || ['joined', 'Joined (Probation)', 'Confirmed Employee', 'confirmed'].includes(applicant.status)) && (
+                        <div style={{ ...styles.milestoneCard, border: '1px solid #0284c7', background: 'rgba(2, 132, 199, 0.08)' }}>
+                            <div>
+                                <h4 style={{ ...styles.milestoneTitle, color: '#38bdf8' }}>📋 Stage 5: Confirmation Process (5-Month Performance)</h4>
+                                <p style={styles.milestoneDesc}>
+                                    Submit your verified 5-month field performance records (Doctor Visits, Call Averages, POB, Secondary Objectives &amp; Achievements) for official Confirmation Review.
+                                </p>
+                            </div>
+                            <button onClick={() => setActiveTab('confirmation-process')} style={{ ...styles.actionButtonBlue, background: 'linear-gradient(135deg, #0ea5e9, #4f46e5)' }}>
+                                📋 Open Confirmation Form ➔
+                            </button>
+                        </div>
+                    )}
+
                     {/* Step 4: Assigned Division Exams */}
                     {(pendingExams.length > 0 || completedProducts.length > 0) && (
                         <div style={{ marginTop: '24px' }}>
@@ -496,6 +529,11 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
             {activeTab === 'letters' && (
                 <div style={styles.tabContentCard}>
                     <MyLettersView applicant={applicant} companyData={companyData} onRefresh={refreshApplicantProfile} />
+                </div>
+            )}
+            {activeTab === 'confirmation-process' && (
+                <div style={styles.tabContentCard}>
+                    <ConfirmationProcessPortal applicant={applicant} onBack={() => setActiveTab('overview')} />
                 </div>
             )}
         </div>
