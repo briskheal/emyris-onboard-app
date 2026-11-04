@@ -177,10 +177,21 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             const updated = [...prev];
             const row = { ...updated[index], [field]: value };
 
-            const dr = parseFloat(field === 'drVisits' ? value : row.drVisits);
-            const calls = parseFloat(field === 'totCalls' ? value : row.totCalls);
-            if (!isNaN(dr) && dr > 0 && !isNaN(calls) && calls >= 0) {
-                row.callAvg = (calls / dr).toFixed(1);
+            const days = parseFloat(field === 'daysWorked' ? value : row.daysWorked) || 0;
+            const dr = parseFloat(field === 'drVisits' ? value : row.drVisits) || 0;
+            const chem = parseFloat(field === 'chemVisits' ? value : row.chemVisits) || 0;
+
+            // Tot Calls is sum of dr + chem
+            const totCalls = dr + chem;
+            row.drVisits = dr;
+            row.chemVisits = chem;
+            row.totCalls = totCalls;
+
+            // Call avg is total calls / days work
+            if (days > 0) {
+                row.callAvg = (totCalls / days).toFixed(1);
+            } else {
+                row.callAvg = '0.0';
             }
 
             updated[index] = row;
@@ -201,15 +212,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
     // Calculate row % (Sec + Coll) and separate Actuals (M1-M5) vs Projection (M6) totals
     const { rowsCalculated, actualsTotals, projectionRow, combinedTotals } = useMemo(() => {
-        let actDays = 0, actDr = 0, actCalls = 0, actPob = 0, actSecObj = 0, actSecAch = 0, actCollObj = 0, actCollAch = 0, actSalaryExp = 0, actActAmt = 0, actLop = 0;
-        let totDays = 0, totDr = 0, totCalls = 0, totPob = 0, totSecObj = 0, totSecAch = 0, totCollObj = 0, totCollAch = 0, totSalaryExp = 0, totActAmt = 0, totLop = 0;
+        let actDays = 0, actDr = 0, actChem = 0, actCalls = 0, actPob = 0, actSecObj = 0, actSecAch = 0, actCollObj = 0, actCollAch = 0, actSalaryExp = 0, actActAmt = 0, actLop = 0;
+        let totDays = 0, totDr = 0, totChem = 0, totCalls = 0, totPob = 0, totSecObj = 0, totSecAch = 0, totCollObj = 0, totCollAch = 0, totSalaryExp = 0, totActAmt = 0, totLop = 0;
         let projRow = null;
 
         const rows = monthsData.map((m, idx) => {
             const isProjection = m.isProjection || idx === 5;
             const days = parseFloat(m.daysWorked) || 0;
             const dr = parseFloat(m.drVisits) || 0;
-            const calls = parseFloat(m.totCalls) || 0;
+            const chem = parseFloat(m.chemVisits) || 0;
+            const calls = dr + chem; // Tot Calls is sum of dr + chem
             const pob = parseFloat(m.pob) || 0;
             const sObj = parseFloat(m.secObj) || 0;
             const sAch = parseFloat(m.secAchieved) || 0;
@@ -219,15 +231,26 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             const aAmt = parseFloat(m.totActivityAmt) || 0;
             const lop = parseFloat(m.lopDays) || 0;
 
-            const callAvg = parseFloat(m.callAvg) || (dr > 0 ? parseFloat((calls / dr).toFixed(1)) : 0);
+            const callAvg = days > 0 ? parseFloat((calls / days).toFixed(1)) : 0; // Call avg is total calls / days work
             const secPct = sObj > 0 ? ((sAch / sObj) * 100).toFixed(1) : 0;
             const collPct = cObj > 0 ? ((cAch / cObj) * 100).toFixed(1) : 0;
+
+            // Sales vs Expense ratio: Sec Ach / (Salary & Exp + Tot Activity)
+            const expSum = sExp + aAmt;
+            const salesExpRatioNum = expSum > 0 ? (sAch / expSum) : 0;
+            const salesExpRatioStr = expSum > 0 ? (sAch / expSum).toFixed(2) + 'x' : (sAch > 0 ? '—' : '0.00x');
 
             const calculatedRow = {
                 ...m,
                 isProjection,
+                drVisits: dr,
+                chemVisits: chem,
+                totCalls: calls,
+                callAvg,
                 computedSecPct: parseFloat(secPct),
-                computedCollPct: parseFloat(collPct)
+                computedCollPct: parseFloat(collPct),
+                salesExpRatioNum,
+                salesExpRatioStr
             };
 
             if (isProjection) {
@@ -235,6 +258,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             } else {
                 actDays += days;
                 actDr += dr;
+                actChem += chem;
                 actCalls += calls;
                 actPob += pob;
                 actSecObj += sObj;
@@ -248,6 +272,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
             totDays += days;
             totDr += dr;
+            totChem += chem;
             totCalls += calls;
             totPob += pob;
             totSecObj += sObj;
@@ -261,11 +286,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             return calculatedRow;
         });
 
-        const actCallAvg = actDr > 0 ? (actCalls / actDr).toFixed(1) : 0;
+        const actCallAvg = actDays > 0 ? (actCalls / actDays).toFixed(1) : 0;
         const actSecPct = actSecObj > 0 ? ((actSecAch / actSecObj) * 100).toFixed(1) : 0;
         const actCollPct = actCollObj > 0 ? ((actCollAch / actCollObj) * 100).toFixed(1) : 0;
 
-        const combCallAvg = totDr > 0 ? (totCalls / totDr).toFixed(1) : 0;
+        const combCallAvg = totDays > 0 ? (totCalls / totDays).toFixed(1) : 0;
         const combSecPct = totSecObj > 0 ? ((totSecAch / totSecObj) * 100).toFixed(1) : 0;
         const combCollPct = totCollObj > 0 ? ((totCollAch / totCollObj) * 100).toFixed(1) : 0;
 
@@ -274,6 +299,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             actualsTotals: {
                 totalDays: actDays,
                 totalDr: actDr,
+                totalChem: actChem,
                 totalCalls: actCalls,
                 overallCallAvg: actCallAvg,
                 totalPob: actPob,
@@ -294,6 +320,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             combinedTotals: {
                 totalDays: totDays,
                 totalDr: totDr,
+                totalChem: totChem,
                 totalCalls: totCalls,
                 overallCallAvg: combCallAvg,
                 totalPob: totPob,
@@ -305,7 +332,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 overallCollPct: parseFloat(combCollPct),
                 totalSalaryExpense: totSalaryExp,
                 totalActivityAmt: totActAmt,
-                totalLopDays: totLop
+                totalLopDays: totLop,
+                combSalesExpRatioStr: (totSalaryExp + totActAmt) > 0 ? (totSecAch / (totSalaryExp + totActAmt)).toFixed(2) + 'x' : (totSecAch > 0 ? '—' : '0.00x'),
+                combSalesExpRatioNum: (totSalaryExp + totActAmt) > 0 ? (totSecAch / (totSalaryExp + totActAmt)) : 0
             }
         };
     }, [monthsData]);
@@ -605,21 +634,41 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </div>
             )}
             {errorMsg && (
-                <div style={{
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    border: '1px solid #ef4444',
-                    color: '#fca5a5',
-                    padding: '12px 18px',
-                    borderRadius: '10px',
-                    marginBottom: '18px',
-                    fontSize: '0.9rem',
-                    fontWeight: 600
-                }}>
-                    ⚠️ {errorMsg}
-                </div>
-            )}
+                    <div style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        border: '1px solid #ef4444',
+                        color: '#fca5a5',
+                        padding: '12px 18px',
+                        borderRadius: '10px',
+                        marginBottom: '18px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600
+                    }}>
+                        ⚠️ {errorMsg}
+                    </div>
+                )}
 
-            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
+                {/* Management / Admin Guidance Remarks Banner */}
+                {adminRemarks && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)',
+                        border: '1.5px solid #0284c7',
+                        borderRadius: '16px',
+                        padding: '18px 24px',
+                        marginBottom: '24px',
+                        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.2)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#38bdf8', fontWeight: 800, fontSize: '1rem', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+                            <span>Management / Admin Guidance &amp; Remarks</span>
+                        </div>
+                        <div style={{ color: '#f1f5f9', fontSize: '0.94rem', lineHeight: '1.6', fontStyle: 'italic', background: 'rgba(15, 23, 42, 0.55)', padding: '12px 18px', borderRadius: '8px', borderLeft: '3px solid #38bdf8' }}>
+                            "{adminRemarks}"
+                        </div>
+                    </div>
+                )}
+
+                {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
             <div style={{
                 background: '#131b2e',
                 border: '1px solid #334155',
@@ -639,7 +688,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         </p>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
-                        * Call Avg: Tot Calls / Dr Visits | % Achvmnt: (Achieved / Objective) × 100
+                        * Tot Calls: Dr Visited + Chem. Visited | Call Avg: Tot Calls / Days Work | % Achvmnt: (Achieved / Objective) × 100
                     </span>
                 </div>
 
@@ -653,12 +702,13 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         minWidth: '1500px'
                     }}>
                         <colgroup>
-                            <col style={{ width: '160px' }} /> {/* Month */}
-                            <col style={{ width: '80px' }} />  {/* Days Worked */}
-                            <col style={{ width: '80px' }} />  {/* Dr Visite */}
-                            <col style={{ width: '80px' }} />  {/* Tot Calls */}
+                            <col style={{ width: '150px' }} /> {/* Month */}
+                            <col style={{ width: '75px' }} />  {/* Days Work */}
+                            <col style={{ width: '75px' }} />  {/* Dr Visited */}
+                            <col style={{ width: '80px' }} />  {/* Chem. Visited */}
+                            <col style={{ width: '75px' }} />  {/* Tot Calls */}
                             <col style={{ width: '75px' }} />  {/* Call Avg */}
-                            <col style={{ width: '95px' }} />  {/* POB (₹) */}
+                            <col style={{ width: '90px' }} />  {/* POB (₹) */}
                             {/* Secondary Sales Group */}
                             <col style={{ width: '110px' }} /> {/* Sec Obj (₹) */}
                             <col style={{ width: '110px' }} /> {/* Sec Achivd (₹) */}
@@ -676,7 +726,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         <thead>
                             {/* Grouping Header */}
                             <tr style={{ background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                <th colSpan={6} style={{ padding: '8px 12px', borderRight: '1px solid #334155' }}>
+                                <th colSpan={7} style={{ padding: '8px 12px', borderRight: '1px solid #334155' }}>
                                     Field Activity &amp; Coverage
                                 </th>
                                 <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
@@ -695,10 +745,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             {/* Column Header */}
                             <tr style={{ background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
                                 <th style={{ padding: '12px 12px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>MONTH</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>DAYS WRK</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>DR VISITE</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>TOT CALLS</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>CALL AVG</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Days Work</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Dr Visited</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>Chem. Visited</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Tot Calls</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Call Avg</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', borderRight: '1px solid #334155' }}>POB (₹)</th>
                                 
                                 {/* Secondary Columns */}
@@ -1034,6 +1085,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalDr.toLocaleString('en-IN')}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                    {actualsTotals.totalChem.toLocaleString('en-IN')}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalCalls.toLocaleString('en-IN')}

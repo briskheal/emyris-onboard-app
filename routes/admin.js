@@ -8478,6 +8478,56 @@ router.get('/all-confirmations', async (req, res) => {
         const applicants = await Applicant.find({});
 
         const now = new Date();
+        
+        const getAdminMonths = (a) => {
+            if (a.confirmationData && a.confirmationData.months && a.confirmationData.months.length > 0) {
+                return a.confirmationData.months;
+            }
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            let adoj = null;
+            if (a.actualJoiningDate) {
+                const s = String(a.actualJoiningDate).trim();
+                if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+                    const p = s.substring(0, 10).split('-');
+                    adoj = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+                    const p = s.split('-');
+                    const p1 = parseInt(p[0], 10), p2 = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                    adoj = new Date(y, (p1 > 12 ? p2 : p1) - 1, p1 > 12 ? p1 : p2);
+                } else {
+                    adoj = new Date(s);
+                }
+            }
+            if (!adoj || isNaN(adoj.getTime())) adoj = new Date();
+            const list = [];
+            for (let i = 0; i < 6; i++) {
+                const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
+                list.push({
+                    monthIndex: i + 1,
+                    monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
+                    year: mDate.getFullYear(),
+                    monthNum: mDate.getMonth() + 1,
+                    isProjection: i === 5,
+                    daysWorked: 0,
+                    drVisits: 0,
+                    chemVisits: 0,
+                    totCalls: 0,
+                    callAvg: 0,
+                    pob: 0,
+                    secObj: 0,
+                    secAchieved: 0,
+                    achievementPct: 0,
+                    collObj: 0,
+                    collAchieved: 0,
+                    collAchievementPct: 0,
+                    salaryExpense: 0,
+                    totActivityAmt: 0,
+                    lopDays: 0
+                });
+            }
+            return list;
+        };
+        // Default 6 consecutive months for Admin Section 1 view
         const list = applicants.map(a => {
             let completedMonths = 0;
             if (a.actualJoiningDate) {
@@ -8513,7 +8563,7 @@ router.get('/all-confirmations', async (req, res) => {
                 reportingTo: a.reportingTo,
                 completedMonths,
                 canLogin: a.canLogin !== false,
-                confirmationData: conf,
+                confirmationData: conf ? { ...conf, months: (conf.months && conf.months.length > 0) ? conf.months : getAdminMonths(a) } : { months: getAdminMonths(a), status: 'not_submitted', adminRemarks: '' },
                 status: a.status,
                 confirmationStatus: displayStatus
             };
@@ -8536,10 +8586,12 @@ router.post('/update-confirmation-record', async (req, res) => {
         if (!app) return res.status(404).json({ success: false, message: 'Applicant not found' });
 
         const conf = app.confirmationData || {};
+        const isRemarksOnly = adminStatus === 'remarks_only' || !adminStatus;
         const updatedConf = {
             ...conf,
             adminRemarks: adminRemarks !== undefined ? adminRemarks : (conf.adminRemarks || ''),
-            status: adminStatus || conf.status || 'confirmed',
+            adminRemarkedAt: adminRemarks !== undefined ? new Date() : (conf.adminRemarkedAt || null),
+            status: isRemarksOnly ? (conf.status || 'pending_manager_review') : adminStatus,
             adminConfirmedAt: adminStatus === 'confirmed' ? new Date() : (conf.adminConfirmedAt || null),
             lastUpdated: new Date()
         };
@@ -8563,7 +8615,7 @@ router.post('/update-confirmation-record', async (req, res) => {
 
         res.json({
             success: true,
-            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : 'Confirmation record updated.',
+            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : (adminStatus === 'remarks_only' ? 'Admin remarks saved successfully!' : 'Confirmation record updated.'),
             confirmationData: updatedConf
         });
     } catch (e) {

@@ -2032,6 +2032,7 @@ router.post('/confirmation-process', async (req, res) => {
 
         let totalDaysWorked = 0;
         let totalDrVisits = 0;
+        let totalChemVisits = 0;
         let totalCalls = 0;
         let totalPob = 0;
         let totalSecObj = 0;
@@ -2044,6 +2045,7 @@ router.post('/confirmation-process', async (req, res) => {
 
         let actualDaysWorked = 0;
         let actualDrVisits = 0;
+        let actualChemVisits = 0;
         let actualCalls = 0;
         let actualPob = 0;
         let actualSecObj = 0;
@@ -2106,6 +2108,7 @@ router.post('/confirmation-process', async (req, res) => {
                 isProjection,
                 daysWorked: m.daysWorked !== undefined && m.daysWorked !== '' ? daysWorked : '',
                 drVisits,
+                chemVisits,
                 totCalls,
                 callAvg,
                 pob,
@@ -2122,13 +2125,13 @@ router.post('/confirmation-process', async (req, res) => {
             };
         });
 
-        const actualCallAvg = actualDrVisits > 0 ? Number((actualCalls / actualDrVisits).toFixed(1)) : 0;
+        const actualCallAvg = actualDaysWorked > 0 ? Number((actualCalls / actualDaysWorked).toFixed(1)) : 0;
         const actualAchievementPct = actualSecObj > 0 ? Number(((actualSecAchieved / actualSecObj) * 100).toFixed(1)) : 0;
         const actualCollAchievementPct = actualCollObj > 0 ? Number(((actualCollAchieved / actualCollObj) * 100).toFixed(1)) : 0;
         const actualTotalCost = actualSalaryExpense + actualActivityAmt;
         const actualSalesExpRatio = actualTotalCost > 0 ? Number((actualSecAchieved / actualTotalCost).toFixed(2)) : 0;
 
-        const overallCallAvg = totalDrVisits > 0 ? Number((totalCalls / totalDrVisits).toFixed(1)) : 0;
+        const overallCallAvg = totalDaysWorked > 0 ? Number((totalCalls / totalDaysWorked).toFixed(1)) : 0;
         const overallAchievementPct = totalSecObj > 0 ? Number(((totalSecAchieved / totalSecObj) * 100).toFixed(1)) : 0;
         const overallCollAchievementPct = totalCollObj > 0 ? Number(((totalCollAchieved / totalCollObj) * 100).toFixed(1)) : 0;
         const overallTotalCost = totalSalaryExpense + totalActivityAmt;
@@ -2137,6 +2140,7 @@ router.post('/confirmation-process', async (req, res) => {
         const summary = {
             actualDaysWorked,
             actualDrVisits,
+            actualChemVisits,
             actualCalls,
             actualCallAvg,
             actualPob,
@@ -2153,6 +2157,7 @@ router.post('/confirmation-process', async (req, res) => {
             actualSalesExpRatio,
             totalDaysWorked,
             totalDrVisits,
+            totalChemVisits,
             totalCalls,
             overallCallAvg,
             totalPob,
@@ -2267,6 +2272,56 @@ router.get('/team-confirmations', async (req, res) => {
         });
 
         const now = new Date();
+        
+        const getReporteeMonths = (r) => {
+            if (r.confirmationData && r.confirmationData.months && r.confirmationData.months.length > 0) {
+                return r.confirmationData.months;
+            }
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            let adoj = null;
+            if (r.actualJoiningDate) {
+                const s = String(r.actualJoiningDate).trim();
+                if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+                    const p = s.substring(0, 10).split('-');
+                    adoj = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+                    const p = s.split('-');
+                    const p1 = parseInt(p[0], 10), p2 = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                    adoj = new Date(y, (p1 > 12 ? p2 : p1) - 1, p1 > 12 ? p1 : p2);
+                } else {
+                    adoj = new Date(s);
+                }
+            }
+            if (!adoj || isNaN(adoj.getTime())) adoj = new Date();
+            const list = [];
+            for (let i = 0; i < 6; i++) {
+                const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
+                list.push({
+                    monthIndex: i + 1,
+                    monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
+                    year: mDate.getFullYear(),
+                    monthNum: mDate.getMonth() + 1,
+                    isProjection: i === 5,
+                    daysWorked: 0,
+                    drVisits: 0,
+                    chemVisits: 0,
+                    totCalls: 0,
+                    callAvg: 0,
+                    pob: 0,
+                    secObj: 0,
+                    secAchieved: 0,
+                    achievementPct: 0,
+                    collObj: 0,
+                    collAchieved: 0,
+                    collAchievementPct: 0,
+                    salaryExpense: 0,
+                    totActivityAmt: 0,
+                    lopDays: 0
+                });
+            }
+            return list;
+        };
+        // Default 6 consecutive months for reportee Section 1
         const formatted = reportees.map(r => {
             let completedMonths = 0;
             if (r.actualJoiningDate) {
@@ -2295,7 +2350,7 @@ router.get('/team-confirmations', async (req, res) => {
                 actualJoiningDate: r.actualJoiningDate,
                 reportingTo: r.reportingTo,
                 completedMonths,
-                confirmationData: conf,
+                confirmationData: conf ? { ...conf, months: (conf.months && conf.months.length > 0) ? conf.months : getReporteeMonths(r) } : { months: getReporteeMonths(r), status: 'not_submitted', adminRemarks: '' },
                 status: displayStatus
             };
         });

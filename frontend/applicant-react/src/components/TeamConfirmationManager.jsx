@@ -423,6 +423,31 @@ export default function TeamConfirmationManager({ applicant, onBack }) {
                         </div>
                     )}
 
+                    {/* Management / Admin Remarks Banner */}
+                    {selectedReportee?.confirmationData?.adminRemarks && (
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)',
+                            border: '1.5px solid #0284c7',
+                            borderRadius: '14px',
+                            padding: '16px 22px',
+                            marginBottom: '22px',
+                            boxShadow: '0 4px 16px rgba(2, 132, 199, 0.15)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontWeight: 800, fontSize: '0.96rem', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+                                <span>Management / Admin Guidance &amp; Remarks</span>
+                            </div>
+                            <div style={{ color: '#f1f5f9', fontSize: '0.9rem', lineHeight: '1.6', fontStyle: 'italic', background: 'rgba(15, 23, 42, 0.55)', padding: '12px 16px', borderRadius: '8px', borderLeft: '3px solid #38bdf8' }}>
+                                "{selectedReportee.confirmationData.adminRemarks}"
+                            </div>
+                            {selectedReportee.confirmationData.adminRemarkedAt && (
+                                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '6px' }}>
+                                    Recorded on: {formatDate(selectedReportee.confirmationData.adminRemarkedAt)}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Section 1: Candidate's Submitted Field Numbers */}
                     <div style={{
                         background: '#131b2e',
@@ -435,85 +460,99 @@ export default function TeamConfirmationManager({ applicant, onBack }) {
                             📊 Section 1: 5-Month Field Performance (Actuals) &amp; 6th-Month Projection
                         </h4>
 
-                        {selectedReportee?.confirmationData?.months && selectedReportee.confirmationData.months.length > 0 ? (
-                            <div style={{ overflowX: 'auto', background: '#090e1a', borderRadius: '12px', border: '1px solid #334155' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'right' }}>
-                                    <thead>
-                                        <tr style={{ background: '#1e293b', color: '#94a3b8', borderBottom: '1px solid #334155' }}>
-                                            <th style={{ padding: '10px 12px', textAlign: 'left' }}>Month</th>
-                                            <th style={{ padding: '10px 8px' }}>Days</th>
-                                            <th style={{ padding: '10px 8px' }}>Dr Vis</th>
-                                            <th style={{ padding: '10px 8px' }}>Calls</th>
-                                            <th style={{ padding: '10px 8px' }}>Call Avg</th>
-                                            <th style={{ padding: '10px 8px' }}>POB (₹)</th>
-                                            <th style={{ padding: '10px 8px' }}>Sec Obj (₹)</th>
-                                            <th style={{ padding: '10px 8px' }}>Sec Ach (₹)</th>
-                                            <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Sec</th>
-                                            <th style={{ padding: '10px 8px' }}>Coll Obj (₹)</th>
-                                            <th style={{ padding: '10px 8px' }}>Coll Ach (₹)</th>
-                                            <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Coll</th>
-                                            <th style={{ padding: '10px 8px' }}>Salary &amp; Exp</th>
-                                            <th style={{ padding: '10px 8px' }}>Activity</th>
-                                            <th style={{ padding: '10px 8px' }}>LOP</th>
-                                            <th style={{ padding: '10px 8px', textAlign: 'center' }}>SALES / EXP</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedReportee.confirmationData.months.map((m, mIdx) => (
-                                            <tr key={mIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}>
-                                                <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff' }}>
-                                                    {m.monthLabel} {m.isProjection ? '(🎯 Proj)' : ''}
-                                                </td>
-                                                <td style={{ padding: '10px 8px', color: '#ffffff' }}>{m.daysWorked || 0}</td>
-                                                <td style={{ padding: '10px 8px', color: '#ffffff' }}>{m.drVisits || 0}</td>
-                                                <td style={{ padding: '10px 8px', color: '#ffffff' }}>{m.totCalls || 0}</td>
-                                                <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{m.callAvg || 0}</td>
-                                                <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(m.pob)}</td>
-                                                <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(m.secObj)}</td>
-                                                <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{formatCurrency(m.secAchieved)}</td>
-                                                <td style={{ padding: '10px 8px', textAlign: 'center', color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
-                                                    {m.achievementPct || 0}%
-                                                </td>
-                                                <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(m.collObj)}</td>
-                                                <td style={{ padding: '10px 8px', color: '#34d399', fontWeight: 700 }}>{formatCurrency(m.collAchieved)}</td>
-                                                <td style={{ padding: '10px 8px', textAlign: 'center', color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
-                                                    {m.collAchievementPct || 0}%
-                                                </td>
-                                                <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
-                                                <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                                <td style={{ padding: '10px 8px', color: m.lopDays > 0 ? '#f87171' : '#ffffff' }}>{m.lopDays || 0}</td>
-                                                <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                                                    {(() => {
-                                                        const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
-                                                        const ach = Number(m.secAchieved) || 0;
-                                                        const rStr = cost > 0 ? (ach / cost).toFixed(2) + 'x' : (ach > 0 ? '—' : '0.00x');
-                                                        const rNum = cost > 0 ? (ach / cost) : 0;
-                                                        return (
-                                                            <span style={{
-                                                                display: 'inline-block',
-                                                                padding: '3px 6px',
-                                                                borderRadius: '6px',
-                                                                fontSize: '0.78rem',
-                                                                fontWeight: 900,
-                                                                background: `rgba(${rNum >= 3.5 ? '16, 185, 129' : (rNum >= 2.0 ? '56, 189, 248' : '245, 158, 11')}, 0.2)`,
-                                                                color: rNum >= 3.5 ? '#34d399' : (rNum >= 2.0 ? '#38bdf8' : '#fbbf24'),
-                                                                border: `1px solid ${rNum >= 3.5 ? '#10b981' : (rNum >= 2.0 ? '#0284c7' : '#f59e0b')}`
-                                                            }}>
-                                                                {rStr}
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div style={{ color: '#94a3b8', fontSize: '0.86rem' }}>
-                                No field performance records submitted yet by this reportee.
-                            </div>
-                        )}
+                        {(() => {
+                            const monthsList = getReporteeMonths(selectedReportee);
+                            const hasSubmitted = selectedReportee?.confirmationData?.months && selectedReportee.confirmationData.months.length > 0;
+                            return (
+                                <div>
+                                    {!hasSubmitted && (
+                                        <div style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid #f59e0b', borderRadius: '8px', color: '#fbbf24', fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px', display: 'inline-block' }}>
+                                            ⏳ Self-Submission Pending (Default 5-Mo Schedule &amp; 6th-Mo Commitment Structure)
+                                        </div>
+                                    )}
+                                    <div style={{ overflowX: 'auto', background: '#090e1a', borderRadius: '12px', border: '1px solid #334155' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'right' }}>
+                                            <thead>
+                                                <tr style={{ background: '#1e293b', color: '#94a3b8', borderBottom: '1px solid #334155' }}>
+                                                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>Month</th>
+                                                    <th style={{ padding: '10px 8px' }}>Days Work</th>
+                                                    <th style={{ padding: '10px 8px' }}>Dr Visited</th>
+                                                    <th style={{ padding: '10px 8px', color: '#38bdf8' }}>Chem. Visited</th>
+                                                    <th style={{ padding: '10px 8px' }}>Tot Calls</th>
+                                                    <th style={{ padding: '10px 8px' }}>Call Avg</th>
+                                                    <th style={{ padding: '10px 8px' }}>POB (₹)</th>
+                                                    <th style={{ padding: '10px 8px' }}>Sec Obj (₹)</th>
+                                                    <th style={{ padding: '10px 8px' }}>Sec Ach (₹)</th>
+                                                    <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Sec</th>
+                                                    <th style={{ padding: '10px 8px' }}>Coll Obj (₹)</th>
+                                                    <th style={{ padding: '10px 8px' }}>Coll Ach (₹)</th>
+                                                    <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Coll</th>
+                                                    <th style={{ padding: '10px 8px' }}>Salary &amp; Exp</th>
+                                                    <th style={{ padding: '10px 8px' }}>Activity</th>
+                                                    <th style={{ padding: '10px 8px' }}>LOP</th>
+                                                    <th style={{ padding: '10px 8px', textAlign: 'center' }}>SALES / EXP</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {monthsList.map((m, mIdx) => {
+                                                    const dr = Number(m.drVisits) || 0;
+                                                    const chem = Number(m.chemVisits) || 0;
+                                                    const totCalls = m.totCalls !== undefined && m.totCalls !== '' ? Number(m.totCalls) : (dr + chem);
+                                                    const days = Number(m.daysWorked) || 0;
+                                                    const callAvg = days > 0 ? (totCalls / days).toFixed(1) : (m.callAvg || '0.0');
+
+                                                    const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
+                                                    const ach = Number(m.secAchieved) || 0;
+                                                    const rStr = cost > 0 ? (ach / cost).toFixed(2) + 'x' : (ach > 0 ? '—' : '0.00x');
+                                                    const rNum = cost > 0 ? (ach / cost) : 0;
+
+                                                    return (
+                                                        <tr key={mIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}>
+                                                            <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff' }}>
+                                                                {m.monthLabel} {m.isProjection ? '(🎯 Proj)' : ''}
+                                                            </td>
+                                                            <td style={{ padding: '10px 8px', color: '#ffffff' }}>{m.daysWorked || 0}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#ffffff' }}>{dr}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{chem}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 700 }}>{totCalls}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{callAvg}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(m.pob)}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(m.secObj)}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{formatCurrency(m.secAchieved)}</td>
+                                                            <td style={{ padding: '10px 8px', textAlign: 'center', color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
+                                                                {m.achievementPct || 0}%
+                                                            </td>
+                                                            <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(m.collObj)}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#34d399', fontWeight: 700 }}>{formatCurrency(m.collAchieved)}</td>
+                                                            <td style={{ padding: '10px 8px', textAlign: 'center', color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
+                                                                {m.collAchievementPct || 0}%
+                                                            </td>
+                                                            <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
+                                                            <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
+                                                            <td style={{ padding: '10px 8px', color: m.lopDays > 0 ? '#f87171' : '#ffffff' }}>{m.lopDays || 0}</td>
+                                                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                                                <span style={{
+                                                                    display: 'inline-block',
+                                                                    padding: '3px 6px',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '0.78rem',
+                                                                    fontWeight: 900,
+                                                                    background: `rgba(${rNum >= 3.5 ? '16, 185, 129' : (rNum >= 2.0 ? '56, 189, 248' : (rNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
+                                                                    color: rNum >= 3.5 ? '#34d399' : (rNum >= 2.0 ? '#38bdf8' : (rNum >= 1.0 ? '#fbbf24' : '#f87171')),
+                                                                    border: `1px solid ${rNum >= 3.5 ? '#10b981' : (rNum >= 2.0 ? '#0284c7' : (rNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
+                                                                }}>
+                                                                    {rStr}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Section 2: Manager Evaluation on the 6 Parameters */}
