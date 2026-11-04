@@ -1,9 +1,10 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins, CheckSquare } from 'lucide-react';
 import api from '../api/client';
 
 const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
 const ApplicantManager = lazy(() => import('../components/Admin/ApplicantManager'));
+const ConfirmationManager = lazy(() => import('../components/Admin/ConfirmationManager'));
 const SetupAndLetters = lazy(() => import('../components/Admin/SetupAndLetters'));
 const QuestionBank = lazy(() => import('../components/Admin/QuestionBank'));
 const PendingExams = lazy(() => import('../components/Admin/PendingExams'));
@@ -13,7 +14,7 @@ const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
 
 const SupportManagement = lazy(() => import('../components/Admin/SupportManagement'));
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support';
+type AdminView = 'company' | 'applicants' | 'confirmations' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -123,6 +124,7 @@ const AdminPanel: React.FC = () => {
           {[
             { id: 'company', icon: <Building2 size={16} style={{ flexShrink: 0 }} />, label: 'Company Profile' },
             { id: 'applicants', icon: <Users size={16} style={{ flexShrink: 0 }} />, label: 'Applicant Manager' },
+            { id: 'confirmations', icon: <CheckSquare size={16} style={{ flexShrink: 0, color: '#38bdf8' }} />, label: 'Confirmation Reviews' },
             { id: 'payrun', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Payrun & Attendance' },
             { id: 'setup', icon: <FileSignature size={16} style={{ flexShrink: 0 }} />, label: 'Setup & Letters' },
             { id: 'questions', icon: <HelpCircle size={16} style={{ flexShrink: 0 }} />, label: 'Question Bank' },
@@ -258,6 +260,7 @@ const AdminPanel: React.FC = () => {
         }>
           {activeView === 'company' && <CompanyProfile />}
           {activeView === 'applicants' && <ApplicantManager />}
+          {activeView === 'confirmations' && <ConfirmationManager />}
           {activeView === 'payrun' && <PayrunSystem />}
           {activeView === 'setup' && <SetupAndLetters />}
           {activeView === 'questions' && <QuestionBank />}

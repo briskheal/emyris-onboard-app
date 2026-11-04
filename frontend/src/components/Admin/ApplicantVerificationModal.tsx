@@ -575,7 +575,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                           <tr style={{ background: '#090e1a', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase' }}>
                             <th colSpan={6} style={{ padding: '6px 8px', borderRight: '1px solid #334155' }}>Activity</th>
                             <th colSpan={3} style={{ padding: '6px 8px', borderRight: '1px solid #334155', color: '#38bdf8' }}>Secondary Sales</th>
-                            <th colSpan={3} style={{ padding: '6px 8px', color: '#34d399' }}>Collection</th>
+                            <th colSpan={3} style={{ padding: '6px 8px', borderRight: '1px solid #334155', color: '#34d399' }}>Collection</th>
+                            <th colSpan={3} style={{ padding: '6px 8px', color: '#f59e0b' }}>Cost & Investment</th>
                           </tr>
                           <tr style={{ background: '#0f172a', textAlign: 'left' }}>
                             <th style={{ padding: '6px' }}>Month</th>
@@ -589,7 +590,10 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                             <th style={{ padding: '6px', borderRight: '1px solid #334155', color: '#38bdf8' }}>% Sec</th>
                             <th style={{ padding: '6px', color: '#34d399' }}>Coll Obj (₹)</th>
                             <th style={{ padding: '6px', color: '#34d399' }}>Coll Ach (₹)</th>
-                            <th style={{ padding: '6px', color: '#34d399' }}>% Coll</th>
+                            <th style={{ padding: '6px', borderRight: '1px solid #334155', color: '#34d399' }}>% Coll</th>
+                            <th style={{ padding: '6px', color: '#f59e0b' }}>Salary & Exp (₹)</th>
+                            <th style={{ padding: '6px', color: '#f59e0b' }}>Tot Activity (₹)</th>
+                            <th style={{ padding: '6px', color: '#f59e0b' }}>LOP Days</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -617,8 +621,14 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
                                 <td style={{ padding: '6px' }}>₹{(m.collObj || 0).toLocaleString()}</td>
                                 <td style={{ padding: '6px' }}>₹{(m.collAchieved || 0).toLocaleString()}</td>
-                                <td style={{ padding: '6px', fontWeight: 'bold', color: (m.collAchievementPct || 0) >= 100 ? '#34d399' : ((m.collAchievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
+                                <td style={{ padding: '6px', borderRight: '1px solid #334155', fontWeight: 'bold', color: (m.collAchievementPct || 0) >= 100 ? '#34d399' : ((m.collAchievementPct || 0) >= 85 ? '#fbbf24' : '#f87171') }}>
                                   {m.collAchievementPct || 0}%
+                                </td>
+
+                                <td style={{ padding: '6px', color: '#fef08a' }}>₹{(m.salaryExpense || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px', color: '#fed7aa' }}>₹{(m.totActivityAmt || 0).toLocaleString()}</td>
+                                <td style={{ padding: '6px', color: (m.lopDays || 0) > 0 ? '#f87171' : '#f8fafc', fontWeight: (m.lopDays || 0) > 0 ? 'bold' : 'normal' }}>
+                                  {m.lopDays || 0}
                                 </td>
                               </tr>
                             );
@@ -640,8 +650,14 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
                               <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualCollObj ?? applicant.confirmationData.summary.totalCollObj ?? 0)?.toLocaleString()}</td>
                               <td style={{ padding: '6px' }}>₹{(applicant.confirmationData.summary.actualCollAchieved ?? applicant.confirmationData.summary.totalCollAchieved ?? 0)?.toLocaleString()}</td>
-                              <td style={{ padding: '6px', color: ((applicant.confirmationData.summary.actualCollAchievementPct ?? applicant.confirmationData.summary.overallCollAchievementPct) || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
+                              <td style={{ padding: '6px', borderRight: '1px solid #334155', color: ((applicant.confirmationData.summary.actualCollAchievementPct ?? applicant.confirmationData.summary.overallCollAchievementPct) || 0) >= 100 ? '#34d399' : '#fbbf24' }}>
                                 {applicant.confirmationData.summary.actualCollAchievementPct ?? applicant.confirmationData.summary.overallCollAchievementPct ?? 0}%
+                              </td>
+
+                              <td style={{ padding: '6px', color: '#fef08a' }}>₹{(applicant.confirmationData.summary.actualSalaryExpense ?? applicant.confirmationData.summary.totalSalaryExpense ?? 0)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px', color: '#fed7aa' }}>₹{(applicant.confirmationData.summary.actualActivityAmt ?? applicant.confirmationData.summary.totalActivityAmt ?? 0)?.toLocaleString()}</td>
+                              <td style={{ padding: '6px', color: (applicant.confirmationData.summary.actualLopDays || applicant.confirmationData.summary.totalLopDays) > 0 ? '#f87171' : '#f8fafc' }}>
+                                {applicant.confirmationData.summary.actualLopDays ?? applicant.confirmationData.summary.totalLopDays ?? 0}
                               </td>
                             </tr>
                           )}

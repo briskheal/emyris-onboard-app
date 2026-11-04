@@ -8471,6 +8471,106 @@ router.get('/lists/call-plans', async (req, res, next) => {
     }
 });
 
+// --- CONFIRMATION PROCESS ADMIN APIS ---
+router.get('/all-confirmations', async (req, res) => {
+    try {
+        const { Applicant } = require('../db');
+        const applicants = await Applicant.find({});
+
+        const now = new Date();
+        const list = applicants.map(a => {
+            let completedMonths = 0;
+            if (a.actualJoiningDate) {
+                const doj = new Date(a.actualJoiningDate);
+                if (!isNaN(doj.getTime())) {
+                    completedMonths = (now.getFullYear() - doj.getFullYear()) * 12 + (now.getMonth() - doj.getMonth());
+                }
+            }
+
+            const conf = a.confirmationData || null;
+            let displayStatus = 'in_probation';
+            if (conf?.status === 'confirmed' || a.status === 'confirmed' || a.status === 'Confirmed Employee') {
+                displayStatus = 'confirmed';
+            } else if (conf?.status === 'manager_evaluated') {
+                displayStatus = 'manager_evaluated';
+            } else if (conf?.status === 'submitted') {
+                displayStatus = 'pending_manager_review';
+            } else if (conf?.status === 'draft') {
+                displayStatus = 'draft';
+            } else if (completedMonths >= 5) {
+                displayStatus = 'eligible';
+            }
+
+            return {
+                _id: a._id,
+                fullName: a.fullName,
+                email: a.email,
+                empCode: a.empCode,
+                designation: a.designation,
+                division: a.division,
+                hq: a.hq,
+                actualJoiningDate: a.actualJoiningDate,
+                reportingTo: a.reportingTo,
+                completedMonths,
+                confirmationData: conf,
+                status: a.status,
+                confirmationStatus: displayStatus
+            };
+        });
+
+        res.json({ success: true, list });
+    } catch (e) {
+        console.error('All confirmations fetch error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/update-confirmation-record', async (req, res) => {
+    try {
+        const { Applicant, XlNotification } = require('../db');
+        const { email, adminRemarks, adminStatus } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+        const app = await Applicant.findOne({ email });
+        if (!app) return res.status(404).json({ success: false, message: 'Applicant not found' });
+
+        const conf = app.confirmationData || {};
+        const updatedConf = {
+            ...conf,
+            adminRemarks: adminRemarks !== undefined ? adminRemarks : (conf.adminRemarks || ''),
+            status: adminStatus || conf.status || 'confirmed',
+            adminConfirmedAt: adminStatus === 'confirmed' ? new Date() : (conf.adminConfirmedAt || null),
+            lastUpdated: new Date()
+        };
+
+        const updatePayload = {
+            confirmationData: updatedConf
+        };
+        if (adminStatus === 'confirmed') {
+            updatePayload.status = 'Confirmed Employee';
+        }
+
+        await Applicant.findOneAndUpdate({ email }, { $set: updatePayload });
+
+        if (adminStatus === 'confirmed' && XlNotification) {
+            await XlNotification.create({
+                employeeId: app.empCode || app.email,
+                title: 'Congratulations! Official Confirmation Approved',
+                message: `Dear ${app.fullName}, your 5-month confirmation evaluation has been reviewed and approved by Management. You are now a Confirmed Employee.`
+            }).catch(e => console.error('Notification error:', e.message));
+        }
+
+        res.json({
+            success: true,
+            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : 'Confirmation record updated.',
+            confirmationData: updatedConf
+        });
+    } catch (e) {
+        console.error('Update confirmation error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;
 
 

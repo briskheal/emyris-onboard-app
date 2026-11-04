@@ -39,7 +39,7 @@ const EVALUATION_PILLARS = [
     }
 ];
 
-// Strictly format date as DD-MM-YYYY
+// Format date strictly as DD-MM-YYYY
 const formatDDMMYYYY = (dateVal) => {
     if (!dateVal) return 'N/A';
     const s = String(dateVal).trim();
@@ -137,6 +137,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     const secAchieved = saved.secAchieved !== undefined ? saved.secAchieved : '';
                     const collObj = saved.collObj !== undefined ? saved.collObj : '';
                     const collAchieved = saved.collAchieved !== undefined ? saved.collAchieved : '';
+                    const salaryExpense = saved.salaryExpense !== undefined ? saved.salaryExpense : '';
+                    const totActivityAmt = saved.totActivityAmt !== undefined ? saved.totActivityAmt : '';
+                    const lopDays = saved.lopDays !== undefined ? saved.lopDays : '';
 
                     return {
                         monthIndex: cm.monthIndex || (idx + 1),
@@ -150,7 +153,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         secObj,
                         secAchieved,
                         collObj,
-                        collAchieved
+                        collAchieved,
+                        salaryExpense,
+                        totActivityAmt,
+                        lopDays
                     };
                 });
 
@@ -195,8 +201,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
     // Calculate row % (Sec + Coll) and separate Actuals (M1-M5) vs Projection (M6) totals
     const { rowsCalculated, actualsTotals, projectionRow, combinedTotals } = useMemo(() => {
-        let actDays = 0, actDr = 0, actCalls = 0, actPob = 0, actSecObj = 0, actSecAch = 0, actCollObj = 0, actCollAch = 0;
-        let totDays = 0, totDr = 0, totCalls = 0, totPob = 0, totSecObj = 0, totSecAch = 0, totCollObj = 0, totCollAch = 0;
+        let actDays = 0, actDr = 0, actCalls = 0, actPob = 0, actSecObj = 0, actSecAch = 0, actCollObj = 0, actCollAch = 0, actSalaryExp = 0, actActAmt = 0, actLop = 0;
+        let totDays = 0, totDr = 0, totCalls = 0, totPob = 0, totSecObj = 0, totSecAch = 0, totCollObj = 0, totCollAch = 0, totSalaryExp = 0, totActAmt = 0, totLop = 0;
         let projRow = null;
 
         const rows = monthsData.map((m, idx) => {
@@ -209,6 +215,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             const sAch = parseFloat(m.secAchieved) || 0;
             const cObj = parseFloat(m.collObj) || 0;
             const cAch = parseFloat(m.collAchieved) || 0;
+            const sExp = parseFloat(m.salaryExpense) || 0;
+            const aAmt = parseFloat(m.totActivityAmt) || 0;
+            const lop = parseFloat(m.lopDays) || 0;
 
             const callAvg = parseFloat(m.callAvg) || (dr > 0 ? parseFloat((calls / dr).toFixed(1)) : 0);
             const secPct = sObj > 0 ? ((sAch / sObj) * 100).toFixed(1) : 0;
@@ -232,6 +241,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 actSecAch += sAch;
                 actCollObj += cObj;
                 actCollAch += cAch;
+                actSalaryExp += sExp;
+                actActAmt += aAmt;
+                actLop += lop;
             }
 
             totDays += days;
@@ -242,6 +254,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             totSecAch += sAch;
             totCollObj += cObj;
             totCollAch += cAch;
+            totSalaryExp += sExp;
+            totActAmt += aAmt;
+            totLop += lop;
 
             return calculatedRow;
         });
@@ -267,7 +282,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 overallSecPct: parseFloat(actSecPct),
                 totalCollObj: actCollObj,
                 totalCollAch: actCollAch,
-                overallCollPct: parseFloat(actCollPct)
+                overallCollPct: parseFloat(actCollPct),
+                totalSalaryExpense: actSalaryExp,
+                totalActivityAmt: actActAmt,
+                totalLopDays: actLop
             },
             projectionRow: projRow,
             combinedTotals: {
@@ -281,7 +299,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 overallSecPct: parseFloat(combSecPct),
                 totalCollObj: totCollObj,
                 totalCollAch: totCollAch,
-                overallCollPct: parseFloat(combCollPct)
+                overallCollPct: parseFloat(combCollPct),
+                totalSalaryExpense: totSalaryExp,
+                totalActivityAmt: totActAmt,
+                totalLopDays: totLop
             }
         };
     }, [monthsData]);
@@ -383,13 +404,15 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
     return (
         <div style={{
-            maxWidth: '1380px',
-            margin: '0 auto',
+            width: '100%',
+            maxWidth: '100%',
+            margin: '0',
+            padding: '12px 20px',
+            boxSizing: 'border-box',
             fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             WebkitFontSmoothing: 'antialiased',
             MozOsxFontSmoothing: 'grayscale',
-            color: '#e2e8f0',
-            padding: '6px'
+            color: '#e2e8f0'
         }}>
             {/* Remove number input spinner up/down arrows completely */}
             <style>{`
@@ -422,7 +445,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             </h2>
                         </div>
                         <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.5', fontWeight: 500 }}>
-                            5-Month Field Performance (Actuals) + 6th-Month Forward Projection (Commitment) with Sales vs. Cash Flow Analysis.
+                            5-Month Field Performance (Actuals) + 6th-Month Forward Projection (Commitment) with Sales, Collection, Activity Spend &amp; ROI Analysis.
                         </p>
                     </div>
 
@@ -593,14 +616,15 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </div>
             )}
 
-            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (with Sales vs Cash Flow) */}
+            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
             <div style={{
                 background: '#131b2e',
                 border: '1px solid #334155',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                width: '100%'
             }}>
                 <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
@@ -608,7 +632,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             📊 Section 1: 5-Month Field Activity (Actuals) &amp; 6th-Month Projection (Commitment)
                         </h3>
                         <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.84rem', fontWeight: 500 }}>
-                            Sales vs. Cash Flow Analysis: Secondary Sales (Demand Generation) paired with Collection Recovery (Working Capital).
+                            Complete Performance Dossier: Field Activity, Secondary Sales, Collection Recovery, Salary &amp; Expense, Tot Activity Amt, and LOP Days.
                         </p>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
@@ -616,62 +640,74 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </span>
                 </div>
 
-                {/* Stable, non-jumping Table with locked column widths */}
+                {/* Stable, non-jumping Full-Screen Table with locked column widths */}
                 <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '6px' }}>
                     <table style={{
                         width: '100%',
                         tableLayout: 'fixed',
                         borderCollapse: 'collapse',
                         fontSize: '0.88rem',
-                        minWidth: '1340px'
+                        minWidth: '1500px'
                     }}>
                         <colgroup>
-                            <col style={{ width: '175px' }} /> {/* Month */}
-                            <col style={{ width: '95px' }} />  {/* Days Worked */}
-                            <col style={{ width: '95px' }} />  {/* Dr Visite */}
-                            <col style={{ width: '95px' }} />  {/* Tot Calls */}
-                            <col style={{ width: '85px' }} />  {/* Call Avg */}
-                            <col style={{ width: '110px' }} /> {/* POB (₹) */}
+                            <col style={{ width: '160px' }} /> {/* Month */}
+                            <col style={{ width: '80px' }} />  {/* Days Worked */}
+                            <col style={{ width: '80px' }} />  {/* Dr Visite */}
+                            <col style={{ width: '80px' }} />  {/* Tot Calls */}
+                            <col style={{ width: '75px' }} />  {/* Call Avg */}
+                            <col style={{ width: '95px' }} />  {/* POB (₹) */}
                             {/* Secondary Sales Group */}
-                            <col style={{ width: '125px' }} /> {/* Sec Obj (₹) */}
-                            <col style={{ width: '125px' }} /> {/* Sec Achivd (₹) */}
-                            <col style={{ width: '95px' }} />  {/* % Sec Ach */}
+                            <col style={{ width: '110px' }} /> {/* Sec Obj (₹) */}
+                            <col style={{ width: '110px' }} /> {/* Sec Achivd (₹) */}
+                            <col style={{ width: '80px' }} />  {/* % Sec Ach */}
                             {/* Collection / Cash Flow Group */}
-                            <col style={{ width: '125px' }} /> {/* Coll Obj (₹) */}
-                            <col style={{ width: '125px' }} /> {/* Coll Achvd (₹) */}
-                            <col style={{ width: '95px' }} />  {/* % Coll Ach */}
+                            <col style={{ width: '110px' }} /> {/* Coll Obj (₹) */}
+                            <col style={{ width: '110px' }} /> {/* Coll Achvd (₹) */}
+                            <col style={{ width: '80px' }} />  {/* % Coll Ach */}
+                            {/* Cost & Investment Group */}
+                            <col style={{ width: '125px' }} /> {/* Salary & Expense (₹) */}
+                            <col style={{ width: '125px' }} /> {/* Tot Activity Amt (₹) */}
+                            <col style={{ width: '75px' }} />  {/* LOP Days */}
                         </colgroup>
                         <thead>
                             {/* Grouping Header */}
                             <tr style={{ background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                <th colSpan={6} style={{ padding: '8px 14px', borderRight: '1px solid #334155' }}>
+                                <th colSpan={6} style={{ padding: '8px 12px', borderRight: '1px solid #334155' }}>
                                     Field Activity &amp; Coverage
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 14px', borderRight: '1px solid #334155', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
-                                    💼 Secondary Sales (Demand Generation)
+                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
+                                    💼 Secondary Sales
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 14px', color: '#34d399', background: 'rgba(16, 185, 129, 0.05)' }}>
-                                    💰 Collection (Cash Flow Recovery)
+                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#34d399', background: 'rgba(16, 185, 129, 0.05)' }}>
+                                    💰 Collection Recovery
+                                </th>
+                                <th colSpan={3} style={{ padding: '8px 12px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                    🏷️ Cost, Activity Investment &amp; Attendance
                                 </th>
                             </tr>
                             {/* Column Header */}
                             <tr style={{ background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>MONTH</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>DAYS WORKED</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>DR VISITE</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>TOT CALLS</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>CALL AVG</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', borderRight: '1px solid #334155' }}>POB (₹)</th>
+                                <th style={{ padding: '12px 12px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>MONTH</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>DAYS WRK</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>DR VISITE</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>TOT CALLS</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>CALL AVG</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', borderRight: '1px solid #334155' }}>POB (₹)</th>
                                 
                                 {/* Secondary Columns */}
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC OBJ (₹)</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC ACHIVD (₹)</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#38bdf8' }}>% SEC ACH</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC OBJ (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC ACH (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#38bdf8' }}>% SEC</th>
 
                                 {/* Collection Columns */}
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL OBJ (₹)</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL ACHVD (₹)</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px', textAlign: 'center', color: '#34d399' }}>% COLL ACH</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL OBJ (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL ACH (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#34d399' }}>% COLL</th>
+
+                                {/* Cost & Investment Columns */}
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>SALARY &amp; EXP (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>TOT ACTIVITY (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#f59e0b' }}>LOP DAYS</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -691,7 +727,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     >
                                         {/* Month Header / Type Label */}
                                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap' }}>
-                                            <div style={{ fontSize: '0.9rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
+                                            <div style={{ fontSize: '0.88rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
                                                 {row.monthLabel}
                                             </div>
                                             <div style={{ marginTop: '3px' }}>
@@ -702,14 +738,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                         border: '1px solid #0284c7',
                                                         padding: '2px 6px',
                                                         borderRadius: '4px',
-                                                        fontSize: '0.66rem',
+                                                        fontSize: '0.64rem',
                                                         fontWeight: 800,
                                                         letterSpacing: '0.3px'
                                                     }}>
-                                                        🌟 6TH MO. PROJECTION
+                                                        🌟 6TH MO. PROJ
                                                     </span>
                                                 ) : (
-                                                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
                                                         Month {idx + 1} of 5 (Actual)
                                                     </span>
                                                 )}
@@ -717,7 +753,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Days Worked */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -735,7 +771,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Dr Visite */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -752,7 +788,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Tot Calls */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -769,7 +805,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Call Avg */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 step="0.1"
@@ -789,7 +825,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* POB */}
-                                        <td style={{ padding: '6px 8px', borderRight: '1px solid #334155' }}>
+                                        <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -806,7 +842,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Sec Obj */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -823,7 +859,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Sec Achivd */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -840,12 +876,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* % Sec Ach */}
-                                        <td style={{ padding: '10px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                        <td style={{ padding: '8px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                             <span style={{
                                                 display: 'inline-block',
-                                                padding: '5px 8px',
+                                                padding: '4px 6px',
                                                 borderRadius: '6px',
-                                                fontSize: '0.84rem',
+                                                fontSize: '0.8rem',
                                                 fontWeight: 800,
                                                 background: `rgba(${row.computedSecPct >= 100 ? '16, 185, 129' : (row.computedSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
                                                 color: getPctColor(row.computedSecPct),
@@ -856,7 +892,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Coll Obj */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -873,7 +909,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Coll Achvd */}
-                                        <td style={{ padding: '6px 8px' }}>
+                                        <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -890,12 +926,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* % Coll Ach */}
-                                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                        <td style={{ padding: '8px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                             <span style={{
                                                 display: 'inline-block',
-                                                padding: '5px 8px',
+                                                padding: '4px 6px',
                                                 borderRadius: '6px',
-                                                fontSize: '0.84rem',
+                                                fontSize: '0.8rem',
                                                 fontWeight: 800,
                                                 background: `rgba(${row.computedCollPct >= 100 ? '16, 185, 129' : (row.computedCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
                                                 color: getPctColor(row.computedCollPct),
@@ -904,44 +940,100 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 {row.computedCollPct}%
                                             </span>
                                         </td>
+
+                                        {/* Salary & Expense */}
+                                        <td style={{ padding: '6px 4px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.salaryExpense}
+                                                onChange={(e) => handleFieldChange(idx, 'salaryExpense', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: '1.5px solid #334155',
+                                                    color: '#fef08a'
+                                                }}
+                                            />
+                                        </td>
+
+                                        {/* Tot Activity Amt */}
+                                        <td style={{ padding: '6px 4px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={row.totActivityAmt}
+                                                onChange={(e) => handleFieldChange(idx, 'totActivityAmt', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: '1.5px solid #334155',
+                                                    color: '#fed7aa'
+                                                }}
+                                            />
+                                        </td>
+
+                                        {/* LOP Days */}
+                                        <td style={{ padding: '6px 4px' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="31"
+                                                value={row.lopDays}
+                                                onChange={(e) => handleFieldChange(idx, 'lopDays', e.target.value)}
+                                                onFocus={(e) => { e.target.style.borderColor = '#ef4444'; e.target.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.25)'; }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                placeholder="0"
+                                                style={{
+                                                    ...inputStyle,
+                                                    border: '1.5px solid #334155',
+                                                    color: row.lopDays > 0 ? '#f87171' : '#ffffff',
+                                                    fontWeight: row.lopDays > 0 ? '800' : '600'
+                                                }}
+                                            />
+                                        </td>
                                     </tr>
                                 );
                             })}
 
                             {/* Row 1: 5-Month Actuals Total / Average */}
                             <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                <td style={{ padding: '14px', color: '#f8fafc', fontSize: '0.86rem' }}>
+                                <td style={{ padding: '14px 10px', color: '#f8fafc', fontSize: '0.84rem' }}>
                                     📈 5-Mo. Actuals
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
-                                    {actualsTotals.totalDays} <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>d</span>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                    {actualsTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalDr.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalCalls.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                     {actualsTotals.overallCallAvg}
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #334155' }}>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #334155' }}>
                                     {formatCurrency(actualsTotals.totalPob)}
                                 </td>
                                 
                                 {/* Secondary Actuals */}
-                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                     {formatCurrency(actualsTotals.totalSecObj)}
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                     {formatCurrency(actualsTotals.totalSecAch)}
                                 </td>
-                                <td style={{ padding: '14px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 8px',
+                                        padding: '4px 6px',
                                         borderRadius: '6px',
-                                        fontSize: '0.82rem',
+                                        fontSize: '0.78rem',
                                         fontWeight: 900,
                                         background: `rgba(${actualsTotals.overallSecPct >= 100 ? '16, 185, 129' : (actualsTotals.overallSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
                                         color: getPctColor(actualsTotals.overallSecPct),
@@ -952,18 +1044,18 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
 
                                 {/* Collection Actuals */}
-                                <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
                                     {formatCurrency(actualsTotals.totalCollObj)}
                                 </td>
-                                <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
                                     {formatCurrency(actualsTotals.totalCollAch)}
                                 </td>
-                                <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 8px',
+                                        padding: '4px 6px',
                                         borderRadius: '6px',
-                                        fontSize: '0.82rem',
+                                        fontSize: '0.78rem',
                                         fontWeight: 900,
                                         background: `rgba(${actualsTotals.overallCollPct >= 100 ? '16, 185, 129' : (actualsTotals.overallCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
                                         color: getPctColor(actualsTotals.overallCollPct),
@@ -972,43 +1064,54 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         {actualsTotals.overallCollPct}%
                                     </span>
                                 </td>
+
+                                {/* Cost & Activity Investment Actuals */}
+                                <td style={{ padding: '14px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800 }}>
+                                    {formatCurrency(actualsTotals.totalSalaryExpense)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800 }}>
+                                    {formatCurrency(actualsTotals.totalActivityAmt)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: actualsTotals.totalLopDays > 0 ? '#f87171' : '#ffffff', textAlign: 'center', fontWeight: 800 }}>
+                                    {actualsTotals.totalLopDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
+                                </td>
                             </tr>
 
                             {/* Row 2: 6th-Month Forward Commitment Highlight */}
                             {projectionRow && (
                                 <tr style={{ background: 'rgba(14, 165, 233, 0.12)', borderTop: '1px solid #0284c7', fontWeight: 800 }}>
-                                    <td style={{ padding: '14px', color: '#38bdf8', fontSize: '0.86rem' }}>
+                                    <td style={{ padding: '14px 10px', color: '#38bdf8', fontSize: '0.84rem' }}>
                                         🎯 6th-Mo. Commit
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
-                                        {projectionRow.daysWorked || 0} <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>d</span>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.daysWorked || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.drVisits || 0}
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.totCalls || 0}
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.callAvg || '0.0'}
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #334155' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #334155' }}>
                                         {formatCurrency(projectionRow.pob)}
                                     </td>
                                     
                                     {/* Secondary Projection */}
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.secObj)}
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#38bdf8', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.secAchieved)}
                                     </td>
-                                    <td style={{ padding: '14px 8px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                    <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                         <span style={{
                                             display: 'inline-block',
-                                            padding: '4px 8px',
+                                            padding: '4px 6px',
                                             borderRadius: '6px',
-                                            fontSize: '0.82rem',
+                                            fontSize: '0.78rem',
                                             fontWeight: 900,
                                             background: 'rgba(56, 189, 248, 0.25)',
                                             color: '#38bdf8',
@@ -1019,18 +1122,18 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     </td>
 
                                     {/* Collection Projection */}
-                                    <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.collObj)}
                                     </td>
-                                    <td style={{ padding: '14px 8px', color: '#34d399', textAlign: 'right' }}>
+                                    <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.collAchieved)}
                                     </td>
-                                    <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                         <span style={{
                                             display: 'inline-block',
-                                            padding: '4px 8px',
+                                            padding: '4px 6px',
                                             borderRadius: '6px',
-                                            fontSize: '0.82rem',
+                                            fontSize: '0.78rem',
                                             fontWeight: 900,
                                             background: 'rgba(52, 211, 153, 0.25)',
                                             color: '#34d399',
@@ -1038,6 +1141,17 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         }}>
                                             {projectionRow.computedCollPct}%
                                         </span>
+                                    </td>
+
+                                    {/* Cost & Activity Investment Projection */}
+                                    <td style={{ padding: '14px 4px', color: '#fef08a', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.salaryExpense)}
+                                    </td>
+                                    <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right' }}>
+                                        {formatCurrency(projectionRow.totActivityAmt)}
+                                    </td>
+                                    <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'center' }}>
+                                        {projectionRow.lopDays || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                     </td>
                                 </tr>
                             )}
@@ -1053,7 +1167,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 borderRadius: '16px',
                 padding: '24px 28px',
                 marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                width: '100%'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
                     <div>
@@ -1184,7 +1299,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 borderRadius: '16px',
                 padding: '22px 26px',
                 marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                width: '100%'
             }}>
                 <label style={{ display: 'block', marginBottom: '10px', color: '#ffffff', fontWeight: 700, fontSize: '0.92rem' }}>
                     📝 Employee Remarks / Justification &amp; 6th-Month Strategy (Optional)
@@ -1225,7 +1341,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 background: '#090e1a',
                 border: '1px solid #334155',
                 borderRadius: '14px',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.3)'
+                boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+                width: '100%'
             }}>
                 <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
                     {isSubmitted ? (
@@ -1282,12 +1399,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
 const inputStyle = {
     width: '100%',
-    height: '40px',
-    padding: '6px 10px',
+    height: '38px',
+    padding: '4px 6px',
     background: '#090e1a',
-    borderRadius: '8px',
+    borderRadius: '6px',
     color: '#ffffff',
-    fontSize: '0.9rem',
+    fontSize: '0.88rem',
     fontFamily: "'Montserrat', sans-serif",
     fontWeight: '600',
     boxSizing: 'border-box',

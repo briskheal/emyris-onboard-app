@@ -2038,6 +2038,9 @@ router.post('/confirmation-process', async (req, res) => {
         let totalSecAchieved = 0;
         let totalCollObj = 0;
         let totalCollAchieved = 0;
+        let totalSalaryExpense = 0;
+        let totalActivityAmt = 0;
+        let totalLopDays = 0;
 
         let actualDaysWorked = 0;
         let actualDrVisits = 0;
@@ -2047,6 +2050,9 @@ router.post('/confirmation-process', async (req, res) => {
         let actualSecAchieved = 0;
         let actualCollObj = 0;
         let actualCollAchieved = 0;
+        let actualSalaryExpense = 0;
+        let actualActivityAmt = 0;
+        let actualLopDays = 0;
 
         const sanitizedMonths = months.map((m, idx) => {
             const isProjection = idx === 5 || m.isProjection === true;
@@ -2061,6 +2067,9 @@ router.post('/confirmation-process', async (req, res) => {
             const collObj = Math.max(0, Number(m.collObj) || 0);
             const collAchieved = Math.max(0, Number(m.collAchieved) || 0);
             const collAchievementPct = collObj > 0 ? Number(((collAchieved / collObj) * 100).toFixed(1)) : 0;
+            const salaryExpense = Math.max(0, Number(m.salaryExpense) || 0);
+            const totActivityAmt = Math.max(0, Number(m.totActivityAmt) || 0);
+            const lopDays = Math.max(0, Number(m.lopDays) || 0);
 
             if (!isProjection) {
                 actualDaysWorked += daysWorked;
@@ -2071,6 +2080,9 @@ router.post('/confirmation-process', async (req, res) => {
                 actualSecAchieved += secAchieved;
                 actualCollObj += collObj;
                 actualCollAchieved += collAchieved;
+                actualSalaryExpense += salaryExpense;
+                actualActivityAmt += totActivityAmt;
+                actualLopDays += lopDays;
             }
 
             totalDaysWorked += daysWorked;
@@ -2081,6 +2093,9 @@ router.post('/confirmation-process', async (req, res) => {
             totalSecAchieved += secAchieved;
             totalCollObj += collObj;
             totalCollAchieved += collAchieved;
+            totalSalaryExpense += salaryExpense;
+            totalActivityAmt += totActivityAmt;
+            totalLopDays += lopDays;
 
             return {
                 monthIndex: idx + 1,
@@ -2096,7 +2111,10 @@ router.post('/confirmation-process', async (req, res) => {
                 achievementPct,
                 collObj,
                 collAchieved,
-                collAchievementPct
+                collAchievementPct,
+                salaryExpense,
+                totActivityAmt,
+                lopDays: m.lopDays !== undefined && m.lopDays !== '' ? lopDays : ''
             };
         });
 
@@ -2120,6 +2138,9 @@ router.post('/confirmation-process', async (req, res) => {
             actualCollObj,
             actualCollAchieved,
             actualCollAchievementPct,
+            actualSalaryExpense,
+            actualActivityAmt,
+            actualLopDays,
             totalDaysWorked,
             totalDrVisits,
             totalCalls,
@@ -2130,7 +2151,10 @@ router.post('/confirmation-process', async (req, res) => {
             overallAchievementPct,
             totalCollObj,
             totalCollAchieved,
-            overallCollAchievementPct
+            overallCollAchievementPct,
+            totalSalaryExpense,
+            totalActivityAmt,
+            totalLopDays
         };
 
         // Sanitize 6 Core Evaluation Pillars (Self Ratings - max whole marks)
@@ -2184,6 +2208,162 @@ router.post('/confirmation-process', async (req, res) => {
     } catch (e) {
         console.error('Confirmation process save error:', e);
         res.status(500).json({ success: false, message: 'Failed to save confirmation details' });
+    }
+});
+
+// GET Team Confirmations for Reporting Manager (e.g. Aslam Memon reviewing Alfez Kachhi)
+router.get('/team-confirmations', async (req, res) => {
+    try {
+        const { managerEmail, managerName } = req.query;
+        if (!managerEmail && !managerName) {
+            return res.status(400).json({ success: false, message: 'Manager email or name is required' });
+        }
+
+        let manager = null;
+        if (managerEmail) {
+            manager = await Applicant.findOne({ email: managerEmail });
+        }
+        if (!manager && managerName) {
+            manager = await Applicant.findOne({ fullName: managerName });
+        }
+
+        const allApps = await Applicant.find({});
+
+        const mFullName = (manager?.fullName || managerName || '').trim().toLowerCase();
+        const mDesignation = (manager?.designation || '').trim().toLowerCase();
+        const mEmpCode = (manager?.empCode || '').trim().toLowerCase();
+        const mEmail = (manager?.email || managerEmail || '').trim().toLowerCase();
+
+        // Separate meaningful name tokens (e.g., 'aslam', 'memon')
+        const mTokens = mFullName.split(/\s+/).filter(t => t.length > 2);
+
+        const reportees = allApps.filter(app => {
+            if (!app.reportingTo) return false;
+            if (mEmail && app.email && app.email.toLowerCase() === mEmail) return false; // Not self
+
+            const rep = (app.reportingTo || '').trim().toLowerCase();
+            if (rep === mFullName) return true;
+            if (mFullName.length > 3 && rep.includes(mFullName)) return true;
+            if (mTokens.length > 0 && mTokens.every(tok => rep.includes(tok))) return true;
+            if (mDesignation && rep === mDesignation) return true;
+            if (mEmpCode && rep === mEmpCode) return true;
+            if (mEmail && rep === mEmail) return true;
+
+            return false;
+        });
+
+        const now = new Date();
+        const formatted = reportees.map(r => {
+            let completedMonths = 0;
+            if (r.actualJoiningDate) {
+                const doj = new Date(r.actualJoiningDate);
+                if (!isNaN(doj.getTime())) {
+                    completedMonths = (now.getFullYear() - doj.getFullYear()) * 12 + (now.getMonth() - doj.getMonth());
+                }
+            }
+
+            const conf = r.confirmationData || null;
+            let displayStatus = 'not_eligible';
+            if (conf?.status === 'confirmed') displayStatus = 'confirmed';
+            else if (conf?.status === 'manager_evaluated') displayStatus = 'manager_evaluated';
+            else if (conf?.status === 'submitted') displayStatus = 'pending_manager_review';
+            else if (conf?.status === 'draft') displayStatus = 'draft';
+            else if (completedMonths >= 5) displayStatus = 'eligible_pending_submission';
+
+            return {
+                _id: r._id,
+                fullName: r.fullName,
+                email: r.email,
+                empCode: r.empCode,
+                designation: r.designation,
+                division: r.division,
+                hq: r.hq,
+                actualJoiningDate: r.actualJoiningDate,
+                reportingTo: r.reportingTo,
+                completedMonths,
+                confirmationData: conf,
+                status: displayStatus
+            };
+        });
+
+        res.json({
+            success: true,
+            manager: manager ? { fullName: manager.fullName, designation: manager.designation, empCode: manager.empCode, email: manager.email } : null,
+            reportees: formatted
+        });
+    } catch (e) {
+        console.error('Team confirmations error:', e);
+        res.status(500).json({ success: false, message: 'Failed to fetch team confirmations' });
+    }
+});
+
+// POST Reporting Manager Evaluation of Reportee
+router.post('/evaluate-reportee-confirmation', async (req, res) => {
+    try {
+        const { reporteeEmail, managerEmail, managerRatings, managerRecommendation, managerRemarks } = req.body;
+        if (!reporteeEmail) {
+            return res.status(400).json({ success: false, message: 'Reportee email is required' });
+        }
+
+        const reportee = await Applicant.findOne({ email: reporteeEmail });
+        if (!reportee) {
+            return res.status(404).json({ success: false, message: 'Reportee not found' });
+        }
+
+        const conf = reportee.confirmationData || {};
+
+        // 6 Pillars Manager Evaluation (100 Marks Max, integers only)
+        const sanitizedManagerRatings = {
+            sales: Math.min(45, Math.max(0, parseInt(managerRatings?.sales, 10) || 0)),
+            fieldWork: Math.min(20, Math.max(0, parseInt(managerRatings?.fieldWork, 10) || 0)),
+            quality: Math.min(15, Math.max(0, parseInt(managerRatings?.quality, 10) || 0)),
+            knowledge: Math.min(10, Math.max(0, parseInt(managerRatings?.knowledge, 10) || 0)),
+            discipline: Math.min(5, Math.max(0, parseInt(managerRatings?.discipline, 10) || 0)),
+            attitude: Math.min(5, Math.max(0, parseInt(managerRatings?.attitude, 10) || 0))
+        };
+
+        const totalManagerScore = Object.values(sanitizedManagerRatings).reduce((a, b) => a + b, 0);
+
+        let finalGrade = 'D';
+        if (totalManagerScore >= 85) finalGrade = 'A+';
+        else if (totalManagerScore >= 75) finalGrade = 'A';
+        else if (totalManagerScore >= 60) finalGrade = 'B';
+        else if (totalManagerScore >= 50) finalGrade = 'C';
+
+        const updatedConf = {
+            ...conf,
+            managerRatings: sanitizedManagerRatings,
+            totalManagerScore,
+            finalGrade,
+            managerRecommendation: managerRecommendation || 'confirm',
+            managerRemarks: managerRemarks || '',
+            managerEvaluatedBy: managerEmail || '',
+            managerEvaluatedAt: new Date(),
+            status: 'manager_evaluated',
+            lastUpdated: new Date()
+        };
+
+        await Applicant.findOneAndUpdate(
+            { email: reporteeEmail },
+            { $set: { confirmationData: updatedConf } }
+        );
+
+        if (XlNotification) {
+            await XlNotification.create({
+                employeeId: 'ADMIN',
+                title: `Manager Evaluated Confirmation: ${reportee.fullName}`,
+                message: `Reporting manager evaluated ${reportee.fullName} (${reportee.empCode || 'N/A'}) with Score ${totalManagerScore}/100 (Grade ${finalGrade}). Recommendation: ${managerRecommendation || 'confirm'}.`
+            }).catch(e => console.error('Notification creation error:', e.message));
+        }
+
+        res.json({
+            success: true,
+            message: 'Manager evaluation submitted successfully for Confirmation Review!',
+            confirmationData: updatedConf
+        });
+    } catch (e) {
+        console.error('Evaluate reportee error:', e);
+        res.status(500).json({ success: false, message: 'Failed to submit manager evaluation' });
     }
 });
 

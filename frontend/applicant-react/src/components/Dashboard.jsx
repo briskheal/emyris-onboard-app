@@ -8,6 +8,7 @@ import VoiceStudio from './VoiceStudio';
 import MyLettersView from './MyLettersView';
 import ManageLeavePortal from './ManageLeavePortal';
 import ConfirmationProcessPortal from './ConfirmationProcessPortal';
+import TeamConfirmationManager from './TeamConfirmationManager';
 
 const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [applicant, setApplicant] = useState(initialApplicant);
@@ -17,6 +18,19 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [completedProducts, setCompletedProducts] = useState([]);
     const [activeExamContext, setActiveExamContext] = useState(null);
     const [isRapidLaunch, setIsRapidLaunch] = useState(false);
+    const [teamReportees, setTeamReportees] = useState([]);
+
+    useEffect(() => {
+        if (!applicant?.email && !applicant?.fullName) return;
+        fetch('/api/applicant/team-confirmations?managerEmail=' + encodeURIComponent(applicant.email || '') + '&managerName=' + encodeURIComponent(applicant.fullName || ''))
+            .then(r => r.json())
+            .then(d => {
+                if (d && d.success && Array.isArray(d.reportees)) {
+                    setTeamReportees(d.reportees);
+                }
+            })
+            .catch(e => console.error('Failed to fetch team reportees in dashboard:', e));
+    }, [applicant?.email, applicant?.fullName]);
 
     useEffect(() => {
         setApplicant(initialApplicant);
