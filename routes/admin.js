@@ -8512,6 +8512,7 @@ router.get('/all-confirmations', async (req, res) => {
                 actualJoiningDate: a.actualJoiningDate,
                 reportingTo: a.reportingTo,
                 completedMonths,
+                canLogin: a.canLogin !== false,
                 confirmationData: conf,
                 status: a.status,
                 confirmationStatus: displayStatus

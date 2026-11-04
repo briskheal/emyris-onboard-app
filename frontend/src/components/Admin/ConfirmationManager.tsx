@@ -314,7 +314,18 @@ export default function ConfirmationManager() {
                     >
                       {/* Candidate Name & Code */}
                       <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.92rem' }}>{item.fullName}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.92rem' }}>{item.fullName}</span>
+                          {item.canLogin === false ? (
+                            <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid #ef4444', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 800 }}>
+                              INACTIVE (ACCESS OFF)
+                            </span>
+                          ) : (
+                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid #10b981', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 700 }}>
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '3px' }}>
                           <span style={{ color: '#38bdf8', fontSize: '0.78rem', fontWeight: 700 }}>{item.empCode || 'N/A'}</span>
                           <span style={{ color: '#64748b', fontSize: '0.78rem' }}>•</span>

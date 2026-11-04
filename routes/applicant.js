@@ -2252,6 +2252,8 @@ router.get('/team-confirmations', async (req, res) => {
         const reportees = allApps.filter(app => {
             if (!app.reportingTo) return false;
             if (mEmail && app.email && app.email.toLowerCase() === mEmail) return false; // Not self
+            if (app.canLogin === false) return false; // Inactive / Access disabled by Admin
+            if (app.status === 'rejected' || app.status === 'cancelled') return false;
 
             const rep = (app.reportingTo || '').trim().toLowerCase();
             if (rep === mFullName) return true;
