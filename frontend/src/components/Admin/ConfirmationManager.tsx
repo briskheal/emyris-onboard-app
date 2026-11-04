@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Users, CheckCircle2, Clock, Search, 
-  Eye, RefreshCw, X, Award, TrendingUp
+  Eye, RefreshCw, X, Award, TrendingUp, RotateCcw
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -142,7 +142,7 @@ export default function ConfirmationManager() {
   const confirmedCount = list.filter(i => i.confirmationStatus === 'confirmed').length;
   const eligibleCount = list.filter(i => i.confirmationStatus === 'eligible').length;
 
-  const handleUpdateStatus = async (statusToSet: 'confirmed' | 'Confirmation Extended' | 'manager_evaluated') => {
+  const handleUpdateStatus = async (statusToSet: 'confirmed' | 'Confirmation Extended' | 'manager_evaluated' | 'draft') => {
     if (!selectedRecord) return;
     setActionLoading(true);
     setFeedbackMsg(null);
@@ -153,12 +153,12 @@ export default function ConfirmationManager() {
         adminRemarks: adminRemarks
       });
       if (res.data.success) {
-        setFeedbackMsg({ type: 'success', text: `Employee ${selectedRecord.fullName} confirmation status updated successfully!` });
+        setFeedbackMsg({ type: 'success', text: res.data.message || `Employee ${selectedRecord.fullName} confirmation status updated successfully!` });
         await fetchConfirmations();
         // Update selected record locally
         setSelectedRecord((prev: any) => ({
           ...prev,
-          confirmationStatus: statusToSet,
+          confirmationStatus: statusToSet === 'draft' ? 'eligible' : statusToSet,
           confirmationData: res.data.confirmationData
         }));
       } else {
@@ -169,6 +169,14 @@ export default function ConfirmationManager() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleReleaseProcess = async () => {
+    if (!selectedRecord) return;
+    if (!window.confirm(`Release confirmation process for ${selectedRecord.fullName} back to editable mode? This will allow the field executive and manager to modify and resubmit their assessments.`)) {
+      return;
+    }
+    await handleUpdateStatus('draft');
   };
 
   return (
@@ -855,6 +863,29 @@ export default function ConfirmationManager() {
                     }}
                   >
                     ⏳ Extend Probation by 3 Months
+                  </button>
+
+                  <button
+                    onClick={handleReleaseProcess}
+                    disabled={actionLoading}
+                    style={{
+                      background: '#1e293b',
+                      color: '#38bdf8',
+                      border: '1px solid #0284c7',
+                      padding: '11px 20px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: actionLoading ? 'not-allowed' : 'pointer',
+                      fontSize: '0.86rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.15)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#1e293b'; }}
+                  >
+                    <RotateCcw size={15} /> Release Saved Process
                   </button>
                 </div>
               </div>

@@ -8593,6 +8593,7 @@ router.post('/update-confirmation-record', async (req, res) => {
             adminRemarkedAt: adminRemarks !== undefined ? new Date() : (conf.adminRemarkedAt || null),
             status: isRemarksOnly ? (conf.status || 'pending_manager_review') : adminStatus,
             adminConfirmedAt: adminStatus === 'confirmed' ? new Date() : (conf.adminConfirmedAt || null),
+            releasedByAdminAt: adminStatus === 'draft' ? new Date() : (conf.releasedByAdminAt || null),
             lastUpdated: new Date()
         };
 
@@ -8601,6 +8602,8 @@ router.post('/update-confirmation-record', async (req, res) => {
         };
         if (adminStatus === 'confirmed') {
             updatePayload.status = 'Confirmed Employee';
+        } else if (adminStatus === 'draft' && app.status === 'Confirmed Employee') {
+            updatePayload.status = 'probation';
         }
 
         await Applicant.findOneAndUpdate({ email }, { $set: updatePayload });
@@ -8611,11 +8614,17 @@ router.post('/update-confirmation-record', async (req, res) => {
                 title: 'Congratulations! Official Confirmation Approved',
                 message: `Dear ${app.fullName}, your 5-month confirmation evaluation has been reviewed and approved by Management. You are now a Confirmed Employee.`
             }).catch(e => console.error('Notification error:', e.message));
+        } else if (adminStatus === 'draft' && XlNotification) {
+            await XlNotification.create({
+                employeeId: app.empCode || app.email,
+                title: 'Confirmation Assessment Released for Re-edit',
+                message: `Dear ${app.fullName}, your Confirmation Evaluation Process has been released by Admin. You may now edit and resubmit your 5-month field actuals, projection, and self-assessment.`
+            }).catch(e => console.error('Notification error:', e.message));
         }
 
         res.json({
             success: true,
-            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : (adminStatus === 'remarks_only' ? 'Admin remarks saved successfully!' : 'Confirmation record updated.'),
+            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : (adminStatus === 'draft' ? 'Confirmation process released back to Draft! Field executive and manager can now edit and resubmit.' : (adminStatus === 'remarks_only' ? 'Admin remarks saved successfully!' : 'Confirmation record updated.')),
             confirmationData: updatedConf
         });
     } catch (e) {
