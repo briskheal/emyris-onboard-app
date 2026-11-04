@@ -1420,7 +1420,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </div>
 
                     <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderLeft: '3px solid #f59e0b', padding: '10px 14px', borderRadius: '6px', color: '#e2e8f0', fontSize: '0.82rem', lineHeight: '1.5' }}>
-                        💡 <strong>Case Analysis (₹2.0L Sales with High Expenses):</strong> If a territory achieves ₹2,00,000 monthly sales against ₹65,000 total expense (Salary ₹45k + Activity ₹20k), the ratio is <strong>3.07x</strong>. The field cost consumes <strong>32.5%</strong> of sales. After factoring standard pharma COGS (30%) and distribution margins (30%), net profitability is razor-thin. <em>Actionable Strategy:</em> Re-verify whether activity spend was committed to verified high-yield prescribers, review RCPA at mapped retail chemists, and set the 6th-Month forward commitment at $ge$ ₹2,75,000 to bring the ratio to $ge 4.0	ext{x}$.
+                        💡 <strong>Case Analysis (₹2.0L Sales with High Expenses):</strong> If a territory achieves ₹2,00,000 monthly sales against ₹65,000 total expense (Salary ₹45k + Activity ₹20k), the ratio is <strong>3.07x</strong>. The field cost consumes <strong>32.5%</strong> of sales. After factoring standard pharma COGS (30%) and distribution margins (30%), net profitability is razor-thin. <em>Actionable Strategy:</em> Re-verify whether activity spend was committed to verified high-yield prescribers, review RCPA at mapped retail chemists, and set the 6th-Month forward commitment at &ge; ₹2,75,000 to bring the ratio to &ge; 4.0x.
                     </div>
                 </div>
 </div>
