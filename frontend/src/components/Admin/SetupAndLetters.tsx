@@ -298,6 +298,8 @@ export default function SetupAndLetters() {
     }
     
     setIsPushing(true);
+    // Yield execution to allow React and browser to render spinning animation immediately
+    await new Promise(resolve => setTimeout(resolve, 80));
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) {
       setIsPushing(false);
@@ -650,7 +652,19 @@ export default function SetupAndLetters() {
 
                 <div style={{ display: 'flex', gap: '0.75rem', flex: 1, justifyContent: 'flex-end' }}>
                   <button className="btn btn-primary" onClick={handleHubpush} disabled={isPushing} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none', flex: 1, maxWidth: '180px', justifyContent: 'center' }}>
-                      {isPushing ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />} {isPushing ? 'Processing...' : 'Generate & Send'}
+                      {isPushing ? (
+                        <RefreshCw
+                          className="animate-spin"
+                          size={16}
+                          style={{
+                            animation: 'spin 0.85s linear infinite',
+                            display: 'inline-block',
+                            transformOrigin: 'center center'
+                          }}
+                        />
+                      ) : (
+                        <Send size={16} />
+                      )} {isPushing ? 'Processing...' : 'Generate & Send'}
                   </button>
 
                   <button className="btn btn-outline" onClick={handleClearLetters} disabled={!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderColor: '#ef4444', color: '#ef4444', flex: 1, maxWidth: '180px', justifyContent: 'center', opacity: targetApplicant ? 1 : 0.5 }}>

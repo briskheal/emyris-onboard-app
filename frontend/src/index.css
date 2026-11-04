@@ -1243,7 +1243,14 @@ input:checked + .slider:before {
 }
 
 @keyframes spin {
+    from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 0.85s linear infinite !important;
+    display: inline-block !important;
+    transform-origin: center center !important;
 }
 
 @keyframes progressIndeterminate {
@@ -2967,7 +2974,14 @@ body.admin-mode .admin-header {
 
 @keyframes rotate {
     from { transform: rotate(0deg); }
+    from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 0.85s linear infinite !important;
+    display: inline-block !important;
+    transform-origin: center center !important;
 }
 
 @media (max-width: 900px) {
