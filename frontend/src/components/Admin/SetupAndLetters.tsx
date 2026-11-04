@@ -597,7 +597,7 @@ export default function SetupAndLetters() {
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <input 
                         type="text"
-                        autoComplete="off"
+                        autoComplete="new-password" name="candidate_search_filter" data-lpignore="true" spellCheck={false}
                         className="form-input" 
                         style={{ width: '300px', padding: '9px 32px 9px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', outline: 'none' }} 
                         value={applicantSearch} 
@@ -607,7 +607,7 @@ export default function SetupAndLetters() {
                             setIsDropdownOpen(true);
                             if (!e.target.value) setTargetApplicant('');
                         }}
-                        placeholder="Search applicant email..."
+                        placeholder="Search candidate name or code..."
                       />
                       {applicantSearch && (
                         <button onClick={() => { setApplicantSearch(''); setTargetApplicant(''); setIsDropdownOpen(true); }} style={{ position: 'absolute', right: '28px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
