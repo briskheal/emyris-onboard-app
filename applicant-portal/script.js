@@ -2092,7 +2092,10 @@ function showConsentModal() {
 
     if (localStorage.getItem('finalConsentAccepted_' + currentApplicant.email) === 'true') {
         consentGiven = true;
-        document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        const obForm = document.getElementById('onboardingForm');
+    if (obForm) {
+        obForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
         return;
     }
 
@@ -2107,10 +2110,14 @@ function acceptConsentAndSubmit() {
     consentGiven = true;
     localStorage.setItem('finalConsentAccepted_' + currentApplicant.email, 'true');
     closeConsentModal();
-    document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    const obForm = document.getElementById('onboardingForm');
+    if (obForm) {
+        obForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
 }
 
-document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
+document.addEventListener('submit', async (e) => {
+    if (!e.target || e.target.id !== 'onboardingForm') return;
     e.preventDefault();
     if (!document.getElementById('agree').checked) {
         showToast("Please agree to the declaration.", "warning");
