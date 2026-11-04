@@ -628,8 +628,8 @@ export default function ConfirmationManager() {
                                 <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Coll</th>
                                 <th style={{ padding: '10px 8px' }}>Salary &amp; Exp</th>
                                 <th style={{ padding: '10px 8px' }}>Activity</th>
-                                <th style={{ padding: '10px 8px' }}>LOP</th>
-                                <th style={{ padding: '10px 8px', textAlign: 'center' }}>SALES / EXP</th>
+                                <th style={{ padding: '10px 8px', color: '#fde047' }}>Tot Expense</th>
+                                <th style={{ padding: '10px 8px', textAlign: 'center', color: '#a78bfa' }}>6x Variance (₹) &amp; ROI</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -640,11 +640,7 @@ export default function ConfirmationManager() {
                                 const days = Number(m.daysWorked) || 0;
                                 const callAvg = days > 0 ? (totCalls / days).toFixed(1) : (m.callAvg || '0.0');
 
-                                const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
-                                const ach = Number(m.secAchieved) || 0;
-                                const rStr = cost > 0 ? (ach / cost).toFixed(2) + 'x' : (ach > 0 ? '—' : '0.00x');
-                                const rNum = cost > 0 ? (ach / cost) : 0;
-
+                                                                
                                 return (
                                   <tr key={mIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}>
                                     <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff' }}>
@@ -668,20 +664,38 @@ export default function ConfirmationManager() {
                                     </td>
                                     <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
                                     <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                    <td style={{ padding: '10px 8px', color: m.lopDays > 0 ? '#f87171' : '#ffffff' }}>{m.lopDays || 0}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{formatCurrency((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
                                     <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                                      <span style={{
-                                        display: 'inline-block',
-                                        padding: '3px 6px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 900,
-                                        background: `rgba(${rNum >= 3.5 ? '16, 185, 129' : (rNum >= 2.0 ? '56, 189, 248' : (rNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
-                                        color: rNum >= 3.5 ? '#34d399' : (rNum >= 2.0 ? '#38bdf8' : (rNum >= 1.0 ? '#fbbf24' : '#f87171')),
-                                        border: `1px solid ${rNum >= 3.5 ? '#10b981' : (rNum >= 2.0 ? '#0284c7' : (rNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
-                                      }}>
-                                        {rStr}
-                                      </span>
+                                      {(() => {
+                                        const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
+                                        const ach = Number(m.secAchieved) || 0;
+                                        const exp6x = cost * 6;
+                                        const diff = ach - exp6x;
+                                        const isPlus = diff >= 0;
+                                        const diffText = cost > 0
+                                          ? (isPlus ? '+' + Math.round(diff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(diff)).toLocaleString('en-IN'))
+                                          : (ach > 0 ? '+' + Math.round(ach).toLocaleString('en-IN') : '0');
+                                        const rStr = cost > 0 ? (ach / cost).toFixed(2) + 'x' : (ach > 0 ? '—' : '0.00x');
+
+                                        return (
+                                          <div style={{
+                                            display: 'inline-flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            padding: '3px 8px',
+                                            borderRadius: '6px',
+                                            background: cost === 0 && ach === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+                                            border: `1px solid ${cost === 0 && ach === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`
+                                          }}>
+                                            <span style={{ fontSize: '0.82rem', fontWeight: 900, color: cost === 0 && ach === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171') }}>
+                                              {diffText}
+                                            </span>
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, marginTop: '1px', color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
+                                              {rStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
                                     </td>
                                   </tr>
                                 );

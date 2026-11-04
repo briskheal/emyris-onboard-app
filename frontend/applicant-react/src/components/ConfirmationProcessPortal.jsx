@@ -235,8 +235,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             const secPct = sObj > 0 ? ((sAch / sObj) * 100).toFixed(1) : 0;
             const collPct = cObj > 0 ? ((cAch / cObj) * 100).toFixed(1) : 0;
 
-            // Sales vs Expense ratio: Sec Ach / (Salary & Exp + Tot Activity)
+            // Total Field Expense: Salary & Exp + Activity Amount
             const expSum = sExp + aAmt;
+            // 6x Minimum Sales Benchmark: Territory must yield at least 6x of expense
+            const expectedSales6x = expSum * 6;
+            const variance6x = sAch - expectedSales6x; // Actual sales minus (expense * 6)
+            const isSurplus6x = variance6x >= 0;
+            const variance6xStr = expSum > 0
+                ? (isSurplus6x ? `+₹${Math.round(variance6x).toLocaleString('en-IN')}` : `-₹${Math.round(Math.abs(variance6x)).toLocaleString('en-IN')}`)
+                : (sAch > 0 ? `+₹${Math.round(sAch).toLocaleString('en-IN')}` : '₹0');
+
             const salesExpRatioNum = expSum > 0 ? (sAch / expSum) : 0;
             const salesExpRatioStr = expSum > 0 ? (sAch / expSum).toFixed(2) + 'x' : (sAch > 0 ? '—' : '0.00x');
 
@@ -249,6 +257,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 callAvg,
                 computedSecPct: parseFloat(secPct),
                 computedCollPct: parseFloat(collPct),
+                totalExpense: expSum,
+                expectedSales6x,
+                variance6x,
+                variance6xStr,
+                isSurplus6x,
                 salesExpRatioNum,
                 salesExpRatioStr
             };
@@ -314,7 +327,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 totalLopDays: actLop,
                 totalExpense: actSalaryExp + actActAmt,
                 actSalesExpRatioStr: (actSalaryExp + actActAmt) > 0 ? (actSecAch / (actSalaryExp + actActAmt)).toFixed(2) + 'x' : (actSecAch > 0 ? '—' : '0.00x'),
-                actSalesExpRatioNum: (actSalaryExp + actActAmt) > 0 ? (actSecAch / (actSalaryExp + actActAmt)) : 0
+                actSalesExpRatioNum: (actSalaryExp + actActAmt) > 0 ? (actSecAch / (actSalaryExp + actActAmt)) : 0,
+                actExpectedSales6x: (actSalaryExp + actActAmt) * 6,
+                actVariance6x: actSecAch - ((actSalaryExp + actActAmt) * 6),
+                actVariance6xStr: (actSalaryExp + actActAmt) > 0
+                    ? (actSecAch >= (actSalaryExp + actActAmt) * 6 ? `+₹${Math.round(actSecAch - (actSalaryExp + actActAmt) * 6).toLocaleString('en-IN')}` : `-₹${Math.round(Math.abs(actSecAch - (actSalaryExp + actActAmt) * 6)).toLocaleString('en-IN')}`)
+                    : '₹0'
             },
             projectionRow: projRow,
             combinedTotals: {
@@ -684,7 +702,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             📊 Section 1: 5-Month Field Activity (Actuals) &amp; 6th-Month Projection (Commitment)
                         </h3>
                         <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.84rem', fontWeight: 500 }}>
-                            Complete Performance Dossier: Field Activity, Secondary Sales, Collection Recovery, Salary &amp; Expense, Tot Activity Amt, and LOP Days.
+                            Complete Performance Dossier: Field Activity, Secondary Sales, Collection Recovery, Field Expenses, Total Territory Cost, and ROI Health Multiple.
                         </p>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
@@ -736,10 +754,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     💰 Collection Recovery
                                 </th>
                                 <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
-                                    🏷️ Cost, Activity &amp; Attendance
+                                    🏷️ Cost &amp; Total Field Investment
                                 </th>
                                 <th colSpan={1} style={{ padding: '8px 12px', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.08)', textAlign: 'center' }}>
-                                    📈 ROI RATIO
+                                    📈 6x ROI &amp; SURPLUS / DEFICIT
                                 </th>
                             </tr>
                             {/* Column Header */}
@@ -765,8 +783,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 {/* Cost & Investment Columns */}
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>SALARY &amp; EXP (₹)</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>TOT ACTIVITY (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#f59e0b' }}>LOP DAYS</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#a78bfa' }}>SALES / EXP</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'right', borderRight: '1px solid #334155', color: '#f59e0b' }}>TOT EXPENSE (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#a78bfa' }}>6x EXP VARIANCE (₹) &amp; ROI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1049,40 +1067,67 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             />
                                         </td>
 
-                                        {/* LOP Days */}
+                                        {/* TOT EXPENSE (Auto-calculated: Salary & Exp + Tot Activity) */}
                                         <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="31"
-                                                value={row.lopDays}
-                                                onChange={(e) => handleFieldChange(idx, 'lopDays', e.target.value)}
-                                                onFocus={(e) => { e.target.style.borderColor = '#ef4444'; e.target.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
-                                                placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: '1.5px solid #334155',
-                                                    color: row.lopDays > 0 ? '#f87171' : '#ffffff',
-                                                    fontWeight: row.lopDays > 0 ? '800' : '600'
-                                                }}
-                                            />
+                                            <div style={{
+                                                ...inputStyle,
+                                                background: '#0c1527',
+                                                color: '#fde047',
+                                                fontWeight: 800,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'flex-end',
+                                                paddingRight: '8px',
+                                                border: '1.5px solid #334155'
+                                            }}>
+                                                {formatCurrency((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0))}
+                                            </div>
                                         </td>
 
-                                        {/* Sales vs Exp Ratio */}
+                                        {/* Sales vs Exp Ratio with Territory Health Diagnosis */}
                                         <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '5px 8px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.82rem',
-                                                fontWeight: 900,
-                                                background: `rgba(${row.salesExpRatioNum >= 3.5 ? '16, 185, 129' : (row.salesExpRatioNum >= 2.0 ? '56, 189, 248' : (row.salesExpRatioNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
-                                                color: row.salesExpRatioNum >= 3.5 ? '#34d399' : (row.salesExpRatioNum >= 2.0 ? '#38bdf8' : (row.salesExpRatioNum >= 1.0 ? '#fbbf24' : '#f87171')),
-                                                border: `1px solid ${row.salesExpRatioNum >= 3.5 ? '#10b981' : (row.salesExpRatioNum >= 2.0 ? '#0284c7' : (row.salesExpRatioNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
-                                            }}>
-                                                {row.salesExpRatioStr}
-                                            </span>
+                                            {(() => {
+                                                const exp = (Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0);
+                                                const sAch = Number(row.secAchieved) || 0;
+                                                const exp6x = exp * 6;
+                                                const diff = sAch - exp6x;
+                                                const isPlus = diff >= 0;
+                                                const diffText = exp > 0
+                                                    ? (isPlus ? '+' + Math.round(diff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(diff)).toLocaleString('en-IN'))
+                                                    : (sAch > 0 ? '+' + Math.round(sAch).toLocaleString('en-IN') : '0');
+                                                const ratioStr = exp > 0 ? (sAch / exp).toFixed(2) + 'x' : (sAch > 0 ? '—' : '0.00x');
+
+                                                return (
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '8px',
+                                                        minWidth: '95px',
+                                                        background: exp === 0 && sAch === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+                                                        border: `1.5px solid ${exp === 0 && sAch === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`,
+                                                        boxShadow: isPlus ? '0 2px 8px rgba(16, 185, 129, 0.25)' : '0 2px 8px rgba(239, 68, 68, 0.25)'
+                                                    }}>
+                                                        <span style={{
+                                                            fontSize: '0.88rem',
+                                                            fontWeight: 900,
+                                                            color: exp === 0 && sAch === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171'),
+                                                            letterSpacing: '0.3px'
+                                                        }}>
+                                                            {diffText}
+                                                        </span>
+                                                        <span style={{
+                                                            fontSize: '0.62rem',
+                                                            fontWeight: 800,
+                                                            marginTop: '2px',
+                                                            color: exp === 0 && sAch === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5')
+                                                        }}>
+                                                            {ratioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </td>
                                     </tr>
                                 );
@@ -1163,22 +1208,39 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800 }}>
                                     {formatCurrency(actualsTotals.totalActivityAmt)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: actualsTotals.totalLopDays > 0 ? '#f87171' : '#ffffff', textAlign: 'center', fontWeight: 800 }}>
-                                    {actualsTotals.totalLopDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
+                                <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
+                                    {formatCurrency(actualsTotals.totalExpense)}
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        padding: '5px 8px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.82rem',
-                                        fontWeight: 900,
-                                        background: `rgba(${actualsTotals.actSalesExpRatioNum >= 3.5 ? '16, 185, 129' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '56, 189, 248' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
-                                        color: actualsTotals.actSalesExpRatioNum >= 3.5 ? '#34d399' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '#38bdf8' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '#fbbf24' : '#f87171')),
-                                        border: `1px solid ${actualsTotals.actSalesExpRatioNum >= 3.5 ? '#10b981' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '#0284c7' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
-                                    }}>
-                                        {actualsTotals.actSalesExpRatioStr}
-                                    </span>
+                                    {(() => {
+                                        const aExp = actualsTotals.totalExpense;
+                                        const aSec = actualsTotals.totalSecAch;
+                                        const aExp6x = aExp * 6;
+                                        const aDiff = aSec - aExp6x;
+                                        const isPlus = aDiff >= 0;
+                                        const aDiffText = aExp > 0
+                                            ? (isPlus ? '+' + Math.round(aDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(aDiff)).toLocaleString('en-IN'))
+                                            : '0';
+                                        return (
+                                            <div style={{
+                                                display: 'inline-flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                padding: '4px 8px',
+                                                borderRadius: '8px',
+                                                minWidth: '100px',
+                                                background: isPlus ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                                                border: `1.5px solid ${isPlus ? '#10b981' : '#ef4444'}`
+                                            }}>
+                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#34d399' : '#f87171' }}>
+                                                    {aDiffText}
+                                                </span>
+                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
+                                                    {actualsTotals.actSalesExpRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                 </td>
                             </tr>
 
@@ -1258,31 +1320,111 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.totActivityAmt)}
                                     </td>
-                                    <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'center', borderRight: '1px solid #334155' }}>
-                                        {projectionRow.lopDays || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
-                                    </td>
-                                    <td style={{ padding: '14px 4px', textAlign: 'center' }}>
-                                        <span style={{
-                                            display: 'inline-block',
-                                            padding: '5px 8px',
-                                            borderRadius: '6px',
-                                            fontSize: '0.84rem',
-                                            fontWeight: 900,
-                                            background: 'rgba(167, 139, 250, 0.25)',
-                                            color: '#c4b5fd',
-                                            border: '1px solid #a78bfa'
-                                        }}>
-                                            {projectionRow.salesExpRatioStr || '0.00x'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            )}
+                                    <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
+                                    {formatCurrency((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0))}
+                                </td>
+                                <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                    {(() => {
+                                        const pExp = (Number(projectionRow?.salaryExpense) || 0) + (Number(projectionRow?.totActivityAmt) || 0);
+                                        const pSec = Number(projectionRow?.secAchieved) || 0;
+                                        const pExp6x = pExp * 6;
+                                        const pDiff = pSec - pExp6x;
+                                        const isPlus = pDiff >= 0;
+                                        const pDiffText = pExp > 0
+                                            ? (isPlus ? '+' + Math.round(pDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(pDiff)).toLocaleString('en-IN'))
+                                            : '0';
+                                        const pRatioStr = pExp > 0 ? (pSec / pExp).toFixed(2) + 'x' : '0.00x';
+                                        return (
+                                            <div style={{
+                                                display: 'inline-flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                padding: '4px 8px',
+                                                borderRadius: '8px',
+                                                minWidth: '100px',
+                                                background: isPlus ? 'rgba(56, 189, 248, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                                                border: `1.5px solid ${isPlus ? '#0284c7' : '#ef4444'}`
+                                            }}>
+                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#38bdf8' : '#f87171' }}>
+                                                    {pDiffText}
+                                                </span>
+                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#bae6fd' : '#fca5a5' }}>
+                                                    {pRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
+                                </td>
+                            </tr>
+                        )}
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            {/* SECTION 2: 6 Core Confirmation Pillars (100 Marks Evaluation) */}
+                {/* Territory Health & Field ROI Diagnostic Guide */}
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.8) 100%)',
+                    border: '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px 24px',
+                    margin: '18px 24px 24px 24px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '1.4rem' }}>🩺</span>
+                            <h4 style={{ margin: 0, color: '#38bdf8', fontSize: '1.05rem', fontWeight: 800 }}>
+                                Territory Health &amp; Field ROI Multiple Diagnostic Standard
+                            </h4>
+                        </div>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(56, 189, 248, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                            Formula: ROI Multiple = Secondary Sales Achieved ÷ Total Expense (Salary &amp; Exp + Activity)
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: 800, fontSize: '0.88rem' }}>
+                                🔴 Ratio &lt; 2.5x — UNHEALTHY (LOSS-MAKING)
+                            </div>
+                            <p style={{ margin: '6px 0 0 0', color: '#cbd5e1', fontSize: '0.78rem', lineHeight: '1.5' }}>
+                                <strong>Diagnosis:</strong> Sales cannot cover MR salary and field activity. Gross margin after COGS/stockist margin is negative. Indicates activity leakage or lack of active prescriber commitment.
+                            </p>
+                        </div>
+
+                        <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', borderRadius: '10px', padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontWeight: 800, fontSize: '0.88rem' }}>
+                                🟡 Ratio 2.5x to 3.5x — BORDERLINE (GESTATION)
+                            </div>
+                            <p style={{ margin: '6px 0 0 0', color: '#cbd5e1', fontSize: '0.78rem', lineHeight: '1.5' }}>
+                                <strong>Diagnosis:</strong> Territory breaks even at territory cost level. Acceptable only during the first 3-5 months for new product launch or new MR. Requires immediate conversion focus.
+                            </p>
+                        </div>
+
+                        <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: '10px', padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 800, fontSize: '0.88rem' }}>
+                                🟢 Ratio 3.5x to 5.0x — HEALTHY (PROFITABLE)
+                            </div>
+                            <p style={{ margin: '6px 0 0 0', color: '#cbd5e1', fontSize: '0.78rem', lineHeight: '1.5' }}>
+                                <strong>Diagnosis:</strong> Fully self-sustaining territory. Generates substantial net contribution margin covering company overheads. Ideal benchmark for permanent Confirmation.
+                            </p>
+                        </div>
+
+                        <div style={{ background: 'rgba(167, 139, 250, 0.1)', border: '1px solid #8b5cf6', borderRadius: '10px', padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c4b5fd', fontWeight: 800, fontSize: '0.88rem' }}>
+                                🌟 Ratio &gt; 5.0x — STAR TERRITORY (HIGH ROI)
+                            </div>
+                            <p style={{ margin: '6px 0 0 0', color: '#cbd5e1', fontSize: '0.78rem', lineHeight: '1.5' }}>
+                                <strong>Diagnosis:</strong> High yield prescriber loyalty, low expense-to-sales ratio (&lt;20%). Prime candidate for territory expansion, merit increment, and manager leadership role.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderLeft: '3px solid #f59e0b', padding: '10px 14px', borderRadius: '6px', color: '#e2e8f0', fontSize: '0.82rem', lineHeight: '1.5' }}>
+                        💡 <strong>Case Analysis (₹2.0L Sales with High Expenses):</strong> If a territory achieves ₹2,00,000 monthly sales against ₹65,000 total expense (Salary ₹45k + Activity ₹20k), the ratio is <strong>3.07x</strong>. The field cost consumes <strong>32.5%</strong> of sales. After factoring standard pharma COGS (30%) and distribution margins (30%), net profitability is razor-thin. <em>Actionable Strategy:</em> Re-verify whether activity spend was committed to verified high-yield prescribers, review RCPA at mapped retail chemists, and set the 6th-Month forward commitment at $ge$ ₹2,75,000 to bring the ratio to $ge 4.0	ext{x}$.
+                    </div>
+                </div>
+</div>
+{/* SECTION 2: 6 Core Confirmation Pillars (100 Marks Evaluation) */}
             <div style={{
                 background: '#131b2e',
                 border: '1px solid #334155',
