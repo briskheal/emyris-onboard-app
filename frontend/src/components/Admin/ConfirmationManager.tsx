@@ -664,7 +664,7 @@ export default function ConfirmationManager() {
                                     </td>
                                     <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
                                     <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{formatCurrency((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0)).toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                                       {(() => {
                                         const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);

@@ -450,7 +450,61 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
         );
     }
 
-    const isSubmitted = status === 'submitted';
+    const isLocked = ['submitted', 'manager_evaluated', 'confirmed', 'Confirmation Extended'].includes(status);
+    const isReadOnly = isLocked;
+    const isSubmitted = isLocked;
+
+    const scrollTable = (direction) => {
+        const el = document.getElementById('confirmation-table-container');
+        if (el) {
+            el.scrollBy({ left: direction === 'left' ? -350 : 350, behavior: 'smooth' });
+        }
+    };
+
+    const handleCellKeyDown = (e, rowIdx, colKey) => {
+        const EDITABLE_COLS = ['daysWorked', 'drVisits', 'chemVisits', 'pob', 'secObj', 'secAchieved', 'collObj', 'collAchieved', 'salaryExpense', 'totActivityAmt'];
+        const curColIdx = EDITABLE_COLS.indexOf(colKey);
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = document.querySelector(`input[data-row="${rowIdx - 1}"][data-col="${colKey}"]`);
+            if (prev) {
+                prev.focus();
+                prev.select?.();
+                prev.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+            e.preventDefault();
+            const next = document.querySelector(`input[data-row="${rowIdx + 1}"][data-col="${colKey}"]`);
+            if (next) {
+                next.focus();
+                next.select?.();
+                next.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        } else if (e.key === 'ArrowRight' && (e.target.selectionEnd === e.target.value.length || e.target.selectionStart === e.target.selectionEnd)) {
+            if (curColIdx >= 0 && curColIdx < EDITABLE_COLS.length - 1) {
+                e.preventDefault();
+                const nextCol = EDITABLE_COLS[curColIdx + 1];
+                const nextInput = document.querySelector(`input[data-row="${rowIdx}"][data-col="${nextCol}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select?.();
+                    nextInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                }
+            }
+        } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+            if (curColIdx > 0) {
+                e.preventDefault();
+                const prevCol = EDITABLE_COLS[curColIdx - 1];
+                const prevInput = document.querySelector(`input[data-row="${rowIdx}"][data-col="${prevCol}"]`);
+                if (prevInput) {
+                    prevInput.focus();
+                    prevInput.select?.();
+                    prevInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                }
+            }
+        }
+    };
 
     return (
         <div style={{
@@ -686,7 +740,45 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </div>
                 )}
 
-                {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
+                {isReadOnly && (
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%)',
+                    border: '1.5px solid #10b981',
+                    borderRadius: '14px',
+                    padding: '16px 22px',
+                    marginBottom: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <span style={{ fontSize: '1.8rem' }}>🔒</span>
+                        <div>
+                            <div style={{ color: '#34d399', fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.2px' }}>
+                                Confirmation Dossier Submitted to Manager (Locked • Read-Only)
+                            </div>
+                            <p style={{ margin: '3px 0 0 0', color: '#cbd5e1', fontSize: '0.84rem' }}>
+                                Your 5-month field actuals, 6th-month projection, and self-assessment have been submitted for confirmation review. All inputs are preserved in view mode.
+                            </p>
+                        </div>
+                    </div>
+                    <span style={{
+                        background: 'rgba(16, 185, 129, 0.25)',
+                        border: '1px solid #10b981',
+                        color: '#34d399',
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: 800
+                    }}>
+                        Status: {status === 'manager_evaluated' ? 'Manager Evaluated' : 'Pending Manager Review'}
+                    </span>
+                </div>
+            )}
+
+            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
             <div style={{
                 background: '#131b2e',
                 border: '1px solid #334155',
@@ -711,11 +803,62 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </div>
 
                 {/* Stable, non-jumping Full-Screen Table with locked column widths */}
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '6px' }}>
+                <div style={{ padding: '0 24px 12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 600 }}>
+                            💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                type="button"
+                                onClick={() => scrollTable('left')}
+                                style={{
+                                    background: '#1e293b',
+                                    color: '#cbd5e1',
+                                    border: '1px solid #334155',
+                                    padding: '5px 12px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.76rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                ◀ Scroll Left
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => scrollTable('right')}
+                                style={{
+                                    background: '#1e293b',
+                                    color: '#cbd5e1',
+                                    border: '1px solid #334155',
+                                    padding: '5px 12px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.76rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Scroll Right ▶
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        id="confirmation-table-container"
+                        tabIndex={0}
+                        style={{
+                            overflowX: 'auto',
+                            overflowY: 'auto',
+                            maxHeight: '68vh',
+                            WebkitOverflowScrolling: 'touch',
+                            position: 'relative'
+                        }}
+                    >
                     <table style={{
                         width: '100%',
                         tableLayout: 'fixed',
-                        borderCollapse: 'collapse',
+                        borderCollapse: 'separate',
+                        borderSpacing: 0,
                         fontSize: '0.88rem',
                         minWidth: '1500px'
                     }}>
@@ -743,26 +886,26 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         </colgroup>
                         <thead>
                             {/* Grouping Header */}
-                            <tr style={{ background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                <th colSpan={7} style={{ padding: '8px 12px', borderRight: '1px solid #334155' }}>
+                            <tr style={{ position: 'sticky', top: 0, zIndex: 25, background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th colSpan={7} style={{ position: 'sticky', top: 0, left: 0, zIndex: 35, background: '#090e1a', padding: '8px 12px', borderRight: '1px solid #334155' }}>
                                     Field Activity &amp; Coverage
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#38bdf8', background: '#0b162c' }}>
                                     💼 Secondary Sales
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#34d399', background: 'rgba(16, 185, 129, 0.05)' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#34d399', background: '#081c1c' }}>
                                     💰 Collection Recovery
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#f59e0b', background: '#1c170d' }}>
                                     🏷️ Cost &amp; Total Field Investment
                                 </th>
-                                <th colSpan={1} style={{ padding: '8px 12px', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.08)', textAlign: 'center' }}>
+                                <th colSpan={1} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', color: '#a78bfa', background: '#171128', textAlign: 'center' }}>
                                     📈 6x ROI &amp; SURPLUS / DEFICIT
                                 </th>
                             </tr>
                             {/* Column Header */}
-                            <tr style={{ background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                                <th style={{ padding: '12px 12px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>MONTH</th>
+                            <tr style={{ position: 'sticky', top: '34px', zIndex: 24, background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
+                                <th style={{ position: 'sticky', top: '34px', left: 0, zIndex: 35, background: '#090e1a', padding: '12px 12px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>MONTH</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Days Work</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Dr Visited</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>Chem. Visited</th>
@@ -783,7 +926,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 {/* Cost & Investment Columns */}
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>SALARY &amp; EXP (₹)</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>TOT ACTIVITY (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'right', borderRight: '1px solid #334155', color: '#f59e0b' }}>TOT EXPENSE (₹)</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'right', borderRight: '1px solid #334155', color: '#fde047' }}>TOT EXPENSE</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#a78bfa' }}>6x EXP VARIANCE (₹) &amp; ROI</th>
                             </tr>
                         </thead>
@@ -803,7 +946,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         }}
                                     >
                                         {/* Month Header / Type Label */}
-                                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                                        <td style={{ position: 'sticky', left: 0, zIndex: 12, background: isProj ? '#0b162c' : (idx % 2 === 1 ? '#0d1527' : '#090e1a'), padding: '12px 14px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', borderRight: '1px solid #1e293b' }}>
                                             <div style={{ fontSize: '0.88rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
                                                 {row.monthLabel}
                                             </div>
@@ -835,8 +978,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 max="31"
-                                                value={row.daysWorked}
+                                                data-row={idx} data-col="daysWorked" readOnly={isReadOnly} value={row.daysWorked}
                                                 onChange={(e) => handleFieldChange(idx, 'daysWorked', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'daysWorked')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
@@ -852,8 +996,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.drVisits}
+                                                data-row={idx} data-col="drVisits" readOnly={isReadOnly} value={row.drVisits}
                                                 onChange={(e) => handleFieldChange(idx, 'drVisits', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'drVisits')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
@@ -869,8 +1014,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.chemVisits !== undefined ? row.chemVisits : ''}
+                                                data-row={idx} data-col="chemVisits" readOnly={isReadOnly} value={row.chemVisits !== undefined ? row.chemVisits : ''}
                                                 onChange={(e) => handleFieldChange(idx, 'chemVisits', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'chemVisits')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
@@ -919,8 +1065,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.pob}
+                                                data-row={idx} data-col="pob" readOnly={isReadOnly} value={row.pob}
                                                 onChange={(e) => handleFieldChange(idx, 'pob', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'pob')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder="0"
@@ -936,8 +1083,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.secObj}
+                                                data-row={idx} data-col="secObj" readOnly={isReadOnly} value={row.secObj}
                                                 onChange={(e) => handleFieldChange(idx, 'secObj', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'secObj')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder="0"
@@ -953,8 +1101,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.secAchieved}
+                                                data-row={idx} data-col="secAchieved" readOnly={isReadOnly} value={row.secAchieved}
                                                 onChange={(e) => handleFieldChange(idx, 'secAchieved', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'secAchieved')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Commitment" : "0"}
@@ -986,8 +1135,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.collObj}
+                                                data-row={idx} data-col="collObj" readOnly={isReadOnly} value={row.collObj}
                                                 onChange={(e) => handleFieldChange(idx, 'collObj', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'collObj')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder="0"
@@ -1003,8 +1153,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.collAchieved}
+                                                data-row={idx} data-col="collAchieved" readOnly={isReadOnly} value={row.collAchieved}
                                                 onChange={(e) => handleFieldChange(idx, 'collAchieved', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'collAchieved')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Recovery" : "0"}
@@ -1036,8 +1187,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.salaryExpense}
+                                                data-row={idx} data-col="salaryExpense" readOnly={isReadOnly} value={row.salaryExpense}
                                                 onChange={(e) => handleFieldChange(idx, 'salaryExpense', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'salaryExpense')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder="0"
@@ -1054,8 +1206,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.totActivityAmt}
+                                                data-row={idx} data-col="totActivityAmt" readOnly={isReadOnly} value={row.totActivityAmt}
                                                 onChange={(e) => handleFieldChange(idx, 'totActivityAmt', e.target.value)}
+                                                onKeyDown={(e) => handleCellKeyDown(e, idx, 'totActivityAmt')}
                                                 onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder="0"
@@ -1069,19 +1222,21 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                                         {/* TOT EXPENSE (Auto-calculated: Salary & Exp + Tot Activity) */}
                                         <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
-                                            <div style={{
-                                                ...inputStyle,
-                                                background: '#0c1527',
-                                                color: '#fde047',
-                                                fontWeight: 800,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'flex-end',
-                                                paddingRight: '8px',
-                                                border: '1.5px solid #334155'
-                                            }}>
-                                                {formatCurrency((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0))}
-                                            </div>
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                tabIndex={-1}
+                                                value={((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)) ? ((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)).toLocaleString('en-IN') : '0'}
+                                                style={{
+                                                    ...inputStyle,
+                                                    background: '#0c1527',
+                                                    color: '#fde047',
+                                                    fontWeight: 800,
+                                                    textAlign: 'right',
+                                                    cursor: 'default',
+                                                    border: '1.5px solid #334155'
+                                                }}
+                                            />
                                         </td>
 
                                         {/* Sales vs Exp Ratio with Territory Health Diagnosis */}
@@ -1209,7 +1364,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     {formatCurrency(actualsTotals.totalActivityAmt)}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                    {formatCurrency(actualsTotals.totalExpense)}
+                                    <span style={{ padding: '0 8px' }}>{Math.round(actualsTotals.totalExpense || 0).toLocaleString('en-IN')}</span>
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -1247,7 +1402,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             {/* Row 2: 6th-Month Forward Commitment Highlight */}
                             {projectionRow && (
                                 <tr style={{ background: 'rgba(14, 165, 233, 0.12)', borderTop: '1px solid #0284c7', fontWeight: 800 }}>
-                                    <td style={{ padding: '14px 10px', color: '#38bdf8', fontSize: '0.84rem' }}>
+                                    <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#0f172a', borderRight: '1px solid #334155', padding: '14px 10px', color: '#38bdf8', fontSize: '0.84rem' }}>
                                         🎯 6th-Mo. Commit
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
@@ -1321,7 +1476,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         {formatCurrency(projectionRow.totActivityAmt)}
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                    {formatCurrency((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0))}
+                                    <span style={{ padding: '0 8px' }}>{Math.round((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0)).toLocaleString('en-IN')}</span>
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -1513,8 +1668,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 min="0"
                                                 max={pillar.weight}
                                                 step="1"
-                                                value={val}
-                                                onChange={(e) => handleRatingChange(pillar.id, pillar.weight, e.target.value)}
+                                                readOnly={isReadOnly} value={val}
+                                                onChange={(e) => !isReadOnly && handleRatingChange(pillar.id, pillar.weight, e.target.value)}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = '#475569'; e.target.style.boxShadow = 'none'; }}
                                                 style={{
@@ -1571,8 +1726,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </label>
                 <textarea
                     rows={3}
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
+                    readOnly={isReadOnly} value={remarks}
+                    onChange={(e) => !isReadOnly && setRemarks(e.target.value)}
                     placeholder="Provide context on your 5-month sales performance, territory development, key doctor conversions, and your action plan to achieve the 6th-month projection..."
                     style={{
                         width: '100%',
@@ -1616,46 +1771,67 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '14px' }}>
-                    <button
-                        onClick={() => handleSaveOrSubmit(false)}
-                        disabled={saving || submitting}
-                        style={{
-                            background: '#1e293b',
-                            color: '#ffffff',
-                            border: '1px solid #475569',
-                            padding: '11px 20px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
-                            fontSize: '0.88rem',
-                            fontFamily: 'inherit',
-                            transition: 'all 0.15s ease'
-                        }}
-                    >
-                        {saving ? 'Saving Draft...' : '💾 Save Draft'}
-                    </button>
-
-                    <button
-                        onClick={() => handleSaveOrSubmit(true)}
-                        disabled={saving || submitting}
-                        style={{
-                            background: 'linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '11px 24px',
+                {isReadOnly ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34d399',
+                            border: '1.5px solid #10b981',
+                            padding: '11px 22px',
                             borderRadius: '8px',
                             fontWeight: 800,
-                            cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 4px 16px rgba(79, 70, 229, 0.45)',
                             fontSize: '0.92rem',
-                            fontFamily: 'inherit',
-                            transition: 'all 0.15s ease'
-                        }}
-                    >
-                        {submitting ? 'Submitting...' : '🚀 Submit to Manager for Confirmation Review'}
-                    </button>
-                </div>
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            ✅ Submitted to Manager • Locked for Editing
+                        </span>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', gap: '14px' }}>
+                        <button
+                            type="button"
+                            onClick={() => handleSaveOrSubmit(false)}
+                            disabled={saving || submitting}
+                            style={{
+                                background: '#1e293b',
+                                color: '#ffffff',
+                                border: '1px solid #475569',
+                                padding: '11px 22px',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
+                                fontSize: '0.88rem',
+                                fontFamily: 'inherit',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            {saving ? 'Saving Draft...' : '💾 Save Draft (Work Later)'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => handleSaveOrSubmit(true)}
+                            disabled={saving || submitting}
+                            style={{
+                                background: 'linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '11px 26px',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                cursor: (saving || submitting) ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 4px 16px rgba(79, 70, 229, 0.45)',
+                                fontSize: '0.92rem',
+                                fontFamily: 'inherit',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            {submitting ? 'Submitting...' : '🚀 Submit to Manager for Confirmation Review'}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

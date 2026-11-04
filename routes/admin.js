@@ -8546,7 +8546,7 @@ router.get('/all-confirmations', async (req, res) => {
             } else if (conf?.status === 'submitted') {
                 displayStatus = 'pending_manager_review';
             } else if (conf?.status === 'draft') {
-                displayStatus = 'draft';
+                displayStatus = completedMonths >= 5 ? 'eligible' : 'in_probation';
             } else if (completedMonths >= 5) {
                 displayStatus = 'eligible';
             }

@@ -2060,8 +2060,9 @@ router.post('/confirmation-process', async (req, res) => {
             const isProjection = idx === 5 || m.isProjection === true;
             const daysWorked = Math.max(0, Number(m.daysWorked) || 0);
             const drVisits = Math.max(0, Number(m.drVisits) || 0);
-            const totCalls = Math.max(0, Number(m.totCalls) || 0);
-            const callAvg = Number(m.callAvg) || (drVisits > 0 ? Number((totCalls / drVisits).toFixed(1)) : 0);
+            const chemVisits = Math.max(0, Number(m.chemVisits) || 0);
+            const totCalls = Math.max(0, Number(m.totCalls) || (drVisits + chemVisits));
+            const callAvg = daysWorked > 0 ? Number((totCalls / daysWorked).toFixed(1)) : 0;
             const pob = Math.max(0, Number(m.pob) || 0);
             const secObj = Math.max(0, Number(m.secObj) || 0);
             const secAchieved = Math.max(0, Number(m.secAchieved) || 0);
@@ -2076,6 +2077,7 @@ router.post('/confirmation-process', async (req, res) => {
             if (!isProjection) {
                 actualDaysWorked += daysWorked;
                 actualDrVisits += drVisits;
+                actualChemVisits += chemVisits;
                 actualCalls += totCalls;
                 actualPob += pob;
                 actualSecObj += secObj;
@@ -2089,6 +2091,7 @@ router.post('/confirmation-process', async (req, res) => {
 
             totalDaysWorked += daysWorked;
             totalDrVisits += drVisits;
+            totalChemVisits += chemVisits;
             totalCalls += totCalls;
             totalPob += pob;
             totalSecObj += secObj;
