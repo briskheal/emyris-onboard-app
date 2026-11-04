@@ -2097,6 +2097,9 @@ router.post('/confirmation-process', async (req, res) => {
             totalActivityAmt += totActivityAmt;
             totalLopDays += lopDays;
 
+            const totCost = salaryExpense + totActivityAmt;
+            const salesExpRatio = totCost > 0 ? Number((secAchieved / totCost).toFixed(2)) : (secAchieved > 0 ? 999 : 0);
+
             return {
                 monthIndex: idx + 1,
                 monthLabel: m.monthLabel || `Month ${idx + 1}`,
@@ -2114,17 +2117,22 @@ router.post('/confirmation-process', async (req, res) => {
                 collAchievementPct,
                 salaryExpense,
                 totActivityAmt,
-                lopDays: m.lopDays !== undefined && m.lopDays !== '' ? lopDays : ''
+                lopDays: m.lopDays !== undefined && m.lopDays !== '' ? lopDays : '',
+                salesExpRatio
             };
         });
 
         const actualCallAvg = actualDrVisits > 0 ? Number((actualCalls / actualDrVisits).toFixed(1)) : 0;
         const actualAchievementPct = actualSecObj > 0 ? Number(((actualSecAchieved / actualSecObj) * 100).toFixed(1)) : 0;
         const actualCollAchievementPct = actualCollObj > 0 ? Number(((actualCollAchieved / actualCollObj) * 100).toFixed(1)) : 0;
+        const actualTotalCost = actualSalaryExpense + actualActivityAmt;
+        const actualSalesExpRatio = actualTotalCost > 0 ? Number((actualSecAchieved / actualTotalCost).toFixed(2)) : 0;
 
         const overallCallAvg = totalDrVisits > 0 ? Number((totalCalls / totalDrVisits).toFixed(1)) : 0;
         const overallAchievementPct = totalSecObj > 0 ? Number(((totalSecAchieved / totalSecObj) * 100).toFixed(1)) : 0;
         const overallCollAchievementPct = totalCollObj > 0 ? Number(((totalCollAchieved / totalCollObj) * 100).toFixed(1)) : 0;
+        const overallTotalCost = totalSalaryExpense + totalActivityAmt;
+        const overallSalesExpRatio = overallTotalCost > 0 ? Number((totalSecAchieved / overallTotalCost).toFixed(2)) : 0;
 
         const summary = {
             actualDaysWorked,
@@ -2141,6 +2149,8 @@ router.post('/confirmation-process', async (req, res) => {
             actualSalaryExpense,
             actualActivityAmt,
             actualLopDays,
+            actualTotalCost,
+            actualSalesExpRatio,
             totalDaysWorked,
             totalDrVisits,
             totalCalls,
@@ -2154,7 +2164,9 @@ router.post('/confirmation-process', async (req, res) => {
             overallCollAchievementPct,
             totalSalaryExpense,
             totalActivityAmt,
-            totalLopDays
+            totalLopDays,
+            overallTotalCost,
+            overallSalesExpRatio
         };
 
         // Sanitize 6 Core Evaluation Pillars (Self Ratings - max whole marks)

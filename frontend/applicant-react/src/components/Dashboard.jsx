@@ -193,15 +193,25 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     }
 
     // If viewing Confirmation Process full screen
+    // Full Screen Confirmation Process View (Edge-to-Edge)
     if (activeTab === 'confirmation-process') {
         return (
-            <div style={styles.dashboardContainer}>
-                <div style={{ marginBottom: '16px' }}>
+            <div style={{ width: '100%', maxWidth: '100%', minHeight: '100vh', padding: '16px 24px', margin: 0, boxSizing: 'border-box', background: '#0b1120' }}>
+                <div style={{ marginBottom: '14px' }}>
                     <button onClick={() => setActiveTab('overview')} style={styles.backButton}>
                         ⬅️ Back to Dashboard Overview
                     </button>
                 </div>
                 <ConfirmationProcessPortal applicant={applicant} onBack={() => setActiveTab('overview')} />
+            </div>
+        );
+    }
+
+    // Full Screen Team Confirmation Reviews (Reporting Manager Portal)
+    if (activeTab === 'team-confirmations') {
+        return (
+            <div style={{ width: '100%', maxWidth: '100%', minHeight: '100vh', padding: '16px 24px', margin: 0, boxSizing: 'border-box', background: '#0b1120' }}>
+                <TeamConfirmationManager applicant={applicant} onBack={() => setActiveTab('overview')} />
             </div>
         );
     }

@@ -455,6 +455,7 @@ export default function TeamConfirmationManager({ applicant, onBack }) {
                                             <th style={{ padding: '10px 8px' }}>Salary &amp; Exp</th>
                                             <th style={{ padding: '10px 8px' }}>Activity</th>
                                             <th style={{ padding: '10px 8px' }}>LOP</th>
+                                            <th style={{ padding: '10px 8px', textAlign: 'center' }}>SALES / EXP</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -481,6 +482,28 @@ export default function TeamConfirmationManager({ applicant, onBack }) {
                                                 <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
                                                 <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
                                                 <td style={{ padding: '10px 8px', color: m.lopDays > 0 ? '#f87171' : '#ffffff' }}>{m.lopDays || 0}</td>
+                                                <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                                    {(() => {
+                                                        const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
+                                                        const ach = Number(m.secAchieved) || 0;
+                                                        const rStr = cost > 0 ? (ach / cost).toFixed(2) + 'x' : (ach > 0 ? '—' : '0.00x');
+                                                        const rNum = cost > 0 ? (ach / cost) : 0;
+                                                        return (
+                                                            <span style={{
+                                                                display: 'inline-block',
+                                                                padding: '3px 6px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.78rem',
+                                                                fontWeight: 900,
+                                                                background: `rgba(${rNum >= 3.5 ? '16, 185, 129' : (rNum >= 2.0 ? '56, 189, 248' : '245, 158, 11')}, 0.2)`,
+                                                                color: rNum >= 3.5 ? '#34d399' : (rNum >= 2.0 ? '#38bdf8' : '#fbbf24'),
+                                                                border: `1px solid ${rNum >= 3.5 ? '#10b981' : (rNum >= 2.0 ? '#0284c7' : '#f59e0b')}`
+                                                            }}>
+                                                                {rStr}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

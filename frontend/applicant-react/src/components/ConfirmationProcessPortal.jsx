@@ -285,7 +285,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 overallCollPct: parseFloat(actCollPct),
                 totalSalaryExpense: actSalaryExp,
                 totalActivityAmt: actActAmt,
-                totalLopDays: actLop
+                totalLopDays: actLop,
+                totalExpense: actSalaryExp + actActAmt,
+                actSalesExpRatioStr: (actSalaryExp + actActAmt) > 0 ? (actSecAch / (actSalaryExp + actActAmt)).toFixed(2) + 'x' : (actSecAch > 0 ? '—' : '0.00x'),
+                actSalesExpRatioNum: (actSalaryExp + actActAmt) > 0 ? (actSecAch / (actSalaryExp + actActAmt)) : 0
             },
             projectionRow: projRow,
             combinedTotals: {
@@ -665,9 +668,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             <col style={{ width: '110px' }} /> {/* Coll Achvd (₹) */}
                             <col style={{ width: '80px' }} />  {/* % Coll Ach */}
                             {/* Cost & Investment Group */}
-                            <col style={{ width: '125px' }} /> {/* Salary & Expense (₹) */}
-                            <col style={{ width: '125px' }} /> {/* Tot Activity Amt (₹) */}
-                            <col style={{ width: '75px' }} />  {/* LOP Days */}
+                            <col style={{ width: '120px' }} /> {/* Salary & Expense (₹) */}
+                            <col style={{ width: '120px' }} /> {/* Tot Activity Amt (₹) */}
+                            <col style={{ width: '70px' }} />  {/* LOP Days */}
+                            <col style={{ width: '105px' }} /> {/* Sales vs Expense Ratio */}
                         </colgroup>
                         <thead>
                             {/* Grouping Header */}
@@ -681,8 +685,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#34d399', background: 'rgba(16, 185, 129, 0.05)' }}>
                                     💰 Collection Recovery
                                 </th>
-                                <th colSpan={3} style={{ padding: '8px 12px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
-                                    🏷️ Cost, Activity Investment &amp; Attendance
+                                <th colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #334155', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                    🏷️ Cost, Activity &amp; Attendance
+                                </th>
+                                <th colSpan={1} style={{ padding: '8px 12px', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.08)', textAlign: 'center' }}>
+                                    📈 ROI RATIO
                                 </th>
                             </tr>
                             {/* Column Header */}
@@ -707,7 +714,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 {/* Cost & Investment Columns */}
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>SALARY &amp; EXP (₹)</th>
                                 <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>TOT ACTIVITY (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#f59e0b' }}>LOP DAYS</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#f59e0b' }}>LOP DAYS</th>
+                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#a78bfa' }}>SALES / EXP</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -978,7 +986,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* LOP Days */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -995,6 +1003,22 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                     fontWeight: row.lopDays > 0 ? '800' : '600'
                                                 }}
                                             />
+                                        </td>
+
+                                        {/* Sales vs Exp Ratio */}
+                                        <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '5px 8px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.82rem',
+                                                fontWeight: 900,
+                                                background: `rgba(${row.salesExpRatioNum >= 3.5 ? '16, 185, 129' : (row.salesExpRatioNum >= 2.0 ? '56, 189, 248' : (row.salesExpRatioNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
+                                                color: row.salesExpRatioNum >= 3.5 ? '#34d399' : (row.salesExpRatioNum >= 2.0 ? '#38bdf8' : (row.salesExpRatioNum >= 1.0 ? '#fbbf24' : '#f87171')),
+                                                border: `1px solid ${row.salesExpRatioNum >= 3.5 ? '#10b981' : (row.salesExpRatioNum >= 2.0 ? '#0284c7' : (row.salesExpRatioNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
+                                            }}>
+                                                {row.salesExpRatioStr}
+                                            </span>
                                         </td>
                                     </tr>
                                 );
@@ -1150,8 +1174,29 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right' }}>
                                         {formatCurrency(projectionRow.totActivityAmt)}
                                     </td>
-                                    <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'center' }}>
+                                    <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'center', borderRight: '1px solid #334155' }}>
                                         {projectionRow.lopDays || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
+                                    </td>
+                                    <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                        {(() => {
+                                            const pExp = (Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0);
+                                            const pSec = Number(projectionRow.secAchieved) || 0;
+                                            const pRatioStr = pExp > 0 ? (pSec / pExp).toFixed(2) + 'x' : (pSec > 0 ? '—' : '0.00x');
+                                            return (
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    padding: '5px 8px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.84rem',
+                                                    fontWeight: 900,
+                                                    background: 'rgba(167, 139, 250, 0.25)',
+                                                    color: '#c4b5fd',
+                                                    border: '1px solid #a78bfa'
+                                                }}>
+                                                    {pRatioStr}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                 </tr>
                             )}
