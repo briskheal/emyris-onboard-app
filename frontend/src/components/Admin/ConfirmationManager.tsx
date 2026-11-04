@@ -826,66 +826,96 @@ export default function ConfirmationManager() {
                   }}
                 />
 
-                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: '14px',
+                  width: '100%',
+                  marginTop: '4px'
+                }}>
                   <button
                     onClick={() => handleUpdateStatus('confirmed')}
                     disabled={actionLoading}
                     style={{
+                      width: '100%',
+                      minHeight: '46px',
                       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                       color: '#ffffff',
                       border: 'none',
-                      padding: '11px 24px',
+                      padding: '11px 16px',
                       borderRadius: '8px',
                       fontWeight: 800,
                       cursor: actionLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '0.88rem',
+                      fontSize: '0.84rem',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
-                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
+                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.15s ease'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; }}
                   >
-                    <CheckCircle2 size={16} /> Confirm Employee &amp; Issue Confirmation Status
+                    <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                    <span>Confirm Employee &amp; Issue Confirmation Status</span>
                   </button>
 
                   <button
                     onClick={() => handleUpdateStatus('Confirmation Extended')}
                     disabled={actionLoading}
                     style={{
+                      width: '100%',
+                      minHeight: '46px',
                       background: '#1e293b',
                       color: '#fbbf24',
                       border: '1px solid #f59e0b',
-                      padding: '11px 20px',
+                      padding: '11px 16px',
                       borderRadius: '8px',
                       fontWeight: 700,
                       cursor: actionLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '0.86rem'
+                      fontSize: '0.84rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.15s ease'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#1e293b'; }}
                   >
-                    ⏳ Extend Probation by 3 Months
+                    <span style={{ fontSize: '0.95rem', flexShrink: 0 }}>⏳</span>
+                    <span>Extend Probation by 3 Months</span>
                   </button>
 
                   <button
                     onClick={handleReleaseProcess}
                     disabled={actionLoading}
                     style={{
+                      width: '100%',
+                      minHeight: '46px',
                       background: '#1e293b',
                       color: '#38bdf8',
                       border: '1px solid #0284c7',
-                      padding: '11px 20px',
+                      padding: '11px 16px',
                       borderRadius: '8px',
                       fontWeight: 700,
                       cursor: actionLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '0.86rem',
+                      fontSize: '0.84rem',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
+                      boxSizing: 'border-box',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.15)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = '#1e293b'; }}
                   >
-                    <RotateCcw size={15} /> Release Saved Process
+                    <RotateCcw size={15} style={{ flexShrink: 0 }} />
+                    <span>Release Saved Process</span>
                   </button>
                 </div>
               </div>
