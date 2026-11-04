@@ -829,7 +829,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             />
                                         </td>
 
-                                        {/* Dr Visite */}
+                                        {/* Dr Visited (Input given by MR/User) */}
                                         <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
@@ -846,41 +846,54 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                             />
                                         </td>
 
-                                        {/* Tot Calls */}
+                                        {/* Chem. Visited (Input given by MR/User) */}
                                         <td style={{ padding: '6px 4px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={row.totCalls}
-                                                onChange={(e) => handleFieldChange(idx, 'totCalls', e.target.value)}
+                                                value={row.chemVisits !== undefined ? row.chemVisits : ''}
+                                                onChange={(e) => handleFieldChange(idx, 'chemVisits', e.target.value)}
                                                 onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
                                                 onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
                                                 style={{
                                                     ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
+                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155',
+                                                    color: '#38bdf8'
                                                 }}
                                             />
                                         </td>
 
-                                        {/* Call Avg */}
+                                        {/* Tot Calls (Auto-calculated: Dr Visited + Chem. Visited) */}
                                         <td style={{ padding: '6px 4px' }}>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                value={row.callAvg}
-                                                onChange={(e) => handleFieldChange(idx, 'callAvg', e.target.value)}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
-                                                placeholder="0.0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    background: '#0c1527',
-                                                    color: '#38bdf8',
-                                                    fontWeight: '700'
-                                                }}
-                                            />
+                                            <div style={{
+                                                ...inputStyle,
+                                                background: '#0c1527',
+                                                color: '#ffffff',
+                                                fontWeight: 800,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: '1.5px solid #334155'
+                                            }}>
+                                                {row.totCalls || (Number(row.drVisits || 0) + Number(row.chemVisits || 0))}
+                                            </div>
+                                        </td>
+
+                                        {/* Call Avg (Auto-calculated: Tot Calls / Days Work) */}
+                                        <td style={{ padding: '6px 4px' }}>
+                                            <div style={{
+                                                ...inputStyle,
+                                                background: '#0c1527',
+                                                color: '#38bdf8',
+                                                fontWeight: 800,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: '1.5px solid #334155'
+                                            }}>
+                                                {row.callAvg || '0.0'}
+                                            </div>
                                         </td>
 
                                         {/* POB */}
@@ -1153,6 +1166,20 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 <td style={{ padding: '14px 4px', color: actualsTotals.totalLopDays > 0 ? '#f87171' : '#ffffff', textAlign: 'center', fontWeight: 800 }}>
                                     {actualsTotals.totalLopDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                 </td>
+                                <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '5px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 900,
+                                        background: `rgba(${actualsTotals.actSalesExpRatioNum >= 3.5 ? '16, 185, 129' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '56, 189, 248' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '245, 158, 11' : '239, 68, 68'))}, 0.2)`,
+                                        color: actualsTotals.actSalesExpRatioNum >= 3.5 ? '#34d399' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '#38bdf8' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '#fbbf24' : '#f87171')),
+                                        border: `1px solid ${actualsTotals.actSalesExpRatioNum >= 3.5 ? '#10b981' : (actualsTotals.actSalesExpRatioNum >= 2.0 ? '#0284c7' : (actualsTotals.actSalesExpRatioNum >= 1.0 ? '#f59e0b' : '#ef4444'))}`
+                                    }}>
+                                        {actualsTotals.actSalesExpRatioStr}
+                                    </span>
+                                </td>
                             </tr>
 
                             {/* Row 2: 6th-Month Forward Commitment Highlight */}
@@ -1166,6 +1193,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.drVisits || 0}
+                                    </td>
+                                    <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                        {projectionRow.chemVisits || 0}
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.totCalls || 0}
@@ -1232,25 +1262,18 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         {projectionRow.lopDays || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                     </td>
                                     <td style={{ padding: '14px 4px', textAlign: 'center' }}>
-                                        {(() => {
-                                            const pExp = (Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0);
-                                            const pSec = Number(projectionRow.secAchieved) || 0;
-                                            const pRatioStr = pExp > 0 ? (pSec / pExp).toFixed(2) + 'x' : (pSec > 0 ? '—' : '0.00x');
-                                            return (
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    padding: '5px 8px',
-                                                    borderRadius: '6px',
-                                                    fontSize: '0.84rem',
-                                                    fontWeight: 900,
-                                                    background: 'rgba(167, 139, 250, 0.25)',
-                                                    color: '#c4b5fd',
-                                                    border: '1px solid #a78bfa'
-                                                }}>
-                                                    {pRatioStr}
-                                                </span>
-                                            );
-                                        })()}
+                                        <span style={{
+                                            display: 'inline-block',
+                                            padding: '5px 8px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.84rem',
+                                            fontWeight: 900,
+                                            background: 'rgba(167, 139, 250, 0.25)',
+                                            color: '#c4b5fd',
+                                            border: '1px solid #a78bfa'
+                                        }}>
+                                            {projectionRow.salesExpRatioStr || '0.00x'}
+                                        </span>
                                     </td>
                                 </tr>
                             )}
