@@ -551,23 +551,23 @@ export default function ConfirmationManager() {
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 9999,
-          padding: '20px'
+          padding: '12px 16px'
         }}>
           <div style={{
             background: '#0f172a',
             border: '1px solid #334155',
-            borderRadius: '18px',
-            width: '100%',
-            maxWidth: '1200px',
-            maxHeight: '92vh',
+            borderRadius: '16px',
+            width: '97vw',
+            maxWidth: '1580px',
+            maxHeight: '96vh',
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85)',
             overflow: 'hidden'
           }}>
             {/* Modal Header */}
             <div style={{
-              padding: '20px 28px',
+              padding: '14px 24px',
               background: '#1e293b',
               borderBottom: '1px solid #334155',
               display: 'flex',
@@ -607,16 +607,16 @@ export default function ConfirmationManager() {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '16px 22px', overflowY: 'auto', flex: 1 }}>
               {feedbackMsg && (
                 <div style={{
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   borderRadius: '10px',
-                  marginBottom: '18px',
+                  marginBottom: '16px',
                   background: feedbackMsg.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                   border: `1px solid ${feedbackMsg.type === 'success' ? '#10b981' : '#ef4444'}`,
                   color: feedbackMsg.type === 'success' ? '#34d399' : '#f87171',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   fontWeight: 600
                 }}>
                   {feedbackMsg.text}
@@ -624,8 +624,8 @@ export default function ConfirmationManager() {
               )}
 
               {/* 5-Month Field Performance Summary Table */}
-              <div style={{ marginBottom: '24px' }}>
-                <h4 style={{ color: '#38bdf8', fontSize: '1rem', fontWeight: 800, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ marginBottom: '22px' }}>
+                <h4 style={{ color: '#38bdf8', fontSize: '0.98rem', fontWeight: 800, margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <TrendingUp size={18} /> Section 1: Field Performance &amp; 6th-Month Commitment
                 </h4>
 
@@ -643,23 +643,23 @@ export default function ConfirmationManager() {
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
                             <thead>
                               <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155' }}>
-                                <th style={{ padding: '8px 10px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Month</th>
-                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
-                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
-                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
-                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
-                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
-                                <th style={{ padding: '8px 6px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
-                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
-                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
-                                <th style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
-                                <th style={{ padding: '8px 6px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
-                                <th style={{ padding: '8px 6px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
-                                <th style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
-                                <th style={{ padding: '8px 6px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
-                                <th style={{ padding: '8px 6px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
-                                <th style={{ padding: '8px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
-                                <th style={{ padding: '8px 6px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
+                                <th style={{ padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Month</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
+                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
+                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
+                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
+                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
+                                <th style={{ padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
+                                <th style={{ padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
+                                <th style={{ padding: '7px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
+                                <th style={{ padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -672,33 +672,33 @@ export default function ConfirmationManager() {
 
                                 return (
                                   <tr key={mIdx} style={{ borderBottom: '1px solid #1e293b', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : (mIdx % 2 === 1 ? '#0d1527' : '#090e1a') }}>
-                                    <td style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '5px 6px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
                                       {m.monthLabel} {m.isProjection ? '(🎯 Plan)' : ''}
                                     </td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{m.daysWorked || 0}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{dr}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{chem}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{totCalls}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{callAvg}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.pob)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secAchieved)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{m.daysWorked || 0}</td>
+                                    <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{dr}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{chem}</td>
+                                    <td style={{ padding: '5px 4px', color: '#ffffff', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{totCalls}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{callAvg}</td>
+                                    <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.pob)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secObj)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secAchieved)}</td>
+                                    <td style={{ padding: '5px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
                                       <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
                                         {m.achievementPct || 0}%
                                       </span>
                                     </td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collAchieved)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '5px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collObj)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#34d399', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collAchieved)}</td>
+                                    <td style={{ padding: '5px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
                                       <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
                                         {m.collAchievementPct || 0}%
                                       </span>
                                     </td>
-                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.salaryExpense)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
-                                    <td style={{ padding: '6px 6px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '5px 4px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.salaryExpense)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.totActivityAmt)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
+                                    <td style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                       {(() => {
                                         const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
                                         const ach = Number(m.secAchieved) || 0;
@@ -789,25 +789,25 @@ export default function ConfirmationManager() {
                                 <tfoot>
                                   {/* Row 1: Actuals Subtotal */}
                                   <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                    <td style={{ padding: '6px 8px', textAlign: 'left', color: '#f8fafc', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#f8fafc', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
                                       {monthsList.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                     </td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDays}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDr.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actChem.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCalls.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCallAvg}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actPob)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecAch)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actSecPct}%</td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollAch)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actCollPct}%</td>
-                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSalExp)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actActAmt)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round(actTotExp)}</td>
-                                    <td style={{ padding: '6px 6px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDays}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCallAvg}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actPob)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecObj)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecAch)}</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actSecPct}%</td>
+                                    <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollObj)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollAch)}</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actCollPct}%</td>
+                                    <td style={{ padding: '6px 4px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSalExp)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actActAmt)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round(actTotExp)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: actIsPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', border: `1px solid ${actIsPlus ? '#10b981' : '#ef4444'}` }}>
                                         <span style={{ fontSize: '0.76rem', fontWeight: 800, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
                                         <span style={{ fontSize: '0.58rem', fontWeight: 800, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>({actRatioStr})</span>
@@ -817,25 +817,25 @@ export default function ConfirmationManager() {
 
                                   {/* Row 2: Grand Total Taking Projection Also */}
                                   <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
-                                    <td style={{ padding: '6px 8px', textAlign: 'left', color: '#c084fc', borderRight: '1px solid #334155' }}>
+                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#c084fc', borderRight: '1px solid #334155' }}>
                                       {monthsList.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                     </td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDays}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDr.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combChem.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combCalls.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combCallAvg}</td>
-                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569' }}>{formatCurrency(combPob)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecAch)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combSecPct}%</td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollObj)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollAch)}</td>
-                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combCollPct}%</td>
-                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSalExp)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b' }}>{formatCurrency(combActAmt)}</td>
-                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{Math.round(combTotExp)}</td>
-                                    <td style={{ padding: '6px 6px', textAlign: 'center' }}>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDays}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combCallAvg}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1.5px solid #475569' }}>{formatCurrency(combPob)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecObj)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecAch)}</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combSecPct}%</td>
+                                    <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollObj)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollAch)}</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combCollPct}%</td>
+                                    <td style={{ padding: '6px 4px', color: '#fef08a', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSalExp)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b' }}>{formatCurrency(combActAmt)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fde047', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{Math.round(combTotExp)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: combIsPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)', border: `1px solid ${combIsPlus ? '#a855f7' : '#ef4444'}` }}>
                                         <span style={{ fontSize: '0.76rem', fontWeight: 900, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
                                         <span style={{ fontSize: '0.58rem', fontWeight: 800, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>({combRatioStr})</span>
@@ -853,54 +853,182 @@ export default function ConfirmationManager() {
               </div>
 
               {/* Section 2: 6 Parameters Dual Evaluation */}
-              <div style={{ marginBottom: '24px' }}>
-                <h4 style={{ color: '#38bdf8', fontSize: '1rem', fontWeight: 800, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Award size={18} /> Section 2: 100-Mark Dual-Evaluation Comparison
-                </h4>
+              <div style={{ marginBottom: '22px' }}>
+                {(() => {
+                  const selfRatings: Record<string, any> = (selectedRecord.confirmationData as any)?.selfRatings || {};
+                  const totalSelfScore: number | null = (selectedRecord.confirmationData as any)?.totalSelfScore !== undefined
+                    ? Number((selectedRecord.confirmationData as any).totalSelfScore)
+                    : (Object.keys(selfRatings).length > 0 ? Object.values(selfRatings).reduce((a: number, b: any) => a + (Number(b) || 0), 0) : null);
 
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {PILLARS_CONFIG.map(pillar => {
-                    const selfVal = selectedRecord.confirmationData?.selfRatings?.[pillar.id];
-                    const mgrVal = selectedRecord.confirmationData?.managerRatings?.[pillar.id];
+                  const mgrRatings: Record<string, any> = (selectedRecord.confirmationData as any)?.managerRatings || {};
+                  const totalMgrScore: number | null = (selectedRecord.confirmationData as any)?.totalManagerScore !== undefined
+                    ? Number((selectedRecord.confirmationData as any).totalManagerScore)
+                    : (Object.keys(mgrRatings).length > 0 ? Object.values(mgrRatings).reduce((a: number, b: any) => a + (Number(b) || 0), 0) : null);
+                  const finalGrade = (selectedRecord.confirmationData as any)?.finalGrade;
 
-                    return (
-                      <div key={pillar.id} style={{
-                        background: '#090e1a',
-                        border: '1px solid #334155',
-                        borderRadius: '10px',
-                        padding: '14px 18px',
+                  return (
+                    <>
+                      <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         flexWrap: 'wrap',
-                        gap: '12px'
+                        gap: '12px',
+                        marginBottom: '12px',
+                        background: '#090e1a',
+                        border: '1px solid #334155',
+                        borderRadius: '12px',
+                        padding: '12px 18px'
                       }}>
-                        <div style={{ flex: '1 1 300px' }}>
-                          <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.9rem' }}>{pillar.title}</div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: '2px' }}>{pillar.desc}</div>
+                        <div>
+                          <h4 style={{ color: '#38bdf8', fontSize: '1.05rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Award size={19} /> Section 2: 100-Mark Dual-Evaluation Comparison
+                          </h4>
+                          <div style={{ color: '#94a3b8', fontSize: '0.76rem', marginTop: '3px' }}>
+                            Evaluation of Employee Self-Rating vs Reporting Manager Assessment across 6 Performance Pillars
+                          </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                          {/* Self Rating */}
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Self Rating</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
-                              {selfVal !== undefined ? selfVal : '-'} <span style={{ fontSize: '0.74rem', color: '#64748b' }}>/{pillar.maxSelf}</span>
+                        {/* Dual Total Score Badges */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                          {/* Total Self Rating Pill */}
+                          <div style={{
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            border: '1.5px solid #0284c7',
+                            borderRadius: '10px',
+                            padding: '6px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              Total Self Score:
+                            </span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#38bdf8' }}>
+                              {totalSelfScore !== null ? totalSelfScore : 0}
+                            </span>
+                            <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
+                          </div>
+
+                          {/* Total Manager Score Pill */}
+                          <div style={{
+                            background: totalMgrScore !== null ? 'rgba(16, 185, 129, 0.12)' : 'rgba(51, 65, 85, 0.25)',
+                            border: `1.5px solid ${totalMgrScore !== null ? '#10b981' : '#475569'}`,
+                            borderRadius: '10px',
+                            padding: '6px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              Total Manager Score:
+                            </span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: totalMgrScore !== null ? '#34d399' : '#94a3b8' }}>
+                              {totalMgrScore !== null ? totalMgrScore : '—'}
+                            </span>
+                            <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
+                            {finalGrade && (
+                              <span style={{
+                                marginLeft: '4px',
+                                background: '#065f46',
+                                color: '#a7f3d0',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.72rem',
+                                fontWeight: 900
+                              }}>
+                                Grade {finalGrade}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {PILLARS_CONFIG.map(pillar => {
+                          const selfVal = selectedRecord.confirmationData?.selfRatings?.[pillar.id];
+                          const mgrVal = selectedRecord.confirmationData?.managerRatings?.[pillar.id];
+
+                          return (
+                            <div key={pillar.id} style={{
+                              background: '#090e1a',
+                              border: '1px solid #334155',
+                              borderRadius: '10px',
+                              padding: '12px 18px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: '12px'
+                            }}>
+                              <div style={{ flex: '1 1 300px' }}>
+                                <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.88rem' }}>{pillar.title}</div>
+                                <div style={{ color: '#94a3b8', fontSize: '0.76rem', marginTop: '2px' }}>{pillar.desc}</div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                                {/* Self Rating */}
+                                <div style={{ textAlign: 'center', minWidth: '85px' }}>
+                                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Self Rating</div>
+                                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
+                                    {selfVal !== undefined ? selfVal : '-'} <span style={{ fontSize: '0.72rem', color: '#64748b' }}>/{pillar.maxSelf}</span>
+                                  </div>
+                                </div>
+
+                                {/* Manager Rating */}
+                                <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '20px', minWidth: '95px' }}>
+                                  <div style={{ fontSize: '0.7rem', color: '#34d399', textTransform: 'uppercase', fontWeight: 700 }}>Manager Score</div>
+                                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: mgrVal !== undefined ? '#34d399' : '#64748b', marginTop: '2px' }}>
+                                    {mgrVal !== undefined ? mgrVal : '-'} <span style={{ fontSize: '0.72rem', color: '#64748b' }}>/{pillar.maxMgr}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Overall Cumulative Summary Row */}
+                        <div style={{
+                          background: 'linear-gradient(90deg, #090e1a 0%, #1e1b4b 100%)',
+                          border: '1.5px solid #6366f1',
+                          borderRadius: '10px',
+                          padding: '14px 20px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '14px',
+                          marginTop: '4px'
+                        }}>
+                          <div>
+                            <div style={{ color: '#ffffff', fontWeight: 900, fontSize: '0.94rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>🎯</span> Overall 100-Mark Dual Evaluation Cumulative Score
+                            </div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '2px' }}>
+                              Total cumulative score out of 100 benchmark points (Self vs Manager)
                             </div>
                           </div>
 
-                          {/* Manager Rating */}
-                          <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '20px' }}>
-                            <div style={{ fontSize: '0.72rem', color: '#34d399', textTransform: 'uppercase', fontWeight: 700 }}>Manager Score</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>
-                              {mgrVal !== undefined ? mgrVal : '-'} <span style={{ fontSize: '0.74rem', color: '#64748b' }}>/{pillar.maxMgr}</span>
+                          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                            <div style={{ textAlign: 'center', minWidth: '85px' }}>
+                              <div style={{ fontSize: '0.72rem', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 800 }}>Total Self</div>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>
+                                {totalSelfScore !== null ? totalSelfScore : 0} <span style={{ fontSize: '0.76rem', color: '#64748b' }}>/100</span>
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'center', borderLeft: '1px solid #4338ca', paddingLeft: '20px', minWidth: '95px' }}>
+                              <div style={{ fontSize: '0.72rem', color: '#34d399', textTransform: 'uppercase', fontWeight: 800 }}>Total Manager</div>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: totalMgrScore !== null ? '#34d399' : '#64748b', marginTop: '2px' }}>
+                                {totalMgrScore !== null ? totalMgrScore : '-'} <span style={{ fontSize: '0.76rem', color: '#64748b' }}>/100</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Manager Recommendation & Remarks */}
