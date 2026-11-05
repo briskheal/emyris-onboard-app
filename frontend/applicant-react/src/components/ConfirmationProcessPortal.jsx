@@ -1427,7 +1427,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                             {/* Row 1: Actuals Total / Average */}
                             <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                <td style={{ padding: '14px 10px', color: '#f8fafc', fontSize: '0.84rem' }}>
+                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#090e1a', borderRight: '1px solid #334155', padding: '14px 10px', color: '#f8fafc', fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
                                     {monthsData.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
@@ -1538,7 +1538,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                             {/* Row 2: Grand Total Taking Projection Also (6-Mo. or 9-Mo. Period Calculation) */}
                             <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2.5px solid #a855f7', fontWeight: 900 }}>
-                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#1e1b4b', borderRight: '1px solid #4338ca', padding: '14px 10px', color: '#c084fc', fontSize: '0.86rem' }}>
+                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#1e1b4b', borderRight: '1px solid #4338ca', padding: '14px 10px', color: '#c084fc', fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
                                     {monthsData.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
