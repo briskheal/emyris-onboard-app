@@ -550,7 +550,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 next.select?.();
                 next.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
             }
-        } else if (e.key === 'ArrowRight' && (e.target.selectionEnd === e.target.value.length || e.target.selectionStart === e.target.selectionEnd)) {
+        } else if (e.key === 'ArrowRight') {
             if (curColIdx >= 0 && curColIdx < EDITABLE_COLS.length - 1) {
                 e.preventDefault();
                 const nextCol = EDITABLE_COLS[curColIdx + 1];
@@ -560,8 +560,16 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     nextInput.select?.();
                     nextInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
                 }
+            } else if (curColIdx === EDITABLE_COLS.length - 1 && rowIdx < monthsData.length - 1) {
+                e.preventDefault();
+                const nextRowInput = document.querySelector(`input[data-row="${rowIdx + 1}"][data-col="${EDITABLE_COLS[0]}"]`);
+                if (nextRowInput) {
+                    nextRowInput.focus();
+                    nextRowInput.select?.();
+                    nextRowInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                }
             }
-        } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+        } else if (e.key === 'ArrowLeft') {
             if (curColIdx > 0) {
                 e.preventDefault();
                 const prevCol = EDITABLE_COLS[curColIdx - 1];
@@ -570,6 +578,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     prevInput.focus();
                     prevInput.select?.();
                     prevInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                }
+            } else if (curColIdx === 0 && rowIdx > 0) {
+                e.preventDefault();
+                const prevRowInput = document.querySelector(`input[data-row="${rowIdx - 1}"][data-col="${EDITABLE_COLS[EDITABLE_COLS.length - 1]}"]`);
+                if (prevRowInput) {
+                    prevRowInput.focus();
+                    prevRowInput.select?.();
+                    prevRowInput.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
                 }
             }
         }
