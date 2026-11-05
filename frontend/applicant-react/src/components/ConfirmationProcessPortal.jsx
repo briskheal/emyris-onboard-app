@@ -969,49 +969,165 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             <col style={{ width: '115px' }} /> {/* Sales vs Expense Ratio */}
                         </colgroup>
                         <thead>
-                            {/* Grouping Header */}
-                            <tr style={{ position: 'sticky', top: 0, zIndex: 25, background: '#0b1329', color: '#94a3b8', borderBottom: '1px solid #1e293b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                <th colSpan={7} style={{ position: 'sticky', top: 0, left: 0, zIndex: 35, background: '#0b1329', padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155' }}>
-                                    Field Activity &amp; Coverage
+                            {/* Grouping Header (Row 1) */}
+                            <tr style={{ height: '32px' }}>
+                                <th style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    left: 0,
+                                    zIndex: 40,
+                                    background: '#0b1329',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderRight: '1px solid #334155',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#94a3b8',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'left'
+                                }}>
+                                    MONTH
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#38bdf8', background: '#0b162c' }}>
-                                    💼 Secondary Sales
+                                <th colSpan={6} style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 30,
+                                    background: '#0b1329',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderRight: '1.5px solid #475569',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#94a3b8',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'center'
+                                }}>
+                                    FIELD ACTIVITY &amp; COVERAGE
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#34d399', background: '#081c1c' }}>
-                                    💰 Collection Recovery
+                                <th colSpan={3} style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 30,
+                                    background: '#0b162c',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderRight: '1.5px solid #475569',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#38bdf8',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'center'
+                                }}>
+                                    💼 SECONDARY SALES
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#f59e0b', background: '#1c170d' }}>
-                                    🏷️ Cost &amp; Total Field Investment
+                                <th colSpan={3} style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 30,
+                                    background: '#081c1c',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderRight: '1.5px solid #475569',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#34d399',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'center'
+                                }}>
+                                    💰 COLLECTION RECOVERY
                                 </th>
-                                <th colSpan={1} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderBottom: '1px solid #334155', color: '#a78bfa', background: '#171128', textAlign: 'center' }}>
+                                <th colSpan={3} style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 30,
+                                    background: '#1c170d',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderRight: '1.5px solid #475569',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#f59e0b',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'center'
+                                }}>
+                                    🏷️ COST &amp; TOTAL FIELD INVESTMENT
+                                </th>
+                                <th colSpan={1} style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 30,
+                                    background: '#171128',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    borderBottom: '1px solid #1e293b',
+                                    boxSizing: 'border-box',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: '#a78bfa',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    textAlign: 'center'
+                                }}>
                                     📈 6x ROI &amp; SURPLUS / DEFICIT
                                 </th>
                             </tr>
-                            {/* Column Header */}
-                            <tr style={{ position: 'sticky', top: '30px', zIndex: 24, background: '#0f172a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1.5px solid #334155' }}>
-                                <th style={{ position: 'sticky', top: '30px', left: 0, zIndex: 35, background: '#0f172a', padding: '8px 10px', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.5px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>MONTH</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
+                            {/* Column Header (Row 2) */}
+                            <tr style={{ height: '32px' }}>
+                                <th style={{
+                                    position: 'sticky',
+                                    top: '32px',
+                                    left: 0,
+                                    zIndex: 39,
+                                    background: '#0f172a',
+                                    height: '32px',
+                                    padding: '6px 8px',
+                                    fontWeight: 700,
+                                    fontSize: '0.72rem',
+                                    letterSpacing: '0.5px',
+                                    borderRight: '1px solid #334155',
+                                    borderBottom: '2px solid #334155',
+                                    boxSizing: 'border-box',
+                                    color: '#94a3b8'
+                                }}>
+                                    CALENDAR
+                                </th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Days</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Dr Vis</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>Chem Vis</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Tot Calls</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>Call Avg</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>POB (₹)</th>
                                 
                                 {/* Secondary Columns */}
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SEC OBJ</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SEC ACH</th>
-                                <th style={{ padding: '8px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#38bdf8' }}>% SEC</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SEC OBJ</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SEC ACH</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#38bdf8' }}>% SEC</th>
 
                                 {/* Collection Columns */}
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>COLL OBJ</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>COLL ACH</th>
-                                <th style={{ padding: '8px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#34d399' }}>% COLL</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>COLL OBJ</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>COLL ACH</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#34d399' }}>% COLL</th>
 
                                 {/* Cost & Investment Columns */}
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SALARY &amp; EXP</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>TOT ACTIVITY</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#fde047' }}>TOT EXPENSE</th>
-                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x EXP &amp; ROI</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SALARY &amp; EXP</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>TOT ACTIVITY</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#fde047' }}>TOT EXPENSE</th>
+                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#171128', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', color: '#a78bfa', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>6x EXP &amp; ROI</th>
                             </tr>
                         </thead>
                         <tbody>
