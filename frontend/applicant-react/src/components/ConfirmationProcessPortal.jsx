@@ -844,40 +844,6 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
                         </div>
                     )}
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                            type="button"
-                            onClick={() => scrollTable('left')}
-                            style={{
-                                background: '#1e293b',
-                                color: '#cbd5e1',
-                                border: '1px solid #334155',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            ◀ Scroll Left
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => scrollTable('right')}
-                            style={{
-                                background: '#1e293b',
-                                color: '#cbd5e1',
-                                border: '1px solid #334155',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Scroll Right ▶
-                        </button>
-                    </div>
                 </div>
 
                 <div
