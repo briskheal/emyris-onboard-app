@@ -181,6 +181,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     const isProjection = cm.isProjection !== undefined ? cm.isProjection : (idx === calcMonths.length - 1);
                     const daysWorked = saved.daysWorked !== undefined ? saved.daysWorked : '';
                     const drVisits = saved.drVisits !== undefined ? saved.drVisits : '';
+                    const chemVisits = saved.chemVisits !== undefined ? saved.chemVisits : '';
                     const totCalls = saved.totCalls !== undefined ? saved.totCalls : '';
                     const callAvg = saved.callAvg !== undefined ? saved.callAvg : '';
                     const pob = saved.pob !== undefined ? saved.pob : '';
@@ -198,6 +199,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         isProjection,
                         daysWorked,
                         drVisits,
+                        chemVisits,
                         totCalls,
                         callAvg,
                         pob,
@@ -228,14 +230,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             const updated = [...prev];
             const row = { ...updated[index], [field]: value };
 
-            const days = parseFloat(field === 'daysWorked' ? value : row.daysWorked) || 0;
-            const dr = parseFloat(field === 'drVisits' ? value : row.drVisits) || 0;
-            const chem = parseFloat(field === 'chemVisits' ? value : row.chemVisits) || 0;
+            const days = parseFloat(row.daysWorked) || 0;
+            const dr = parseFloat(row.drVisits) || 0;
+            const chem = parseFloat(row.chemVisits) || 0;
 
             // Tot Calls is sum of dr + chem
             const totCalls = dr + chem;
-            row.drVisits = dr;
-            row.chemVisits = chem;
             row.totCalls = totCalls;
 
             // Call avg is total calls / days work

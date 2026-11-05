@@ -2191,23 +2191,25 @@ router.post('/confirmation-process', async (req, res) => {
         };
         const totalSelfScore = Object.values(sanitizedSelfRatings).reduce((a, b) => a + b, 0);
 
-        const currentStatus = applicant.confirmationData?.status;
+        const existingConf = applicant.confirmationData || {};
+        const currentStatus = existingConf.status;
         const newStatus = isSubmit ? 'submitted' : (currentStatus === 'submitted' ? 'submitted' : 'draft');
 
         const confirmationPayload = {
+            ...existingConf,
             months: sanitizedMonths,
             summary,
             selfRatings: sanitizedSelfRatings,
             totalSelfScore,
-            managerRatings: applicant.confirmationData?.managerRatings || null,
-            totalManagerScore: applicant.confirmationData?.totalManagerScore || null,
-            finalGrade: applicant.confirmationData?.finalGrade || null,
-            managerRecommendation: applicant.confirmationData?.managerRecommendation || '',
-            managerRemarks: applicant.confirmationData?.managerRemarks || '',
+            managerRatings: existingConf.managerRatings || null,
+            totalManagerScore: existingConf.totalManagerScore || null,
+            finalGrade: existingConf.finalGrade || null,
+            managerRecommendation: existingConf.managerRecommendation || '',
+            managerRemarks: existingConf.managerRemarks || '',
             status: newStatus,
             remarks: remarks || '',
             lastUpdated: new Date(),
-            submittedAt: isSubmit ? new Date() : (applicant.confirmationData?.submittedAt || null)
+            submittedAt: isSubmit ? new Date() : (existingConf.submittedAt || null)
         };
 
         await Applicant.findOneAndUpdate(
