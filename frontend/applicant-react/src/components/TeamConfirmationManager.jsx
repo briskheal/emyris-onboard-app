@@ -29,7 +29,7 @@ const MANAGER_PILLARS = [
     {
         id: 'sales',
         title: '1. Sales Performance',
-        weight: 45,
+        weight: 40,
         desc: 'Achievement vs Target (Primary & Secondary sales), Growth over predecessor/prior period, Focus/new-launch brands, New prescribers generated, Stockist/chemist stocking of key brands, Expiry & breakage control.'
     },
     {
@@ -53,7 +53,7 @@ const MANAGER_PILLARS = [
     {
         id: 'discipline',
         title: '5. Reporting & Discipline',
-        weight: 5,
+        weight: 10,
         desc: 'Timely and genuine DCR entries in CRM/SFA, accuracy of expense claims, compliance with sample & gift distribution norms & UCPMP code, meeting punctuality.'
     },
     {

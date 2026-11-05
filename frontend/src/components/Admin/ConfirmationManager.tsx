@@ -31,11 +31,11 @@ const formatCurrency = (val: any) => {
 };
 
 const PILLARS_CONFIG = [
-  { id: 'sales', title: '1. Sales Performance', maxMgr: 45, maxSelf: 40, desc: 'Achievement vs Target (Primary & Secondary), Focus Brands, New Prescribers, Stockist Coverage, Expiry Control' },
+  { id: 'sales', title: '1. Sales Performance', maxMgr: 40, maxSelf: 40, desc: 'Achievement vs Target (Primary & Secondary), Focus Brands, New Prescribers, Stockist Coverage, Expiry Control' },
   { id: 'fieldWork', title: '2. Field Work & Coverage', maxMgr: 20, maxSelf: 20, desc: 'Daily Doctor Calls (10-12), Chemist Calls (4-6), MSL Coverage %, Call Frequency, Tour Plan Adherence, POB' },
   { id: 'quality', title: '3. Quality of Work', maxMgr: 15, maxSelf: 15, desc: 'RCPA Execution & Accuracy, Detailing & Visual Aid Skills, Doctor Relationship & Conversion, Speciality Targeting' },
   { id: 'knowledge', title: '4. Knowledge & Training', maxMgr: 10, maxSelf: 10, desc: 'Scores in Product, Competitor & Disease Tests, Induction Module Completion, Anatomy/Physiology grasp' },
-  { id: 'discipline', title: '5. Reporting & Discipline', maxMgr: 5, maxSelf: 10, desc: 'Timely & Genuine DCR Entries in SFA, Accurate Expense Claims, UCPMP Compliance, Meeting Punctuality' },
+  { id: 'discipline', title: '5. Reporting & Discipline', maxMgr: 10, maxSelf: 10, desc: 'Timely & Genuine DCR Entries in SFA, Accurate Expense Claims, UCPMP Compliance, Meeting Punctuality' },
   { id: 'attitude', title: '6. Attitude & Behaviour', maxMgr: 5, maxSelf: 5, desc: 'Initiative, Coachability & Response to Feedback, Integrity (No Fake Calls), Grooming & Stockist Relationship' }
 ];
 
@@ -551,15 +551,15 @@ export default function ConfirmationManager() {
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 9999,
-          padding: '12px 16px'
+          padding: '8px'
         }}>
           <div style={{
             background: '#0f172a',
             border: '1px solid #334155',
             borderRadius: '16px',
-            width: '97vw',
-            maxWidth: '1580px',
-            maxHeight: '96vh',
+            width: '98vw',
+            maxWidth: '1750px',
+            maxHeight: '97vh',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85)',
