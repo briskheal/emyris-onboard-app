@@ -1984,9 +1984,9 @@ router.get('/confirmation-process', async (req, res) => {
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         const existingData = applicant.confirmationData || null;
-        const totalMonthsNeeded = (existingData?.months && existingData.months.length > 6)
+        const totalMonthsNeeded = (existingData?.isExtended === true && Array.isArray(existingData?.months) && existingData.months.length > 6)
             ? existingData.months.length
-            : ((existingData?.isExtended || applicant.status === 'Confirmation Extended') ? 9 : 6);
+            : 6;
 
         // Consecutive months starting from ADOJ:
         // Months 1 to (N-1): Completed Field Performance (Actuals)
