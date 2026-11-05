@@ -941,77 +941,77 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     <table style={{
                         width: '100%',
                         tableLayout: 'fixed',
-                        borderCollapse: 'separate',
-                        borderSpacing: 0,
-                        fontSize: '0.88rem',
-                        minWidth: '1500px'
+                        borderCollapse: 'collapse',
+                        fontSize: '0.82rem',
+                        minWidth: '1380px',
+                        background: '#090e1a'
                     }}>
                         <colgroup>
-                            <col style={{ width: '150px' }} /> {/* Month */}
-                            <col style={{ width: '75px' }} />  {/* Days Work */}
-                            <col style={{ width: '75px' }} />  {/* Dr Visited */}
-                            <col style={{ width: '80px' }} />  {/* Chem. Visited */}
-                            <col style={{ width: '75px' }} />  {/* Tot Calls */}
-                            <col style={{ width: '75px' }} />  {/* Call Avg */}
-                            <col style={{ width: '90px' }} />  {/* POB (₹) */}
+                            <col style={{ width: '130px' }} /> {/* Month */}
+                            <col style={{ width: '60px' }} />  {/* Days Work */}
+                            <col style={{ width: '65px' }} />  {/* Dr Visited */}
+                            <col style={{ width: '65px' }} />  {/* Chem. Visited */}
+                            <col style={{ width: '65px' }} />  {/* Tot Calls */}
+                            <col style={{ width: '60px' }} />  {/* Call Avg */}
+                            <col style={{ width: '80px' }} />  {/* POB (₹) */}
                             {/* Secondary Sales Group */}
-                            <col style={{ width: '110px' }} /> {/* Sec Obj (₹) */}
-                            <col style={{ width: '110px' }} /> {/* Sec Achivd (₹) */}
-                            <col style={{ width: '80px' }} />  {/* % Sec Ach */}
+                            <col style={{ width: '90px' }} />  {/* Sec Obj (₹) */}
+                            <col style={{ width: '90px' }} />  {/* Sec Achivd (₹) */}
+                            <col style={{ width: '65px' }} />  {/* % Sec Ach */}
                             {/* Collection / Cash Flow Group */}
-                            <col style={{ width: '110px' }} /> {/* Coll Obj (₹) */}
-                            <col style={{ width: '110px' }} /> {/* Coll Achvd (₹) */}
-                            <col style={{ width: '80px' }} />  {/* % Coll Ach */}
+                            <col style={{ width: '90px' }} />  {/* Coll Obj (₹) */}
+                            <col style={{ width: '90px' }} />  {/* Coll Achvd (₹) */}
+                            <col style={{ width: '65px' }} />  {/* % Coll Ach */}
                             {/* Cost & Investment Group */}
-                            <col style={{ width: '120px' }} /> {/* Salary & Expense (₹) */}
-                            <col style={{ width: '120px' }} /> {/* Tot Activity Amt (₹) */}
-                            <col style={{ width: '70px' }} />  {/* LOP Days */}
-                            <col style={{ width: '105px' }} /> {/* Sales vs Expense Ratio */}
+                            <col style={{ width: '95px' }} />  {/* Salary & Expense (₹) */}
+                            <col style={{ width: '95px' }} />  {/* Tot Activity Amt (₹) */}
+                            <col style={{ width: '95px' }} />  {/* Tot Expense */}
+                            <col style={{ width: '115px' }} /> {/* Sales vs Expense Ratio */}
                         </colgroup>
                         <thead>
                             {/* Grouping Header */}
-                            <tr style={{ position: 'sticky', top: 0, zIndex: 25, background: '#090e1a', color: '#94a3b8', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                <th colSpan={7} style={{ position: 'sticky', top: 0, left: 0, zIndex: 35, background: '#090e1a', padding: '8px 12px', borderRight: '1px solid #334155' }}>
+                            <tr style={{ position: 'sticky', top: 0, zIndex: 25, background: '#0b1329', color: '#94a3b8', borderBottom: '1px solid #1e293b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th colSpan={7} style={{ position: 'sticky', top: 0, left: 0, zIndex: 35, background: '#0b1329', padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155' }}>
                                     Field Activity &amp; Coverage
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#38bdf8', background: '#0b162c' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#38bdf8', background: '#0b162c' }}>
                                     💼 Secondary Sales
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#34d399', background: '#081c1c' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#34d399', background: '#081c1c' }}>
                                     💰 Collection Recovery
                                 </th>
-                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', borderRight: '1px solid #334155', color: '#f59e0b', background: '#1c170d' }}>
+                                <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', color: '#f59e0b', background: '#1c170d' }}>
                                     🏷️ Cost &amp; Total Field Investment
                                 </th>
-                                <th colSpan={1} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '8px 12px', color: '#a78bfa', background: '#171128', textAlign: 'center' }}>
+                                <th colSpan={1} style={{ position: 'sticky', top: 0, zIndex: 25, padding: '6px 8px', borderBottom: '1px solid #334155', color: '#a78bfa', background: '#171128', textAlign: 'center' }}>
                                     📈 6x ROI &amp; SURPLUS / DEFICIT
                                 </th>
                             </tr>
                             {/* Column Header */}
-                            <tr style={{ position: 'sticky', top: '34px', zIndex: 24, background: '#090e1a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                                <th style={{ position: 'sticky', top: '34px', left: 0, zIndex: 35, background: '#090e1a', padding: '12px 12px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>MONTH</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Days Work</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Dr Visited</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>Chem. Visited</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Tot Calls</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px' }}>Call Avg</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', borderRight: '1px solid #334155' }}>POB (₹)</th>
+                            <tr style={{ position: 'sticky', top: '30px', zIndex: 24, background: '#0f172a', color: '#cbd5e1', textAlign: 'left', borderBottom: '1.5px solid #334155' }}>
+                                <th style={{ position: 'sticky', top: '30px', left: 0, zIndex: 35, background: '#0f172a', padding: '8px 10px', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.5px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>MONTH</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
                                 
                                 {/* Secondary Columns */}
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC OBJ (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#38bdf8' }}>SEC ACH (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#38bdf8' }}>% SEC</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SEC OBJ</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SEC ACH</th>
+                                <th style={{ padding: '8px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#38bdf8' }}>% SEC</th>
 
                                 {/* Collection Columns */}
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL OBJ (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#34d399' }}>COLL ACH (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', borderRight: '1px solid #334155', color: '#34d399' }}>% COLL</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>COLL OBJ</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>COLL ACH</th>
+                                <th style={{ padding: '8px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#34d399' }}>% COLL</th>
 
                                 {/* Cost & Investment Columns */}
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>SALARY &amp; EXP (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', color: '#f59e0b' }}>TOT ACTIVITY (₹)</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'right', borderRight: '1px solid #334155', color: '#fde047' }}>TOT EXPENSE</th>
-                                <th style={{ padding: '12px 4px', fontWeight: 700, fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center', color: '#a78bfa' }}>6x EXP VARIANCE (₹) &amp; ROI</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>SALARY &amp; EXP</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>TOT ACTIVITY</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', color: '#fde047' }}>TOT EXPENSE</th>
+                                <th style={{ padding: '8px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x EXP &amp; ROI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1022,34 +1022,33 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     <tr
                                         key={row.monthIndex || idx}
                                         style={{
-                                            borderBottom: '1px solid rgba(51, 65, 85, 0.6)',
+                                            borderBottom: '1px solid #1e293b',
                                             background: isProj
                                                 ? 'rgba(14, 165, 233, 0.08)'
-                                                : (idx % 2 === 1 ? 'rgba(15, 23, 42, 0.45)' : 'transparent'),
-                                            borderLeft: isProj ? '3px solid #38bdf8' : 'none'
+                                                : (idx % 2 === 1 ? '#0d1527' : '#090e1a')
                                         }}
                                     >
                                         {/* Month Header / Type Label */}
-                                        <td style={{ position: 'sticky', left: 0, zIndex: 12, background: isProj ? '#0b162c' : (idx % 2 === 1 ? '#0d1527' : '#090e1a'), padding: '12px 14px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', borderRight: '1px solid #1e293b' }}>
-                                            <div style={{ fontSize: '0.88rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
+                                        <td style={{ position: 'sticky', left: 0, zIndex: 12, background: isProj ? '#0b162c' : (idx % 2 === 1 ? '#0d1527' : '#090e1a'), padding: '6px 8px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                            <div style={{ fontSize: '0.8rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
                                                 {row.monthLabel}
                                             </div>
-                                            <div style={{ marginTop: '3px' }}>
+                                            <div style={{ marginTop: '2px' }}>
                                                 {isProj ? (
                                                     <span style={{
                                                         background: 'rgba(56, 189, 248, 0.2)',
                                                         color: '#38bdf8',
                                                         border: '1px solid #0284c7',
-                                                        padding: '2px 6px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.64rem',
+                                                        padding: '1px 5px',
+                                                        borderRadius: '3px',
+                                                        fontSize: '0.62rem',
                                                         fontWeight: 800,
                                                         letterSpacing: '0.3px'
                                                     }}>
-                                                        ⭐ {idx + 1 === 6 ? '6TH MO. PROJ' : (idx + 1 === 9 ? '9TH MO. PROJ' : `MO. ${idx + 1} PROJ`)}
+                                                        ⭐ {idx + 1 === 6 ? '6TH MO. PLAN' : (idx + 1 === 9 ? '9TH MO. PLAN' : `MO. ${idx + 1} PLAN`)}
                                                     </span>
                                                 ) : (
-                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                                                    <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>
                                                         Month {idx + 1} (Actual)
                                                     </span>
                                                 )}
@@ -1057,7 +1056,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Days Worked */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -1065,266 +1064,195 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="daysWorked" readOnly={isReadOnly} value={row.daysWorked}
                                                 onChange={(e) => handleFieldChange(idx, 'daysWorked', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'daysWorked')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
-                                                }}
+                                                style={gridInputStyle}
                                             />
                                         </td>
 
                                         {/* Dr Visited (Input given by MR/User) */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="drVisits" readOnly={isReadOnly} value={row.drVisits}
                                                 onChange={(e) => handleFieldChange(idx, 'drVisits', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'drVisits')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
-                                                }}
+                                                style={gridInputStyle}
                                             />
                                         </td>
 
                                         {/* Chem. Visited (Input given by MR/User) */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="chemVisits" readOnly={isReadOnly} value={row.chemVisits !== undefined ? row.chemVisits : ''}
                                                 onChange={(e) => handleFieldChange(idx, 'chemVisits', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'chemVisits')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155',
-                                                    color: '#38bdf8'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#38bdf8' }}
                                             />
                                         </td>
 
                                         {/* Tot Calls (Auto-calculated: Dr Visited + Chem. Visited) */}
-                                        <td style={{ padding: '6px 4px' }}>
-                                            <div style={{
-                                                ...inputStyle,
-                                                background: '#0c1527',
-                                                color: '#ffffff',
-                                                fontWeight: 800,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                border: '1.5px solid #334155'
-                                            }}>
-                                                {row.totCalls || (Number(row.drVisits || 0) + Number(row.chemVisits || 0))}
-                                            </div>
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
+                                            {row.totCalls || (Number(row.drVisits || 0) + Number(row.chemVisits || 0))}
                                         </td>
 
                                         {/* Call Avg (Auto-calculated: Tot Calls / Days Work) */}
-                                        <td style={{ padding: '6px 4px' }}>
-                                            <div style={{
-                                                ...inputStyle,
-                                                background: '#0c1527',
-                                                color: '#38bdf8',
-                                                fontWeight: 800,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                border: '1.5px solid #334155'
-                                            }}>
-                                                {row.callAvg || '0.0'}
-                                            </div>
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 700, color: '#38bdf8', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
+                                            {row.callAvg || '0.0'}
                                         </td>
 
                                         {/* POB */}
-                                        <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
+                                        <td style={{ padding: 0, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="pob" readOnly={isReadOnly} value={row.pob}
                                                 onChange={(e) => { handleFieldChange(idx, 'pob', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'pob')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
-                                                }}
+                                                style={gridInputStyle}
                                             />
                                         </td>
 
                                         {/* Sec Obj */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="secObj" readOnly={isReadOnly} value={row.secObj}
                                                 onChange={(e) => { handleFieldChange(idx, 'secObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secObj')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#38bdf8' }}
                                             />
                                         </td>
 
                                         {/* Sec Achivd */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="secAchieved" readOnly={isReadOnly} value={row.secAchieved}
                                                 onChange={(e) => { handleFieldChange(idx, 'secAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secAchieved')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Commitment" : "0"}
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #0284c7' : '1.5px solid #334155'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#38bdf8', fontWeight: 700 }}
                                             />
                                         </td>
 
                                         {/* % Sec Ach */}
-                                        <td style={{ padding: '8px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                        <td style={{ padding: '0 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
                                             <span style={{
                                                 display: 'inline-block',
-                                                padding: '4px 6px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.8rem',
+                                                padding: '2px 4px',
+                                                borderRadius: '3px',
+                                                fontSize: '0.74rem',
                                                 fontWeight: 800,
                                                 background: `rgba(${row.computedSecPct >= 100 ? '16, 185, 129' : (row.computedSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
-                                                color: getPctColor(row.computedSecPct),
-                                                border: `1px solid ${getPctColor(row.computedSecPct)}`
+                                                color: getPctColor(row.computedSecPct)
                                             }}>
                                                 {row.computedSecPct}%
                                             </span>
                                         </td>
 
                                         {/* Coll Obj */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="collObj" readOnly={isReadOnly} value={row.collObj}
                                                 onChange={(e) => { handleFieldChange(idx, 'collObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collObj')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #059669' : '1.5px solid #334155'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#34d399' }}
                                             />
                                         </td>
 
                                         {/* Coll Achvd */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="collAchieved" readOnly={isReadOnly} value={row.collAchieved}
                                                 onChange={(e) => { handleFieldChange(idx, 'collAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collAchieved')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Recovery" : "0"}
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: isProj ? '1.5px solid #059669' : '1.5px solid #334155'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#34d399', fontWeight: 700 }}
                                             />
                                         </td>
 
                                         {/* % Coll Ach */}
-                                        <td style={{ padding: '8px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                        <td style={{ padding: '0 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
                                             <span style={{
                                                 display: 'inline-block',
-                                                padding: '4px 6px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.8rem',
+                                                padding: '2px 4px',
+                                                borderRadius: '3px',
+                                                fontSize: '0.74rem',
                                                 fontWeight: 800,
                                                 background: `rgba(${row.computedCollPct >= 100 ? '16, 185, 129' : (row.computedCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
-                                                color: getPctColor(row.computedCollPct),
-                                                border: `1px solid ${getPctColor(row.computedCollPct)}`
+                                                color: getPctColor(row.computedCollPct)
                                             }}>
                                                 {row.computedCollPct}%
                                             </span>
                                         </td>
 
                                         {/* Salary & Expense */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="salaryExpense" readOnly={isReadOnly} value={row.salaryExpense}
                                                 onChange={(e) => { handleFieldChange(idx, 'salaryExpense', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'salaryExpense')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: '1.5px solid #334155',
-                                                    color: '#fef08a'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#fef08a' }}
                                             />
                                         </td>
 
                                         {/* Tot Activity Amt */}
-                                        <td style={{ padding: '6px 4px' }}>
+                                        <td style={{ padding: 0, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="totActivityAmt" readOnly={isReadOnly} value={row.totActivityAmt}
                                                 onChange={(e) => { handleFieldChange(idx, 'totActivityAmt', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'totActivityAmt')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
+                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
-                                                style={{
-                                                    ...inputStyle,
-                                                    border: '1.5px solid #334155',
-                                                    color: '#fed7aa'
-                                                }}
+                                                style={{ ...gridInputStyle, color: '#fed7aa' }}
                                             />
                                         </td>
 
-                                        {/* TOT EXPENSE (Auto-calculated: Salary & Exp + Tot Activity) */}
-                                        <td style={{ padding: '6px 4px', borderRight: '1px solid #334155' }}>
-                                            <input
-                                                type="text"
-                                                readOnly
-                                                tabIndex={-1}
-                                                value={((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)) ? ((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)).toLocaleString('en-IN') : '0'}
-                                                style={{
-                                                    ...inputStyle,
-                                                    background: '#0c1527',
-                                                    color: '#fde047',
-                                                    fontWeight: 800,
-                                                    textAlign: 'right',
-                                                    cursor: 'default',
-                                                    border: '1.5px solid #334155'
-                                                }}
-                                            />
+                                        {/* TOT EXPENSE (Auto-calculated: Salary & Exp + Tot Activity) - No Comma, Clean Excel Grid */}
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 800, color: '#fde047', fontSize: '0.8rem', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b', background: 'rgba(254, 224, 71, 0.05)' }}>
+                                            {Math.round((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)) || 0}
                                         </td>
 
                                         {/* Sales vs Exp Ratio with Territory Health Diagnosis */}
-                                        <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                                        <td style={{ padding: '4px 6px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                             {(() => {
                                                 const exp = (Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0);
                                                 const sAch = Number(row.secAchieved) || 0;
@@ -1339,30 +1267,27 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 return (
                                                     <div style={{
                                                         display: 'inline-flex',
-                                                        flexDirection: 'column',
                                                         alignItems: 'center',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '8px',
-                                                        minWidth: '95px',
-                                                        background: exp === 0 && sAch === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
-                                                        border: `1.5px solid ${exp === 0 && sAch === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`,
-                                                        boxShadow: isPlus ? '0 2px 8px rgba(16, 185, 129, 0.25)' : '0 2px 8px rgba(239, 68, 68, 0.25)'
+                                                        justifyContent: 'center',
+                                                        gap: '4px',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '4px',
+                                                        background: exp === 0 && sAch === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'),
+                                                        border: `1px solid ${exp === 0 && sAch === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`
                                                     }}>
                                                         <span style={{
-                                                            fontSize: '0.88rem',
-                                                            fontWeight: 900,
-                                                            color: exp === 0 && sAch === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171'),
-                                                            letterSpacing: '0.3px'
+                                                            fontSize: '0.78rem',
+                                                            fontWeight: 800,
+                                                            color: exp === 0 && sAch === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171')
                                                         }}>
                                                             {diffText}
                                                         </span>
                                                         <span style={{
                                                             fontSize: '0.62rem',
                                                             fontWeight: 800,
-                                                            marginTop: '2px',
                                                             color: exp === 0 && sAch === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5')
                                                         }}>
-                                                            {ratioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                            ({ratioStr})
                                                         </span>
                                                     </div>
                                                 );
@@ -1448,7 +1373,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     {formatCurrency(actualsTotals.totalActivityAmt)}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                    <span style={{ padding: '0 8px' }}>{Math.round(actualsTotals.totalExpense || 0).toLocaleString('en-IN')}</span>
+                                    <span style={{ padding: '0 8px' }}>{Math.round(actualsTotals.totalExpense || 0)}</span>
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -1560,7 +1485,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         {formatCurrency(projectionRow.totActivityAmt)}
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                        <span style={{ padding: '0 8px' }}>{Math.round((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0)).toLocaleString('en-IN')}</span>
+                                        <span style={{ padding: '0 8px' }}>{Math.round((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0))}</span>
                                     </td>
                                     <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                         {(() => {
@@ -1673,7 +1598,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     {formatCurrency(combinedTotals.totalActivityAmt)}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 900, borderRight: '1px solid #4338ca' }}>
-                                    <span style={{ padding: '0 8px' }}>{Math.round(combinedTotals.totalExpense || 0).toLocaleString('en-IN')}</span>
+                                    <span style={{ padding: '0 8px' }}>{Math.round(combinedTotals.totalExpense || 0)}</span>
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -2080,18 +2005,19 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
     );
 }
 
-const inputStyle = {
+const gridInputStyle = {
     width: '100%',
-    height: '38px',
-    padding: '4px 6px',
-    background: '#090e1a',
-    borderRadius: '6px',
+    height: '32px',
+    padding: '0 6px',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '0px',
     color: '#ffffff',
-    fontSize: '0.88rem',
+    fontSize: '0.8rem',
     fontFamily: "'Montserrat', sans-serif",
     fontWeight: '600',
     boxSizing: 'border-box',
     textAlign: 'right',
     outline: 'none',
-    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+    transition: 'background 0.15s ease, box-shadow 0.15s ease'
 };
