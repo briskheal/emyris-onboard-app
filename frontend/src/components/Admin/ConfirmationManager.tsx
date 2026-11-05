@@ -93,7 +93,7 @@ export default function ConfirmationManager() {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'evaluated' | 'confirmed' | 'eligible'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'evaluated' | 'confirmed' | 'draft' | 'extended'>('all');
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [adminRemarks, setAdminRemarks] = useState('');
   const [confirmationDate, setConfirmationDate] = useState<string>('');
@@ -123,7 +123,8 @@ export default function ConfirmationManager() {
     if (filterTab === 'pending' && item.confirmationStatus !== 'pending_manager_review') return false;
     if (filterTab === 'evaluated' && item.confirmationStatus !== 'manager_evaluated') return false;
     if (filterTab === 'confirmed' && item.confirmationStatus !== 'confirmed') return false;
-    if (filterTab === 'eligible' && item.confirmationStatus !== 'eligible') return false;
+    if (filterTab === 'draft' && item.confirmationStatus !== 'draft') return false;
+    if (filterTab === 'extended' && item.confirmationStatus !== 'extended') return false;
 
     // Search filter
     if (!search.trim()) return true;
@@ -141,7 +142,8 @@ export default function ConfirmationManager() {
   const pendingCount = list.filter(i => i.confirmationStatus === 'pending_manager_review').length;
   const evaluatedCount = list.filter(i => i.confirmationStatus === 'manager_evaluated').length;
   const confirmedCount = list.filter(i => i.confirmationStatus === 'confirmed').length;
-  const eligibleCount = list.filter(i => i.confirmationStatus === 'eligible').length;
+  const draftCount = list.filter(i => i.confirmationStatus === 'draft').length;
+  const extendedCount = list.filter(i => i.confirmationStatus === 'extended').length;
 
   const handleUpdateStatus = async (statusToSet: 'confirmed' | 'Confirmation Extended' | 'manager_evaluated' | 'draft') => {
     if (!selectedRecord) return;
@@ -231,13 +233,13 @@ export default function ConfirmationManager() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px 22px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>
-            <span>TOTAL ELIGIBLE (5+ MO)</span>
+            <span>TOTAL SUBMITTED REVIEWS</span>
             <Users size={18} color="#38bdf8" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', marginTop: '8px' }}>
-            {list.filter(i => (i.completedMonths || 0) >= 5).length}
+            {list.length}
           </div>
-          <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px' }}>Across all divisions &amp; zones</div>
+          <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px' }}>Dossiers submitted by employees</div>
         </div>
 
         <div style={{ background: '#1e293b', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '14px', padding: '18px 22px' }}>
@@ -248,7 +250,7 @@ export default function ConfirmationManager() {
           <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fbbf24', marginTop: '8px' }}>
             {pendingCount}
           </div>
-          <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '4px' }}>MR submitted, waiting manager</div>
+          <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '4px' }}>Submitted, waiting manager review</div>
         </div>
 
         <div style={{ background: '#1e293b', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '14px', padding: '18px 22px' }}>
@@ -290,11 +292,12 @@ export default function ConfirmationManager() {
         {/* Filter Pills */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
-            { id: 'all', label: `All Candidates (${list.length})` },
+            { id: 'all', label: `All Submitted (${list.length})` },
             { id: 'pending', label: `Pending Manager Review (${pendingCount})` },
             { id: 'evaluated', label: `Manager Evaluated (${evaluatedCount})` },
             { id: 'confirmed', label: `Confirmed (${confirmedCount})` },
-            { id: 'eligible', label: `Eligible 5+ Mo (${eligibleCount})` }
+            ...(draftCount > 0 ? [{ id: 'draft', label: `Draft / Released (${draftCount})` }] : []),
+            ...(extendedCount > 0 ? [{ id: 'extended', label: `Probation Extended (${extendedCount})` }] : [])
           ].map(tab => (
             <button
               key={tab.id}
@@ -476,17 +479,17 @@ export default function ConfirmationManager() {
                           <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', border: '1px solid #0284c7', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
                             Manager Evaluated
                           </span>
-                        ) : item.confirmationStatus === 'pending_manager_review' ? (
+                        ) : item.confirmationStatus === 'extended' ? (
                           <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
-                            Pending Manager Review
+                            Probation Extended
                           </span>
                         ) : item.confirmationStatus === 'draft' ? (
                           <span style={{ background: 'rgba(148, 163, 184, 0.2)', color: '#cbd5e1', border: '1px solid #64748b', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            Draft in Progress
+                            Draft / Released for Edit
                           </span>
                         ) : (
-                          <span style={{ background: 'rgba(100, 116, 139, 0.15)', color: '#94a3b8', border: '1px solid #475569', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
-                            Eligible (Pending MR)
+                          <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
+                            Pending Manager Review
                           </span>
                         )}
                       </td>
@@ -642,24 +645,24 @@ export default function ConfirmationManager() {
                         <div style={{ overflowX: 'auto', background: '#090e1a', borderRadius: '8px', border: '1px solid #334155' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
                             <thead>
-                              <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155' }}>
-                                <th style={{ padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Month</th>
-                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
-                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
-                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
-                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
-                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
-                                <th style={{ padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
-                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
-                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
-                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
-                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
-                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
-                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
-                                <th style={{ padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
-                                <th style={{ padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
-                                <th style={{ padding: '7px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
-                                <th style={{ padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
+                              <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>
+                                <th style={{ padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Month</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Days</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Dr Visits</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Chem Visits</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Tot Calls</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Call Avg</th>
+                                <th style={{ padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>POB (₹)</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Sec Obj</th>
+                                <th style={{ padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Sec Ach</th>
+                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>% Sec</th>
+                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Coll Obj</th>
+                                <th style={{ padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Coll Ach</th>
+                                <th style={{ padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>% Coll</th>
+                                <th style={{ padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Salary &amp; Exp</th>
+                                <th style={{ padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Activity</th>
+                                <th style={{ padding: '7px 4px', color: '#fde047', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Tot Expense</th>
+                                <th style={{ padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>6x Variance &amp; ROI</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -672,32 +675,32 @@ export default function ConfirmationManager() {
 
                                 return (
                                   <tr key={mIdx} style={{ borderBottom: '1px solid #1e293b', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : (mIdx % 2 === 1 ? '#0d1527' : '#090e1a') }}>
-                                    <td style={{ padding: '5px 6px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                    <td style={{ padding: '5px 6px', textAlign: 'left', fontWeight: 600, color: m.isProjection ? '#38bdf8' : '#ffffff', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
                                       {m.monthLabel} {m.isProjection ? '(🎯 Plan)' : ''}
                                     </td>
                                     <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{m.daysWorked || 0}</td>
                                     <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{dr}</td>
                                     <td style={{ padding: '5px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{chem}</td>
-                                    <td style={{ padding: '5px 4px', color: '#ffffff', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{totCalls}</td>
-                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{callAvg}</td>
+                                    <td style={{ padding: '5px 4px', color: '#ffffff', fontWeight: 500, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{totCalls}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 500, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{callAvg}</td>
                                     <td style={{ padding: '5px 4px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.pob)}</td>
                                     <td style={{ padding: '5px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secObj)}</td>
-                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secAchieved)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#38bdf8', fontWeight: 500, borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secAchieved)}</td>
                                     <td style={{ padding: '5px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
-                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
+                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 600, color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
                                         {m.achievementPct || 0}%
                                       </span>
                                     </td>
                                     <td style={{ padding: '5px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collObj)}</td>
-                                    <td style={{ padding: '5px 4px', color: '#34d399', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collAchieved)}</td>
+                                    <td style={{ padding: '5px 4px', color: '#34d399', fontWeight: 500, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collAchieved)}</td>
                                     <td style={{ padding: '5px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
-                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
+                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 600, color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
                                         {m.collAchievementPct || 0}%
                                       </span>
                                     </td>
                                     <td style={{ padding: '5px 4px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.salaryExpense)}</td>
                                     <td style={{ padding: '5px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                    <td style={{ padding: '5px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
+                                    <td style={{ padding: '5px 4px', color: '#fde047', fontWeight: 500, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
                                     <td style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                       {(() => {
                                         const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
@@ -721,10 +724,10 @@ export default function ConfirmationManager() {
                                             background: cost === 0 && ach === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'),
                                             border: `1px solid ${cost === 0 && ach === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`
                                           }}>
-                                            <span style={{ fontSize: '0.76rem', fontWeight: 800, color: cost === 0 && ach === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171') }}>
+                                            <span style={{ fontSize: '0.76rem', fontWeight: 600, color: cost === 0 && ach === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171') }}>
                                               {diffText}
                                             </span>
-                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: cost === 0 && ach === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5') }}>
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 500, color: cost === 0 && ach === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5') }}>
                                               ({rStr})
                                             </span>
                                           </div>
@@ -788,11 +791,11 @@ export default function ConfirmationManager() {
                               return (
                                 <tfoot>
                                   {/* Row 1: Actuals Subtotal */}
-                                  <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#f8fafc', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                  <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 600 }}>
+                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#f8fafc', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b', fontWeight: 600 }}>
                                       {monthsList.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                     </td>
-                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDays}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap' }}>{actDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span></td>
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDr.toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actChem.toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCalls.toLocaleString('en-IN')}</td>
@@ -800,27 +803,27 @@ export default function ConfirmationManager() {
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actPob)}</td>
                                     <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecObj)}</td>
                                     <td style={{ padding: '6px 4px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecAch)}</td>
-                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actSecPct}%</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 600, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actSecPct}%</td>
                                     <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollObj)}</td>
                                     <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollAch)}</td>
-                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actCollPct}%</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 600, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actCollPct}%</td>
                                     <td style={{ padding: '6px 4px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSalExp)}</td>
                                     <td style={{ padding: '6px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actActAmt)}</td>
-                                    <td style={{ padding: '6px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round(actTotExp)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fde047', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actTotExp)}</td>
                                     <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: actIsPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', border: `1px solid ${actIsPlus ? '#10b981' : '#ef4444'}` }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
-                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>({actRatioStr})</span>
+                                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 500, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>({actRatioStr})</span>
                                       </div>
                                     </td>
                                   </tr>
 
                                   {/* Row 2: Grand Total Taking Projection Also */}
-                                  <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
-                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#c084fc', borderRight: '1px solid #334155' }}>
+                                  <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 600 }}>
+                                    <td style={{ padding: '6px 6px', textAlign: 'left', color: '#c084fc', borderRight: '1px solid #334155', fontWeight: 600 }}>
                                       {monthsList.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                     </td>
-                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDays}</td>
+                                    <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b', whiteSpace: 'nowrap' }}>{combDays} <span style={{ fontSize: '0.62rem', color: '#c084fc' }}>d</span></td>
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDr.toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combChem.toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combCalls.toLocaleString('en-IN')}</td>
@@ -828,17 +831,17 @@ export default function ConfirmationManager() {
                                     <td style={{ padding: '6px 4px', color: '#ffffff', borderRight: '1.5px solid #475569' }}>{formatCurrency(combPob)}</td>
                                     <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecObj)}</td>
                                     <td style={{ padding: '6px 4px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecAch)}</td>
-                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combSecPct}%</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 600, borderRight: '1.5px solid #475569' }}>{combSecPct}%</td>
                                     <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollObj)}</td>
                                     <td style={{ padding: '6px 4px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollAch)}</td>
-                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combCollPct}%</td>
+                                    <td style={{ padding: '6px 3px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 600, borderRight: '1.5px solid #475569' }}>{combCollPct}%</td>
                                     <td style={{ padding: '6px 4px', color: '#fef08a', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSalExp)}</td>
                                     <td style={{ padding: '6px 4px', color: '#fed7aa', borderRight: '1px solid #1e293b' }}>{formatCurrency(combActAmt)}</td>
-                                    <td style={{ padding: '6px 4px', color: '#fde047', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{Math.round(combTotExp)}</td>
+                                    <td style={{ padding: '6px 4px', color: '#fde047', borderRight: '1.5px solid #475569' }}>{formatCurrency(combTotExp)}</td>
                                     <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: combIsPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)', border: `1px solid ${combIsPlus ? '#a855f7' : '#ef4444'}` }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 900, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
-                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>({combRatioStr})</span>
+                                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 500, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>({combRatioStr})</span>
                                       </div>
                                     </td>
                                   </tr>

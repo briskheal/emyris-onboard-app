@@ -866,24 +866,24 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         background: '#090e1a'
                     }}>
                         <thead>
-                            <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155' }}>
-                                <th style={{ position: 'sticky', top: 0, left: 0, zIndex: 40, background: '#0f172a', padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', whiteSpace: 'nowrap' }}>Month</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
-                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
+                            <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>
+                                <th style={{ position: 'sticky', top: 0, left: 0, zIndex: 40, background: '#0f172a', padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', whiteSpace: 'nowrap', fontWeight: 600 }}>Month</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Days</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Dr Visits</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Chem Visits</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Tot Calls</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Call Avg</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>POB (₹)</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Sec Obj</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Sec Ach</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>% Sec</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Coll Obj</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Coll Ach</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>% Coll</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Salary &amp; Exp</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Activity</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fde047', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>Tot Expense</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155', fontWeight: 600 }}>6x Variance &amp; ROI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -964,12 +964,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* Tot Calls (Auto-calculated: Dr Visited + Chem. Visited) */}
-                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 500, color: '#ffffff', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
                                             {row.totCalls || (Number(row.drVisits || 0) + Number(row.chemVisits || 0))}
                                         </td>
 
                                         {/* Call Avg (Auto-calculated: Tot Calls / Days Work) */}
-                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 700, color: '#38bdf8', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 500, color: '#38bdf8', fontSize: '0.8rem', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: 'rgba(15, 23, 42, 0.3)' }}>
                                             {row.callAvg || '0.0'}
                                         </td>
 
@@ -1014,7 +1014,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Commitment" : "0"}
-                                                style={{ ...gridInputStyle, color: '#38bdf8', fontWeight: 700 }}
+                                                style={{ ...gridInputStyle, color: '#38bdf8' }}
                                             />
                                         </td>
 
@@ -1025,7 +1025,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 padding: '2px 4px',
                                                 borderRadius: '3px',
                                                 fontSize: '0.74rem',
-                                                fontWeight: 800,
+                                                fontWeight: 600,
                                                 background: `rgba(${row.computedSecPct >= 100 ? '16, 185, 129' : (row.computedSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
                                                 color: getPctColor(row.computedSecPct)
                                             }}>
@@ -1059,7 +1059,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Recovery" : "0"}
-                                                style={{ ...gridInputStyle, color: '#34d399', fontWeight: 700 }}
+                                                style={{ ...gridInputStyle, color: '#34d399' }}
                                             />
                                         </td>
 
@@ -1070,7 +1070,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 padding: '2px 4px',
                                                 borderRadius: '3px',
                                                 fontSize: '0.74rem',
-                                                fontWeight: 800,
+                                                fontWeight: 600,
                                                 background: `rgba(${row.computedCollPct >= 100 ? '16, 185, 129' : (row.computedCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.15)`,
                                                 color: getPctColor(row.computedCollPct)
                                             }}>
@@ -1109,7 +1109,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         </td>
 
                                         {/* TOT EXPENSE (Auto-calculated: Salary & Exp + Tot Activity) - No Comma, Clean Excel Grid */}
-                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 800, color: '#fde047', fontSize: '0.8rem', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b', background: 'rgba(254, 224, 71, 0.05)' }}>
+                                        <td style={{ padding: '0 6px', textAlign: 'right', fontWeight: 500, color: '#fde047', fontSize: '0.8rem', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b', background: 'rgba(254, 224, 71, 0.05)' }}>
                                             {Math.round((Number(row.salaryExpense) || 0) + (Number(row.totActivityAmt) || 0)) || 0}
                                         </td>
 
@@ -1139,14 +1139,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                     }}>
                                                         <span style={{
                                                             fontSize: '0.78rem',
-                                                            fontWeight: 800,
+                                                            fontWeight: 600,
                                                             color: exp === 0 && sAch === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171')
                                                         }}>
                                                             {diffText}
                                                         </span>
                                                         <span style={{
                                                             fontSize: '0.62rem',
-                                                            fontWeight: 800,
+                                                            fontWeight: 500,
                                                             color: exp === 0 && sAch === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5')
                                                         }}>
                                                             ({ratioStr})
@@ -1161,7 +1161,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         </tbody>
                         <tfoot>
                             {/* Row 1: Actuals Total / Average */}
-                            <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
+                            <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 600 }}>
                                 <td style={{
                                     position: 'sticky',
                                     left: 0,
@@ -1171,11 +1171,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     padding: '6px 6px',
                                     textAlign: 'left',
                                     color: '#f8fafc',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 600
                                 }}>
                                     {monthsData.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b', whiteSpace: 'nowrap' }}>
                                     {actualsTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                 </td>
                                 <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
@@ -1207,7 +1208,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         padding: '1px 4px',
                                         borderRadius: '3px',
                                         fontSize: '0.74rem',
-                                        fontWeight: 800,
+                                        fontWeight: 600,
                                         color: getPctColor(actualsTotals.overallSecPct)
                                     }}>
                                         {actualsTotals.overallSecPct}%
@@ -1227,7 +1228,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         padding: '1px 4px',
                                         borderRadius: '3px',
                                         fontSize: '0.74rem',
-                                        fontWeight: 800,
+                                        fontWeight: 600,
                                         color: getPctColor(actualsTotals.overallCollPct)
                                     }}>
                                         {actualsTotals.overallCollPct}%
@@ -1235,14 +1236,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
 
                                 {/* Cost & Activity Investment Actuals */}
-                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalSalaryExpense)}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalActivityAmt)}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1.5px solid #475569' }}>
-                                    {Math.round(actualsTotals.totalExpense || 0)}
+                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', borderRight: '1.5px solid #475569' }}>
+                                    {formatCurrency(actualsTotals.totalExpense)}
                                 </td>
                                 <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -1265,10 +1266,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 background: isPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                                                 border: `1px solid ${isPlus ? '#10b981' : '#ef4444'}`
                                             }}>
-                                                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: isPlus ? '#34d399' : '#f87171' }}>
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 600, color: isPlus ? '#34d399' : '#f87171' }}>
                                                     {aDiffText}
                                                 </span>
-                                                <span style={{ fontSize: '0.58rem', fontWeight: 800, color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
+                                                <span style={{ fontSize: '0.58rem', fontWeight: 500, color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
                                                     ({actualsTotals.actSalesExpRatioStr})
                                                 </span>
                                             </div>
@@ -1278,7 +1279,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                             </tr>
 
                             {/* Row 2: Grand Total Taking Projection Also */}
-                            <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
+                            <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 600 }}>
                                 <td style={{
                                     position: 'sticky',
                                     left: 0,
@@ -1288,11 +1289,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     padding: '6px 6px',
                                     textAlign: 'left',
                                     color: '#c084fc',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 600
                                 }}>
                                     {monthsData.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b', whiteSpace: 'nowrap' }}>
                                     {combinedTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#c084fc' }}>d</span>
                                 </td>
                                 <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
@@ -1324,7 +1326,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         padding: '1px 4px',
                                         borderRadius: '3px',
                                         fontSize: '0.74rem',
-                                        fontWeight: 900,
+                                        fontWeight: 600,
                                         color: getPctColor(combinedTotals.overallSecPct)
                                     }}>
                                         {combinedTotals.overallSecPct}%
@@ -1344,7 +1346,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         padding: '1px 4px',
                                         borderRadius: '3px',
                                         fontSize: '0.74rem',
-                                        fontWeight: 900,
+                                        fontWeight: 600,
                                         color: getPctColor(combinedTotals.overallCollPct)
                                     }}>
                                         {combinedTotals.overallCollPct}%
@@ -1352,14 +1354,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
 
                                 {/* Cost & Activity Investment Grand Total */}
-                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalSalaryExpense)}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
+                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalActivityAmt)}
                                 </td>
-                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', fontWeight: 900, borderRight: '1.5px solid #475569' }}>
-                                    {Math.round(combinedTotals.totalExpense || 0)}
+                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', borderRight: '1.5px solid #475569' }}>
+                                    {formatCurrency(combinedTotals.totalExpense)}
                                 </td>
                                 <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                     {(() => {
@@ -1382,10 +1384,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 background: isPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)',
                                                 border: `1px solid ${isPlus ? '#a855f7' : '#ef4444'}`
                                             }}>
-                                                <span style={{ fontSize: '0.76rem', fontWeight: 900, color: isPlus ? '#e9d5ff' : '#f87171' }}>
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 600, color: isPlus ? '#e9d5ff' : '#f87171' }}>
                                                     {cDiffText}
                                                 </span>
-                                                <span style={{ fontSize: '0.58rem', fontWeight: 800, color: isPlus ? '#d8b4fe' : '#fca5a5' }}>
+                                                <span style={{ fontSize: '0.58rem', fontWeight: 500, color: isPlus ? '#d8b4fe' : '#fca5a5' }}>
                                                     ({combinedTotals.combSalesExpRatioStr})
                                                 </span>
                                             </div>
@@ -1792,7 +1794,7 @@ const gridInputStyle = {
     color: '#ffffff',
     fontSize: '0.78rem',
     fontFamily: "'Montserrat', sans-serif",
-    fontWeight: '600',
+    fontWeight: '500',
     boxSizing: 'border-box',
     textAlign: 'right',
     outline: 'none',

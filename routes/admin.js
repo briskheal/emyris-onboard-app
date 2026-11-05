@@ -8527,8 +8527,18 @@ router.get('/all-confirmations', async (req, res) => {
             }
             return list;
         };
-        // Default 6 consecutive months for Admin Section 1 view
-        const list = applicants.map(a => {
+        // Only return candidates who have actually submitted their confirmation review
+        const submittedApplicants = applicants.filter(a => {
+            const conf = a.confirmationData;
+            if (!conf) return false;
+            return Boolean(conf.submittedAt) ||
+                   conf.status === 'submitted' ||
+                   conf.status === 'manager_evaluated' ||
+                   conf.status === 'confirmed' ||
+                   conf.status === 'Confirmation Extended';
+        });
+
+        const list = submittedApplicants.map(a => {
             let completedMonths = 0;
             if (a.actualJoiningDate) {
                 const doj = new Date(a.actualJoiningDate);
@@ -8538,17 +8548,17 @@ router.get('/all-confirmations', async (req, res) => {
             }
 
             const conf = a.confirmationData || null;
-            let displayStatus = 'in_probation';
+            let displayStatus = 'pending_manager_review';
             if (conf?.status === 'confirmed' || a.status === 'confirmed' || a.status === 'Confirmed Employee') {
                 displayStatus = 'confirmed';
             } else if (conf?.status === 'manager_evaluated') {
                 displayStatus = 'manager_evaluated';
+            } else if (conf?.status === 'Confirmation Extended') {
+                displayStatus = 'extended';
+            } else if (conf?.status === 'draft') {
+                displayStatus = 'draft';
             } else if (conf?.status === 'submitted') {
                 displayStatus = 'pending_manager_review';
-            } else if (conf?.status === 'draft') {
-                displayStatus = completedMonths >= 5 ? 'eligible' : 'in_probation';
-            } else if (completedMonths >= 5) {
-                displayStatus = 'eligible';
             }
 
             return {
