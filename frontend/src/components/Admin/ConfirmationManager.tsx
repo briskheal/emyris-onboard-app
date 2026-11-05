@@ -639,27 +639,27 @@ export default function ConfirmationManager() {
                             ⏳ Self-Submission Pending (Default 5-Mo Schedule &amp; 6th-Mo Commitment Structure)
                           </div>
                         )}
-                        <div style={{ overflowX: 'auto', background: '#090e1a', borderRadius: '10px', border: '1px solid #334155' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'right' }}>
+                        <div style={{ overflowX: 'auto', background: '#090e1a', borderRadius: '8px', border: '1px solid #334155' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
                             <thead>
-                              <tr style={{ background: '#1e293b', color: '#94a3b8', borderBottom: '1px solid #334155' }}>
-                                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Month</th>
-                                <th style={{ padding: '10px 8px' }}>Days Work</th>
-                                <th style={{ padding: '10px 8px' }}>Dr Visited</th>
-                                <th style={{ padding: '10px 8px', color: '#38bdf8' }}>Chem. Visited</th>
-                                <th style={{ padding: '10px 8px' }}>Tot Calls</th>
-                                <th style={{ padding: '10px 8px' }}>Call Avg</th>
-                                <th style={{ padding: '10px 8px' }}>POB (₹)</th>
-                                <th style={{ padding: '10px 8px' }}>Sec Obj (₹)</th>
-                                <th style={{ padding: '10px 8px' }}>Sec Ach (₹)</th>
-                                <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Sec</th>
-                                <th style={{ padding: '10px 8px' }}>Coll Obj (₹)</th>
-                                <th style={{ padding: '10px 8px' }}>Coll Ach (₹)</th>
-                                <th style={{ padding: '10px 8px', textAlign: 'center' }}>% Coll</th>
-                                <th style={{ padding: '10px 8px' }}>Salary &amp; Exp</th>
-                                <th style={{ padding: '10px 8px' }}>Activity</th>
-                                <th style={{ padding: '10px 8px', color: '#fde047' }}>Tot Expense</th>
-                                <th style={{ padding: '10px 8px', textAlign: 'center', color: '#a78bfa' }}>6x Variance (₹) &amp; ROI</th>
+                              <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155' }}>
+                                <th style={{ padding: '8px 10px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Month</th>
+                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
+                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
+                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
+                                <th style={{ padding: '8px 6px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
+                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
+                                <th style={{ padding: '8px 6px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
+                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
+                                <th style={{ padding: '8px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
+                                <th style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
+                                <th style={{ padding: '8px 6px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
+                                <th style={{ padding: '8px 6px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
+                                <th style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
+                                <th style={{ padding: '8px 6px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
+                                <th style={{ padding: '8px 6px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
+                                <th style={{ padding: '8px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
+                                <th style={{ padding: '8px 6px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -670,32 +670,35 @@ export default function ConfirmationManager() {
                                 const days = Number(m.daysWorked) || 0;
                                 const callAvg = days > 0 ? (totCalls / days).toFixed(1) : (m.callAvg || '0.0');
 
-                                                                
                                 return (
-                                  <tr key={mIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}>
-                                    <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff' }}>
-                                      {m.monthLabel} {m.isProjection ? '(🎯 Proj)' : ''}
+                                  <tr key={mIdx} style={{ borderBottom: '1px solid #1e293b', background: m.isProjection ? 'rgba(56, 189, 248, 0.08)' : (mIdx % 2 === 1 ? '#0d1527' : '#090e1a') }}>
+                                    <td style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700, color: m.isProjection ? '#38bdf8' : '#ffffff', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
+                                      {m.monthLabel} {m.isProjection ? '(🎯 Plan)' : ''}
                                     </td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{m.daysWorked || 0}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{dr}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{chem}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 700 }}>{totCalls}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{callAvg}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(m.pob)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(m.secObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8', fontWeight: 700 }}>{formatCurrency(m.secAchieved)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
-                                      {m.achievementPct || 0}%
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{m.daysWorked || 0}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{dr}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{chem}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{totCalls}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{callAvg}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.pob)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', fontWeight: 700, borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.secAchieved)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
+                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.achievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
+                                        {m.achievementPct || 0}%
+                                      </span>
                                     </td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(m.collObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399', fontWeight: 700 }}>{formatCurrency(m.collAchieved)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>
-                                      {m.collAchievementPct || 0}%
+                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#34d399', fontWeight: 700, borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.collAchieved)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>
+                                      <span style={{ display: 'inline-block', padding: '1px 4px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800, color: m.collAchievementPct >= 85 ? '#34d399' : '#fbbf24', background: 'rgba(255,255,255,0.04)' }}>
+                                        {m.collAchievementPct || 0}%
+                                      </span>
                                     </td>
-                                    <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(m.salaryExpense)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(m.totActivityAmt)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0)).toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.salaryExpense)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(m.totActivityAmt)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round((Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0))}</td>
+                                    <td style={{ padding: '6px 6px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
                                       {(() => {
                                         const cost = (Number(m.salaryExpense) || 0) + (Number(m.totActivityAmt) || 0);
                                         const ach = Number(m.secAchieved) || 0;
@@ -710,18 +713,19 @@ export default function ConfirmationManager() {
                                         return (
                                           <div style={{
                                             display: 'inline-flex',
-                                            flexDirection: 'column',
                                             alignItems: 'center',
-                                            padding: '3px 8px',
-                                            borderRadius: '6px',
-                                            background: cost === 0 && ach === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+                                            justifyContent: 'center',
+                                            gap: '3px',
+                                            padding: '1px 5px',
+                                            borderRadius: '4px',
+                                            background: cost === 0 && ach === 0 ? 'rgba(51, 65, 85, 0.2)' : (isPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'),
                                             border: `1px solid ${cost === 0 && ach === 0 ? '#334155' : (isPlus ? '#10b981' : '#ef4444')}`
                                           }}>
-                                            <span style={{ fontSize: '0.82rem', fontWeight: 900, color: cost === 0 && ach === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171') }}>
+                                            <span style={{ fontSize: '0.76rem', fontWeight: 800, color: cost === 0 && ach === 0 ? '#94a3b8' : (isPlus ? '#34d399' : '#f87171') }}>
                                               {diffText}
                                             </span>
-                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, marginTop: '1px', color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
-                                              {rStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: cost === 0 && ach === 0 ? '#64748b' : (isPlus ? '#a7f3d0' : '#fca5a5') }}>
+                                              ({rStr})
                                             </span>
                                           </div>
                                         );
@@ -785,56 +789,56 @@ export default function ConfirmationManager() {
                                 <tfoot>
                                   {/* Row 1: Actuals Subtotal */}
                                   <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                    <td style={{ padding: '10px 12px', textAlign: 'left', color: '#f8fafc' }}>
+                                    <td style={{ padding: '6px 8px', textAlign: 'left', color: '#f8fafc', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
                                       {monthsList.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                     </td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actDays}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actDr.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{actChem.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actCalls.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{actCallAvg}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(actPob)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(actSecObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(actSecAch)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>{actSecPct}%</td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(actCollObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(actCollAch)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>{actCollPct}%</td>
-                                    <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(actSalExp)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(actActAmt)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{Math.round(actTotExp).toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', padding: '2px 6px', borderRadius: '4px', background: actIsPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)', border: `1px solid ${actIsPlus ? '#10b981' : '#ef4444'}` }}>
-                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
-                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>{actRatioStr} {actIsPlus ? '(Surplus)' : '(Deficit)'}</span>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDays}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{actCallAvg}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actPob)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#38bdf8', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSecAch)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actSecPct}%</td>
+                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actCollAch)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{actCollPct}%</td>
+                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actSalExp)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>{formatCurrency(actActAmt)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1px solid #1e293b' }}>{Math.round(actTotExp)}</td>
+                                    <td style={{ padding: '6px 6px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: actIsPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', border: `1px solid ${actIsPlus ? '#10b981' : '#ef4444'}` }}>
+                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>({actRatioStr})</span>
                                       </div>
                                     </td>
                                   </tr>
 
                                   {/* Row 2: Grand Total Taking Projection Also */}
                                   <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
-                                    <td style={{ padding: '10px 12px', textAlign: 'left', color: '#c084fc' }}>
+                                    <td style={{ padding: '6px 8px', textAlign: 'left', color: '#c084fc', borderRight: '1px solid #334155' }}>
                                       {monthsList.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                     </td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combDays}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combDr.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{combChem.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combCalls.toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{combCallAvg}</td>
-                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(combPob)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{formatCurrency(combSecObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{formatCurrency(combSecAch)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900 }}>{combSecPct}%</td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(combCollObj)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(combCollAch)}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900 }}>{combCollPct}%</td>
-                                    <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(combSalExp)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(combActAmt)}</td>
-                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 900 }}>{Math.round(combTotExp).toLocaleString('en-IN')}</td>
-                                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', padding: '2px 6px', borderRadius: '4px', background: combIsPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)', border: `1px solid ${combIsPlus ? '#a855f7' : '#ef4444'}` }}>
-                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
-                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>{combRatioStr} {combIsPlus ? '(Surplus)' : '(Deficit)'}</span>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDays}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1px solid #1e293b' }}>{combCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{combCallAvg}</td>
+                                    <td style={{ padding: '6px 6px', color: '#ffffff', borderRight: '1.5px solid #475569' }}>{formatCurrency(combPob)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#c084fc', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSecAch)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combSecPct}%</td>
+                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollObj)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#34d399', borderRight: '1px solid #1e293b' }}>{formatCurrency(combCollAch)}</td>
+                                    <td style={{ padding: '6px 4px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{combCollPct}%</td>
+                                    <td style={{ padding: '6px 6px', color: '#fef08a', borderRight: '1px solid #1e293b' }}>{formatCurrency(combSalExp)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fed7aa', borderRight: '1px solid #1e293b' }}>{formatCurrency(combActAmt)}</td>
+                                    <td style={{ padding: '6px 6px', color: '#fde047', fontWeight: 900, borderRight: '1.5px solid #475569' }}>{Math.round(combTotExp)}</td>
+                                    <td style={{ padding: '6px 6px', textAlign: 'center' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '1px 5px', borderRadius: '4px', background: combIsPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)', border: `1px solid ${combIsPlus ? '#a855f7' : '#ef4444'}` }}>
+                                        <span style={{ fontSize: '0.76rem', fontWeight: 900, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>({combRatioStr})</span>
                                       </div>
                                     </td>
                                   </tr>
