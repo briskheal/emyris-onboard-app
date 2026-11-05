@@ -1443,8 +1443,25 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                             {/* Row 1: Actuals Total / Average */}
                             <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
-                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#090e1a', borderRight: '1px solid #334155', padding: '14px 10px', color: '#f8fafc', fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
-                                    {monthsData.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
+                                <td style={{
+                                    position: 'sticky',
+                                    left: 0,
+                                    zIndex: 14,
+                                    background: '#090e1a',
+                                    borderRight: '1px solid #334155',
+                                    padding: '8px 8px',
+                                    maxWidth: '130px',
+                                    width: '130px',
+                                    boxSizing: 'border-box',
+                                    overflow: 'hidden',
+                                    lineHeight: '1.25'
+                                }}>
+                                    <div style={{ fontWeight: 800, color: '#f8fafc', fontSize: '0.78rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                        {monthsData.length > 6 ? '📈 8-Mo. Actuals' : '📈 5-Mo. Actuals'}
+                                    </div>
+                                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>
+                                        Subtotal
+                                    </div>
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
@@ -1554,8 +1571,25 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                             {/* Row 2: Grand Total Taking Projection Also (6-Mo. or 9-Mo. Period Calculation) */}
                             <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2.5px solid #a855f7', fontWeight: 900 }}>
-                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#1e1b4b', borderRight: '1px solid #4338ca', padding: '14px 10px', color: '#c084fc', fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
-                                    {monthsData.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
+                                <td style={{
+                                    position: 'sticky',
+                                    left: 0,
+                                    zIndex: 14,
+                                    background: '#1e1b4b',
+                                    borderRight: '1px solid #4338ca',
+                                    padding: '8px 8px',
+                                    maxWidth: '130px',
+                                    width: '130px',
+                                    boxSizing: 'border-box',
+                                    overflow: 'hidden',
+                                    lineHeight: '1.25'
+                                }}>
+                                    <div style={{ fontWeight: 900, color: '#c084fc', fontSize: '0.8rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                        {monthsData.length > 6 ? '🌟 9-Mo. Total' : '🌟 6-Mo. Total'}
+                                    </div>
+                                    <div style={{ fontSize: '0.64rem', color: '#d8b4fe', fontWeight: 700, marginTop: '2px', whiteSpace: 'normal', lineHeight: '1.15' }}>
+                                        {monthsData.length > 6 ? '(6 Mo. + 3 Mo. Plan)' : '(5 Actuals + 6th Plan)'}
+                                    </div>
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {combinedTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#c084fc' }}>d</span>
