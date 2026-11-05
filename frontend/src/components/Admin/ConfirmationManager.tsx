@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Users, CheckCircle2, Clock, Search, 
-  Eye, RefreshCw, X, Award, TrendingUp, RotateCcw
+  Eye, RefreshCw, X, Award, TrendingUp, RotateCcw, Calendar
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -96,6 +96,7 @@ export default function ConfirmationManager() {
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'evaluated' | 'confirmed' | 'eligible'>('all');
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [adminRemarks, setAdminRemarks] = useState('');
+  const [confirmationDate, setConfirmationDate] = useState<string>('');
   const [actionLoading, setActionLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -150,7 +151,8 @@ export default function ConfirmationManager() {
       const res = await api.post('/admin/update-confirmation-record', {
         email: selectedRecord.email,
         adminStatus: statusToSet,
-        adminRemarks: adminRemarks
+        adminRemarks: adminRemarks,
+        doc: confirmationDate
       });
       if (res.data.success) {
         setFeedbackMsg({ type: 'success', text: res.data.message || `Employee ${selectedRecord.fullName} confirmation status updated successfully!` });
@@ -169,6 +171,14 @@ export default function ConfirmationManager() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleExtendProbation = async () => {
+    if (!selectedRecord) return;
+    if (!window.confirm(`Extend probation for ${selectedRecord.fullName} by 3 months? This will open 3 additional months (Months 7, 8, and 9) in the performance table and release it for the executive and manager to submit.`)) {
+      return;
+    }
+    await handleUpdateStatus('Confirmation Extended');
   };
 
   const handleReleaseProcess = async () => {
@@ -488,6 +498,18 @@ export default function ConfirmationManager() {
                             setSelectedRecord(item);
                             setAdminRemarks(item.confirmationData?.adminRemarks || '');
                             setFeedbackMsg(null);
+                            let defaultDoc = '';
+                            if (item.confirmationData?.doc) defaultDoc = item.confirmationData.doc;
+                            else if (item.doc) defaultDoc = item.doc;
+                            else if (item.actualJoiningDate) {
+                              const d = new Date(item.actualJoiningDate);
+                              if (!isNaN(d.getTime())) {
+                                d.setMonth(d.getMonth() + 6);
+                                defaultDoc = d.toISOString().split('T')[0];
+                              }
+                            }
+                            if (!defaultDoc) defaultDoc = new Date().toISOString().split('T')[0];
+                            setConfirmationDate(defaultDoc);
                           }}
                           style={{
                             background: '#0284c7',
@@ -826,6 +848,52 @@ export default function ConfirmationManager() {
                   }}
                 />
 
+                {/* DOC (Date of Confirmation) Effective Date Field */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#131b2e',
+                  border: '1.5px solid #0284c7',
+                  borderRadius: '10px',
+                  padding: '12px 18px',
+                  marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '14px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Calendar size={18} color="#38bdf8" />
+                    <div>
+                      <div style={{ color: '#ffffff', fontWeight: 800, fontSize: '0.88rem' }}>
+                        DOC (Date of Confirmation)
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.76rem', marginTop: '2px' }}>
+                        From this date employee will be considered as a Confirmed Employee
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ color: '#38bdf8', fontSize: '0.82rem', fontWeight: 700 }}>Effective DOC:</label>
+                    <input
+                      type="date"
+                      value={confirmationDate}
+                      onChange={(e) => setConfirmationDate(e.target.value)}
+                      style={{
+                        background: '#090e1a',
+                        border: '1px solid #0284c7',
+                        borderRadius: '8px',
+                        color: '#38bdf8',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        padding: '7px 12px',
+                        outline: 'none',
+                        colorScheme: 'dark'
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -863,7 +931,7 @@ export default function ConfirmationManager() {
                   </button>
 
                   <button
-                    onClick={() => handleUpdateStatus('Confirmation Extended')}
+                    onClick={handleExtendProbation}
                     disabled={actionLoading}
                     style={{
                       width: '100%',

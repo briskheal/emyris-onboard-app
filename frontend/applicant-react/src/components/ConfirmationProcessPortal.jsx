@@ -127,7 +127,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                 const initialList = calcMonths.map((cm, idx) => {
                     const saved = savedMonthsMap[cm.monthIndex || (idx + 1)] || {};
-                    const isProjection = cm.isProjection || idx === 5;
+                    const isProjection = cm.isProjection !== undefined ? cm.isProjection : (idx === calcMonths.length - 1);
                     const daysWorked = saved.daysWorked !== undefined ? saved.daysWorked : '';
                     const drVisits = saved.drVisits !== undefined ? saved.drVisits : '';
                     const totCalls = saved.totCalls !== undefined ? saved.totCalls : '';
@@ -450,7 +450,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
         );
     }
 
-    const isLocked = ['submitted', 'manager_evaluated', 'confirmed', 'Confirmation Extended'].includes(status);
+    const isLocked = ['submitted', 'manager_evaluated', 'confirmed'].includes(status);
     const isReadOnly = isLocked;
     const isSubmitted = isLocked;
 
@@ -791,7 +791,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                         <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
-                            📊 Section 1: 5-Month Field Activity (Actuals) &amp; 6th-Month Projection (Commitment)
+                            {monthsData.length > 6 ? (
+                                `📊 Section 1: Field Performance Actuals (Months 1 to ${monthsData.length - 1}) & Month ${monthsData.length} Projection`
+                            ) : (
+                                '📊 Section 1: 5-Month Field Activity (Actuals) & 6th-Month Projection (Commitment)'
+                            )}
                         </h3>
                         <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.84rem', fontWeight: 500 }}>
                             Complete Performance Dossier: Field Activity, Secondary Sales, Collection Recovery, Field Expenses, Total Territory Cost, and ROI Health Multiple.

@@ -1983,22 +1983,25 @@ router.get('/confirmation-process', async (req, res) => {
 
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        // 6 consecutive months starting from ADOJ:
-        // Months 1-5: Completed Field Performance (Actuals)
-        // Month 6: Forward Projection / Territory Commitment for Confirmation
+        const existingData = applicant.confirmationData || null;
+        const totalMonthsNeeded = (existingData?.months && existingData.months.length > 6)
+            ? existingData.months.length
+            : ((existingData?.isExtended || applicant.status === 'Confirmation Extended') ? 9 : 6);
+
+        // Consecutive months starting from ADOJ:
+        // Months 1 to (N-1): Completed Field Performance (Actuals)
+        // Month N: Forward Projection / Territory Commitment
         const calculatedMonths = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < totalMonthsNeeded; i++) {
             const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
             calculatedMonths.push({
                 monthIndex: i + 1,
                 monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
                 year: mDate.getFullYear(),
                 monthNum: mDate.getMonth() + 1,
-                isProjection: i === 5
+                isProjection: (i === totalMonthsNeeded - 1)
             });
         }
-
-        const existingData = applicant.confirmationData || null;
 
         res.json({
             success: true,

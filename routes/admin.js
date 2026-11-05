@@ -8578,8 +8578,8 @@ router.get('/all-confirmations', async (req, res) => {
 
 router.post('/update-confirmation-record', async (req, res) => {
     try {
-        const { Applicant, XlNotification } = require('../db');
-        const { email, adminRemarks, adminStatus } = req.body;
+        const { Applicant, Company, XlNotification } = require('../db');
+        const { email, adminRemarks, adminStatus, doc } = req.body;
         if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
 
         const app = await Applicant.findOne({ email });
@@ -8589,42 +8589,233 @@ router.post('/update-confirmation-record', async (req, res) => {
         const isRemarksOnly = adminStatus === 'remarks_only' || !adminStatus;
         const updatedConf = {
             ...conf,
+            doc: doc || conf.doc || null,
             adminRemarks: adminRemarks !== undefined ? adminRemarks : (conf.adminRemarks || ''),
             adminRemarkedAt: adminRemarks !== undefined ? new Date() : (conf.adminRemarkedAt || null),
-            status: isRemarksOnly ? (conf.status || 'pending_manager_review') : adminStatus,
+            status: isRemarksOnly ? (conf.status || 'pending_manager_review') : (adminStatus === 'Confirmation Extended' ? 'draft' : adminStatus),
             adminConfirmedAt: adminStatus === 'confirmed' ? new Date() : (conf.adminConfirmedAt || null),
-            releasedByAdminAt: adminStatus === 'draft' ? new Date() : (conf.releasedByAdminAt || null),
+            releasedByAdminAt: (adminStatus === 'draft' || adminStatus === 'Confirmation Extended') ? new Date() : (conf.releasedByAdminAt || null),
             lastUpdated: new Date()
         };
 
         const updatePayload = {
             confirmationData: updatedConf
         };
+
+        if (doc) {
+            updatePayload.doc = doc;
+            updatePayload.confirmationDate = doc;
+        }
+
+        // --- FLOW 1: CONFIRMED EMPLOYEE ---
         if (adminStatus === 'confirmed') {
             updatePayload.status = 'Confirmed Employee';
-        } else if (adminStatus === 'draft' && app.status === 'Confirmed Employee') {
-            updatePayload.status = 'probation';
+            updatePayload.canLogin = true;
+
+            const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+            const formattedDoc = doc ? new Date(doc).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            // Generate Official Confirmation Letter PDF
+            let pdfBuffer = null;
+            try {
+                const { generateAppointmentPdf } = require('../utils/pdfGenerator');
+                pdfBuffer = await generateAppointmentPdf({
+                    applicant: { ...app.toJSON ? app.toJSON() : app, doc: doc || app.doc, confirmationDate: doc || app.doc },
+                    company,
+                    letterType: 'confirm',
+                    letterData: company.confirmLetterBody
+                });
+            } catch (pdfErr) {
+                console.error('Confirmation Letter PDF generation error:', pdfErr.message);
+            }
+
+            // Push to issuedLetters
+            const letterObj = {
+                type: 'confirm',
+                issuedAt: new Date(),
+                doc: doc || new Date().toISOString().split('T')[0]
+            };
+            await Applicant.updateOne({ email }, { $push: { issuedLetters: letterObj } });
+
+            // Increment company miscCounter
+            await Company.findOneAndUpdate({}, { $inc: { miscCounter: 1 } });
+
+            // Send in-app notification
+            if (XlNotification) {
+                await XlNotification.create({
+                    employeeId: app.empCode || app.email,
+                    title: 'Congratulations! Official Confirmation Approved',
+                    message: `Dear ${app.fullName}, your confirmation evaluation has been reviewed and approved by Management effective ${formattedDoc}. You are now a Confirmed Employee.`
+                }).catch(e => console.error('Notification error:', e.message));
+            }
+
+            // Send Confirmation Email with PDF Attachment & CC
+            try {
+                const { sendEmail } = require('../utils/mailer');
+                const adminEmail = await getSystemAdminEmail();
+                const managerEmail = await resolveReportingManager(app);
+
+                const ccSet = new Set();
+                if (adminEmail && adminEmail !== email.toLowerCase()) ccSet.add(adminEmail);
+                if (managerEmail && managerEmail !== email.toLowerCase()) ccSet.add(managerEmail);
+                const ccList = Array.from(ccSet);
+
+                const attachments = [];
+                if (pdfBuffer && pdfBuffer.length > 0) {
+                    attachments.push({
+                        filename: `Confirmation_Letter_${(app.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf'
+                    });
+                }
+
+                const emailSubject = `Official Employment Confirmation – ${app.fullName} (${app.empCode || 'Staff'}) | ${company.name}`;
+                const emailHtml = `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 24px; text-align: center;">
+                            <h2 style="color: white; margin: 0; font-size: 22px;">${company.name}</h2>
+                            <p style="color: #d1fae5; margin: 6px 0 0 0; font-size: 14px; font-weight: bold;">Official Service Confirmation Notification</p>
+                        </div>
+                        <div style="padding: 28px 24px; background: #ffffff;">
+                            <p style="font-size: 15px; margin-top: 0;">Dear <strong>${app.fullName}</strong>,</p>
+                            <p style="font-size: 14px;">We are pleased to inform you that following the review of your field performance and evaluation, your services with <strong>${company.name}</strong> have been officially <strong>CONFIRMED</strong>.</p>
+                            
+                            <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 14px 18px; margin: 20px 0; border-radius: 6px; font-size: 13.5px; color: #1e293b;">
+                                <div style="margin-bottom: 6px;"><strong>Employee Code:</strong> ${app.empCode || 'N/A'}</div>
+                                <div style="margin-bottom: 6px;"><strong>Designation:</strong> ${app.designation || 'Staff'}</div>
+                                <div style="margin-bottom: 6px;"><strong>Division:</strong> ${app.division || 'General'}</div>
+                                <div style="margin-bottom: 6px;"><strong>Headquarters:</strong> ${app.hq || 'N/A'}</div>
+                                <div style="margin-bottom: 6px;"><strong>Date of Confirmation (DOC):</strong> ${formattedDoc}</div>
+                                ${adminRemarks ? `<div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-style: italic; color: #047857;"><strong>Management Remarks:</strong> "${adminRemarks}"</div>` : ''}
+                            </div>
+
+                            <p style="font-size: 14px;">Please find your formal <strong>Confirmation Letter</strong> attached to this email for your official records.</p>
+                            <p style="font-size: 14px;">We congratulate you on this milestone and look forward to your continued dedication, growth, and valuable contributions to the organization.</p>
+                            
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                <p style="margin: 0; font-weight: bold; color: #1e293b;">${company.signatoryName || 'Human Resources Management'}</p>
+                                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'Emyris Biolifesciences'}</p>
+                            </div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                            This is an official system-generated notification from ${company.name}. Admin & Reporting Management are copied for official HR records.
+                        </div>
+                    </div>`;
+
+                await sendEmail({
+                    to: email,
+                    cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+                    subject: emailSubject,
+                    html: emailHtml,
+                    attachments
+                });
+                console.log(`✅ [CONFIRMATION FLOW] Confirmation letter and email sent to ${email} (CC: ${ccList.join(', ')})`);
+            } catch (mailErr) {
+                console.error('Failed to send confirmation email:', mailErr.message);
+            }
+
+        // --- FLOW 2: CONFIRMATION EXTENDED BY 3 MONTHS ---
+        } else if (adminStatus === 'Confirmation Extended') {
+            updatePayload.status = 'Confirmation Extended';
+            updatePayload.canLogin = true;
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            let adoj = null;
+            if (app.actualJoiningDate) {
+                const s = String(app.actualJoiningDate).trim();
+                if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+                    const p = s.substring(0, 10).split('-');
+                    adoj = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+                    const p = s.split('-');
+                    const p1 = parseInt(p[0], 10), p2 = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                    adoj = new Date(y, (p1 > 12 ? p2 : p1) - 1, p1 > 12 ? p1 : p2);
+                } else {
+                    adoj = new Date(s);
+                }
+            }
+            if (!adoj || isNaN(adoj.getTime())) adoj = new Date();
+
+            let currentMonths = Array.isArray(conf.months) && conf.months.length > 0 ? [...conf.months] : [];
+            if (currentMonths.length === 0) {
+                for (let i = 0; i < 6; i++) {
+                    const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
+                    currentMonths.push({
+                        monthIndex: i + 1,
+                        monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
+                        year: mDate.getFullYear(),
+                        monthNum: mDate.getMonth() + 1,
+                        isProjection: i === 5,
+                        daysWorked: 0, drVisits: 0, chemVisits: 0, totCalls: 0, callAvg: 0,
+                        pob: 0, secObj: 0, secAchieved: 0, achievementPct: 0,
+                        collObj: 0, collAchieved: 0, collAchievementPct: 0,
+                        salaryExpense: 0, totActivityAmt: 0, lopDays: '', salesExpRatio: 0
+                    });
+                }
+            }
+
+            // Unflag former projection row; it becomes actual performance
+            if (currentMonths.length >= 6) {
+                currentMonths[5].isProjection = false;
+            }
+
+            // Append 3 more months
+            const targetLength = currentMonths.length + 3;
+            const startIdx = currentMonths.length;
+            for (let i = startIdx; i < targetLength; i++) {
+                const mDate = new Date(adoj.getFullYear(), adoj.getMonth() + i, 1);
+                currentMonths.push({
+                    monthIndex: i + 1,
+                    monthLabel: `${monthNames[mDate.getMonth()]} ${mDate.getFullYear()}`,
+                    year: mDate.getFullYear(),
+                    monthNum: mDate.getMonth() + 1,
+                    isProjection: (i === targetLength - 1),
+                    daysWorked: 0, drVisits: 0, chemVisits: 0, totCalls: 0, callAvg: 0,
+                    pob: 0, secObj: 0, secAchieved: 0, achievementPct: 0,
+                    collObj: 0, collAchieved: 0, collAchievementPct: 0,
+                    salaryExpense: 0, totActivityAmt: 0, lopDays: '', salesExpRatio: 0
+                });
+            }
+
+            updatedConf.months = currentMonths;
+            updatedConf.isExtended = true;
+            updatedConf.extensionMonths = targetLength;
+            updatedConf.status = 'draft'; // Release to editable mode so employee & manager can fill the next 3 months!
+            updatedConf.extendedAt = new Date();
+
+            if (XlNotification) {
+                await XlNotification.create({
+                    employeeId: app.empCode || app.email,
+                    title: 'Probation Extended by 3 Months',
+                    message: `Dear ${app.fullName}, your evaluation period has been extended by 3 months. Next 3 months (Months 7, 8, and 9) are now open in your Confirmation Portal for entering performance details.`
+                }).catch(e => console.error('Notification error:', e.message));
+            }
+
+        // --- FLOW 3: RELEASE TO DRAFT ---
+        } else if (adminStatus === 'draft') {
+            if (app.status === 'Confirmed Employee') {
+                updatePayload.status = 'probation';
+            }
+            if (XlNotification) {
+                await XlNotification.create({
+                    employeeId: app.empCode || app.email,
+                    title: 'Confirmation Assessment Released for Re-edit',
+                    message: `Dear ${app.fullName}, your Confirmation Evaluation Process has been released by Admin. You may now edit and resubmit your field actuals, projection, and self-assessment.`
+                }).catch(e => console.error('Notification error:', e.message));
+            }
         }
 
         await Applicant.findOneAndUpdate({ email }, { $set: updatePayload });
 
-        if (adminStatus === 'confirmed' && XlNotification) {
-            await XlNotification.create({
-                employeeId: app.empCode || app.email,
-                title: 'Congratulations! Official Confirmation Approved',
-                message: `Dear ${app.fullName}, your 5-month confirmation evaluation has been reviewed and approved by Management. You are now a Confirmed Employee.`
-            }).catch(e => console.error('Notification error:', e.message));
-        } else if (adminStatus === 'draft' && XlNotification) {
-            await XlNotification.create({
-                employeeId: app.empCode || app.email,
-                title: 'Confirmation Assessment Released for Re-edit',
-                message: `Dear ${app.fullName}, your Confirmation Evaluation Process has been released by Admin. You may now edit and resubmit your 5-month field actuals, projection, and self-assessment.`
-            }).catch(e => console.error('Notification error:', e.message));
-        }
-
         res.json({
             success: true,
-            message: adminStatus === 'confirmed' ? 'Employee successfully confirmed!' : (adminStatus === 'draft' ? 'Confirmation process released back to Draft! Field executive and manager can now edit and resubmit.' : (adminStatus === 'remarks_only' ? 'Admin remarks saved successfully!' : 'Confirmation record updated.')),
+            message: adminStatus === 'confirmed' 
+                ? `Employee ${app.fullName} successfully confirmed! Official Confirmation Letter issued and emailed.`
+                : (adminStatus === 'Confirmation Extended' 
+                    ? `Probation extended by 3 months! Next 3 months (Total ${updatedConf.months.length} months) are now open for entry.`
+                    : (adminStatus === 'draft' 
+                        ? 'Confirmation process released back to Draft! Field executive and manager can now edit and resubmit.' 
+                        : (adminStatus === 'remarks_only' ? 'Admin remarks saved successfully!' : 'Confirmation record updated.'))),
             confirmationData: updatedConf
         });
     } catch (e) {
