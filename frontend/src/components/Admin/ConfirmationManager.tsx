@@ -731,6 +731,116 @@ export default function ConfirmationManager() {
                                 );
                               })}
                             </tbody>
+                            {(() => {
+                              if (!monthsList || monthsList.length === 0) return null;
+                              const actMonths = monthsList.filter((m: any) => !m.isProjection);
+                              
+                              const sumField = (arr: any[], field: string) => arr.reduce((acc: number, r: any) => acc + (Number(r[field]) || 0), 0);
+                              
+                              // Actuals Totals
+                              const actDays = sumField(actMonths, 'daysWorked');
+                              const actDr = sumField(actMonths, 'drVisits');
+                              const actChem = sumField(actMonths, 'chemVisits');
+                              const actCalls = sumField(actMonths, 'totCalls');
+                              const actCallAvg = actDays > 0 ? (actCalls / actDays).toFixed(1) : '0.0';
+                              const actPob = sumField(actMonths, 'pob');
+                              const actSecObj = sumField(actMonths, 'secObj');
+                              const actSecAch = sumField(actMonths, 'secAchieved');
+                              const actSecPct = actSecObj > 0 ? Math.round((actSecAch / actSecObj) * 100) : 0;
+                              const actCollObj = sumField(actMonths, 'collObj');
+                              const actCollAch = sumField(actMonths, 'collAchieved');
+                              const actCollPct = actCollObj > 0 ? Math.round((actCollAch / actCollObj) * 100) : 0;
+                              const actSalExp = sumField(actMonths, 'salaryExpense');
+                              const actActAmt = sumField(actMonths, 'totActivityAmt');
+                              const actTotExp = actSalExp + actActAmt;
+                              const act6xExp = actTotExp * 6;
+                              const actDiff = actSecAch - act6xExp;
+                              const actIsPlus = actDiff >= 0;
+                              const actDiffText = actTotExp > 0 ? (actIsPlus ? '+' + Math.round(actDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(actDiff)).toLocaleString('en-IN')) : '0';
+                              const actRatioStr = actTotExp > 0 ? (actSecAch / actTotExp).toFixed(2) + 'x' : (actSecAch > 0 ? '—' : '0.00x');
+
+                              // Combined / Grand Totals (Actuals + Projection)
+                              const combDays = sumField(monthsList, 'daysWorked');
+                              const combDr = sumField(monthsList, 'drVisits');
+                              const combChem = sumField(monthsList, 'chemVisits');
+                              const combCalls = sumField(monthsList, 'totCalls');
+                              const combCallAvg = combDays > 0 ? (combCalls / combDays).toFixed(1) : '0.0';
+                              const combPob = sumField(monthsList, 'pob');
+                              const combSecObj = sumField(monthsList, 'secObj');
+                              const combSecAch = sumField(monthsList, 'secAchieved');
+                              const combSecPct = combSecObj > 0 ? Math.round((combSecAch / combSecObj) * 100) : 0;
+                              const combCollObj = sumField(monthsList, 'collObj');
+                              const combCollAch = sumField(monthsList, 'collAchieved');
+                              const combCollPct = combCollObj > 0 ? Math.round((combCollAch / combCollObj) * 100) : 0;
+                              const combSalExp = sumField(monthsList, 'salaryExpense');
+                              const combActAmt = sumField(monthsList, 'totActivityAmt');
+                              const combTotExp = combSalExp + combActAmt;
+                              const comb6xExp = combTotExp * 6;
+                              const combDiff = combSecAch - comb6xExp;
+                              const combIsPlus = combDiff >= 0;
+                              const combDiffText = combTotExp > 0 ? (combIsPlus ? '+' + Math.round(combDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(combDiff)).toLocaleString('en-IN')) : '0';
+                              const combRatioStr = combTotExp > 0 ? (combSecAch / combTotExp).toFixed(2) + 'x' : (combSecAch > 0 ? '—' : '0.00x');
+
+                              return (
+                                <tfoot>
+                                  {/* Row 1: Actuals Subtotal */}
+                                  <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
+                                    <td style={{ padding: '10px 12px', textAlign: 'left', color: '#f8fafc' }}>
+                                      {monthsList.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
+                                    </td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actDays}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{actChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{actCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{actCallAvg}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(actPob)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(actSecObj)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#38bdf8' }}>{formatCurrency(actSecAch)}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: actSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>{actSecPct}%</td>
+                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(actCollObj)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(actCollAch)}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: actCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 800 }}>{actCollPct}%</td>
+                                    <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(actSalExp)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(actActAmt)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 800 }}>{Math.round(actTotExp).toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', padding: '2px 6px', borderRadius: '4px', background: actIsPlus ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)', border: `1px solid ${actIsPlus ? '#10b981' : '#ef4444'}` }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: actIsPlus ? '#34d399' : '#f87171' }}>{actDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: actIsPlus ? '#a7f3d0' : '#fca5a5' }}>{actRatioStr} {actIsPlus ? '(Surplus)' : '(Deficit)'}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+
+                                  {/* Row 2: Grand Total Taking Projection Also */}
+                                  <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
+                                    <td style={{ padding: '10px 12px', textAlign: 'left', color: '#c084fc' }}>
+                                      {monthsList.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
+                                    </td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combDays}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combDr.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{combChem.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{combCalls.toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{combCallAvg}</td>
+                                    <td style={{ padding: '10px 8px', color: '#ffffff' }}>{formatCurrency(combPob)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{formatCurrency(combSecObj)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#c084fc' }}>{formatCurrency(combSecAch)}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: combSecPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900 }}>{combSecPct}%</td>
+                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(combCollObj)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#34d399' }}>{formatCurrency(combCollAch)}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center', color: combCollPct >= 85 ? '#34d399' : '#fbbf24', fontWeight: 900 }}>{combCollPct}%</td>
+                                    <td style={{ padding: '10px 8px', color: '#fef08a' }}>{formatCurrency(combSalExp)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fed7aa' }}>{formatCurrency(combActAmt)}</td>
+                                    <td style={{ padding: '10px 8px', color: '#fde047', fontWeight: 900 }}>{Math.round(combTotExp).toLocaleString('en-IN')}</td>
+                                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', padding: '2px 6px', borderRadius: '4px', background: combIsPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)', border: `1px solid ${combIsPlus ? '#a855f7' : '#ef4444'}` }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: combIsPlus ? '#e9d5ff' : '#f87171' }}>{combDiffText}</span>
+                                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: combIsPlus ? '#d8b4fe' : '#fca5a5' }}>{combRatioStr} {combIsPlus ? '(Surplus)' : '(Deficit)'}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </tfoot>
+                              );
+                            })()}
                           </table>
                         </div>
                       </div>

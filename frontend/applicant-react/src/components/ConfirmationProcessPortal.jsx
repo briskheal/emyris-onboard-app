@@ -84,6 +84,57 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
     const [submittedAt, setSubmittedAt] = useState(null);
     const [remarks, setRemarks] = useState('');
     const [adminRemarks, setAdminRemarks] = useState('');
+    const [activeWordPreview, setActiveWordPreview] = useState(null);
+
+    const numberToWordsIndian = (n) => {
+        const num = Math.round(Number(n));
+        if (!num || isNaN(num) || num <= 0) return '';
+        const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        const count = (x) => {
+            if (x < 20) return a[x];
+            return b[Math.floor(x / 10)] + (x % 10 > 0 ? ' ' + a[x % 10] : '');
+        };
+
+        let words = '';
+        let rem = num;
+        if (Math.floor(rem / 10000000) > 0) {
+            words += count(Math.floor(rem / 10000000)) + ' Crore ';
+            rem %= 10000000;
+        }
+        if (Math.floor(rem / 100000) > 0) {
+            words += count(Math.floor(rem / 100000)) + ' Lakh ';
+            rem %= 100000;
+        }
+        if (Math.floor(rem / 1000) > 0) {
+            words += count(Math.floor(rem / 1000)) + ' Thousand ';
+            rem %= 1000;
+        }
+        if (Math.floor(rem / 100) > 0) {
+            words += count(Math.floor(rem / 100)) + ' Hundred ';
+            rem %= 100;
+        }
+        if (rem > 0) {
+            if (words !== '') words += 'and ';
+            words += count(rem);
+        }
+        return words.trim() + ' Rupees Only';
+    };
+
+    const handleWordPreview = (monthLabel, fieldLabel, val) => {
+        const num = Number(val);
+        if (!num || isNaN(num) || num <= 0) {
+            setActiveWordPreview(null);
+            return;
+        }
+        setActiveWordPreview({
+            month: monthLabel,
+            field: fieldLabel,
+            value: num,
+            words: numberToWordsIndian(num)
+        });
+    };
 
     useEffect(() => {
         fetchConfirmationData();
@@ -351,8 +402,14 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 totalSalaryExpense: totSalaryExp,
                 totalActivityAmt: totActAmt,
                 totalLopDays: totLop,
+                totalExpense: totSalaryExp + totActAmt,
                 combSalesExpRatioStr: (totSalaryExp + totActAmt) > 0 ? (totSecAch / (totSalaryExp + totActAmt)).toFixed(2) + 'x' : (totSecAch > 0 ? '—' : '0.00x'),
-                combSalesExpRatioNum: (totSalaryExp + totActAmt) > 0 ? (totSecAch / (totSalaryExp + totActAmt)) : 0
+                combSalesExpRatioNum: (totSalaryExp + totActAmt) > 0 ? (totSecAch / (totSalaryExp + totActAmt)) : 0,
+                combExpectedSales6x: (totSalaryExp + totActAmt) * 6,
+                combVariance6x: totSecAch - ((totSalaryExp + totActAmt) * 6),
+                combVariance6xStr: (totSalaryExp + totActAmt) > 0
+                    ? (totSecAch >= (totSalaryExp + totActAmt) * 6 ? `+₹${Math.round(totSecAch - (totSalaryExp + totActAmt) * 6).toLocaleString('en-IN')}` : `-₹${Math.round(Math.abs(totSecAch - (totSalaryExp + totActAmt) * 6)).toLocaleString('en-IN')}`)
+                    : '₹0'
             }
         };
     }, [monthsData]);
@@ -807,10 +864,33 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </div>
 
                 {/* Stable, non-jumping Full-Screen Table with locked column widths */}
-                <div style={{ padding: '0 24px 12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 600 }}>
-                            💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
-                        </div>
+                <div style={{ padding: '8px 24px 12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b', flexWrap: 'wrap', gap: '10px' }}>
+                        {activeWordPreview ? (
+                            <div style={{
+                                background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                                border: '1.5px solid #38bdf8',
+                                borderRadius: '8px',
+                                padding: '6px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                boxShadow: '0 2px 10px rgba(56, 189, 248, 0.25)'
+                            }}>
+                                <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800 }}>
+                                    {activeWordPreview.month} • {activeWordPreview.field}:
+                                </span>
+                                <span style={{ fontSize: '0.98rem', color: '#fde047', fontWeight: 900 }}>
+                                    ₹{Number(activeWordPreview.value).toLocaleString('en-IN')}
+                                </span>
+                                <span style={{ fontSize: '0.88rem', color: '#ffffff', fontWeight: 700, borderLeft: '1px solid #334155', paddingLeft: '10px' }}>
+                                    💬 {activeWordPreview.words}
+                                </span>
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 600 }}>
+                                💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
+                            </div>
+                        )}
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 type="button"
@@ -936,7 +1016,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         </thead>
                         <tbody>
                             {rowsCalculated.map((row, idx) => {
-                                const isProj = row.isProjection || idx === 5;
+                                const isProj = row.isProjection !== undefined ? row.isProjection : (idx === rowsCalculated.length - 1);
 
                                 return (
                                     <tr
@@ -966,11 +1046,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                         fontWeight: 800,
                                                         letterSpacing: '0.3px'
                                                     }}>
-                                                        🌟 6TH MO. PROJ
+                                                        ⭐ {idx + 1 === 6 ? '6TH MO. PROJ' : (idx + 1 === 9 ? '9TH MO. PROJ' : `MO. ${idx + 1} PROJ`)}
                                                     </span>
                                                 ) : (
                                                     <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
-                                                        Month {idx + 1} of 5 (Actual)
+                                                        Month {idx + 1} (Actual)
                                                     </span>
                                                 )}
                                             </div>
@@ -1070,10 +1150,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="pob" readOnly={isReadOnly} value={row.pob}
-                                                onChange={(e) => handleFieldChange(idx, 'pob', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'pob', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'pob')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{
                                                     ...inputStyle,
@@ -1088,10 +1168,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="secObj" readOnly={isReadOnly} value={row.secObj}
-                                                onChange={(e) => handleFieldChange(idx, 'secObj', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'secObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secObj')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{
                                                     ...inputStyle,
@@ -1106,10 +1186,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="secAchieved" readOnly={isReadOnly} value={row.secAchieved}
-                                                onChange={(e) => handleFieldChange(idx, 'secAchieved', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'secAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secAchieved')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#0284c7' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Commitment" : "0"}
                                                 style={{
                                                     ...inputStyle,
@@ -1140,10 +1220,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="collObj" readOnly={isReadOnly} value={row.collObj}
-                                                onChange={(e) => handleFieldChange(idx, 'collObj', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'collObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collObj')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{
                                                     ...inputStyle,
@@ -1158,10 +1238,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="collAchieved" readOnly={isReadOnly} value={row.collAchieved}
-                                                onChange={(e) => handleFieldChange(idx, 'collAchieved', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'collAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collAchieved')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#34d399'; e.target.style.boxShadow = '0 0 0 2px rgba(52, 211, 153, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = isProj ? '#059669' : '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Recovery" : "0"}
                                                 style={{
                                                     ...inputStyle,
@@ -1192,10 +1272,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="salaryExpense" readOnly={isReadOnly} value={row.salaryExpense}
-                                                onChange={(e) => handleFieldChange(idx, 'salaryExpense', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'salaryExpense', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'salaryExpense')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{
                                                     ...inputStyle,
@@ -1211,10 +1291,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 type="number"
                                                 min="0"
                                                 data-row={idx} data-col="totActivityAmt" readOnly={isReadOnly} value={row.totActivityAmt}
-                                                onChange={(e) => handleFieldChange(idx, 'totActivityAmt', e.target.value)}
+                                                onChange={(e) => { handleFieldChange(idx, 'totActivityAmt', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'totActivityAmt')}
-                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => { e.target.style.borderColor = '#f59e0b'; e.target.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.25)'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
+                                                onBlur={(e) => { e.target.style.borderColor = '#334155'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{
                                                     ...inputStyle,
@@ -1292,10 +1372,10 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 );
                             })}
 
-                            {/* Row 1: 5-Month Actuals Total / Average */}
+                            {/* Row 1: Actuals Total / Average */}
                             <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
                                 <td style={{ padding: '14px 10px', color: '#f8fafc', fontSize: '0.84rem' }}>
-                                    📈 5-Mo. Actuals
+                                    {monthsData.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                 </td>
                                 <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
                                     {actualsTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
@@ -1403,11 +1483,11 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
                             </tr>
 
-                            {/* Row 2: 6th-Month Forward Commitment Highlight */}
+                            {/* Row 2: Projection Commitment Highlight */}
                             {projectionRow && (
                                 <tr style={{ background: 'rgba(14, 165, 233, 0.12)', borderTop: '1px solid #0284c7', fontWeight: 800 }}>
                                     <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#0f172a', borderRight: '1px solid #334155', padding: '14px 10px', color: '#38bdf8', fontSize: '0.84rem' }}>
-                                        🎯 6th-Mo. Commit
+                                        {monthsData.length > 6 ? '🎯 9th-Mo. Plan' : '🎯 6th-Mo. Plan'}
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
                                         {projectionRow.daysWorked || 0} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
@@ -1480,19 +1560,131 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         {formatCurrency(projectionRow.totActivityAmt)}
                                     </td>
                                     <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                    <span style={{ padding: '0 8px' }}>{Math.round((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0)).toLocaleString('en-IN')}</span>
+                                        <span style={{ padding: '0 8px' }}>{Math.round((Number(projectionRow.salaryExpense) || 0) + (Number(projectionRow.totActivityAmt) || 0)).toLocaleString('en-IN')}</span>
+                                    </td>
+                                    <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                        {(() => {
+                                            const pExp = (Number(projectionRow?.salaryExpense) || 0) + (Number(projectionRow?.totActivityAmt) || 0);
+                                            const pSec = Number(projectionRow?.secAchieved) || 0;
+                                            const pExp6x = pExp * 6;
+                                            const pDiff = pSec - pExp6x;
+                                            const isPlus = pDiff >= 0;
+                                            const pDiffText = pExp > 0
+                                                ? (isPlus ? '+' + Math.round(pDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(pDiff)).toLocaleString('en-IN'))
+                                                : '0';
+                                            const pRatioStr = pExp > 0 ? (pSec / pExp).toFixed(2) + 'x' : '0.00x';
+                                            return (
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '8px',
+                                                    minWidth: '100px',
+                                                    background: isPlus ? 'rgba(56, 189, 248, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                                                    border: `1.5px solid ${isPlus ? '#0284c7' : '#ef4444'}`
+                                                }}>
+                                                    <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#38bdf8' : '#f87171' }}>
+                                                        {pDiffText}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#bae6fd' : '#fca5a5' }}>
+                                                        {pRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
+                                    </td>
+                                </tr>
+                            )}
+
+                            {/* Row 3: Grand Total Taking Projection Also (6-Mo. or 9-Mo. Period Calculation) */}
+                            <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2.5px solid #a855f7', fontWeight: 900 }}>
+                                <td style={{ position: 'sticky', left: 0, zIndex: 14, background: '#1e1b4b', borderRight: '1px solid #4338ca', padding: '14px 10px', color: '#c084fc', fontSize: '0.86rem' }}>
+                                    {monthsData.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                    {combinedTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#c084fc' }}>d</span>
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                    {combinedTotals.totalDr.toLocaleString('en-IN')}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                    {combinedTotals.totalChem.toLocaleString('en-IN')}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                    {combinedTotals.totalCalls.toLocaleString('en-IN')}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                    {combinedTotals.overallCallAvg}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #4338ca' }}>
+                                    {formatCurrency(combinedTotals.totalPob)}
+                                </td>
+
+                                {/* Secondary Grand Total */}
+                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                    {formatCurrency(combinedTotals.totalSecObj)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                    {formatCurrency(combinedTotals.totalSecAch)}
+                                </td>
+                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #4338ca' }}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '4px 6px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 900,
+                                        background: `rgba(${combinedTotals.overallSecPct >= 100 ? '16, 185, 129' : (combinedTotals.overallSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.25)`,
+                                        color: getPctColor(combinedTotals.overallSecPct),
+                                        border: `1.5px solid ${getPctColor(combinedTotals.overallSecPct)}`
+                                    }}>
+                                        {combinedTotals.overallSecPct}%
+                                    </span>
+                                </td>
+
+                                {/* Collection Grand Total */}
+                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                    {formatCurrency(combinedTotals.totalCollObj)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                    {formatCurrency(combinedTotals.totalCollAch)}
+                                </td>
+                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #4338ca' }}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '4px 6px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 900,
+                                        background: `rgba(${combinedTotals.overallCollPct >= 100 ? '16, 185, 129' : (combinedTotals.overallCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.25)`,
+                                        color: getPctColor(combinedTotals.overallCollPct),
+                                        border: `1.5px solid ${getPctColor(combinedTotals.overallCollPct)}`
+                                    }}>
+                                        {combinedTotals.overallCollPct}%
+                                    </span>
+                                </td>
+
+                                {/* Cost & Activity Investment Grand Total */}
+                                <td style={{ padding: '14px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800 }}>
+                                    {formatCurrency(combinedTotals.totalSalaryExpense)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800 }}>
+                                    {formatCurrency(combinedTotals.totalActivityAmt)}
+                                </td>
+                                <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 900, borderRight: '1px solid #4338ca' }}>
+                                    <span style={{ padding: '0 8px' }}>{Math.round(combinedTotals.totalExpense || 0).toLocaleString('en-IN')}</span>
                                 </td>
                                 <td style={{ padding: '14px 4px', textAlign: 'center' }}>
                                     {(() => {
-                                        const pExp = (Number(projectionRow?.salaryExpense) || 0) + (Number(projectionRow?.totActivityAmt) || 0);
-                                        const pSec = Number(projectionRow?.secAchieved) || 0;
-                                        const pExp6x = pExp * 6;
-                                        const pDiff = pSec - pExp6x;
-                                        const isPlus = pDiff >= 0;
-                                        const pDiffText = pExp > 0
-                                            ? (isPlus ? '+' + Math.round(pDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(pDiff)).toLocaleString('en-IN'))
+                                        const cExp = combinedTotals.totalExpense;
+                                        const cSec = combinedTotals.totalSecAch;
+                                        const cExp6x = cExp * 6;
+                                        const cDiff = cSec - cExp6x;
+                                        const isPlus = cDiff >= 0;
+                                        const cDiffText = cExp > 0
+                                            ? (isPlus ? '+' + Math.round(cDiff).toLocaleString('en-IN') : '-' + Math.round(Math.abs(cDiff)).toLocaleString('en-IN'))
                                             : '0';
-                                        const pRatioStr = pExp > 0 ? (pSec / pExp).toFixed(2) + 'x' : '0.00x';
                                         return (
                                             <div style={{
                                                 display: 'inline-flex',
@@ -1501,21 +1693,20 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 padding: '4px 8px',
                                                 borderRadius: '8px',
                                                 minWidth: '100px',
-                                                background: isPlus ? 'rgba(56, 189, 248, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                                                border: `1.5px solid ${isPlus ? '#0284c7' : '#ef4444'}`
+                                                background: isPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                                                border: `1.5px solid ${isPlus ? '#a855f7' : '#ef4444'}`
                                             }}>
-                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#38bdf8' : '#f87171' }}>
-                                                    {pDiffText}
+                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#e9d5ff' : '#f87171' }}>
+                                                    {cDiffText}
                                                 </span>
-                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#bae6fd' : '#fca5a5' }}>
-                                                    {pRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#d8b4fe' : '#fca5a5' }}>
+                                                    {combinedTotals.combSalesExpRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
                                                 </span>
                                             </div>
                                         );
                                     })()}
                                 </td>
                             </tr>
-                        )}
                         </tbody>
                     </table>
                 </div>
@@ -1837,6 +2028,54 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </div>
                 )}
             </div>
+
+            {/* Floating Live Number-to-Words Notification Banner */}
+            {activeWordPreview && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 999999,
+                    background: 'rgba(15, 23, 42, 0.96)',
+                    border: '2px solid #38bdf8',
+                    borderRadius: '14px',
+                    padding: '12px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    pointerEvents: 'none',
+                    boxShadow: '0 10px 35px rgba(2, 132, 199, 0.5), 0 0 20px rgba(56, 189, 248, 0.35)',
+                    backdropFilter: 'blur(8px)',
+                    animation: 'fadeIn 0.2s ease-out'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.1rem' }}>💬</span>
+                        <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {activeWordPreview.month} • {activeWordPreview.field}:
+                        </span>
+                    </div>
+                    <div style={{
+                        color: '#facc15',
+                        fontWeight: 900,
+                        fontSize: '1.05rem',
+                        fontFamily: "'Montserrat', sans-serif"
+                    }}>
+                        ₹{Number(activeWordPreview.value).toLocaleString('en-IN')}
+                    </div>
+                    <div style={{
+                        borderLeft: '2px solid #334155',
+                        paddingLeft: '14px',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        letterSpacing: '0.3px',
+                        fontStyle: 'italic'
+                    }}>
+                        "{activeWordPreview.words}"
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
