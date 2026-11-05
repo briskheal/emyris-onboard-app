@@ -71,12 +71,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
     const [monthsData, setMonthsData] = useState([]);
     const [selfRatings, setSelfRatings] = useState({
-        sales: 0,
-        fieldWork: 0,
-        quality: 0,
-        knowledge: 0,
-        discipline: 0,
-        attitude: 0
+        sales: '',
+        fieldWork: '',
+        quality: '',
+        knowledge: '',
+        discipline: '',
+        attitude: ''
     });
     const [managerRatings, setManagerRatings] = useState(null);
     const [managerRecommendation, setManagerRecommendation] = useState('');
@@ -160,12 +160,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                 if (existing.selfRatings) {
                     setSelfRatings({
-                        sales: Number(existing.selfRatings.sales) || 0,
-                        fieldWork: Number(existing.selfRatings.fieldWork) || 0,
-                        quality: Number(existing.selfRatings.quality) || 0,
-                        knowledge: Number(existing.selfRatings.knowledge) || 0,
-                        discipline: Number(existing.selfRatings.discipline) || 0,
-                        attitude: Number(existing.selfRatings.attitude) || 0
+                        sales: existing.selfRatings.sales !== undefined && existing.selfRatings.sales !== null && existing.selfRatings.sales !== 0 ? existing.selfRatings.sales : (existing.selfRatings.sales === 0 ? '' : ''),
+                        fieldWork: existing.selfRatings.fieldWork !== undefined && existing.selfRatings.fieldWork !== null && existing.selfRatings.fieldWork !== 0 ? existing.selfRatings.fieldWork : '',
+                        quality: existing.selfRatings.quality !== undefined && existing.selfRatings.quality !== null && existing.selfRatings.quality !== 0 ? existing.selfRatings.quality : '',
+                        knowledge: existing.selfRatings.knowledge !== undefined && existing.selfRatings.knowledge !== null && existing.selfRatings.knowledge !== 0 ? existing.selfRatings.knowledge : '',
+                        discipline: existing.selfRatings.discipline !== undefined && existing.selfRatings.discipline !== null && existing.selfRatings.discipline !== 0 ? existing.selfRatings.discipline : '',
+                        attitude: existing.selfRatings.attitude !== undefined && existing.selfRatings.attitude !== null && existing.selfRatings.attitude !== 0 ? existing.selfRatings.attitude : ''
                     });
                 }
 
@@ -228,7 +228,9 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
     const handleFieldChange = (index, field, value) => {
         setMonthsData(prev => {
             const updated = [...prev];
-            const row = { ...updated[index], [field]: value };
+            // Remove leading zero if followed by other digits (e.g. "030000" -> "30000", "05" -> "5")
+            const cleanVal = typeof value === 'string' ? value.replace(/^0+(?=\d)/, '') : value;
+            const row = { ...updated[index], [field]: cleanVal };
 
             const days = parseFloat(row.daysWorked) || 0;
             const dr = parseFloat(row.drVisits) || 0;
@@ -251,7 +253,17 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
     };
 
     const handleRatingChange = (pillarId, maxWeight, value) => {
-        let intVal = parseInt(value, 10);
+        if (value === '' || value === null || value === undefined) {
+            setSelfRatings(prev => ({
+                ...prev,
+                [pillarId]: ''
+            }));
+            return;
+        }
+
+        // Remove leading zero if followed by other digits (e.g. "030" -> 30, "05" -> 5)
+        const cleanStr = String(value).replace(/^0+(?=\d)/, '');
+        let intVal = parseInt(cleanStr, 10);
         if (isNaN(intVal) || intVal < 0) intVal = 0;
         if (intVal > maxWeight) intVal = maxWeight;
 
@@ -1180,7 +1192,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="daysWorked" readOnly={isReadOnly} value={row.daysWorked}
                                                 onChange={(e) => handleFieldChange(idx, 'daysWorked', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'daysWorked')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
                                                 style={gridInputStyle}
@@ -1195,7 +1207,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="drVisits" readOnly={isReadOnly} value={row.drVisits}
                                                 onChange={(e) => handleFieldChange(idx, 'drVisits', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'drVisits')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
                                                 style={gridInputStyle}
@@ -1210,7 +1222,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="chemVisits" readOnly={isReadOnly} value={row.chemVisits !== undefined ? row.chemVisits : ''}
                                                 onChange={(e) => handleFieldChange(idx, 'chemVisits', e.target.value)}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'chemVisits')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; }}
                                                 placeholder={isProj ? "Target" : "0"}
                                                 style={{ ...gridInputStyle, color: '#38bdf8' }}
@@ -1235,7 +1247,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="pob" readOnly={isReadOnly} value={row.pob}
                                                 onChange={(e) => { handleFieldChange(idx, 'pob', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'pob')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'POB', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={gridInputStyle}
@@ -1250,7 +1262,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="secObj" readOnly={isReadOnly} value={row.secObj}
                                                 onChange={(e) => { handleFieldChange(idx, 'secObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secObj')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Objective', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{ ...gridInputStyle, color: '#38bdf8' }}
@@ -1265,7 +1277,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="secAchieved" readOnly={isReadOnly} value={row.secAchieved}
                                                 onChange={(e) => { handleFieldChange(idx, 'secAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'secAchieved')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #38bdf8'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Secondary Sales Achieved', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Commitment" : "0"}
                                                 style={{ ...gridInputStyle, color: '#38bdf8', fontWeight: 700 }}
@@ -1295,7 +1307,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="collObj" readOnly={isReadOnly} value={row.collObj}
                                                 onChange={(e) => { handleFieldChange(idx, 'collObj', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collObj')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Objective', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{ ...gridInputStyle, color: '#34d399' }}
@@ -1310,7 +1322,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="collAchieved" readOnly={isReadOnly} value={row.collAchieved}
                                                 onChange={(e) => { handleFieldChange(idx, 'collAchieved', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'collAchieved')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #34d399'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Collection Achieved', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder={isProj ? "Recovery" : "0"}
                                                 style={{ ...gridInputStyle, color: '#34d399', fontWeight: 700 }}
@@ -1340,7 +1352,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="salaryExpense" readOnly={isReadOnly} value={row.salaryExpense}
                                                 onChange={(e) => { handleFieldChange(idx, 'salaryExpense', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'salaryExpense')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Salary & Expense', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{ ...gridInputStyle, color: '#fef08a' }}
@@ -1355,7 +1367,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 data-row={idx} data-col="totActivityAmt" readOnly={isReadOnly} value={row.totActivityAmt}
                                                 onChange={(e) => { handleFieldChange(idx, 'totActivityAmt', e.target.value); handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
                                                 onKeyDown={(e) => handleCellKeyDown(e, idx, 'totActivityAmt')}
-                                                onFocus={(e) => { e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
+                                                onFocus={(e) => { e.target.select(); e.target.style.background = '#1e293b'; e.target.style.boxShadow = 'inset 0 0 0 1.5px #f59e0b'; handleWordPreview(row.monthLabel || `Month ${idx + 1}`, 'Total Activity Amount', e.target.value); }}
                                                 onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.boxShadow = 'none'; setActiveWordPreview(null); }}
                                                 placeholder="0"
                                                 style={{ ...gridInputStyle, color: '#fed7aa' }}
@@ -1738,7 +1750,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
                 <div style={{ display: 'grid', gap: '16px' }}>
                     {EVALUATION_PILLARS.map((pillar) => {
-                        const val = selfRatings[pillar.id] !== undefined ? selfRatings[pillar.id] : 0;
+                        const rawVal = selfRatings[pillar.id];
+                        const val = (rawVal !== undefined && rawVal !== null && rawVal !== '') ? rawVal : '';
                         const mgrVal = managerRatings ? managerRatings[pillar.id] : null;
 
                         return (
@@ -1790,10 +1803,19 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                 min="0"
                                                 max={pillar.weight}
                                                 step="1"
-                                                readOnly={isReadOnly} value={val}
+                                                placeholder="0"
+                                                readOnly={isReadOnly}
+                                                value={val}
                                                 onChange={(e) => !isReadOnly && handleRatingChange(pillar.id, pillar.weight, e.target.value)}
-                                                onFocus={(e) => { e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = '#475569'; e.target.style.boxShadow = 'none'; }}
+                                                onFocus={(e) => {
+                                                    e.target.select();
+                                                    e.target.style.borderColor = '#38bdf8';
+                                                    e.target.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.25)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = '#475569';
+                                                    e.target.style.boxShadow = 'none';
+                                                }}
                                                 style={{
                                                     width: '75px',
                                                     height: '42px',
