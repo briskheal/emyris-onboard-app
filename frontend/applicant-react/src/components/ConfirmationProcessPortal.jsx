@@ -596,7 +596,7 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             width: '100%',
             maxWidth: '100%',
             margin: '0',
-            padding: '12px 20px',
+            padding: '2px',
             boxSizing: 'border-box',
             fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             WebkitFontSmoothing: 'antialiased',
@@ -620,57 +620,61 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
             <div style={{
                 background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '16px',
-                padding: '24px 28px',
-                marginBottom: '22px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.35)'
+                borderRadius: '12px',
+                padding: '12px 18px',
+                marginBottom: '14px',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.3)'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '1.8rem' }}>📋</span>
-                            <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.3px' }}>
-                                Confirmation Evaluation Process
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '1.3rem' }}>📋</span>
+                            <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.18rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
+                                Confirmation Dossier: {applicant?.fullName}
                             </h2>
                         </div>
-                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.5', fontWeight: 500 }}>
-                            5-Month Field Performance (Actuals) + 6th-Month Forward Projection (Commitment) with Sales, Collection, Activity Spend &amp; ROI Analysis.
-                        </p>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '4px', color: '#94a3b8', fontSize: '0.8rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span>Code: <strong style={{ color: '#38bdf8' }}>{applicant?.empCode || 'N/A'}</strong></span>
+                            <span>•</span>
+                            <span>HQ: <strong style={{ color: '#ffffff' }}>{applicant?.hq || 'N/A'}</strong></span>
+                            <span>•</span>
+                            <span>ADOJ: <strong style={{ color: '#facc15' }}>{formatDDMMYYYY(applicant?.actualJoiningDate)}</strong></span>
+                            <span>•</span>
+                            <span>Designation: <strong style={{ color: '#ffffff' }}>{applicant?.designation || 'Medical Representative'}</strong></span>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {isSubmitted ? (
                             <span style={{
                                 background: 'rgba(16, 185, 129, 0.15)',
                                 border: '1px solid #10b981',
                                 color: '#34d399',
-                                padding: '8px 16px',
-                                borderRadius: '24px',
-                                fontSize: '0.82rem',
+                                padding: '5px 12px',
+                                borderRadius: '20px',
+                                fontSize: '0.76rem',
                                 fontWeight: 700,
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '8px',
-                                letterSpacing: '0.3px'
+                                gap: '6px'
                             }}>
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-                                Submitted on {submittedAt ? formatDDMMYYYY(submittedAt) : 'Review'}
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                                Submitted ({submittedAt ? formatDDMMYYYY(submittedAt) : 'Review'})
                             </span>
                         ) : (
                             <span style={{
                                 background: 'rgba(245, 158, 11, 0.15)',
                                 border: '1px solid #f59e0b',
                                 color: '#fbbf24',
-                                padding: '8px 16px',
-                                borderRadius: '24px',
-                                fontSize: '0.82rem',
+                                padding: '5px 12px',
+                                borderRadius: '20px',
+                                fontSize: '0.76rem',
                                 fontWeight: 700,
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '8px',
-                                letterSpacing: '0.3px'
+                                gap: '6px'
                             }}>
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }}></span>
                                 Draft Mode (Pending Submission)
                             </span>
                         )}
@@ -681,13 +685,12 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     background: 'rgba(255, 255, 255, 0.05)',
                                     border: '1px solid #475569',
                                     color: '#cbd5e1',
-                                    padding: '8px 14px',
-                                    borderRadius: '8px',
+                                    padding: '5px 10px',
+                                    borderRadius: '6px',
                                     cursor: 'pointer',
-                                    fontSize: '0.84rem',
+                                    fontSize: '0.76rem',
                                     fontWeight: 600,
-                                    fontFamily: 'inherit',
-                                    transition: 'all 0.15s ease'
+                                    fontFamily: 'inherit'
                                 }}
                             >
                                 ✕ Close
@@ -695,84 +698,6 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                         )}
                     </div>
                 </div>
-
-                {/* Candidate Info Grid with DD-MM-YYYY ADOJ */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '14px',
-                    marginTop: '20px',
-                    padding: '16px 20px',
-                    background: 'rgba(15, 23, 42, 0.65)',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    fontSize: '0.88rem'
-                }}>
-                    <div>
-                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Employee: </span>
-                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.fullName}</strong>
-                    </div>
-                    <div>
-                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Emp Code: </span>
-                        <strong style={{ color: '#38bdf8', fontWeight: 700 }}>{applicant?.empCode || 'N/A'}</strong>
-                    </div>
-                    <div>
-                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>Designation: </span>
-                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.designation || 'Medical Representative'}</strong>
-                    </div>
-                    <div>
-                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>HQ: </span>
-                        <strong style={{ color: '#ffffff', fontWeight: 700 }}>{applicant?.hq || 'N/A'}</strong>
-                    </div>
-                    <div>
-                        <span style={{ color: '#94a3b8', fontWeight: 500 }}>ADOJ: </span>
-                        <strong style={{ color: '#facc15', fontWeight: 700, letterSpacing: '0.5px' }}>
-                            {formatDDMMYYYY(applicant?.actualJoiningDate)}
-                        </strong>
-                    </div>
-                </div>
-
-                {/* Dual-Score Comparison Banner (When Manager has evaluated) */}
-                {totalManagerMarks !== null && (
-                    <div style={{
-                        marginTop: '18px',
-                        padding: '16px 22px',
-                        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))',
-                        border: '1px solid #0284c7',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '14px'
-                    }}>
-                        <div>
-                            <div style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.98rem' }}>
-                                🎯 Final Confirmation Assessment Summary
-                            </div>
-                            <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginTop: '4px' }}>
-                                Recommendation: <strong style={{ color: totalManagerMarks >= 75 ? '#34d399' : '#fbbf24' }}>{managerRecommendation || (totalManagerMarks >= 75 ? 'Confirmed' : 'Probation Extension')}</strong>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Self Score</div>
-                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>{totalSelfMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Manager Score</div>
-                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38bdf8' }}>{totalManagerMarks} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/100</span></div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Variance Gap</div>
-                                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: Math.abs(totalSelfMarks - totalManagerMarks) <= 10 ? '#34d399' : '#f87171' }}>
-                                    {totalSelfMarks - totalManagerMarks > 0 ? `+${totalSelfMarks - totalManagerMarks}` : totalSelfMarks - totalManagerMarks}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Notification Messages */}
@@ -863,299 +788,136 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                 </div>
             )}
 
-            {/* SECTION 1: 5-Month Actuals + 6th-Month Forward Projection (Full Width with Salary, Activity Spend, LOP Days) */}
+            {/* SECTION 1: Field Performance & Forward Projection */}
             <div style={{
                 background: '#131b2e',
                 border: '1px solid #334155',
-                borderRadius: '16px',
+                borderRadius: '14px',
                 overflow: 'hidden',
-                marginBottom: '24px',
+                marginBottom: '18px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
                 width: '100%'
             }}>
-                <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ padding: '12px 18px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
-                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
+                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
                             {monthsData.length > 6 ? (
                                 `📊 Section 1: Field Performance Actuals (Months 1 to ${monthsData.length - 1}) & Month ${monthsData.length} Projection`
                             ) : (
-                                '📊 Section 1: 5-Month Field Activity (Actuals) & 6th-Month Projection (Commitment)'
+                                '📊 Section 1: Field Performance & 6th-Month Commitment'
                             )}
                         </h3>
-                        <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.84rem', fontWeight: 500 }}>
+                        <p style={{ margin: '2px 0 0 0', color: '#94a3b8', fontSize: '0.78rem', fontWeight: 500 }}>
                             Complete Performance Dossier: Field Activity, Secondary Sales, Collection Recovery, Field Expenses, Total Territory Cost, and ROI Health Multiple.
                         </p>
                     </div>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         * Tot Calls: Dr Visited + Chem. Visited | Call Avg: Tot Calls / Days Work | % Achvmnt: (Achieved / Objective) × 100
                     </span>
                 </div>
 
-                {/* Stable, non-jumping Full-Screen Table with locked column widths */}
-                <div style={{ padding: '8px 24px 12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b', flexWrap: 'wrap', gap: '10px' }}>
-                        {activeWordPreview ? (
-                            <div style={{
-                                background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%)',
-                                border: '1.5px solid #38bdf8',
-                                borderRadius: '8px',
-                                padding: '6px 14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                boxShadow: '0 2px 10px rgba(56, 189, 248, 0.25)'
-                            }}>
-                                <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800 }}>
-                                    {activeWordPreview.month} • {activeWordPreview.field}:
-                                </span>
-                                <span style={{ fontSize: '0.98rem', color: '#fde047', fontWeight: 900 }}>
-                                    ₹{Number(activeWordPreview.value).toLocaleString('en-IN')}
-                                </span>
-                                <span style={{ fontSize: '0.88rem', color: '#ffffff', fontWeight: 700, borderLeft: '1px solid #334155', paddingLeft: '10px' }}>
-                                    💬 {activeWordPreview.words}
-                                </span>
-                            </div>
-                        ) : (
-                            <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 600 }}>
-                                💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                type="button"
-                                onClick={() => scrollTable('left')}
-                                style={{
-                                    background: '#1e293b',
-                                    color: '#cbd5e1',
-                                    border: '1px solid #334155',
-                                    padding: '5px 12px',
-                                    borderRadius: '6px',
-                                    fontSize: '0.76rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                ◀ Scroll Left
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => scrollTable('right')}
-                                style={{
-                                    background: '#1e293b',
-                                    color: '#cbd5e1',
-                                    border: '1px solid #334155',
-                                    padding: '5px 12px',
-                                    borderRadius: '6px',
-                                    fontSize: '0.76rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Scroll Right ▶
-                            </button>
+                {/* Stable Navigation & Word Preview */}
+                <div style={{ padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b', flexWrap: 'wrap', gap: '8px' }}>
+                    {activeWordPreview ? (
+                        <div style={{
+                            background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                            border: '1.5px solid #38bdf8',
+                            borderRadius: '6px',
+                            padding: '4px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            boxShadow: '0 2px 8px rgba(56, 189, 248, 0.25)'
+                        }}>
+                            <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: 800 }}>
+                                {activeWordPreview.month} • {activeWordPreview.field}:
+                            </span>
+                            <span style={{ fontSize: '0.92rem', color: '#fde047', fontWeight: 900 }}>
+                                ₹{Number(activeWordPreview.value).toLocaleString('en-IN')}
+                            </span>
+                            <span style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, borderLeft: '1px solid #334155', paddingLeft: '8px' }}>
+                                💬 {activeWordPreview.words}
+                            </span>
                         </div>
+                    ) : (
+                        <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                            💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
+                        </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                            type="button"
+                            onClick={() => scrollTable('left')}
+                            style={{
+                                background: '#1e293b',
+                                color: '#cbd5e1',
+                                border: '1px solid #334155',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ◀ Scroll Left
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollTable('right')}
+                            style={{
+                                background: '#1e293b',
+                                color: '#cbd5e1',
+                                border: '1px solid #334155',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Scroll Right ▶
+                        </button>
                     </div>
+                </div>
 
-                    <div
-                        id="confirmation-table-container"
-                        tabIndex={0}
-                        style={{
-                            overflowX: 'auto',
-                            overflowY: 'auto',
-                            maxHeight: '68vh',
-                            WebkitOverflowScrolling: 'touch',
-                            position: 'relative'
-                        }}
-                    >
+                <div
+                    id="confirmation-table-container"
+                    tabIndex={0}
+                    style={{
+                        overflowX: 'auto',
+                        overflowY: 'auto',
+                        maxHeight: '68vh',
+                        WebkitOverflowScrolling: 'touch',
+                        position: 'relative',
+                        background: '#090e1a'
+                    }}
+                >
                     <table style={{
                         width: '100%',
-                        tableLayout: 'fixed',
                         borderCollapse: 'collapse',
-                        fontSize: '0.82rem',
-                        minWidth: '1380px',
+                        fontSize: '0.78rem',
+                        textAlign: 'right',
                         background: '#090e1a'
                     }}>
-                        <colgroup>
-                            <col style={{ width: '130px' }} /> {/* Month */}
-                            <col style={{ width: '60px' }} />  {/* Days Work */}
-                            <col style={{ width: '65px' }} />  {/* Dr Visited */}
-                            <col style={{ width: '65px' }} />  {/* Chem. Visited */}
-                            <col style={{ width: '65px' }} />  {/* Tot Calls */}
-                            <col style={{ width: '60px' }} />  {/* Call Avg */}
-                            <col style={{ width: '80px' }} />  {/* POB (₹) */}
-                            {/* Secondary Sales Group */}
-                            <col style={{ width: '90px' }} />  {/* Sec Obj (₹) */}
-                            <col style={{ width: '90px' }} />  {/* Sec Achivd (₹) */}
-                            <col style={{ width: '65px' }} />  {/* % Sec Ach */}
-                            {/* Collection / Cash Flow Group */}
-                            <col style={{ width: '90px' }} />  {/* Coll Obj (₹) */}
-                            <col style={{ width: '90px' }} />  {/* Coll Achvd (₹) */}
-                            <col style={{ width: '65px' }} />  {/* % Coll Ach */}
-                            {/* Cost & Investment Group */}
-                            <col style={{ width: '95px' }} />  {/* Salary & Expense (₹) */}
-                            <col style={{ width: '95px' }} />  {/* Tot Activity Amt (₹) */}
-                            <col style={{ width: '95px' }} />  {/* Tot Expense */}
-                            <col style={{ width: '115px' }} /> {/* Sales vs Expense Ratio */}
-                        </colgroup>
                         <thead>
-                            {/* Grouping Header (Row 1) */}
-                            <tr style={{ height: '32px' }}>
-                                <th style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    left: 0,
-                                    zIndex: 40,
-                                    background: '#0b1329',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderRight: '1px solid #334155',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#94a3b8',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'left'
-                                }}>
-                                    MONTH
-                                </th>
-                                <th colSpan={6} style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 30,
-                                    background: '#0b1329',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderRight: '1.5px solid #475569',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#94a3b8',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'center'
-                                }}>
-                                    FIELD ACTIVITY &amp; COVERAGE
-                                </th>
-                                <th colSpan={3} style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 30,
-                                    background: '#0b162c',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderRight: '1.5px solid #475569',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#38bdf8',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'center'
-                                }}>
-                                    💼 SECONDARY SALES
-                                </th>
-                                <th colSpan={3} style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 30,
-                                    background: '#081c1c',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderRight: '1.5px solid #475569',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#34d399',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'center'
-                                }}>
-                                    💰 COLLECTION RECOVERY
-                                </th>
-                                <th colSpan={3} style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 30,
-                                    background: '#1c170d',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderRight: '1.5px solid #475569',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#f59e0b',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'center'
-                                }}>
-                                    🏷️ COST &amp; TOTAL FIELD INVESTMENT
-                                </th>
-                                <th colSpan={1} style={{
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 30,
-                                    background: '#171128',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    borderBottom: '1px solid #1e293b',
-                                    boxSizing: 'border-box',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    color: '#a78bfa',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    textAlign: 'center'
-                                }}>
-                                    📈 6x ROI &amp; SURPLUS / DEFICIT
-                                </th>
-                            </tr>
-                            {/* Column Header (Row 2) */}
-                            <tr style={{ height: '32px' }}>
-                                <th style={{
-                                    position: 'sticky',
-                                    top: '32px',
-                                    left: 0,
-                                    zIndex: 39,
-                                    background: '#0f172a',
-                                    height: '32px',
-                                    padding: '6px 8px',
-                                    fontWeight: 700,
-                                    fontSize: '0.72rem',
-                                    letterSpacing: '0.5px',
-                                    borderRight: '1px solid #334155',
-                                    borderBottom: '2px solid #334155',
-                                    boxSizing: 'border-box',
-                                    color: '#94a3b8'
-                                }}>
-                                    CALENDAR
-                                </th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Days</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Dr Vis</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>Chem Vis</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>Tot Calls</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>Call Avg</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0f172a', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#cbd5e1' }}>POB (₹)</th>
-                                
-                                {/* Secondary Columns */}
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SEC OBJ</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SEC ACH</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#0b162c', height: '32px', padding: '6px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#38bdf8' }}>% SEC</th>
-
-                                {/* Collection Columns */}
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>COLL OBJ</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>COLL ACH</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#081c1c', height: '32px', padding: '6px 2px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#34d399' }}>% COLL</th>
-
-                                {/* Cost & Investment Columns */}
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>SALARY &amp; EXP</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', color: '#f59e0b', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>TOT ACTIVITY</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#1c170d', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'right', borderRight: '1.5px solid #475569', borderBottom: '2px solid #334155', boxSizing: 'border-box', color: '#fde047' }}>TOT EXPENSE</th>
-                                <th style={{ position: 'sticky', top: '32px', zIndex: 28, background: '#171128', height: '32px', padding: '6px 4px', fontWeight: 700, fontSize: '0.72rem', textAlign: 'center', color: '#a78bfa', borderBottom: '2px solid #334155', boxSizing: 'border-box' }}>6x EXP &amp; ROI</th>
+                            <tr style={{ background: '#0f172a', color: '#94a3b8', borderBottom: '1.5px solid #334155' }}>
+                                <th style={{ position: 'sticky', top: 0, left: 0, zIndex: 40, background: '#0f172a', padding: '7px 6px', textAlign: 'left', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155', whiteSpace: 'nowrap' }}>Month</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Days</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Dr Vis</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Chem Vis</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Tot Calls</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Call Avg</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>POB (₹)</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Obj</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#38bdf8', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Sec Ach</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Sec</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Obj</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#34d399', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Coll Ach</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 3px', textAlign: 'center', borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>% Coll</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fef08a', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Salary &amp; Exp</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fed7aa', borderRight: '1px solid #334155', borderBottom: '1.5px solid #334155' }}>Activity</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', color: '#fde047', fontWeight: 800, borderRight: '1.5px solid #475569', borderBottom: '1.5px solid #334155' }}>Tot Expense</th>
+                                <th style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0f172a', padding: '7px 4px', textAlign: 'center', color: '#a78bfa', borderBottom: '1.5px solid #334155' }}>6x Variance &amp; ROI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1173,30 +935,20 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         }}
                                     >
                                         {/* Month Header / Type Label */}
-                                        <td style={{ position: 'sticky', left: 0, zIndex: 12, background: isProj ? '#0b162c' : (idx % 2 === 1 ? '#0d1527' : '#090e1a'), padding: '6px 8px', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', borderRight: '1px solid #334155', borderBottom: '1px solid #1e293b' }}>
-                                            <div style={{ fontSize: '0.8rem', color: isProj ? '#38bdf8' : '#ffffff' }}>
-                                                {row.monthLabel}
-                                            </div>
-                                            <div style={{ marginTop: '2px' }}>
-                                                {isProj ? (
-                                                    <span style={{
-                                                        background: 'rgba(56, 189, 248, 0.2)',
-                                                        color: '#38bdf8',
-                                                        border: '1px solid #0284c7',
-                                                        padding: '1px 5px',
-                                                        borderRadius: '3px',
-                                                        fontSize: '0.62rem',
-                                                        fontWeight: 800,
-                                                        letterSpacing: '0.3px'
-                                                    }}>
-                                                        ⭐ {idx + 1 === 6 ? '6TH MO. PLAN' : (idx + 1 === 9 ? '9TH MO. PLAN' : `MO. ${idx + 1} PLAN`)}
-                                                    </span>
-                                                ) : (
-                                                    <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>
-                                                        Month {idx + 1} (Actual)
-                                                    </span>
-                                                )}
-                                            </div>
+                                        <td style={{
+                                            position: 'sticky',
+                                            left: 0,
+                                            zIndex: 12,
+                                            background: isProj ? '#0b162c' : (idx % 2 === 1 ? '#0d1527' : '#090e1a'),
+                                            padding: '5px 6px',
+                                            textAlign: 'left',
+                                            fontWeight: 700,
+                                            color: isProj ? '#38bdf8' : '#ffffff',
+                                            whiteSpace: 'nowrap',
+                                            borderRight: '1px solid #334155',
+                                            borderBottom: '1px solid #1e293b'
+                                        }}>
+                                            {row.monthLabel} {isProj ? '(🎯 Plan)' : ''}
                                         </td>
 
                                         {/* Days Worked */}
@@ -1440,7 +1192,8 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     </tr>
                                 );
                             })}
-
+                        </tbody>
+                        <tfoot>
                             {/* Row 1: Actuals Total / Average */}
                             <tr style={{ background: '#090e1a', borderTop: '2px solid #475569', fontWeight: 800 }}>
                                 <td style={{
@@ -1449,94 +1202,83 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                     zIndex: 14,
                                     background: '#090e1a',
                                     borderRight: '1px solid #334155',
-                                    padding: '8px 8px',
-                                    maxWidth: '130px',
-                                    width: '130px',
-                                    boxSizing: 'border-box',
-                                    overflow: 'hidden',
-                                    lineHeight: '1.25'
+                                    padding: '6px 6px',
+                                    textAlign: 'left',
+                                    color: '#f8fafc',
+                                    whiteSpace: 'nowrap'
                                 }}>
-                                    <div style={{ fontWeight: 800, color: '#f8fafc', fontSize: '0.78rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                        {monthsData.length > 6 ? '📈 8-Mo. Actuals' : '📈 5-Mo. Actuals'}
-                                    </div>
-                                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>
-                                        Subtotal
-                                    </div>
+                                    {monthsData.length > 6 ? '📈 8-Mo. Actuals Subtotal' : '📈 5-Mo. Actuals Subtotal'}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {actualsTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>d</span>
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {actualsTotals.totalDr.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {actualsTotals.totalChem.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {actualsTotals.totalCalls.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {actualsTotals.overallCallAvg}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #334155' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1.5px solid #475569' }}>
                                     {formatCurrency(actualsTotals.totalPob)}
                                 </td>
                                 
                                 {/* Secondary Actuals */}
-                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalSecObj)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#38bdf8', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#38bdf8', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalSecAch)}
                                 </td>
-                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                <td style={{ padding: '6px 3px', textAlign: 'center', borderRight: '1.5px solid #475569' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 6px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 900,
-                                        background: `rgba(${actualsTotals.overallSecPct >= 100 ? '16, 185, 129' : (actualsTotals.overallSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
-                                        color: getPctColor(actualsTotals.overallSecPct),
-                                        border: `1px solid ${getPctColor(actualsTotals.overallSecPct)}`
+                                        padding: '1px 4px',
+                                        borderRadius: '3px',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        color: getPctColor(actualsTotals.overallSecPct)
                                     }}>
                                         {actualsTotals.overallSecPct}%
                                     </span>
                                 </td>
 
                                 {/* Collection Actuals */}
-                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#34d399', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalCollObj)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#34d399', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalCollAch)}
                                 </td>
-                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #334155' }}>
+                                <td style={{ padding: '6px 3px', textAlign: 'center', borderRight: '1.5px solid #475569' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 6px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 900,
-                                        background: `rgba(${actualsTotals.overallCollPct >= 100 ? '16, 185, 129' : (actualsTotals.overallCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.2)`,
-                                        color: getPctColor(actualsTotals.overallCollPct),
-                                        border: `1px solid ${getPctColor(actualsTotals.overallCollPct)}`
+                                        padding: '1px 4px',
+                                        borderRadius: '3px',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        color: getPctColor(actualsTotals.overallCollPct)
                                     }}>
                                         {actualsTotals.overallCollPct}%
                                     </span>
                                 </td>
 
                                 {/* Cost & Activity Investment Actuals */}
-                                <td style={{ padding: '14px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800 }}>
+                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalSalaryExpense)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800 }}>
+                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(actualsTotals.totalActivityAmt)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #334155' }}>
-                                    <span style={{ padding: '0 8px' }}>{Math.round(actualsTotals.totalExpense || 0)}</span>
+                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', fontWeight: 800, borderRight: '1.5px solid #475569' }}>
+                                    {Math.round(actualsTotals.totalExpense || 0)}
                                 </td>
-                                <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                     {(() => {
                                         const aExp = actualsTotals.totalExpense;
                                         const aSec = actualsTotals.totalSecAch;
@@ -1549,19 +1291,19 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         return (
                                             <div style={{
                                                 display: 'inline-flex',
-                                                flexDirection: 'column',
                                                 alignItems: 'center',
-                                                padding: '4px 8px',
-                                                borderRadius: '8px',
-                                                minWidth: '100px',
-                                                background: isPlus ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                                                border: `1.5px solid ${isPlus ? '#10b981' : '#ef4444'}`
+                                                justifyContent: 'center',
+                                                gap: '3px',
+                                                padding: '1px 5px',
+                                                borderRadius: '4px',
+                                                background: isPlus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                                border: `1px solid ${isPlus ? '#10b981' : '#ef4444'}`
                                             }}>
-                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#34d399' : '#f87171' }}>
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: isPlus ? '#34d399' : '#f87171' }}>
                                                     {aDiffText}
                                                 </span>
-                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
-                                                    {actualsTotals.actSalesExpRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                <span style={{ fontSize: '0.58rem', fontWeight: 800, color: isPlus ? '#a7f3d0' : '#fca5a5' }}>
+                                                    ({actualsTotals.actSalesExpRatioStr})
                                                 </span>
                                             </div>
                                         );
@@ -1569,102 +1311,91 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 </td>
                             </tr>
 
-                            {/* Row 2: Grand Total Taking Projection Also (6-Mo. or 9-Mo. Period Calculation) */}
-                            <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2.5px solid #a855f7', fontWeight: 900 }}>
+                            {/* Row 2: Grand Total Taking Projection Also */}
+                            <tr style={{ background: 'linear-gradient(90deg, #1e1b4b 0%, #0f172a 100%)', borderTop: '2px solid #a855f7', fontWeight: 900 }}>
                                 <td style={{
                                     position: 'sticky',
                                     left: 0,
                                     zIndex: 14,
                                     background: '#1e1b4b',
                                     borderRight: '1px solid #4338ca',
-                                    padding: '8px 8px',
-                                    maxWidth: '130px',
-                                    width: '130px',
-                                    boxSizing: 'border-box',
-                                    overflow: 'hidden',
-                                    lineHeight: '1.25'
+                                    padding: '6px 6px',
+                                    textAlign: 'left',
+                                    color: '#c084fc',
+                                    whiteSpace: 'nowrap'
                                 }}>
-                                    <div style={{ fontWeight: 900, color: '#c084fc', fontSize: '0.8rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                        {monthsData.length > 6 ? '🌟 9-Mo. Total' : '🌟 6-Mo. Total'}
-                                    </div>
-                                    <div style={{ fontSize: '0.64rem', color: '#d8b4fe', fontWeight: 700, marginTop: '2px', whiteSpace: 'normal', lineHeight: '1.15' }}>
-                                        {monthsData.length > 6 ? '(6 Mo. + 3 Mo. Plan)' : '(5 Actuals + 6th Plan)'}
-                                    </div>
+                                    {monthsData.length > 6 ? '🌟 9-Mo. Total (6 Mo. + 3 Mo. Plan)' : '🌟 6-Mo. Total (5 Actuals + 6th Plan)'}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {combinedTotals.totalDays} <span style={{ fontSize: '0.62rem', color: '#c084fc' }}>d</span>
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {combinedTotals.totalDr.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#c084fc', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {combinedTotals.totalChem.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {combinedTotals.totalCalls.toLocaleString('en-IN')}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#c084fc', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {combinedTotals.overallCallAvg}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1px solid #4338ca' }}>
+                                <td style={{ padding: '6px 4px', color: '#ffffff', textAlign: 'right', borderRight: '1.5px solid #475569' }}>
                                     {formatCurrency(combinedTotals.totalPob)}
                                 </td>
 
                                 {/* Secondary Grand Total */}
-                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#c084fc', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalSecObj)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#c084fc', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#c084fc', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalSecAch)}
                                 </td>
-                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #4338ca' }}>
+                                <td style={{ padding: '6px 3px', textAlign: 'center', borderRight: '1.5px solid #475569' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 6px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.8rem',
+                                        padding: '1px 4px',
+                                        borderRadius: '3px',
+                                        fontSize: '0.74rem',
                                         fontWeight: 900,
-                                        background: `rgba(${combinedTotals.overallSecPct >= 100 ? '16, 185, 129' : (combinedTotals.overallSecPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.25)`,
-                                        color: getPctColor(combinedTotals.overallSecPct),
-                                        border: `1.5px solid ${getPctColor(combinedTotals.overallSecPct)}`
+                                        color: getPctColor(combinedTotals.overallSecPct)
                                     }}>
                                         {combinedTotals.overallSecPct}%
                                     </span>
                                 </td>
 
                                 {/* Collection Grand Total */}
-                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#34d399', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalCollObj)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#34d399', textAlign: 'right' }}>
+                                <td style={{ padding: '6px 4px', color: '#34d399', textAlign: 'right', borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalCollAch)}
                                 </td>
-                                <td style={{ padding: '14px 2px', textAlign: 'center', borderRight: '1px solid #4338ca' }}>
+                                <td style={{ padding: '6px 3px', textAlign: 'center', borderRight: '1.5px solid #475569' }}>
                                     <span style={{
                                         display: 'inline-block',
-                                        padding: '4px 6px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.8rem',
+                                        padding: '1px 4px',
+                                        borderRadius: '3px',
+                                        fontSize: '0.74rem',
                                         fontWeight: 900,
-                                        background: `rgba(${combinedTotals.overallCollPct >= 100 ? '16, 185, 129' : (combinedTotals.overallCollPct >= 85 ? '245, 158, 11' : '239, 68, 68')}, 0.25)`,
-                                        color: getPctColor(combinedTotals.overallCollPct),
-                                        border: `1.5px solid ${getPctColor(combinedTotals.overallCollPct)}`
+                                        color: getPctColor(combinedTotals.overallCollPct)
                                     }}>
                                         {combinedTotals.overallCollPct}%
                                     </span>
                                 </td>
 
                                 {/* Cost & Activity Investment Grand Total */}
-                                <td style={{ padding: '14px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800 }}>
+                                <td style={{ padding: '6px 4px', color: '#fef08a', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalSalaryExpense)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800 }}>
+                                <td style={{ padding: '6px 4px', color: '#fed7aa', textAlign: 'right', fontWeight: 800, borderRight: '1px solid #1e293b' }}>
                                     {formatCurrency(combinedTotals.totalActivityAmt)}
                                 </td>
-                                <td style={{ padding: '14px 4px', color: '#fde047', textAlign: 'right', fontWeight: 900, borderRight: '1px solid #4338ca' }}>
-                                    <span style={{ padding: '0 8px' }}>{Math.round(combinedTotals.totalExpense || 0)}</span>
+                                <td style={{ padding: '6px 4px', color: '#fde047', textAlign: 'right', fontWeight: 900, borderRight: '1.5px solid #475569' }}>
+                                    {Math.round(combinedTotals.totalExpense || 0)}
                                 </td>
-                                <td style={{ padding: '14px 4px', textAlign: 'center' }}>
+                                <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                                     {(() => {
                                         const cExp = combinedTotals.totalExpense;
                                         const cSec = combinedTotals.totalSecAch;
@@ -1677,26 +1408,26 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                         return (
                                             <div style={{
                                                 display: 'inline-flex',
-                                                flexDirection: 'column',
                                                 alignItems: 'center',
-                                                padding: '4px 8px',
-                                                borderRadius: '8px',
-                                                minWidth: '100px',
+                                                justifyContent: 'center',
+                                                gap: '3px',
+                                                padding: '1px 5px',
+                                                borderRadius: '4px',
                                                 background: isPlus ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                                                border: `1.5px solid ${isPlus ? '#a855f7' : '#ef4444'}`
+                                                border: `1px solid ${isPlus ? '#a855f7' : '#ef4444'}`
                                             }}>
-                                                <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPlus ? '#e9d5ff' : '#f87171' }}>
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 900, color: isPlus ? '#e9d5ff' : '#f87171' }}>
                                                     {cDiffText}
                                                 </span>
-                                                <span style={{ fontSize: '0.64rem', fontWeight: 800, marginTop: '2px', color: isPlus ? '#d8b4fe' : '#fca5a5' }}>
-                                                    {combinedTotals.combSalesExpRatioStr} {isPlus ? '(Surplus)' : '(Deficit)'}
+                                                <span style={{ fontSize: '0.58rem', fontWeight: 800, color: isPlus ? '#d8b4fe' : '#fca5a5' }}>
+                                                    ({combinedTotals.combSalesExpRatioStr})
                                                 </span>
                                             </div>
                                         );
                                     })()}
                                 </td>
                             </tr>
-                        </tbody>
+                        </tfoot>
                     </table>
                 </div>
 
@@ -1763,42 +1494,80 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </div>
                 </div>
 </div>
-{/* SECTION 2: 6 Core Confirmation Pillars (100 Marks Evaluation) */}
+            {/* SECTION 2: 100-Mark Dual-Evaluation Comparison */}
             <div style={{
-                background: '#131b2e',
+                background: '#0f172a',
                 border: '1px solid #334155',
-                borderRadius: '16px',
-                padding: '24px 28px',
-                marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                marginBottom: '18px',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
                 width: '100%'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    marginBottom: '14px',
+                    background: '#090e1a',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '10px 16px'
+                }}>
                     <div>
-                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
-                            🎯 Section 2: Confirmation Parameters (100 Marks Evaluation)
-                        </h3>
-                        <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
+                        <h4 style={{ margin: 0, color: '#38bdf8', fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>🎯</span> Section 2: 100-Mark Dual-Evaluation Comparison
+                        </h4>
+                        <div style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '3px' }}>
                             Rate your performance across the 6 parameters. Marks must be whole numbers without decimals.
-                        </p>
+                        </div>
                     </div>
 
-                    <div style={{
-                        background: 'rgba(14, 165, 233, 0.15)',
-                        border: '1px solid #0284c7',
-                        padding: '10px 18px',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px'
-                    }}>
-                        <span style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 600 }}>Total Self-Score:</span>
-                        <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#38bdf8' }}>{totalSelfMarks}</span>
-                        <span style={{ fontSize: '0.86rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
+                    {/* Dual Total Score Badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        {/* Total Self Rating Pill */}
+                        <div style={{
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            border: '1.5px solid #0284c7',
+                            borderRadius: '8px',
+                            padding: '5px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Total Self Score:
+                            </span>
+                            <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#38bdf8' }}>
+                                {totalSelfMarks}
+                            </span>
+                            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
+                        </div>
+
+                        {/* Total Manager Score Pill */}
+                        <div style={{
+                            background: totalManagerMarks !== null ? 'rgba(16, 185, 129, 0.12)' : 'rgba(51, 65, 85, 0.25)',
+                            border: `1.5px solid ${totalManagerMarks !== null ? '#10b981' : '#475569'}`,
+                            borderRadius: '8px',
+                            padding: '5px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Total Manager Score:
+                            </span>
+                            <span style={{ fontSize: '1.15rem', fontWeight: 900, color: totalManagerMarks !== null ? '#34d399' : '#94a3b8' }}>
+                                {totalManagerMarks !== null ? totalManagerMarks : '—'}
+                            </span>
+                            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700 }}>/ 100</span>
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gap: '16px' }}>
+                <div style={{ display: 'grid', gap: '10px' }}>
                     {EVALUATION_PILLARS.map((pillar) => {
                         const rawVal = selfRatings[pillar.id];
                         const val = (rawVal !== undefined && rawVal !== null && rawVal !== '') ? rawVal : '';
@@ -1809,45 +1578,26 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                 key={pillar.id}
                                 style={{
                                     background: '#090e1a',
-                                    border: '1px solid rgba(255,255,255,0.07)',
-                                    borderRadius: '12px',
-                                    padding: '18px 22px',
+                                    border: '1px solid #334155',
+                                    borderRadius: '10px',
+                                    padding: '12px 18px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
                                     flexWrap: 'wrap',
-                                    gap: '16px'
+                                    gap: '12px'
                                 }}
                             >
-                                <div style={{ flex: '1 1 360px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                                        <h4 style={{ margin: 0, color: '#ffffff', fontSize: '1rem', fontWeight: 700 }}>
-                                            {pillar.title}
-                                        </h4>
-                                        <span style={{
-                                            background: '#1e293b',
-                                            border: '1px solid #334155',
-                                            color: '#38bdf8',
-                                            fontSize: '0.74rem',
-                                            fontWeight: 700,
-                                            padding: '2px 8px',
-                                            borderRadius: '6px'
-                                        }}>
-                                            Max {pillar.weight} Marks
-                                        </span>
-                                    </div>
-                                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.84rem', lineHeight: '1.5', fontWeight: 500 }}>
-                                        {pillar.desc}
-                                    </p>
+                                <div style={{ flex: '1 1 300px' }}>
+                                    <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.88rem' }}>{pillar.title}</div>
+                                    <div style={{ color: '#94a3b8', fontSize: '0.76rem', marginTop: '2px' }}>{pillar.desc}</div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
-                                    {/* MR Self-Rating Input */}
-                                    <div style={{ textAlign: 'center' }}>
-                                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px', textTransform: 'uppercase', fontWeight: 700 }}>
-                                            Self Rating
-                                        </label>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                    {/* Self Rating */}
+                                    <div style={{ textAlign: 'center', minWidth: '85px' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Self Rating</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '2px' }}>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -1867,41 +1617,76 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                                                     e.target.style.boxShadow = 'none';
                                                 }}
                                                 style={{
-                                                    width: '75px',
-                                                    height: '42px',
-                                                    padding: '6px 8px',
+                                                    width: '56px',
+                                                    height: '32px',
+                                                    padding: '2px 4px',
                                                     textAlign: 'center',
                                                     background: '#131b2e',
                                                     border: '1.5px solid #475569',
-                                                    borderRadius: '8px',
-                                                    color: '#ffffff',
+                                                    borderRadius: '6px',
+                                                    color: '#38bdf8',
                                                     fontWeight: 800,
-                                                    fontSize: '1.05rem',
+                                                    fontSize: '0.98rem',
                                                     fontFamily: 'inherit',
                                                     outline: 'none',
                                                     boxSizing: 'border-box',
                                                     transition: 'all 0.15s ease'
                                                 }}
                                             />
-                                            <span style={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>/ {pillar.weight}</span>
+                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>/{pillar.weight}</span>
                                         </div>
                                     </div>
 
-                                    {/* Manager Assigned Rating (if available) */}
-                                    {mgrVal !== null && (
-                                        <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '18px' }}>
-                                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', marginBottom: '6px', textTransform: 'uppercase', fontWeight: 700 }}>
-                                                Manager Rating
-                                            </label>
-                                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#38bdf8' }}>
-                                                {mgrVal} <span style={{ color: '#64748b', fontSize: '0.82rem', fontWeight: 600 }}>/{pillar.weight}</span>
-                                            </div>
+                                    {/* Manager Rating */}
+                                    <div style={{ textAlign: 'center', borderLeft: '1px solid #334155', paddingLeft: '18px', minWidth: '95px' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#34d399', textTransform: 'uppercase', fontWeight: 700 }}>Manager Score</div>
+                                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: mgrVal !== null && mgrVal !== undefined ? '#34d399' : '#64748b', marginTop: '2px' }}>
+                                            {mgrVal !== null && mgrVal !== undefined ? mgrVal : '-'} <span style={{ fontSize: '0.72rem', color: '#64748b' }}>/{pillar.weight}</span>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         );
                     })}
+
+                    {/* Overall Cumulative Summary Row */}
+                    <div style={{
+                        background: 'linear-gradient(90deg, #090e1a 0%, #1e1b4b 100%)',
+                        border: '1.5px solid #6366f1',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                        marginTop: '4px'
+                    }}>
+                        <div>
+                            <div style={{ color: '#ffffff', fontWeight: 900, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🎯</span> Overall 100-Mark Dual Evaluation Cumulative Score
+                            </div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '2px' }}>
+                                Total cumulative score out of 100 benchmark points (Self vs Manager)
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                            <div style={{ textAlign: 'center', minWidth: '85px' }}>
+                                <div style={{ fontSize: '0.72rem', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 800 }}>Total Self</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>
+                                    {totalSelfMarks} <span style={{ fontSize: '0.74rem', color: '#64748b' }}>/ 100</span>
+                                </div>
+                            </div>
+
+                            <div style={{ textAlign: 'center', borderLeft: '1px solid #4338ca', paddingLeft: '18px', minWidth: '95px' }}>
+                                <div style={{ fontSize: '0.72rem', color: '#34d399', textTransform: 'uppercase', fontWeight: 800 }}>Total Manager</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: totalManagerMarks !== null ? '#34d399' : '#64748b', marginTop: '2px' }}>
+                                    {totalManagerMarks !== null ? totalManagerMarks : '-'} <span style={{ fontSize: '0.74rem', color: '#64748b' }}>/ 100</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2033,13 +1818,13 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
 
 const gridInputStyle = {
     width: '100%',
-    height: '32px',
-    padding: '0 6px',
+    height: '26px',
+    padding: '0 4px',
     background: 'transparent',
     border: 'none',
     borderRadius: '0px',
     color: '#ffffff',
-    fontSize: '0.8rem',
+    fontSize: '0.78rem',
     fontFamily: "'Montserrat', sans-serif",
     fontWeight: '600',
     boxSizing: 'border-box',

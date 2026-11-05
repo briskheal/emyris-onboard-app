@@ -196,7 +196,7 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     // Full Screen Confirmation Process View (Edge-to-Edge)
     if (activeTab === 'confirmation-process') {
         return (
-            <div style={{ width: '100%', maxWidth: '100%', minHeight: '100vh', padding: '16px 24px', margin: 0, boxSizing: 'border-box', background: '#0b1120' }}>
+            <div style={{ width: '100%', maxWidth: '100%', minHeight: '100vh', padding: '10px 14px', margin: 0, boxSizing: 'border-box', background: '#0b1120' }}>
                 <div style={{ marginBottom: '14px' }}>
                     <button onClick={() => setActiveTab('overview')} style={styles.backButton}>
                         ⬅️ Back to Dashboard Overview
