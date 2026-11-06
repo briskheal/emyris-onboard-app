@@ -8935,7 +8935,7 @@ router.post('/update-confirmation-record', async (req, res) => {
                     });
                 }
 
-                await sendSystemMail({
+                await sendEmail({
                     to: email,
                     cc: ccList.length > 0 ? ccList.join(', ') : undefined,
                     subject: emailSubject,
