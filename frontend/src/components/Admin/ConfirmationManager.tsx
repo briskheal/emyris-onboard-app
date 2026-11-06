@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Users, CheckCircle2, Clock, Search, 
-  Eye, RefreshCw, X, Award, TrendingUp, RotateCcw, Calendar
+  Eye, RefreshCw, X, Award, TrendingUp, RotateCcw, Calendar, Download
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -1231,6 +1231,41 @@ export default function ConfirmationManager() {
                     <span>Release Saved Process</span>
                   </button>
                 </div>
+
+                {/* Download Official Confirmation Letter with Letterhead & Stamp */}
+                {(selectedRecord.confirmationStatus === 'confirmed' || selectedRecord.status === 'Confirmed Employee' || selectedRecord.confirmationData?.status === 'confirmed') && (
+                  <div style={{ marginTop: '14px', borderTop: '1px dashed #334155', paddingTop: '14px' }}>
+                    <a
+                      href={`/api/admin/confirmation-letter-pdf?email=${encodeURIComponent(selectedRecord.email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        width: '100%',
+                        minHeight: '44px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#ffffff',
+                        border: '1px solid #38bdf8',
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.86rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        textDecoration: 'none',
+                        boxSizing: 'border-box',
+                        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; }}
+                    >
+                      <Download size={16} />
+                      <span>Download / View Official Confirmation Letter (With Letterhead &amp; Stamp)</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

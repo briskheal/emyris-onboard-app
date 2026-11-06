@@ -87,7 +87,7 @@ export default function SetupAndLetters() {
     '{{TODAY_DATE}}', '{{REF_NO}}', '{{TITLE}}', '{{TITLE_SHORT}}', '{{FULL_NAME}}', '{{FIRST_NAME}}', '{{FATHER_NAME}}', '{{DOB}}',
     '{{BLOOD_GROUP}}', '{{PAN_NO}}', '{{PHONE}}', '{{ADDRESS}}', '{{CITY_STATE}}', '{{PIN}}', '{{DESIGNATION}}', '{{EMP_CODE}}', 
     '{{DIVISION}}', '{{HQ}}', '{{REPORTING_TO}}', '{{SALARY_MONTHLY}}', '{{SALARY_ANNUAL}}', '{{SALARY_WORDS}}', '{{BANK_NAME}}', 
-    '{{BANK_ACC}}', '{{IFSC}}', '{{JOINING_DATE}}', '{{COMPANY_NAME}}', '{{SIGNATORY_NAME}}', '{{SIGNATORY_DESG}}', '{{SAL_BASIC}}', 
+    '{{BANK_ACC}}', '{{IFSC}}', '{{JOINING_DATE}}', '{{DOC}}', '{{COMPANY_NAME}}', '{{SIGNATORY_NAME}}', '{{SIGNATORY_DESG}}', '{{SAL_BASIC}}', 
     '{{SAL_HRA}}', '{{SAL_LTA}}', '{{SAL_CONV}}', '{{SAL_MED}}', '{{SAL_SPECIAL}}', '{{SAL_EDU}}', '{{SAL_FIXED}}', 
     '{{SAL_GROSS_MONTHLY}}', '{{SAL_GROSS_ANNUAL}}', '{{SALARY_BREAKUP}}', '{{MISC_COUNTER}}', '{{OFFER_COUNTER}}', '{{APPT_COUNTER}}', '{{EMP_CODE_COUNTER}}'
   ];

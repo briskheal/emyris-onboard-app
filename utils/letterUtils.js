@@ -101,6 +101,8 @@ function fillLetterPlaceholders(text, app, companyData = {}) {
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
         "{{JOINING_DATE}}": formatDateDMY(app.actualJoiningDate || fd.joiningDate),
+        "{{DOC}}": formatDateDMY(app.doc || app.confirmationDate || app.confirmationData?.doc || new Date()),
+        "{{CONFIRMATION_DATE}}": formatDateDMY(app.doc || app.confirmationDate || app.confirmationData?.doc || new Date()),
         "{{COMPANY_NAME}}": companyData.name || "Emyris Biolifesciences",
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",

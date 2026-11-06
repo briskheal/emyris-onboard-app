@@ -1935,6 +1935,7 @@ router.post('/render-template', async (req, res) => {
             'DIVISION': applicant.division || '',
             'HQ': applicant.hq || fd.hq || '',
             'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
+            'DOC': applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc ? (new Date(applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc).toLocaleDateString('en-GB')) : new Date().toLocaleDateString('en-GB'),
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
@@ -1947,7 +1948,8 @@ router.post('/render-template', async (req, res) => {
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD',
             'OFFER_COUNTER': company.offerCounter || 1001,
-            'APPT_COUNTER': company.apptCounter || 1001
+            'APPT_COUNTER': company.apptCounter || 1001,
+            'MISC_COUNTER': company.miscCounter || 1001
         };
 
         const resolved = resolveTemplate(template, map);
@@ -3146,6 +3148,7 @@ router.post('/render-template', async (req, res) => {
             'DIVISION': applicant.division || '',
             'HQ': applicant.hq || fd.hq || '',
             'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
+            'DOC': applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc ? (new Date(applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc).toLocaleDateString('en-GB')) : new Date().toLocaleDateString('en-GB'),
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
@@ -3158,7 +3161,8 @@ router.post('/render-template', async (req, res) => {
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD',
             'OFFER_COUNTER': company.offerCounter || 1001,
-            'APPT_COUNTER': company.apptCounter || 1001
+            'APPT_COUNTER': company.apptCounter || 1001,
+            'MISC_COUNTER': company.miscCounter || 1001
         };
 
         const resolved = resolveTemplate(template, map);
@@ -8625,14 +8629,23 @@ router.post('/update-confirmation-record', async (req, res) => {
             const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
             const formattedDoc = doc ? new Date(doc).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-            // Generate Official Confirmation Letter PDF
+            // Fetch company assets for Letterhead, Stamp, and Digital Signature
+            const { Asset } = require('../db');
+            const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+            const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+            const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+
+            // Generate Official Confirmation Letter PDF with Letterhead, Stamp, Signature, and DOC
             let pdfBuffer = null;
             try {
-                const { generateAppointmentPdf } = require('../utils/pdfGenerator');
-                pdfBuffer = await generateAppointmentPdf({
+                const { generateConfirmationPdf } = require('../utils/pdfGenerator');
+                pdfBuffer = await generateConfirmationPdf({
                     applicant: { ...app.toJSON ? app.toJSON() : app, doc: doc || app.doc, confirmationDate: doc || app.doc },
                     company,
-                    letterType: 'confirm',
+                    docDate: doc || app.doc || app.confirmationDate || app.confirmationData?.doc,
+                    lhAsset,
+                    stampAsset,
+                    sigAsset,
                     letterData: company.confirmLetterBody
                 });
             } catch (pdfErr) {
@@ -8831,6 +8844,42 @@ router.post('/update-confirmation-record', async (req, res) => {
     } catch (e) {
         console.error('Update confirmation error:', e);
         res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// View / Download Official Confirmation Letter PDF on Company Letterhead with Stamp & Signature
+router.get('/confirmation-letter-pdf', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).send('Email query parameter is required');
+        const { Applicant, Company, Asset } = require('../db');
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).send('Applicant not found');
+
+        const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+        const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+        const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+
+        const { generateConfirmationPdf } = require('../utils/pdfGenerator');
+        const pdfBuffer = await generateConfirmationPdf({
+            applicant: applicant.toJSON ? applicant.toJSON() : applicant,
+            company,
+            docDate: applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc || new Date(),
+            lhAsset,
+            stampAsset,
+            sigAsset,
+            letterData: company.confirmLetterBody
+        });
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="Confirmation_Letter_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf"`
+        });
+        res.send(pdfBuffer);
+    } catch (e) {
+        console.error('Confirmation PDF generation error:', e);
+        res.status(500).send('Failed to generate confirmation PDF: ' + e.message);
     }
 });
 
