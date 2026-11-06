@@ -816,31 +816,58 @@ export default function ConfirmationProcessPortal({ applicant, onBack }) {
                     </span>
                 </div>
 
-                {/* Stable Navigation & Word Preview */}
-                <div style={{ padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0b1329', borderBottom: '1px solid #1e293b', flexWrap: 'wrap', gap: '8px' }}>
+                {/* Stable Navigation & Word Preview (Fixed height to eliminate screen jumping) */}
+                <div style={{
+                    minHeight: '44px',
+                    height: '44px',
+                    maxHeight: '44px',
+                    padding: '0 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: '#0b1329',
+                    borderBottom: '1px solid #1e293b',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden'
+                }}>
                     {activeWordPreview ? (
                         <div style={{
+                            height: '32px',
                             background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%)',
                             border: '1.5px solid #38bdf8',
                             borderRadius: '6px',
-                            padding: '4px 12px',
-                            display: 'flex',
+                            padding: '0 12px',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '10px',
-                            boxShadow: '0 2px 8px rgba(56, 189, 248, 0.25)'
+                            boxShadow: '0 2px 8px rgba(56, 189, 248, 0.25)',
+                            boxSizing: 'border-box',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '100%',
+                            overflow: 'hidden'
                         }}>
-                            <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: 800 }}>
+                            <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: 800, whiteSpace: 'nowrap' }}>
                                 {activeWordPreview.month} • {activeWordPreview.field}:
                             </span>
-                            <span style={{ fontSize: '0.92rem', color: '#fde047', fontWeight: 900 }}>
+                            <span style={{ fontSize: '0.92rem', color: '#fde047', fontWeight: 900, whiteSpace: 'nowrap' }}>
                                 ₹{Number(activeWordPreview.value).toLocaleString('en-IN')}
                             </span>
-                            <span style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, borderLeft: '1px solid #334155', paddingLeft: '8px' }}>
+                            <span style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, borderLeft: '1px solid #334155', paddingLeft: '8px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                                 💬 {activeWordPreview.words}
                             </span>
                         </div>
                     ) : (
-                        <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                        <div style={{
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontSize: '0.75rem',
+                            color: '#38bdf8',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                        }}>
                             💡 Use <strong>Left / Right Arrow keys</strong> to move between inputs. The table header &amp; month names stay frozen while scrolling.
                         </div>
                     )}
