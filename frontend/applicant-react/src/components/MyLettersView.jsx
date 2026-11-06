@@ -170,6 +170,8 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
     if (!type) return 'Document';
     if (type === 'appt') return 'Appointment Letter';
     if (type === 'offer') return 'Offer Letter';
+    if (type === 'confirm') return 'Confirmation Letter';
+    if (type === 'confirm_delayed') return 'Confirmation Extension Letter';
     return type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
@@ -261,12 +263,35 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
               </div>
 
               <div style={styles.cardFooter}>
-                <button 
-                  style={styles.viewBtn}
-                  onClick={(e) => { e.stopPropagation(); setViewingLetter(letter); setViewingIndex(i); }}
-                >
-                  👁️ View Letter
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button 
+                    style={styles.viewBtn}
+                    onClick={(e) => { e.stopPropagation(); setViewingLetter(letter); setViewingIndex(i); }}
+                  >
+                    👁️ View Letter
+                  </button>
+                  {letter.type === 'confirm' && (
+                    <a
+                      href={`/api/applicant/confirmation-letter-pdf?email=${encodeURIComponent(applicant?.email || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...styles.viewBtn,
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#fff',
+                        border: '1px solid #38bdf8',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      title="Download Official Confirmation Letter (With Letterhead, Stamp & Signature)"
+                    >
+                      📥 Download PDF
+                    </a>
+                  )}
+                </div>
                 <button
                   style={{
                     ...styles.deleteBtn,
@@ -290,6 +315,28 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
           <div style={styles.viewerHeader}>
             <h3 style={{ margin: 0, color: '#fff', fontSize: '1.4rem' }}>{formatType(viewingLetter.type)}</h3>
             <div style={styles.modalActionRow}>
+              {viewingLetter.type === 'confirm' && (
+                <a
+                  href={`/api/applicant/confirmation-letter-pdf?email=${encodeURIComponent(applicant?.email || '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    ...styles.viewBtn,
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#fff',
+                    border: '1px solid #38bdf8',
+                    padding: '7px 14px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontWeight: '700'
+                  }}
+                  title="Open or Download Official PDF with Letterhead & Stamp"
+                >
+                  📥 Download Official PDF
+                </a>
+              )}
               <button
                 style={{
                   ...styles.deleteBtn,
@@ -338,9 +385,18 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
                   style={{ 
                     position: 'relative', 
                     zIndex: 1, 
-                    padding: `${companyData?.headerHeight !== undefined ? companyData.headerHeight : 65}mm 20mm ${companyData?.footerHeight !== undefined ? companyData.footerHeight : 25}mm` 
+                    padding: `${companyData?.headerHeight ? companyData.headerHeight : 38}mm 20mm ${companyData?.footerHeight ? companyData.footerHeight : 18}mm` 
                   }}
-                  dangerouslySetInnerHTML={{ __html: (viewingLetter.data || '').replace(/<img[^>]+style=["'][^"']*position:\s*absolute[^"']*["'][^>]*>/gi, '') }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: (viewingLetter.data && viewingLetter.data.trim() 
+                      ? viewingLetter.data 
+                      : `<div style="padding: 24px 0; color: #1e293b; font-family: 'Inter', sans-serif;">
+                           <h3 style="margin-top: 0; color: #0284c7;">Official Confirmation Letter</h3>
+                           <p>Your employment confirmation has been approved by Management.</p>
+                           <p>Please use the <strong>Download Official PDF</strong> button at the top of this window to view and print your complete Confirmation Letter on official company letterhead with digital signature and stamp.</p>
+                         </div>`
+                    ).replace(/<img[^>]+style=["'][^"']*position:\s*absolute[^"']*["'][^>]*>/gi, '') 
+                  }}
               />
             </div>
           </div>

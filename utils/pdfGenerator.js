@@ -409,7 +409,8 @@ function generateConfirmationPdf({ applicant, company = {}, docDate = null, lhAs
             
             const rawParas = cleanText.split(/\n{2,}/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean);
 
-            doc.y = 135;
+            // Leave comfortable lines from letterhead top banner (~125pt) so content is vertically balanced between header and footer
+            doc.y = 195;
 
             // Separate header metadata, body paragraphs, and closings
             let hasDrawnRef = false;
@@ -421,19 +422,19 @@ function generateConfirmationPdf({ applicant, company = {}, docDate = null, lhAs
 
             for (const p of rawParas) {
                 if (/^Ref\s*No/i.test(p)) {
-                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 50, doc.y);
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y);
                     hasDrawnRef = true;
                 } else if (/^Date\s*:/i.test(p)) {
-                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 50, doc.y);
-                    doc.moveDown(0.7);
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
                     hasDrawnDate = true;
                 } else if (/^SUB\s*:/i.test(p)) {
-                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text(p, 50, doc.y);
-                    doc.moveDown(0.7);
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
                     hasDrawnSub = true;
                 } else if (/^Dear\s+/i.test(p)) {
-                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(p, 50, doc.y);
-                    doc.moveDown(0.7);
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
                     hasDrawnSalutation = true;
                 } else if (/^(With best regards|Sincerely|Regards|Yours sincerely|HR DEPT|HR BUSINESS)/i.test(p)) {
                     closingStarted = true;
@@ -444,54 +445,54 @@ function generateConfirmationPdf({ applicant, company = {}, docDate = null, lhAs
 
             // Fallback for header items if template format varied
             if (!hasDrawnRef) {
-                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Ref No : Conf/${miscCounter}`, 50, doc.y);
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Ref No : Conf/${miscCounter}`, 55, doc.y);
             }
             if (!hasDrawnDate) {
-                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Date   : ${todayFormatted}`, 50, doc.y);
-                doc.moveDown(0.7);
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Date   : ${todayFormatted}`, 55, doc.y);
+                doc.moveDown(0.85);
             }
             if (!hasDrawnSub) {
-                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text('SUB : "Confirmation Notification"', 50, doc.y);
-                doc.moveDown(0.7);
+                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text('SUB : "Confirmation Notification"', 55, doc.y);
+                doc.moveDown(0.85);
             }
             if (!hasDrawnSalutation) {
                 const titleStr = (applicantWithDoc.title || 'Mr.').toUpperCase();
                 const nameStr = (applicantWithDoc.fullName || '').toUpperCase();
-                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(`Dear ${titleStr} ${nameStr}`, 50, doc.y);
-                doc.moveDown(0.7);
+                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(`Dear ${titleStr} ${nameStr}`, 55, doc.y);
+                doc.moveDown(0.85);
             }
 
-            // Render body paragraphs with uniform typography
-            doc.font('Helvetica').fontSize(9.5).fillColor('#1e293b').lineGap(3.2);
+            // Render body paragraphs with uniform typography and elegant line spacing
+            doc.font('Helvetica').fontSize(10).fillColor('#1e293b').lineGap(4.2);
             for (const para of bodyParas) {
-                doc.text(para, 50, doc.y, { width: 495, align: 'justify' });
-                doc.moveDown(0.7);
+                doc.text(para, 55, doc.y, { width: 485, align: 'justify' });
+                doc.moveDown(0.85);
             }
 
             doc.moveDown(0.4);
             doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b');
-            doc.text('With best regards,', 50, doc.y);
+            doc.text('With best regards,', 55, doc.y);
             doc.moveDown(0.3);
-            doc.text('Sincerely,', 50, doc.y);
+            doc.text('Sincerely,', 55, doc.y);
             doc.moveDown(0.5);
 
             // Embed Digital Signature & Stamp
             const sigY = doc.y;
             if (sigBuf) {
                 try {
-                    doc.image(sigBuf, 50, sigY, { height: 44 });
+                    doc.image(sigBuf, 55, sigY, { height: 44 });
                 } catch (e) {}
             }
             if (stampBuf) {
                 try {
-                    doc.image(stampBuf, 115, sigY - 8, { height: 62 });
+                    doc.image(stampBuf, 120, sigY - 8, { height: 62 });
                 } catch (e) {}
             }
 
             doc.y = sigY + 48;
-            doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(company.signatoryName || 'HR DEPT', 50, doc.y);
-            doc.font('Helvetica').fontSize(9).fillColor('#475569').text(company.signatoryDesignation || 'HR BUSINESS PARTNER', 50, doc.y);
-            doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD', 50, doc.y);
+            doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(company.signatoryName || 'HR DEPT', 55, doc.y);
+            doc.font('Helvetica').fontSize(9).fillColor('#475569').text(company.signatoryDesignation || 'HR BUSINESS PARTNER', 55, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD', 55, doc.y);
 
             doc.end();
         } catch (err) {

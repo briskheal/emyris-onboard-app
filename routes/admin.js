@@ -8652,9 +8652,19 @@ router.post('/update-confirmation-record', async (req, res) => {
                 console.error('Confirmation Letter PDF generation error:', pdfErr.message);
             }
 
-            // Push to issuedLetters
+            // Push to issuedLetters with filled HTML content so User Portal renders complete letter without blank body
+            const { fillLetterPlaceholders } = require('../utils/letterUtils');
+            const applicantWithDoc = {
+                ...app.toJSON ? app.toJSON() : app,
+                doc: doc || app.doc || app.confirmationDate || app.confirmationData?.doc || new Date(),
+                confirmationDate: doc || app.doc || app.confirmationDate || app.confirmationData?.doc || new Date()
+            };
+            const defaultConfirmTemplate = company.confirmLetterBody || `<p>Ref No : Conf/${company.miscCounter || 1010}</p><p>Date : {{TODAY_DATE}}</p><p><strong>SUB : "Confirmation Notification"</strong></p><p><strong>Dear {{TITLE}} {{FULL_NAME}}</strong></p><p>We are pleased to inform you that, following your successful completion of your probation period, your employment with {{COMPANY_NAME}} has been confirmed effective from {{DOC}}.</p><p>Your dedication, consistent performance, and professional conduct have significantly contributed to the success of our team. We sincerely appreciate your efforts and the positive impact you have made during this period.</p><p>As a confirmed employee, you will now be entitled to all benefits and privileges applicable under company policy will intimate to you in separate communication from HR Dept. We look forward to your continued commitment and valuable contributions to the growth of the organization.</p><p>Congratulations once again on this achievement. We are confident that you will continue to excel in your role and uphold the values of {{COMPANY_NAME}}.</p><p>With best regards,<br/>Sincerely,<br/><br/><strong>{{SIGNATORY_NAME}}</strong><br/>{{SIGNATORY_DESG}}<br/>{{COMPANY_NAME}}</p>`;
+            const filledConfirmHtml = fillLetterPlaceholders(defaultConfirmTemplate, applicantWithDoc, company);
+
             const letterObj = {
                 type: 'confirm',
+                data: filledConfirmHtml,
                 issuedAt: new Date(),
                 doc: doc || new Date().toISOString().split('T')[0]
             };

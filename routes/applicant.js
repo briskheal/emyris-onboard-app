@@ -200,6 +200,7 @@ router.post('/login', async (req, res) => {
         }
 
         await syncActiveExamForApplicant(applicant);
+        await ensureConfirmationLetter(applicant);
 
         res.status(200).json({
             success: true,
@@ -242,11 +243,92 @@ router.all(['/profile/:email', '/profile', '/applicant-profile/:email'], async (
         if (!email) return res.status(400).json({ success: false, message: 'Email required' });
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
+        await ensureConfirmationLetter(applicant);
         return res.json({ success: true, applicant });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Server error fetching profile' });
     }
 });
+
+// View / Download Official Confirmation Letter PDF on Company Letterhead with Stamp & Signature (for Applicant)
+router.get('/confirmation-letter-pdf', async (req, res) => {
+    try {
+        const email = (req.query.email || req.params.email || '').trim().toLowerCase();
+        if (!email) return res.status(400).send('Email query parameter is required');
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).send('Applicant not found');
+
+        const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+        const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+        const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+
+        const { generateConfirmationPdf } = require('../utils/pdfGenerator');
+        const pdfBuffer = await generateConfirmationPdf({
+            applicant: applicant.toJSON ? applicant.toJSON() : applicant,
+            company,
+            docDate: applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc || new Date(),
+            lhAsset,
+            stampAsset,
+            sigAsset,
+            letterData: company.confirmLetterBody
+        });
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="Confirmation_Letter_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf"`
+        });
+        res.send(pdfBuffer);
+    } catch (e) {
+        console.error('Confirmation PDF generation error:', e);
+        res.status(500).send('Failed to generate confirmation PDF: ' + e.message);
+    }
+});
+
+async function ensureConfirmationLetter(applicant) {
+    if (!applicant) return applicant;
+    const isConfirmed = applicant.status === 'Confirmed Employee' || applicant.confirmationStatus === 'confirmed' || applicant.confirmationData?.status === 'confirmed';
+    if (!isConfirmed) return applicant;
+
+    let letters = Array.isArray(applicant.issuedLetters) ? [...applicant.issuedLetters] : [];
+    const confirmIdx = letters.findIndex(l => l && l.type === 'confirm');
+    
+    // If confirm letter exists and has full content, keep it
+    if (confirmIdx !== -1 && letters[confirmIdx].data && letters[confirmIdx].data.trim().length > 50) {
+        return applicant;
+    }
+
+    try {
+        const { fillLetterPlaceholders } = require('../utils/letterUtils');
+        const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+        const applicantWithDoc = {
+            ...applicant.toJSON ? applicant.toJSON() : applicant,
+            doc: applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc || new Date(),
+            confirmationDate: applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc || new Date()
+        };
+        const defaultConfirmTemplate = company.confirmLetterBody || `<p>Ref No : Conf/${company.miscCounter || 1010}</p><p>Date : {{TODAY_DATE}}</p><p><strong>SUB : "Confirmation Notification"</strong></p><p><strong>Dear {{TITLE}} {{FULL_NAME}}</strong></p><p>We are pleased to inform you that, following your successful completion of your probation period, your employment with {{COMPANY_NAME}} has been confirmed effective from {{DOC}}.</p><p>Your dedication, consistent performance, and professional conduct have significantly contributed to the success of our team. We sincerely appreciate your efforts and the positive impact you have made during this period.</p><p>As a confirmed employee, you will now be entitled to all benefits and privileges applicable under company policy will intimate to you in separate communication from HR Dept. We look forward to your continued commitment and valuable contributions to the growth of the organization.</p><p>Congratulations once again on this achievement. We are confident that you will continue to excel in your role and uphold the values of {{COMPANY_NAME}}.</p><p>With best regards,<br/>Sincerely,<br/><br/><strong>{{SIGNATORY_NAME}}</strong><br/>{{SIGNATORY_DESG}}<br/>{{COMPANY_NAME}}</p>`;
+        const filledConfirmHtml = fillLetterPlaceholders(defaultConfirmTemplate, applicantWithDoc, company);
+
+        if (confirmIdx !== -1) {
+            letters[confirmIdx].data = filledConfirmHtml;
+            letters[confirmIdx].doc = applicantWithDoc.doc;
+            letters[confirmIdx].issuedAt = letters[confirmIdx].issuedAt || new Date();
+        } else {
+            letters.unshift({
+                type: 'confirm',
+                data: filledConfirmHtml,
+                issuedAt: applicant.confirmationData?.confirmedAt || applicant.updatedAt || new Date(),
+                doc: applicantWithDoc.doc
+            });
+        }
+
+        await Applicant.updateOne({ email: applicant.email }, { $set: { issuedLetters: letters } });
+        applicant.issuedLetters = letters;
+    } catch (err) {
+        console.error('ensureConfirmationLetter error:', err.message);
+    }
+    return applicant;
+}
 
 // --- DELETE ISSUED LETTER TO FREE DATABASE STORAGE ---
 router.post('/delete-issued-letter', async (req, res) => {
