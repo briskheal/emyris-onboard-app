@@ -74,11 +74,14 @@ const AdvanceSalaryManagement: React.FC = () => {
   const fetchData = async () => {
     try {
       const [empRes, advRes] = await Promise.all([
-        api.get('/admin/applicants'),
+        api.get('/admin/applicants?activeOnly=true'),
         api.get('/admin/assigned-advances')
       ]);
       if (empRes.data.success) {
-        setEmployees(empRes.data.applicants || []);
+        const activeEmps = (empRes.data.applicants || []).filter((emp: any) => 
+          emp.canLogin !== false && !['rejected', 'cancelled', 'inactive'].includes((emp.status || '').toLowerCase())
+        );
+        setEmployees(activeEmps);
       }
       if (advRes.data.success) setAssignedAdvances(advRes.data.advances);
     } catch (err) {

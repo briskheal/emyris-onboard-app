@@ -85,12 +85,15 @@ const LoanManagement: React.FC = () => {
   const fetchData = async () => {
     try {
       const [empRes, typesRes, loansRes] = await Promise.all([
-        api.get('/admin/applicants'),
+        api.get('/admin/applicants?activeOnly=true'),
         api.get('/admin/loan-types'),
         api.get('/admin/assigned-loans')
       ]);
       if (empRes.data.success) {
-        setEmployees(empRes.data.applicants || []);
+        const activeEmps = (empRes.data.applicants || []).filter((emp: any) => 
+          emp.canLogin !== false && !['rejected', 'cancelled', 'inactive'].includes((emp.status || '').toLowerCase())
+        );
+        setEmployees(activeEmps);
       }
       if (typesRes.data.success) setLoanTypes(typesRes.data.types);
       if (loansRes.data.success) setAssignedLoans(loansRes.data.loans);

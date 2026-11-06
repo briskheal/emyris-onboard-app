@@ -77,9 +77,11 @@ const AssignLeave: React.FC = () => {
 
     const fetchApplicants = async () => {
         try {
-            const res = await api.get('/admin/applicants?month=all&year=all');
+            const res = await api.get('/admin/applicants?month=all&year=all&activeOnly=true');
             if (res.data.success) {
-                setApplicants(res.data.applicants.filter((a: any) => a.fullName));
+                setApplicants((res.data.applicants || []).filter((a: any) => 
+                    a.fullName && a.canLogin !== false && !['rejected', 'cancelled', 'inactive'].includes((a.status || '').toLowerCase())
+                ));
             }
         } catch (error) {
             console.error(error);

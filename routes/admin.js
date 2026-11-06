@@ -1007,6 +1007,11 @@ router.get('/applicants', async (req, res) => {
             };
         }
 
+        if (req.query.activeOnly === 'true') {
+            query.canLogin = { $ne: false };
+            query.status = { $nin: ['rejected', 'cancelled', 'inactive'] };
+        }
+
         // Optimization: Exclude heavy fields from the main list to keep API fast.
         // When reports=true (ReportsTab), include psychometric fields so the Dossier tab works.
         const isReports = req.query.reports === 'true';
