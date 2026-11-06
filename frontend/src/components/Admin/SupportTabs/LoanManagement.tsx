@@ -417,7 +417,7 @@ const LoanManagement: React.FC = () => {
             </div>
             
             <div style={{ padding: '2rem' }}>
-              <form onSubmit={handleAssignLoan} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+              <form onSubmit={handleAssignLoan} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.1fr 0.65fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                 
                 <div style={{ gridColumn: 'span 1', position: 'relative' }} ref={empDropdownRef}>
                   <label style={labelStyle}>EMPLOYEE NAME *</label>
@@ -516,7 +516,8 @@ const LoanManagement: React.FC = () => {
                         position: 'absolute',
                         top: 'calc(100% + 4px)',
                         left: 0,
-                        right: 0,
+                        minWidth: '100%',
+                        width: 'max(100%, 360px)',
                         zIndex: 100,
                         background: '#0f172a',
                         border: '1px solid #334155',
