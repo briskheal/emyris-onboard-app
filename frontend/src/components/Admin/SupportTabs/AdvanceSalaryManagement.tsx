@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, Search, Eye, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Trash2, Search, Eye, X, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import api from '../../../api/client';
 
 const AdvanceSalaryManagement: React.FC = () => {
@@ -11,6 +11,9 @@ const AdvanceSalaryManagement: React.FC = () => {
   
   // Form States - Assign Advance
   const [assignEmpEmail, setAssignEmpEmail] = useState('');
+  const [empSearchQuery, setEmpSearchQuery] = useState('');
+  const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
+  const empDropdownRef = useRef<HTMLDivElement>(null);
   const [assignNameOnPayslip, setAssignNameOnPayslip] = useState('Salary Advance');
   const [assignAdvanceAmount, setAssignAdvanceAmount] = useState('');
   const [assignInstallmentAmount, setAssignInstallmentAmount] = useState('');
@@ -58,6 +61,16 @@ const AdvanceSalaryManagement: React.FC = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (empDropdownRef.current && !empDropdownRef.current.contains(event.target as Node)) {
+        setIsEmpDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchData = async () => {
     try {
       const [empRes, advRes] = await Promise.all([
@@ -91,6 +104,8 @@ const AdvanceSalaryManagement: React.FC = () => {
       if (res.data.success) {
         alert('Advance Salary assigned successfully');
         setAssignEmpEmail('');
+        setEmpSearchQuery('');
+        setIsEmpDropdownOpen(false);
         setAssignNameOnPayslip('Salary Advance');
         setAssignAdvanceAmount('');
         setAssignInstallmentAmount('');
@@ -123,6 +138,20 @@ const AdvanceSalaryManagement: React.FC = () => {
     if (searchEmployeeName && !a.employeeName?.toLowerCase().includes(searchEmployeeName.toLowerCase())) return false;
     if (searchStatus && !a.status?.toLowerCase().includes(searchStatus.toLowerCase())) return false;
     return true;
+  });
+
+  const selectedAssignEmp = employees.find(e => e.email === assignEmpEmail);
+  const filteredAssignEmployees = employees.filter(emp => {
+    if (!empSearchQuery.trim()) return true;
+    if (selectedAssignEmp && empSearchQuery.trim() === selectedAssignEmp.fullName?.trim()) return true;
+    const q = empSearchQuery.toLowerCase().trim();
+    return (
+      (emp.fullName && emp.fullName.toLowerCase().includes(q)) ||
+      (emp.email && emp.email.toLowerCase().includes(q)) ||
+      (emp.empCode && emp.empCode.toLowerCase().includes(q)) ||
+      (emp.designation && emp.designation.toLowerCase().includes(q)) ||
+      (emp.hq && emp.hq.toLowerCase().includes(q))
+    );
   });
 
   const generateSchedule = (totalAmount: number, installmentAmount: number, amountPaid: number, startDateStr: string, deductionType: string) => {
@@ -224,14 +253,180 @@ const AdvanceSalaryManagement: React.FC = () => {
             <div style={{ padding: '2rem' }}>
               <form onSubmit={handleAssignAdvance} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                 
-                <div>
+                <div style={{ position: 'relative' }} ref={empDropdownRef}>
                   <label style={labelStyle}>EMPLOYEE NAME *</label>
-                  <select style={inputBase} value={assignEmpEmail} onChange={e => setAssignEmpEmail(e.target.value)} required>
-                    <option value="">Select Name</option>
-                    {employees.map(emp => (
-                      <option key={emp.email} value={emp.email}>{emp.fullName}</option>
-                    ))}
-                  </select>
+                  
+                  {/* Hidden input to enforce native form validation */}
+                  <input
+                    type="text"
+                    value={assignEmpEmail}
+                    required
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px', bottom: 0, left: '20px' }}
+                    onChange={() => {}}
+                    tabIndex={-1}
+                  />
+
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
+                    <input
+                      type="text"
+                      placeholder="Search or select name..."
+                      value={empSearchQuery}
+                      onFocus={() => setIsEmpDropdownOpen(true)}
+                      onClick={() => setIsEmpDropdownOpen(true)}
+                      onChange={(e) => {
+                        setEmpSearchQuery(e.target.value);
+                        setIsEmpDropdownOpen(true);
+                        if (!e.target.value) {
+                          setAssignEmpEmail('');
+                        }
+                      }}
+                      style={{
+                        ...inputBase,
+                        paddingLeft: '34px',
+                        paddingRight: (assignEmpEmail || empSearchQuery) ? '54px' : '34px',
+                        borderColor: isEmpDropdownOpen ? '#3b82f6' : '#334155',
+                      }}
+                      autoComplete="off"
+                    />
+
+                    {/* Clear Button */}
+                    {(empSearchQuery || assignEmpEmail) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAssignEmpEmail('');
+                          setEmpSearchQuery('');
+                          setIsEmpDropdownOpen(true);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: '28px',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Clear selection"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+
+                    {/* Chevron Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEmpDropdownOpen(!isEmpDropdownOpen);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '6px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Toggle list"
+                    >
+                      {isEmpDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+
+                  {/* Dropdown Menu */}
+                  {isEmpDropdownOpen && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+                        maxHeight: '260px',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {filteredAssignEmployees.length > 0 ? (
+                        filteredAssignEmployees.map((emp) => {
+                          const isSelected = assignEmpEmail === emp.email;
+                          return (
+                            <div
+                              key={emp.email}
+                              onClick={() => {
+                                setAssignEmpEmail(emp.email);
+                                setEmpSearchQuery(emp.fullName || emp.email);
+                                setIsEmpDropdownOpen(false);
+                              }}
+                              style={{
+                                padding: '9px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                                background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'background 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    width: '28px',
+                                    height: '28px',
+                                    borderRadius: '50%',
+                                    background: isSelected ? '#3b82f6' : '#1e293b',
+                                    color: isSelected ? '#fff' : '#94a3b8',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    flexShrink: 0,
+                                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                                  }}
+                                >
+                                  {(emp.fullName || 'E').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div style={{ overflow: 'hidden' }}>
+                                  <div style={{ color: isSelected ? '#60a5fa' : '#f8fafc', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                    {emp.fullName || emp.email}
+                                  </div>
+                                  <div style={{ color: '#94a3b8', fontSize: '0.72rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                    {[emp.empCode, emp.designation, emp.hq].filter(Boolean).join(' • ') || emp.email}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSelected && <Check size={15} color="#60a5fa" style={{ flexShrink: 0, marginLeft: '8px' }} />}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{ padding: '14px', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                          No employees found
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
