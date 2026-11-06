@@ -1266,6 +1266,41 @@ export default function ConfirmationManager() {
                     </a>
                   </div>
                 )}
+
+                {/* Download Official Confirmation Extension Letter with Letterhead & Stamp */}
+                {(selectedRecord.confirmationStatus === 'extended' || selectedRecord.status === 'Confirmation Extended' || selectedRecord.confirmationData?.isExtended) && (
+                  <div style={{ marginTop: '14px', borderTop: '1px dashed #334155', paddingTop: '14px' }}>
+                    <a
+                      href={`/api/admin/confirmation-delayed-letter-pdf?email=${encodeURIComponent(selectedRecord.email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        width: '100%',
+                        minHeight: '44px',
+                        background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                        color: '#ffffff',
+                        border: '1px solid #f59e0b',
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.86rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        textDecoration: 'none',
+                        boxSizing: 'border-box',
+                        boxShadow: '0 4px 14px rgba(217, 119, 6, 0.3)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; }}
+                    >
+                      <Download size={16} />
+                      <span>Download / View Official Confirmation Extension Letter (With Letterhead &amp; Stamp)</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

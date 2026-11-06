@@ -285,6 +285,41 @@ router.get('/confirmation-letter-pdf', async (req, res) => {
     }
 });
 
+// View / Download Official Confirmation Extension Letter PDF on Company Letterhead with Stamp & Signature (for Applicant)
+router.get('/confirmation-delayed-letter-pdf', async (req, res) => {
+    try {
+        const email = (req.query.email || req.params.email || '').trim().toLowerCase();
+        if (!email) return res.status(400).send('Email query parameter is required');
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).send('Applicant not found');
+
+        const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+        const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+        const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+
+        const { generateConfirmationDelayedPdf } = require('../utils/pdfGenerator');
+        const pdfBuffer = await generateConfirmationDelayedPdf({
+            applicant: applicant.toJSON ? applicant.toJSON() : applicant,
+            company,
+            cdDate: applicant.extendedAt || applicant.cdDate || applicant.confirmationData?.extendedAt || new Date(),
+            lhAsset,
+            stampAsset,
+            sigAsset,
+            letterData: company.confirmDelayedLetterBody
+        });
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="Confirmation_Extension_Letter_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf"`
+        });
+        res.send(pdfBuffer);
+    } catch (e) {
+        console.error('Confirmation Delayed PDF generation error:', e);
+        res.status(500).send('Failed to generate confirmation delayed PDF: ' + e.message);
+    }
+});
+
 async function ensureConfirmationLetter(applicant) {
     if (!applicant) return applicant;
     const isConfirmed = applicant.status === 'Confirmed Employee' || applicant.confirmationStatus === 'confirmed' || applicant.confirmationData?.status === 'confirmed';

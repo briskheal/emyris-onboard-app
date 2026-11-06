@@ -103,6 +103,31 @@ function fillLetterPlaceholders(text, app, companyData = {}) {
         "{{JOINING_DATE}}": formatDateDMY(app.actualJoiningDate || fd.joiningDate),
         "{{DOC}}": formatDateDMY(app.doc || app.confirmationDate || app.confirmationData?.doc || new Date()),
         "{{CONFIRMATION_DATE}}": formatDateDMY(app.doc || app.confirmationDate || app.confirmationData?.doc || new Date()),
+        "{{3+CD}}": (() => {
+            const cdBase = app.cdDate || app.extendedAt || app.confirmationData?.extendedAt || new Date();
+            const d = new Date(cdBase);
+            const origDay = d.getDate();
+            d.setMonth(d.getMonth() + 3);
+            if (d.getDate() !== origDay) d.setDate(0);
+            return formatDateDMY(d);
+        })(),
+        "{{3+cd}}": (() => {
+            const cdBase = app.cdDate || app.extendedAt || app.confirmationData?.extendedAt || new Date();
+            const d = new Date(cdBase);
+            const origDay = d.getDate();
+            d.setMonth(d.getMonth() + 3);
+            if (d.getDate() !== origDay) d.setDate(0);
+            return formatDateDMY(d);
+        })(),
+        "{{CD+3}}": (() => {
+            const cdBase = app.cdDate || app.extendedAt || app.confirmationData?.extendedAt || new Date();
+            const d = new Date(cdBase);
+            const origDay = d.getDate();
+            d.setMonth(d.getMonth() + 3);
+            if (d.getDate() !== origDay) d.setDate(0);
+            return formatDateDMY(d);
+        })(),
+        "{{CD}}": formatDateDMY(app.cdDate || app.extendedAt || app.confirmationData?.extendedAt || new Date()),
         "{{COMPANY_NAME}}": companyData.name || "Emyris Biolifesciences",
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",

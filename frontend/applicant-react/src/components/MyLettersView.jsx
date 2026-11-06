@@ -291,6 +291,27 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
                       📥 Download PDF
                     </a>
                   )}
+                  {letter.type === 'confirm_delayed' && (
+                    <a
+                      href={`/api/applicant/confirmation-delayed-letter-pdf?email=${encodeURIComponent(applicant?.email || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...styles.viewBtn,
+                        background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                        color: '#fff',
+                        border: '1px solid #f59e0b',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      title="Download Official Confirmation Extension Letter (With Letterhead, Stamp & Signature)"
+                    >
+                      📥 Download PDF
+                    </a>
+                  )}
                 </div>
                 <button
                   style={{
@@ -333,6 +354,28 @@ export default function MyLettersView({ applicant, companyData, onRefresh }) {
                     fontWeight: '700'
                   }}
                   title="Open or Download Official PDF with Letterhead & Stamp"
+                >
+                  📥 Download Official PDF
+                </a>
+              )}
+              {viewingLetter.type === 'confirm_delayed' && (
+                <a
+                  href={`/api/applicant/confirmation-delayed-letter-pdf?email=${encodeURIComponent(applicant?.email || '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    ...styles.viewBtn,
+                    background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                    color: '#fff',
+                    border: '1px solid #f59e0b',
+                    padding: '7px 14px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontWeight: '700'
+                  }}
+                  title="Open or Download Official Extension PDF with Letterhead & Stamp"
                 >
                   📥 Download Official PDF
                 </a>

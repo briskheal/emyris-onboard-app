@@ -501,8 +501,160 @@ function generateConfirmationPdf({ applicant, company = {}, docDate = null, lhAs
     });
 }
 
+function generateConfirmationDelayedPdf({ applicant, company = {}, cdDate = null, lhAsset = null, stampAsset = null, sigAsset = null, letterData = '' }) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({
+                size: 'A4',
+                margins: { top: 125, bottom: 65, left: 50, right: 50 },
+                autoFirstPage: true
+            });
+            const buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+            let lhBuf = null;
+            if (lhAsset && lhAsset.data) {
+                const b64 = lhAsset.data.includes('base64,') ? lhAsset.data.split('base64,')[1] : lhAsset.data;
+                try { lhBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+            let stampBuf = null;
+            if (stampAsset && stampAsset.data) {
+                const b64 = stampAsset.data.includes('base64,') ? stampAsset.data.split('base64,')[1] : stampAsset.data;
+                try { stampBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+            let sigBuf = null;
+            if (sigAsset && sigAsset.data) {
+                const b64 = sigAsset.data.includes('base64,') ? sigAsset.data.split('base64,')[1] : sigAsset.data;
+                try { sigBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+
+            // Draw full-bleed Letterhead Background
+            if (lhBuf) {
+                try {
+                    doc.image(lhBuf, 0, 0, { width: 595.28, height: 841.89 });
+                } catch (e) {}
+            }
+
+            const appObj = applicant.toJSON ? applicant.toJSON() : applicant;
+            const finalCdDate = cdDate || appObj.extendedAt || appObj.cdDate || appObj.confirmationData?.extendedAt || new Date();
+            const applicantWithCd = {
+                ...appObj,
+                cdDate: finalCdDate,
+                extendedAt: finalCdDate
+            };
+
+            const miscCounter = company.miscCounter || 1010;
+            const todayFormatted = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+
+            let rawHtml = letterData || company.confirmDelayedLetterBody || '';
+            rawHtml = rawHtml.replace(/<img[^>]*class="a4-branding-layer"[^>]*>/gi, '');
+            rawHtml = fillLetterPlaceholders(rawHtml, applicantWithCd, company);
+
+            // Cleanly extract text paragraphs from the HTML template
+            let cleanText = rawHtml.replace(/<br\s*[\/]?>/gi, '\n');
+            cleanText = cleanText.replace(/<\/(p|div|h[1-6])>/gi, '\n\n');
+            cleanText = cleanText.replace(/<[^>]+>/g, '');
+            cleanText = cleanText.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+            cleanText = cleanText.replace(/MR\.\./gi, 'Mr.').replace(/MS\.\./gi, 'Ms.');
+            
+            const rawParas = cleanText.split(/\n{2,}/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean);
+
+            // Leave comfortable lines from letterhead top banner (~125pt) so content is vertically balanced between header and footer
+            doc.y = 195;
+
+            // Separate header metadata, body paragraphs, and closings
+            let hasDrawnRef = false;
+            let hasDrawnDate = false;
+            let hasDrawnSub = false;
+            let hasDrawnSalutation = false;
+            const bodyParas = [];
+            let closingStarted = false;
+
+            for (const p of rawParas) {
+                if (/^Ref\s*No/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y);
+                    hasDrawnRef = true;
+                } else if (/^Date\s*:/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
+                    hasDrawnDate = true;
+                } else if (/^SUB\s*:/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
+                    hasDrawnSub = true;
+                } else if (/^Dear\s+/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
+                    hasDrawnSalutation = true;
+                } else if (/^(With best regards|Sincerely|Regards|Yours sincerely|HR DEPT|HR BUSINESS)/i.test(p)) {
+                    closingStarted = true;
+                } else if (!closingStarted) {
+                    bodyParas.push(p);
+                }
+            }
+
+            // Fallback for header items if template format varied
+            if (!hasDrawnRef) {
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Ref No : Prob/${miscCounter}`, 55, doc.y);
+            }
+            if (!hasDrawnDate) {
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(`Date   : ${todayFormatted}`, 55, doc.y);
+                doc.moveDown(0.85);
+            }
+            if (!hasDrawnSub) {
+                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text('SUB : "Delayed Confirmation Notification"', 55, doc.y);
+                doc.moveDown(0.85);
+            }
+            if (!hasDrawnSalutation) {
+                const titleStr = (applicantWithCd.title || 'Mr.').toUpperCase();
+                const nameStr = (applicantWithCd.fullName || '').toUpperCase();
+                doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(`Dear ${titleStr} ${nameStr}`, 55, doc.y);
+                doc.moveDown(0.85);
+            }
+
+            // Render body paragraphs with uniform typography and elegant line spacing
+            doc.font('Helvetica').fontSize(10).fillColor('#1e293b').lineGap(4.2);
+            for (const para of bodyParas) {
+                doc.text(para, 55, doc.y, { width: 485, align: 'justify' });
+                doc.moveDown(0.85);
+            }
+
+            doc.moveDown(0.4);
+            doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b');
+            doc.text('With best regards,', 55, doc.y);
+            doc.moveDown(0.3);
+            doc.text('Sincerely,', 55, doc.y);
+            doc.moveDown(0.5);
+
+            // Embed Digital Signature & Stamp
+            const sigY = doc.y;
+            if (sigBuf) {
+                try {
+                    doc.image(sigBuf, 55, sigY, { height: 44 });
+                } catch (e) {}
+            }
+            if (stampBuf) {
+                try {
+                    doc.image(stampBuf, 120, sigY - 8, { height: 62 });
+                } catch (e) {}
+            }
+
+            doc.y = sigY + 48;
+            doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(company.signatoryName || 'HR DEPT', 55, doc.y);
+            doc.font('Helvetica').fontSize(9).fillColor('#475569').text(company.signatoryDesignation || 'HR BUSINESS PARTNER', 55, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD', 55, doc.y);
+
+            doc.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 module.exports = {
     buildOfficialLetterHtml,
     generateAppointmentPdf,
-    generateConfirmationPdf
+    generateConfirmationPdf,
+    generateConfirmationDelayedPdf
 };

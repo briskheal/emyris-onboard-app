@@ -1936,6 +1936,16 @@ router.post('/render-template', async (req, res) => {
             'HQ': applicant.hq || fd.hq || '',
             'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
             'DOC': applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc ? (new Date(applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc).toLocaleDateString('en-GB')) : new Date().toLocaleDateString('en-GB'),
+            '3+CD': (() => {
+                const target = new Date();
+                const d = target.getDate();
+                target.setMonth(target.getMonth() + 3);
+                if (target.getDate() !== d) target.setDate(0);
+                const day = String(target.getDate()).padStart(2, '0');
+                const m = String(target.getMonth() + 1).padStart(2, '0');
+                return `${day}-${m}-${target.getFullYear()}`;
+            })(),
+            'CD': new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
@@ -3149,6 +3159,16 @@ router.post('/render-template', async (req, res) => {
             'HQ': applicant.hq || fd.hq || '',
             'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
             'DOC': applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc ? (new Date(applicant.doc || applicant.confirmationDate || applicant.confirmationData?.doc).toLocaleDateString('en-GB')) : new Date().toLocaleDateString('en-GB'),
+            '3+CD': (() => {
+                const target = new Date();
+                const d = target.getDate();
+                target.setMonth(target.getMonth() + 3);
+                if (target.getDate() !== d) target.setDate(0);
+                const day = String(target.getDate()).padStart(2, '0');
+                const m = String(target.getMonth() + 1).padStart(2, '0');
+                return `${day}-${m}-${target.getFullYear()}`;
+            })(),
+            'CD': new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
@@ -8816,12 +8836,115 @@ router.post('/update-confirmation-record', async (req, res) => {
             updatedConf.status = 'draft'; // Release to editable mode so employee & manager can fill the next 3 months!
             updatedConf.extendedAt = new Date();
 
+            const cdDate = new Date();
+            const target3Months = new Date(cdDate);
+            const origDay = target3Months.getDate();
+            target3Months.setMonth(target3Months.getMonth() + 3);
+            if (target3Months.getDate() !== origDay) target3Months.setDate(0);
+            const { formatDateDMY, fillLetterPlaceholders } = require('../utils/letterUtils');
+            const threePlusCdFormatted = formatDateDMY(target3Months);
+
+            // Generate Confirmation Delayed Letter PDF with active letterhead, digital stamp and signature
+            let delayedPdfBuffer = null;
+            try {
+                const { generateConfirmationDelayedPdf } = require('../utils/pdfGenerator');
+                delayedPdfBuffer = await generateConfirmationDelayedPdf({
+                    applicant: { ...app.toJSON ? app.toJSON() : app, cdDate, extendedAt: cdDate },
+                    company,
+                    cdDate,
+                    lhAsset,
+                    stampAsset,
+                    sigAsset,
+                    letterData: company.confirmDelayedLetterBody
+                });
+            } catch (pdfErr) {
+                console.error('Confirmation Delayed PDF generation error:', pdfErr.message);
+            }
+
+            // Push to issuedLetters with filled HTML content
+            const applicantWithCd = {
+                ...app.toJSON ? app.toJSON() : app,
+                cdDate,
+                extendedAt: cdDate
+            };
+            const defaultDelayedTemplate = company.confirmDelayedLetterBody || `<p>Ref No : Prob/{{MISC_COUNTER}}</p><p>Date : {{TODAY_DATE}}</p><p><strong>SUB : "Delayed Confirmation Notification"</strong></p><p><strong>Dear {{TITLE}} {{FULL_NAME}}</strong></p><p>This is to inform you that your probation period with <b>{{COMPANY_NAME}}</b>, which was initially scheduled for confirmation after six months, has been extended up to <b>{{3+CD}}</b>. The extension has been necessitated due to performance levels not meeting the required standards during the probationary period.</p><p>We encourage you to utilize this extended period to demonstrate improvement in your performance and align with the expectations of your role. The management and HR team will continue to provide guidance and support to help you achieve the desired outcomes.</p><p>Please treat this extension as an opportunity to focus on the areas of improvement discussed with you and to showcase your capabilities.</p><p>Sincerely,<br/><br/><strong>{{SIGNATORY_NAME}}</strong><br/>{{SIGNATORY_DESG}}<br/>{{COMPANY_NAME}}</p>`;
+            const filledDelayedHtml = fillLetterPlaceholders(defaultDelayedTemplate, applicantWithCd, company);
+
+            const delayedLetterObj = {
+                type: 'confirm_delayed',
+                data: filledDelayedHtml,
+                issuedAt: cdDate,
+                extendedUntil: threePlusCdFormatted
+            };
+            await Applicant.updateOne({ email }, { $push: { issuedLetters: delayedLetterObj } });
+
+            // Increment company miscCounter
+            await Company.findOneAndUpdate({}, { $inc: { miscCounter: 1 } });
+
             if (XlNotification) {
                 await XlNotification.create({
                     employeeId: app.empCode || app.email,
                     title: 'Probation Extended by 3 Months',
-                    message: `Dear ${app.fullName}, your evaluation period has been extended by 3 months. Next 3 months (Months 7, 8, and 9) are now open in your Confirmation Portal for entering performance details.`
+                    message: `Dear ${app.fullName}, your evaluation period has been extended by 3 months up to ${threePlusCdFormatted}. Next 3 months (Months 7, 8, and 9) are now open in your Confirmation Portal for entering performance details.`
                 }).catch(e => console.error('Notification error:', e.message));
+            }
+
+            // Send Confirmation Extension Notification Email with PDF Attachment & CC
+            try {
+                const ccList = [];
+                if (app.reportingTo) {
+                    const manager = await Applicant.findOne({
+                        $or: [{ designation: app.reportingTo }, { fullName: app.reportingTo }]
+                    });
+                    if (manager && manager.email) ccList.push(manager.email);
+                }
+                const zsm = await Applicant.findOne({ designation: /Zonal Sales Manager|ZSM|VP|Vice President/i });
+                if (zsm && zsm.email && !ccList.includes(zsm.email)) ccList.push(zsm.email);
+
+                const emailSubject = `Probation Period Extension Notification - ${company.name || 'Emyris Biolifesciences'}`;
+                const emailHtml = `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff; padding: 20px 24px;">
+                            <h2 style="margin: 0; font-size: 1.25rem;">Probation Period Extension Notice</h2>
+                            <p style="margin: 4px 0 0 0; font-size: 0.9rem; opacity: 0.95;">${company.name || 'Emyris Biolifesciences Pvt. Ltd.'}</p>
+                        </div>
+                        <div style="padding: 24px; background: #ffffff;">
+                            <p>Dear <strong>${app.fullName}</strong>,</p>
+                            <p>This is to formally communicate that following the review of your evaluation dossier, your probation period with <strong>${company.name || 'Emyris Biolifesciences'}</strong> has been extended by <strong>3 months</strong>, up to <strong>${threePlusCdFormatted}</strong>.</p>
+                            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 14px 16px; margin: 16px 0;">
+                                <div style="font-weight: bold; color: #b45309; margin-bottom: 4px;">Next Actionable Steps:</div>
+                                <div style="font-size: 0.9rem; color: #78350f;">
+                                    The next 3 months (Months 7, 8, and 9) are now open in your Confirmation Portal for field actuals and projection submission. Please liaise with your reporting manager to align on target conversion and prescriber objectives.
+                                </div>
+                            </div>
+                            <p>Your official signed Confirmation Extension Letter on company letterhead has been attached to this email for your records.</p>
+                            <p style="margin-top: 24px; font-size: 0.9rem; color: #64748b;">
+                                Warm regards,<br/>
+                                <strong>HR Department</strong><br/>
+                                ${company.name || 'Emyris Biolifesciences Pvt. Ltd.'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                const attachments = [];
+                if (delayedPdfBuffer) {
+                    attachments.push({
+                        filename: `Confirmation_Extension_Letter_${(app.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`,
+                        content: delayedPdfBuffer
+                    });
+                }
+
+                await sendSystemMail({
+                    to: email,
+                    cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+                    subject: emailSubject,
+                    html: emailHtml,
+                    attachments
+                });
+                console.log(`✅ [CONFIRMATION EXTENSION FLOW] Letter and email sent to ${email} (CC: ${ccList.join(', ')})`);
+            } catch (mailErr) {
+                console.error('Failed to send confirmation extension email:', mailErr.message);
             }
 
         // --- FLOW 3: RELEASE TO DRAFT ---
@@ -8890,6 +9013,42 @@ router.get('/confirmation-letter-pdf', async (req, res) => {
     } catch (e) {
         console.error('Confirmation PDF generation error:', e);
         res.status(500).send('Failed to generate confirmation PDF: ' + e.message);
+    }
+});
+
+// View / Download Official Confirmation Extension Letter PDF on Company Letterhead with Stamp & Signature
+router.get('/confirmation-delayed-letter-pdf', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).send('Email query parameter is required');
+        const { Applicant, Company, Asset } = require('../db');
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).send('Applicant not found');
+
+        const company = await Company.findOne() || { name: 'EMYRIS BIOLIFESCIENCES PVT LTD' };
+        const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+        const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+
+        const { generateConfirmationDelayedPdf } = require('../utils/pdfGenerator');
+        const pdfBuffer = await generateConfirmationDelayedPdf({
+            applicant: applicant.toJSON ? applicant.toJSON() : applicant,
+            company,
+            cdDate: applicant.extendedAt || applicant.cdDate || applicant.confirmationData?.extendedAt || new Date(),
+            lhAsset,
+            stampAsset,
+            sigAsset,
+            letterData: company.confirmDelayedLetterBody
+        });
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="Confirmation_Extension_Letter_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf"`
+        });
+        res.send(pdfBuffer);
+    } catch (e) {
+        console.error('Confirmation Delayed PDF generation error:', e);
+        res.status(500).send('Failed to generate confirmation delayed PDF: ' + e.message);
     }
 });
 
