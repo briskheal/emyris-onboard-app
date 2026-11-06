@@ -65,10 +65,11 @@ const LoanManagement: React.FC = () => {
     display: 'block',
     marginBottom: '7px',
     color: '#64748b',
-    fontSize: '0.72rem',
+    fontSize: '0.67rem',
     fontWeight: 700,
-    letterSpacing: '0.07em',
+    letterSpacing: '0.04em',
     textTransform: 'uppercase' as const,
+    whiteSpace: 'nowrap' as const,
   };
 
   useEffect(() => {
@@ -285,25 +286,26 @@ const LoanManagement: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '2rem', height: '100%', minHeight: '600px' }}>
+    <div style={{ display: 'flex', gap: '1.2rem', height: '100%', minHeight: '600px' }}>
       
       {/* LEFT SIDEBAR (Vertical Tabs) */}
       <div style={{
-        width: '180px',
+        width: '150px',
         background: '#1e293b',
         borderRadius: '12px',
         border: '1px solid var(--glass-border)',
         overflow: 'hidden',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        flexShrink: 0
       }}>
-        <div style={{ padding: '1.2rem', borderBottom: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.02)' }}>
-          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.02)' }}>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             MANAGE LOAN
           </h3>
         </div>
         
-        <div style={{ padding: '1rem 0' }}>
+        <div style={{ padding: '0.8rem 0' }}>
           {[
             { id: 'create', label: 'CREATE LOAN' },
             { id: 'assign', label: 'ASSIGN LOAN' },
@@ -314,12 +316,12 @@ const LoanManagement: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               style={{
                 width: '100%',
-                padding: '12px 1.5rem',
+                padding: '10px 1.2rem',
                 textAlign: 'left',
                 background: activeTab === tab.id ? '#3b82f6' : 'transparent',
                 color: activeTab === tab.id ? '#fff' : 'var(--text-muted)',
                 border: 'none',
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 fontWeight: activeTab === tab.id ? 'bold' : 'normal',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
@@ -373,24 +375,24 @@ const LoanManagement: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
+                    <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', border: '1px solid #334155' }}>
                       <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, typeLoanName: !p.typeLoanName}))}>
-                        <Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME
+                        <Search size={13} style={{ marginRight: '6px' }} /> LOAN NAME
                       </div>
                       {showSearch.typeLoanName && (
-                        <input type="text" autoFocus placeholder="Search..." value={searchTypeLoanName} onChange={e => setSearchTypeLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        <input type="text" autoFocus placeholder="Search..." value={searchTypeLoanName} onChange={e => setSearchTypeLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '6px', width: '100%', padding: '4px 8px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
                       )}
                     </th>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>INTEREST RATE</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
+                    <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'center', border: '1px solid #334155' }}>INTEREST RATE</th>
+                    <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLoanTypes.map((type) => (
                     <tr key={type._id}>
-                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{type.name}</td>
-                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', border: '1px solid #334155' }}>{type.interestRate} %</td>
-                      <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', border: '1px solid #334155' }}>{type.name}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', textAlign: 'center', border: '1px solid #334155' }}>{type.interestRate} %</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'center', border: '1px solid #334155' }}>
                         <button className="btn btn-sm" onClick={() => handleDeleteLoanType(type._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
                           <Trash2 size={16} />
                         </button>
@@ -417,7 +419,7 @@ const LoanManagement: React.FC = () => {
             </div>
             
             <div style={{ padding: '2rem' }}>
-              <form onSubmit={handleAssignLoan} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.1fr 0.65fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+              <form onSubmit={handleAssignLoan} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.1fr 0.8fr 1.1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                 
                 <div style={{ gridColumn: 'span 1', position: 'relative' }} ref={empDropdownRef}>
                   <label style={labelStyle}>EMPLOYEE NAME *</label>
@@ -902,50 +904,50 @@ const LoanManagement: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', border: '1px solid #334155' }}>
                         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, loanName: !p.loanName}))}>
-                          <Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME
+                          <Search size={13} style={{ marginRight: '6px' }} /> LOAN NAME
                         </div>
                         {showSearch.loanName && (
-                          <input type="text" autoFocus placeholder="Search..." value={searchLoanName} onChange={e => setSearchLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                          <input type="text" autoFocus placeholder="Search..." value={searchLoanName} onChange={e => setSearchLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '6px', width: '100%', padding: '4px 8px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
                         )}
                       </th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', border: '1px solid #334155' }}>
                         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, employeeName: !p.employeeName}))}>
-                          <Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME
+                          <Search size={13} style={{ marginRight: '6px' }} /> EMPLOYEE NAME
                         </div>
                         {showSearch.employeeName && (
-                          <input type="text" autoFocus placeholder="Search..." value={searchEmployeeName} onChange={e => setSearchEmployeeName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                          <input type="text" autoFocus placeholder="Search..." value={searchEmployeeName} onChange={e => setSearchEmployeeName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '6px', width: '100%', padding: '4px 8px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
                         )}
                       </th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>LOAN AMOUNT</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'right', border: '1px solid #334155' }}>LOAN AMOUNT</th>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID</th>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT</th>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'center', border: '1px solid #334155' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, status: !p.status}))}>
-                          <Search size={14} style={{ marginRight: '6px' }} /> STATUS
+                          <Search size={13} style={{ marginRight: '6px' }} /> STATUS
                         </div>
                         {showSearch.status && (
-                          <input type="text" autoFocus placeholder="Search..." value={searchStatus} onChange={e => setSearchStatus(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                          <input type="text" autoFocus placeholder="Search..." value={searchStatus} onChange={e => setSearchStatus(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '6px', width: '100%', padding: '4px 8px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
                         )}
                       </th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
+                      <th style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 'bold', letterSpacing: '0.04em', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredLoans.map((loan) => (
                       <tr key={loan._id}>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{loan.loanName}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{loan.employeeName}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.loanAmount}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.amountPaid}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.balanceAmount}</td>
-                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
-                          <span style={{ color: loan.status === 'Ongoing' ? '#f59e0b' : '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', border: '1px solid #334155' }}>{loan.loanName}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', border: '1px solid #334155' }}>{loan.employeeName}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.loanAmount}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.amountPaid}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.84rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.balanceAmount}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'center', border: '1px solid #334155' }}>
+                          <span style={{ color: loan.status === 'Ongoing' ? '#f59e0b' : '#10b981', fontWeight: 'bold', fontSize: '0.82rem' }}>
                             {loan.status}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
+                        <td style={{ padding: '10px 14px', textAlign: 'center', border: '1px solid #334155' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                             <button className="btn btn-sm" onClick={() => setViewLoan(loan)} style={{ background: 'transparent', color: '#10b981', padding: '4px' }}>
                               <Eye size={16} />
