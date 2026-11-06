@@ -164,6 +164,8 @@ function buildWhere(query) {
                 where[key] = { [Op.in]: value.$in };
             } else if (value.$nin !== undefined) {
                 where[key] = { [Op.notIn]: value.$nin };
+            } else if (value.$ne !== undefined) {
+                where[key] = { [Op.ne]: value.$ne };
             } else if (value.$exists !== undefined) {
                 where[key] = value.$exists ? { [Op.not]: null } : null;
             } else {

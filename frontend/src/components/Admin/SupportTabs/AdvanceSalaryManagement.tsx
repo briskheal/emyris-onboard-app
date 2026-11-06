@@ -23,6 +23,9 @@ const AdvanceSalaryManagement: React.FC = () => {
   
   // Filters
   const [filterEmployee, setFilterEmployee] = useState('');
+  const [filterEmpSearchQuery, setFilterEmpSearchQuery] = useState('');
+  const [isFilterEmpDropdownOpen, setIsFilterEmpDropdownOpen] = useState(false);
+  const filterEmpDropdownRef = useRef<HTMLDivElement>(null);
   const [searchEmployeeName, setSearchEmployeeName] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
   const [showSearch, setShowSearch] = useState({ employeeName: false, status: false });
@@ -65,6 +68,9 @@ const AdvanceSalaryManagement: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (empDropdownRef.current && !empDropdownRef.current.contains(event.target as Node)) {
         setIsEmpDropdownOpen(false);
+      }
+      if (filterEmpDropdownRef.current && !filterEmpDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterEmpDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -148,6 +154,20 @@ const AdvanceSalaryManagement: React.FC = () => {
     if (!empSearchQuery.trim()) return true;
     if (selectedAssignEmp && empSearchQuery.trim() === selectedAssignEmp.fullName?.trim()) return true;
     const q = empSearchQuery.toLowerCase().trim();
+    return (
+      (emp.fullName && emp.fullName.toLowerCase().includes(q)) ||
+      (emp.email && emp.email.toLowerCase().includes(q)) ||
+      (emp.empCode && emp.empCode.toLowerCase().includes(q)) ||
+      (emp.designation && emp.designation.toLowerCase().includes(q)) ||
+      (emp.hq && emp.hq.toLowerCase().includes(q))
+    );
+  });
+
+  const selectedFilterEmp = employees.find(e => e.email === filterEmployee);
+  const filteredFilterEmployees = employees.filter(emp => {
+    if (!filterEmpSearchQuery.trim()) return true;
+    if (selectedFilterEmp && filterEmpSearchQuery.trim() === selectedFilterEmp.fullName?.trim()) return true;
+    const q = filterEmpSearchQuery.toLowerCase().trim();
     return (
       (emp.fullName && emp.fullName.toLowerCase().includes(q)) ||
       (emp.email && emp.email.toLowerCase().includes(q)) ||
@@ -485,14 +505,233 @@ const AdvanceSalaryManagement: React.FC = () => {
             </div>
             
             <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1.5rem', width: '300px' }}>
+              <div style={{ marginBottom: '1.5rem', width: '320px', position: 'relative' }} ref={filterEmpDropdownRef}>
                 <label style={labelStyle}>SELECT EMPLOYEE</label>
-                <select style={inputBase} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
-                  <option value="">All Employees</option>
-                  {employees.map(emp => (
-                    <option key={emp.email} value={emp.email}>{emp.fullName}</option>
-                  ))}
-                </select>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
+                  <input
+                    type="text"
+                    placeholder="Search employee or 'All'..."
+                    value={isFilterEmpDropdownOpen ? filterEmpSearchQuery : (selectedFilterEmp ? selectedFilterEmp.fullName : (filterEmployee ? filterEmployee : 'All Employees'))}
+                    onFocus={() => {
+                      setIsFilterEmpDropdownOpen(true);
+                      if (selectedFilterEmp) {
+                        setFilterEmpSearchQuery(selectedFilterEmp.fullName);
+                      } else {
+                        setFilterEmpSearchQuery('');
+                      }
+                    }}
+                    onClick={() => {
+                      setIsFilterEmpDropdownOpen(true);
+                    }}
+                    onChange={(e) => {
+                      setFilterEmpSearchQuery(e.target.value);
+                      setIsFilterEmpDropdownOpen(true);
+                      if (!e.target.value) {
+                        setFilterEmployee('');
+                      }
+                    }}
+                    style={{
+                      ...inputBase,
+                      paddingLeft: '34px',
+                      paddingRight: filterEmployee ? '54px' : '34px',
+                      borderColor: isFilterEmpDropdownOpen ? '#3b82f6' : '#334155',
+                      cursor: 'pointer',
+                    }}
+                    autoComplete="off"
+                  />
+
+                  {/* Clear / Reset to All Employees */}
+                  {filterEmployee && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterEmployee('');
+                        setFilterEmpSearchQuery('');
+                        setIsFilterEmpDropdownOpen(false);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '28px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Reset to All Employees"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+
+                  {/* Chevron Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsFilterEmpDropdownOpen(!isFilterEmpDropdownOpen);
+                      if (!isFilterEmpDropdownOpen && selectedFilterEmp) {
+                        setFilterEmpSearchQuery(selectedFilterEmp.fullName);
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '6px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title="Toggle list"
+                  >
+                    {isFilterEmpDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {isFilterEmpDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      left: 0,
+                      right: 0,
+                      zIndex: 100,
+                      background: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+                      maxHeight: '260px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {/* "All Employees" Option */}
+                    <div
+                      onClick={() => {
+                        setFilterEmployee('');
+                        setFilterEmpSearchQuery('');
+                        setIsFilterEmpDropdownOpen(false);
+                      }}
+                      style={{
+                        padding: '9px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                        background: !filterEmployee ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (filterEmployee) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (filterEmployee) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                        <div
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: !filterEmployee ? '#3b82f6' : '#1e293b',
+                            color: !filterEmployee ? '#fff' : '#94a3b8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            border: '1px solid rgba(255, 255, 255, 0.1)'
+                          }}
+                        >
+                          ALL
+                        </div>
+                        <div style={{ color: !filterEmployee ? '#60a5fa' : '#f8fafc', fontWeight: 600, fontSize: '0.85rem' }}>
+                          All Employees
+                        </div>
+                      </div>
+                      {!filterEmployee && <Check size={15} color="#60a5fa" />}
+                    </div>
+
+                    {/* Filtered Employee List */}
+                    {filteredFilterEmployees.length > 0 ? (
+                      filteredFilterEmployees.map((emp) => {
+                        const isSelected = filterEmployee === emp.email;
+                        return (
+                          <div
+                            key={emp.email}
+                            onClick={() => {
+                              setFilterEmployee(emp.email);
+                              setFilterEmpSearchQuery(emp.fullName || emp.email);
+                              setIsFilterEmpDropdownOpen(false);
+                            }}
+                            style={{
+                              padding: '9px 12px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                              background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              transition: 'background 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                              <div
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '50%',
+                                  background: isSelected ? '#3b82f6' : '#1e293b',
+                                  color: isSelected ? '#fff' : '#94a3b8',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  flexShrink: 0,
+                                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                                }}
+                              >
+                                {(emp.fullName || 'E').slice(0, 2).toUpperCase()}
+                              </div>
+                              <div style={{ overflow: 'hidden' }}>
+                                <div style={{ color: isSelected ? '#60a5fa' : '#f8fafc', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                  {emp.fullName || emp.email}
+                                </div>
+                                <div style={{ color: '#94a3b8', fontSize: '0.72rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                  {[emp.empCode, emp.designation, emp.hq].filter(Boolean).join(' • ') || emp.email}
+                                </div>
+                              </div>
+                            </div>
+                            {isSelected && <Check size={15} color="#60a5fa" style={{ flexShrink: 0, marginLeft: '8px' }} />}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ padding: '14px', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                        No employees found
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>SHOW ENTRIES ({filteredAdvances.length})</h4>

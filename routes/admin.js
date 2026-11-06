@@ -1007,11 +1007,6 @@ router.get('/applicants', async (req, res) => {
             };
         }
 
-        if (req.query.activeOnly === 'true') {
-            query.canLogin = { $ne: false };
-            query.status = { $nin: ['rejected', 'cancelled', 'inactive'] };
-        }
-
         // Optimization: Exclude heavy fields from the main list to keep API fast.
         // When reports=true (ReportsTab), include psychometric fields so the Dossier tab works.
         const isReports = req.query.reports === 'true';
@@ -1026,10 +1021,14 @@ router.get('/applicants', async (req, res) => {
         // When isReports=true: mindsetReport, psychometricScores, psychometricTestCompleted
         // are intentionally KEPT so the Psychometric Dossier tab can read them.
 
-        const applicants = await Applicant.find(query)
+        let applicants = await Applicant.find(query)
             .select(selectStr)
             .sort({ registeredAt: -1 })
             .lean(); // Fetch summary fields
+
+        if (req.query.activeOnly === 'true') {
+            applicants = applicants.filter(a => a.canLogin !== false && !['rejected', 'cancelled', 'inactive'].includes((a.status || '').toLowerCase()));
+        }
 
         res.status(200).json({ success: true, applicants });
     } catch (error) {
