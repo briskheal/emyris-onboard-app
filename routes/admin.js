@@ -2308,6 +2308,55 @@ router.post('/send-letter', async (req, res) => {
     }
 });
 
+// Helper: Extract transfer and relocation details directly from letter content
+function extractTransferDetails(htmlOrText, defaultHq = '') {
+    if (!htmlOrText || typeof htmlOrText !== 'string') return { relocatedHq: defaultHq };
+    const clean = htmlOrText.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+
+    let relocatedHq = '';
+    let previousHq = '';
+    let effectiveDate = '';
+    let reportingManager = '';
+
+    // Effective date
+    const dMatch = clean.match(/effective(?:\s+date)?(?:\s+from)?\s+([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+[0-9]{4}|[0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{2,4})/i);
+    if (dMatch && dMatch[1]) effectiveDate = dMatch[1].trim();
+
+    // Reporting manager
+    const mgrMatch = clean.match(/reporting\s+manager\s+will\s+be\s+((?:(?:Mr|Ms|Mrs|Dr)\.?\s+)?[A-Za-z0-9\s().-]+?)(?:,\s*and|,|\.\s+[A-Z]|$)/i);
+    if (mgrMatch && mgrMatch[1]) reportingManager = mgrMatch[1].trim().replace(/\.+$/, '');
+
+    // Transferred from [Old] to [New]
+    const m1 = clean.match(/transferred\s+from\s+([A-Za-z0-9\s.-]+?)\s+to\s+([A-Za-z0-9\s.-]+?)(?:[.,;]|\band\b)/i);
+    if (m1 && m1[2]) {
+        previousHq = m1[1].trim();
+        relocatedHq = m1[2].trim();
+    }
+
+    // Fallback: primary work location will be [New] (HQ)
+    if (!relocatedHq) {
+        const m2 = clean.match(/primary\s+work\s+location\s+will\s+be\s+([A-Za-z0-9\s.-]+?)(?:\s+HQ|[.,;]|\band\b)/i);
+        if (m2 && m2[1]) relocatedHq = m2[1].trim();
+    }
+
+    // Fallback: transferred/relocated to [New]
+    if (!relocatedHq) {
+        const m3 = clean.match(/(?:transferred|relocated)\s+to\s+([A-Za-z0-9\s.-]+?)(?:[.,;]|\band\b)/i);
+        if (m3 && m3[1]) relocatedHq = m3[1].trim();
+    }
+
+    if (relocatedHq) {
+        relocatedHq = relocatedHq.replace(/\s+HQ$/i, '').trim();
+    }
+
+    return {
+        previousHq: previousHq || defaultHq,
+        relocatedHq: relocatedHq || defaultHq,
+        effectiveDate,
+        reportingManager
+    };
+}
+
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
 router.post('/save-letter-snapshot', async (req, res) => {
     try {
@@ -2403,10 +2452,30 @@ router.post('/save-letter-snapshot', async (req, res) => {
             let pdfBuffer;
             if (pdfBase64) {
                 const pdfClean = pdfBase64.includes('base64,') ? pdfBase64.split('base64,')[1] : pdfBase64;
-                pdfBuffer = Buffer.from(pdfClean, 'base64');
-            } else {
-                const { generateAppointmentPdf } = require('../utils/pdfGenerator');
-                pdfBuffer = await generateAppointmentPdf({ applicant, company, letterType, letterData });
+                if (pdfClean && pdfClean.length > 500) {
+                    pdfBuffer = Buffer.from(pdfClean, 'base64');
+                }
+            }
+
+            if (!pdfBuffer || pdfBuffer.length === 0) {
+                const { generateAppointmentPdf, generateGenericLetterPdf } = require('../utils/pdfGenerator');
+                if (letterType === 'appt') {
+                    pdfBuffer = await generateAppointmentPdf({ applicant, company, letterType, letterData });
+                } else {
+                    const lhAsset = company.activeLetterheadId ? await Asset.findById(company.activeLetterheadId) : null;
+                    const stampAsset = company.activeStampId ? await Asset.findById(company.activeStampId) : null;
+                    const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+                    pdfBuffer = await generateGenericLetterPdf({
+                        applicant,
+                        company,
+                        letterType,
+                        letterTitle: label,
+                        letterData,
+                        lhAsset,
+                        stampAsset,
+                        sigAsset
+                    });
+                }
             }
 
             if (pdfBuffer && pdfBuffer.length > 0) {
@@ -2463,6 +2532,8 @@ router.post('/save-letter-snapshot', async (req, res) => {
                 </div>`;
 
             if (isRelocation) {
+                const transferInfo = extractTransferDetails(letterData, applicant.hq || '');
+                const displayHq = transferInfo.relocatedHq || applicant.hq || 'N/A';
                 emailSubject = `Relocation Notification - ${applicant.fullName} (${applicant.empCode || 'N/A'}) | ${company.name}`;
                 emailBodyHtml = `
                     <div style="font-family: Arial, 'Segoe UI', sans-serif; line-height: 1.6; color: #1e293b; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background-color: #ffffff;">
@@ -2475,22 +2546,25 @@ router.post('/save-letter-snapshot', async (req, res) => {
                             <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
                                 We are pleased to formally issue your official <strong>Relocation Notification / Transfer Letter</strong> with <strong>${company.name || 'Emyris Biolifesciences Pvt Ltd'}</strong>.
                             </p>
-                            <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 18px; margin: 18px 0; border-radius: 4px; font-size: 13.5px; line-height: 1.6;">
+                            <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 18px; margin: 18px 0; border-radius: 4px; font-size: 13.5px; line-height: 1.7;">
                                 <strong>Employee Name:</strong> ${applicant.fullName}<br>
                                 <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
                                 <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
                                 <strong>Division:</strong> ${applicant.division || 'CRITIZA'}<br>
-                                <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                                ${transferInfo.previousHq ? `<strong>Previous Headquarters:</strong> ${transferInfo.previousHq}<br>` : ''}
+                                <strong>Relocated Headquarters:</strong> <span style="color: #0284c7; font-weight: bold;">${displayHq}</span><br>
+                                ${transferInfo.effectiveDate ? `<strong>Effective Date:</strong> ${transferInfo.effectiveDate}<br>` : ''}
+                                ${transferInfo.reportingManager ? `<strong>New Reporting Manager:</strong> ${transferInfo.reportingManager}<br>` : ''}
                                 <strong>Document:</strong> Relocation Notification
                             </div>
                             <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
                                 Please find attached your official <strong>Relocation Notification</strong> containing the comprehensive terms and details of your work location transfer and reporting structure.
                             </p>
                             <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
-                                Kindly review the document, acknowledge receipt by signing the duplicate copy, and submit the signed copy to HR Operations at <a href="mailto:hradmin@emyrishr.in" style="color: #0284c7; text-decoration: none; font-weight: bold;">hradmin@emyrishr.in</a> for official records.
+                                Kindly review the document, acknowledge receipt by signing the duplicate copy, and submit the signed copy to HR Operations at <a href="mailto:hradmin@emyrishr.in" style="color: #0284c7; text-decoration: none; font-weight: bold;">hradmin@emyrishr.in</a> for company records.
                             </p>
                             <p style="font-size: 14px; color: #334155; margin-bottom: 24px;">
-                                We wish you continued growth and grand success in your assigned headquarters!
+                                We wish you continued growth and grand success in your new headquarters at <strong>${displayHq}</strong>!
                             </p>
                             <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 20px;">
                                 <p style="margin: 0; font-size: 14px; font-weight: bold; color: #0f172a;">${company.signatoryName || 'HR Operations'}</p>

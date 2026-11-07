@@ -652,9 +652,107 @@ function generateConfirmationDelayedPdf({ applicant, company = {}, cdDate = null
     });
 }
 
+function generateGenericLetterPdf({ applicant, company = {}, letterType = 'misc', letterTitle = '', letterData = '', lhAsset = null, stampAsset = null, sigAsset = null }) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({
+                size: 'A4',
+                margins: { top: 125, bottom: 65, left: 50, right: 50 },
+                autoFirstPage: true
+            });
+            const buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+            let lhBuf = null;
+            if (lhAsset && lhAsset.data) {
+                const b64 = lhAsset.data.includes('base64,') ? lhAsset.data.split('base64,')[1] : lhAsset.data;
+                try { lhBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+            let stampBuf = null;
+            if (stampAsset && stampAsset.data) {
+                const b64 = stampAsset.data.includes('base64,') ? stampAsset.data.split('base64,')[1] : stampAsset.data;
+                try { stampBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+            let sigBuf = null;
+            if (sigAsset && sigAsset.data) {
+                const b64 = sigAsset.data.includes('base64,') ? sigAsset.data.split('base64,')[1] : sigAsset.data;
+                try { sigBuf = Buffer.from(b64, 'base64'); } catch (e) {}
+            }
+
+            // Draw full-bleed Letterhead Background
+            if (lhBuf) {
+                try {
+                    doc.image(lhBuf, 0, 0, { width: 595.28, height: 841.89 });
+                } catch (e) {}
+            }
+
+            let rawHtml = letterData || '';
+            rawHtml = rawHtml.replace(/<img[^>]*class="a4-branding-layer"[^>]*>/gi, '');
+            rawHtml = fillLetterPlaceholders(rawHtml, applicant, company);
+
+            // Cleanly extract text paragraphs from the HTML template
+            let cleanText = rawHtml.replace(/<br\s*[\/]?>/gi, '\n');
+            cleanText = cleanText.replace(/<\/(p|div|h[1-6])>/gi, '\n\n');
+            cleanText = cleanText.replace(/<[^>]+>/g, '');
+            cleanText = cleanText.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+            cleanText = cleanText.replace(/MR\.\./gi, 'Mr.').replace(/MS\.\./gi, 'Ms.');
+
+            const rawParas = cleanText.split(/\n{2,}/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean);
+
+            doc.y = 185;
+            for (const p of rawParas) {
+                if (/^Ref-TRANF-|^Ref\s*No/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y, { align: 'right' });
+                } else if (/^\d{2}\/\d{2}\/\d{4}|Date\s*:/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y, { align: 'right' });
+                    doc.moveDown(0.85);
+                } else if (/^To,|^MR\./i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.4);
+                } else if (/^Subject:|^SUB\s*:/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
+                } else if (/^Dear\s+/i.test(p)) {
+                    doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(p, 55, doc.y);
+                    doc.moveDown(0.85);
+                } else if (/^(Sincerely|With best regards|HR DEPT|HR BUSINESS)/i.test(p)) {
+                    // Handled in closing
+                } else {
+                    doc.font('Helvetica').fontSize(10).fillColor('#1e293b').lineGap(4).text(p, 55, doc.y, { width: 485, align: 'justify' });
+                    doc.moveDown(0.85);
+                }
+            }
+
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b');
+            doc.text('Sincerely,', 55, doc.y);
+            doc.moveDown(0.5);
+
+            const sigY = doc.y;
+            if (sigBuf) {
+                try { doc.image(sigBuf, 55, sigY, { height: 44 }); } catch (e) {}
+            }
+            if (stampBuf) {
+                try { doc.image(stampBuf, 120, sigY - 8, { height: 62 }); } catch (e) {}
+            }
+
+            doc.y = sigY + 48;
+            doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1e293b').text(company.signatoryName || 'HR DEPT', 55, doc.y);
+            doc.font('Helvetica').fontSize(9).fillColor('#475569').text(company.signatoryDesignation || 'HR BUSINESS PARTNER', 55, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a').text(company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD', 55, doc.y);
+
+            doc.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 module.exports = {
     buildOfficialLetterHtml,
     generateAppointmentPdf,
     generateConfirmationPdf,
-    generateConfirmationDelayedPdf
+    generateConfirmationDelayedPdf,
+    generateGenericLetterPdf
 };
