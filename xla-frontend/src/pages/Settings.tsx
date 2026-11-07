@@ -1,10 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   ArrowLeft, Settings as SettingsIcon, ShieldCheck, Search, X, Check,
-  ChevronDown, ChevronUp, Lock, Unlock, UserCheck, ShieldAlert
+  ChevronDown, ChevronUp, Lock, Unlock, UserCheck, Calendar, Sliders,
+  RotateCcw, Activity, Type, Megaphone, Smartphone, Monitor
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+
+// Desktop Subcomponents
+import SettingsPreferences from '../components/SettingsPreferences';
+import SettingsHolidays from '../components/SettingsHolidays';
+import SettingsDoctorControls from '../components/SettingsDoctorControls';
+import TypographySettingsModal from '../components/TypographySettingsModal';
 
 interface ControlDefinition {
   id: string;
@@ -73,11 +80,65 @@ const AUTO_APPROVAL_MODULES = [
   { id: 'tp', label: 'TP' }
 ];
 
+const DESKTOP_SIDEBAR_ITEMS = [
+  { id: 'holidays', label: 'Create Holidays', icon: Calendar },
+  { id: 'preferences', label: 'Preferences', icon: Sliders },
+  { id: 'restore', label: 'Restore Deleted', icon: RotateCcw },
+  { id: 'user_controls', label: 'User Controls', icon: UserCheck },
+  { id: 'doctor_controls', label: 'Doctor Controls', icon: Activity },
+  { id: 'access_control', label: 'Access Control', icon: ShieldCheck },
+  { id: 'typography', label: 'Display & Typography', icon: Type },
+  { id: 'campaigns', label: 'Campaigns', icon: Megaphone, isNew: true },
+];
+
 export default function Settings() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
 
-  // Navigation Views: 'menu' | 'user_controls' | 'access_control'
+  // Responsive device check: Mobile (< 1024px) vs Desktop (>= 1024px)
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Desktop active tab
+  const initialDesktopTab = queryParams.get('tab') || 'holidays';
+  const [desktopTab, setDesktopTab] = useState<string>(initialDesktopTab);
+
+  useEffect(() => {
+    const tab = queryParams.get('tab');
+    if (tab) {
+      setDesktopTab(tab);
+    }
+  }, [location.search]);
+
+  const handleSelectDesktopTab = (tabId: string) => {
+    setDesktopTab(tabId);
+    navigate(`/extras/settings?tab=${tabId}`, { replace: true });
+  };
+
+  // Mobile Navigation Views: 'menu' | 'user_controls' | 'access_control'
   const [currentView, setCurrentView] = useState<'menu' | 'user_controls' | 'access_control'>('menu');
+
+  // If user opens URL directly with ?tab=user_controls or ?tab=access_control on mobile
+  useEffect(() => {
+    const tab = queryParams.get('tab');
+    if (isMobile) {
+      if (tab === 'user_controls') setCurrentView('user_controls');
+      else if (tab === 'access_control') setCurrentView('access_control');
+    }
+  }, [location.search, isMobile]);
 
   // Users Data
   const [users, setUsers] = useState<any[]>([]);
@@ -250,40 +311,28 @@ export default function Settings() {
     if (!lockTarget) return;
     setLockActionLoading(true);
     try {
-      const finalReason = lockReasonCategory === 'Other'
-        ? (lockCustomReason.trim() || 'Other')
-        : (lockCustomReason.trim() ? `${lockReasonCategory} - ${lockCustomReason.trim()}` : lockReasonCategory);
-
-      let currentControls = lockTarget.controls || {};
-      if (typeof currentControls === 'string') {
-        try { currentControls = JSON.parse(currentControls); } catch (e) { currentControls = {}; }
+      const finalReason = lockReasonCategory === 'Other' ? (lockCustomReason || 'Other') : lockReasonCategory;
+      let existingControls = lockTarget.controls || {};
+      if (typeof existingControls === 'string') {
+        try { existingControls = JSON.parse(existingControls); } catch (e) { existingControls = {}; }
       }
-
-      const dateStr = new Date().toISOString().split('T')[0];
       const updatedControls = {
-        ...currentControls,
+        ...existingControls,
         locked: true,
-        lockedReason: finalReason,
-        lockedDate: dateStr
+        lockReason: finalReason,
+        lockedAt: new Date().toISOString()
       };
 
       const res = await axios.put(`/api/admin/users/${lockTarget._id}`, {
-        controls: updatedControls,
         status: 'Deactivated',
-        deactivateReason: finalReason,
-        deactivateDate: dateStr
+        controls: updatedControls
       });
 
       if (res.data.success) {
-        setUsers(prev => prev.map(u => u._id === lockTarget._id ? {
-          ...u,
-          status: 'Deactivated',
-          deactivateReason: finalReason,
-          deactivateDate: dateStr,
-          controls: updatedControls
-        } : u));
+        setUsers(prev => prev.map(u => u._id === lockTarget._id ? { ...u, status: 'Deactivated', controls: updatedControls } : u));
         setLockTarget(null);
         setLockCustomReason('');
+        setLockReasonCategory('Resigned');
       } else {
         alert(res.data.message || 'Failed to lock user');
       }
@@ -299,33 +348,24 @@ export default function Settings() {
     if (!unlockTarget) return;
     setLockActionLoading(true);
     try {
-      let currentControls = unlockTarget.controls || {};
-      if (typeof currentControls === 'string') {
-        try { currentControls = JSON.parse(currentControls); } catch (e) { currentControls = {}; }
+      let existingControls = unlockTarget.controls || {};
+      if (typeof existingControls === 'string') {
+        try { existingControls = JSON.parse(existingControls); } catch (e) { existingControls = {}; }
       }
-
       const updatedControls = {
-        ...currentControls,
+        ...existingControls,
         locked: false,
-        lockedReason: '',
-        lockedDate: ''
+        lockReason: null,
+        unlockedAt: new Date().toISOString()
       };
 
       const res = await axios.put(`/api/admin/users/${unlockTarget._id}`, {
-        controls: updatedControls,
         status: 'Active',
-        deactivateReason: null,
-        deactivateDate: null
+        controls: updatedControls
       });
 
       if (res.data.success) {
-        setUsers(prev => prev.map(u => u._id === unlockTarget._id ? {
-          ...u,
-          status: 'Active',
-          deactivateReason: null,
-          deactivateDate: null,
-          controls: updatedControls
-        } : u));
+        setUsers(prev => prev.map(u => u._id === unlockTarget._id ? { ...u, status: 'Active', controls: updatedControls } : u));
         setUnlockTarget(null);
       } else {
         alert(res.data.message || 'Failed to unlock user');
@@ -337,410 +377,614 @@ export default function Settings() {
     }
   };
 
-  return (
-    <div className="min-h-full bg-[#151928] text-white font-sans flex flex-col pb-24">
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 1. SETTINGS MAIN MENU VIEW (Matching video frame 00:00) */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {currentView === 'menu' && (
-        <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => navigate('/extras')}
-              className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
-              title="Back to Extras"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-black text-white tracking-wide">Settings</h1>
+  // Shared User Controls Panel (used in both desktop and mobile user controls view)
+  const renderUserControlsConfig = () => (
+    <div className="space-y-4">
+      {/* User Information Pill */}
+      <div className="bg-[#1e243d] border border-sky-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 flex items-center justify-center font-bold text-sm">
+            {selectedUser.firstName?.charAt(0).toUpperCase()}
           </div>
-
-          <p className="text-xs text-slate-400 mb-6 px-1">
-            Configure field member app controls and account access privileges.
-          </p>
-
-          {/* Quick Action Menu Cards */}
-          <div className="space-y-4">
-            {/* User Controls Button */}
-            <button
-              onClick={() => { setCurrentView('user_controls'); setSelectedUser(null); }}
-              className="w-full bg-[#1e243d] hover:bg-[#252c4a] border border-[#333e66] hover:border-sky-500/50 rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg active:scale-[0.99] transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0 group-hover:bg-sky-500 group-hover:text-white transition-all">
-                <SettingsIcon size={24} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white group-hover:text-sky-300 transition-colors">
-                  User Controls
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">
-                  Call planning, work-in, backlog, geo-fencing &amp; auto-approvals
-                </p>
-              </div>
-            </button>
-
-            {/* Access Control Button */}
-            <button
-              onClick={() => setCurrentView('access_control')}
-              className="w-full bg-[#1e243d] hover:bg-[#252c4a] border border-[#333e66] hover:border-rose-500/50 rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg active:scale-[0.99] transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all">
-                <ShieldCheck size={24} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white group-hover:text-rose-300 transition-colors">
-                  Access Control
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">
-                  Lock or deactivate field accounts &amp; manage portal access
-                </p>
-              </div>
-            </button>
+          <div>
+            <h3 className="font-bold text-sm text-white">
+              {selectedUser.firstName} {selectedUser.lastName || ''}
+            </h3>
+            <p className="text-[11px] text-slate-400">
+              {selectedUser.employeeId} &bull; {selectedUser.designation || 'Staff'} {selectedUser.hq ? `• ${selectedUser.hq}` : ''}
+            </p>
           </div>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setSelectedUser(null)}
+          className="text-xs font-semibold text-sky-400 hover:text-sky-300 underline"
+        >
+          Change
+        </button>
+      </div>
 
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 2. USER CONTROLS: SELECT USER SCREEN (Video frame 00:02-04) */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {currentView === 'user_controls' && !selectedUser && (
-        <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => setCurrentView('menu')}
-              className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
+      {/* 8 Mandatory / Permission Control Cards */}
+      <div className="space-y-3">
+        {USER_CONTROLS_DEFINITIONS.map((ctrl) => {
+          const isActive = Boolean(userControls[ctrl.id]);
+          return (
+            <div
+              key={ctrl.id}
+              className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md flex items-start justify-between gap-4"
             >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-black text-white tracking-wide">Select User</h1>
-          </div>
-
-          {/* User Selector Dropdown Card */}
-          <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-xl mb-4">
-            <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-700/60">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold">
-                  <UserCheck size={20} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Check size={15} className="text-emerald-400 shrink-0" />
+                  <h4 className="text-xs font-bold text-white tracking-wide">{ctrl.title}</h4>
                 </div>
-                <span className="font-bold text-sm text-white">Select User</span>
+                <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">{ctrl.desc}</p>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-400 border border-sky-500/30">
-                {activeUsers.length}
-              </span>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setUserControls(prev => ({ ...prev, [ctrl.id]: checked }));
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+              </label>
+            </div>
+          );
+        })}
+
+        {/* Auto Approval Accordion Card */}
+        <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <Check size={15} className="text-emerald-400 shrink-0" />
+                <h4 className="text-xs font-bold text-white tracking-wide">Auto Approval</h4>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">
+                With this feature enabled, selected entries will be automatically approved without requiring admin approval.
+                <span className="text-amber-400 block mt-1 font-semibold">
+                  WARNING: No admin notification will be sent for these approvals.
+                </span>
+              </p>
             </div>
 
-            {/* Live Search Input */}
-            <div className="relative mb-3">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            {/* Main Auto Approval Toggle */}
+            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
               <input
-                type="text"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search user..."
-                className="w-full bg-[#151928] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                type="checkbox"
+                checked={Boolean(userControls.autoApproval)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setUserControls(prev => ({ ...prev, autoApproval: checked }));
+                  if (checked) setAutoApprovalOpen(true);
+                }}
+                className="sr-only peer"
               />
-            </div>
-
-            {/* User List */}
-            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-800/80 pr-1">
-              {loadingUsers ? (
-                <div className="p-8 text-center text-xs text-slate-400">Loading active users...</div>
-              ) : filteredActiveUsers.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">No matching active users found</div>
-              ) : (
-                filteredActiveUsers.map((u) => {
-                  const fullName = `${u.firstName} ${u.lastName || ''}`.trim();
-                  return (
-                    <button
-                      key={u._id}
-                      onClick={() => handleSelectUser(u)}
-                      className="w-full py-3 px-2 flex items-center gap-3 text-left hover:bg-slate-800/50 rounded-xl transition-colors group"
-                    >
-                      <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-sky-300 shrink-0 overflow-hidden">
-                        {u.profilePic ? (
-                          <img src={u.profilePic} alt={fullName} className="w-full h-full object-cover" />
-                        ) : (
-                          fullName.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-xs text-white group-hover:text-sky-300 transition-colors truncate">
-                          {fullName}
-                        </div>
-                        <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {u.designation || 'Staff'} {u.hq ? `• ${u.hq}` : ''}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 3. USER CONTROLS: CONTROLS FORM (Video frame 00:05-20)     */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {currentView === 'user_controls' && selectedUser && (
-        <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => setSelectedUser(null)}
-              className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-black text-white tracking-wide">User Controls</h1>
+              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+            </label>
           </div>
 
-          {/* Selected User Banner */}
-          <div className="bg-[#1e243d] border border-[#333e66] rounded-xl px-4 py-3 flex items-center justify-between mb-5 shadow-md">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Selected User :</span>
-              <span className="text-xs font-black text-sky-400">
-                {selectedUser.firstName} {selectedUser.lastName || ''}
-              </span>
-            </div>
-            <button
-              onClick={() => setSelectedUser(null)}
-              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              title="Change user"
-            >
-              <X size={16} />
-            </button>
-          </div>
+          {/* Accordion Trigger */}
+          <button
+            type="button"
+            onClick={() => setAutoApprovalOpen(!autoApprovalOpen)}
+            className="mt-3 pt-3 border-t border-slate-700/60 w-full flex items-center justify-between text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
+          >
+            <span>Select Auto Approval Modules ({AUTO_APPROVAL_MODULES.length})</span>
+            {autoApprovalOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-          {/* Controls List Cards */}
-          <div className="space-y-3.5 mb-8">
-            {USER_CONTROLS_DEFINITIONS.map((ctrl) => {
-              const isChecked = Boolean(userControls[ctrl.id]);
-              return (
-                <div
-                  key={ctrl.id}
-                  className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <SettingsIcon size={14} className="text-sky-400 shrink-0" />
-                        <h4 className="text-xs font-bold text-white tracking-wide">
-                          {ctrl.title}
-                        </h4>
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">
-                        {ctrl.desc}
-                      </p>
-                    </div>
-
-                    {/* Toggle Switch */}
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+          {/* Sub-Modules Switch List */}
+          {autoApprovalOpen && (
+            <div className="mt-3 pt-2 space-y-2.5 divide-y divide-slate-800/80">
+              {AUTO_APPROVAL_MODULES.map((mod) => {
+                const isModActive = Boolean(userControls.autoApprovals?.[mod.id]);
+                return (
+                  <div key={mod.id} className="pt-2.5 flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-medium">{mod.label}</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => setUserControls(prev => ({ ...prev, [ctrl.id]: e.target.checked }))}
+                        checked={isModActive}
+                        onChange={() => handleToggleAutoApprovalModule(mod.id)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                      <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
                     </label>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        type="button"
+        onClick={handleSaveUserControls}
+        disabled={savingControls}
+        className="w-full mt-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-sm rounded-xl shadow-lg shadow-sky-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        {savingControls ? (
+          <span>Saving Controls...</span>
+        ) : (
+          <>
+            <Check size={18} />
+            <span>Submit</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+
+  // Shared Access Control Table Component
+  const renderAccessControlTable = () => (
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={accessSearch}
+          onChange={(e) => setAccessSearch(e.target.value)}
+          placeholder="Search user by name, ID, HQ..."
+          className="w-full bg-[#1e243d] border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
+        />
+      </div>
+
+      {/* Access Control Table / Card List */}
+      <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl overflow-hidden shadow-xl">
+        <div className="px-4 py-3 bg-[#171c31] border-b border-slate-700/70 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
+          <span>User</span>
+          <span>Lock Status</span>
+        </div>
+
+        <div className="divide-y divide-slate-800/80 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {loadingUsers ? (
+            <div className="p-8 text-center text-xs text-slate-400">Loading user list...</div>
+          ) : filteredAccessUsers.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400">No users found</div>
+          ) : (
+            filteredAccessUsers.map((u) => {
+              const locked = isUserLocked(u);
+              const fullName = `${u.firstName} ${u.lastName || ''}`.trim();
+              return (
+                <div
+                  key={u._id}
+                  className="px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-sky-400 shrink-0 overflow-hidden">
+                      {u.profilePic ? (
+                        <img src={u.profilePic} alt={fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        fullName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-white truncate flex items-center gap-2">
+                        <span>{fullName}</span>
+                        {locked && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            Locked
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                        {u.employeeId} &bull; {u.designation || 'Staff'} {u.hq ? `• ${u.hq}` : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lock Toggle Switch */}
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (locked) {
+                          setUnlockTarget(u);
+                        } else {
+                          setLockTarget(u);
+                        }
+                      }}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                        locked ? 'bg-rose-600 justify-end' : 'bg-slate-700 justify-start'
+                      }`}
+                      title={locked ? 'Click to Unlock' : 'Click to Lock'}
+                    >
+                      <div className="bg-white w-4 h-4 rounded-full shadow-md flex items-center justify-center">
+                        {locked ? (
+                          <Lock size={10} className="text-rose-600" />
+                        ) : (
+                          <Unlock size={10} className="text-slate-700" />
+                        )}
+                      </div>
+                    </button>
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
-            {/* Auto Approval Accordion Card (Video frame 00:40-01:04) */}
-            <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Check size={15} className="text-emerald-400 shrink-0" />
-                    <h4 className="text-xs font-bold text-white tracking-wide">Auto Approval</h4>
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">
-                    With this feature enabled, selected entries will be automatically approved without requiring admin approval.
-                    <span className="text-amber-400 block mt-1 font-semibold">
-                      WARNING: No admin notification will be sent for these approvals.
-                    </span>
-                  </p>
+  return (
+    <div className="min-h-screen bg-[#151521] text-white font-sans flex flex-col">
+      {/* ════════════════════════════════════════════════════════════════ */}
+      {/* 1. MOBILE VIEW (Screen width < 1024px)                          */}
+      {/* ONLY User Controls and Access Control are visible on mobile     */}
+      {/* ════════════════════════════════════════════════════════════════ */}
+      {isMobile ? (
+        <div className="flex-1 flex flex-col pb-24 bg-[#151928]">
+          {/* Mobile View: Main Menu */}
+          {currentView === 'menu' && (
+            <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => navigate('/extras')}
+                    className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
+                    title="Back to Extras"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+                  <h1 className="text-xl font-black text-white tracking-wide">Settings</h1>
                 </div>
-
-                {/* Main Auto Approval Toggle */}
-                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(userControls.autoApproval)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setUserControls(prev => ({ ...prev, autoApproval: checked }));
-                      if (checked) setAutoApprovalOpen(true);
-                    }}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                </label>
+                {/* Switch to Desktop View option for mobile tablets if needed */}
+                <button
+                  onClick={() => setIsMobile(false)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white border border-slate-700 text-[10px] font-bold flex items-center gap-1.5"
+                  title="Switch to Desktop Settings View"
+                >
+                  <Monitor size={12} /> Desktop
+                </button>
               </div>
 
-              {/* Accordion Trigger */}
-              <button
-                type="button"
-                onClick={() => setAutoApprovalOpen(!autoApprovalOpen)}
-                className="mt-3 pt-3 border-t border-slate-700/60 w-full flex items-center justify-between text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
-              >
-                <span>Select Auto Approval Modules ({AUTO_APPROVAL_MODULES.length})</span>
-                {autoApprovalOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
+              <p className="text-xs text-slate-400 mb-6 px-1">
+                Configure field member app controls and account access privileges.
+              </p>
 
-              {/* Sub-Modules Switch List */}
-              {autoApprovalOpen && (
-                <div className="mt-3 pt-2 space-y-2.5 divide-y divide-slate-800/80">
-                  {AUTO_APPROVAL_MODULES.map((mod) => {
-                    const isModActive = Boolean(userControls.autoApprovals?.[mod.id]);
-                    return (
-                      <div key={mod.id} className="pt-2.5 flex items-center justify-between text-xs">
-                        <span className="text-slate-300 font-medium">{mod.label}</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isModActive}
-                            onChange={() => handleToggleAutoApprovalModule(mod.id)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Mobile Only: 2 Cards (User Controls & Access Control) */}
+              <div className="space-y-4">
+                <button
+                  onClick={() => { setCurrentView('user_controls'); setSelectedUser(null); }}
+                  className="w-full bg-[#1e243d] hover:bg-[#252c4a] border border-[#333e66] hover:border-sky-500/50 rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg active:scale-[0.99] transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                    <SettingsIcon size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-white group-hover:text-sky-300 transition-colors">
+                      User Controls
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">
+                      Call planning, work-in, backlog, geo-fencing &amp; auto-approvals
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setCurrentView('access_control')}
+                  className="w-full bg-[#1e243d] hover:bg-[#252c4a] border border-[#333e66] hover:border-rose-500/50 rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg active:scale-[0.99] transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-white group-hover:text-rose-300 transition-colors">
+                      Access Control
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">
+                      Lock or deactivate field accounts &amp; manage portal access
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Submit Button (Video frame 01:04) */}
-          <button
-            type="button"
-            onClick={handleSaveUserControls}
-            disabled={savingControls}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-600/20 active:scale-[0.99] transition-all disabled:opacity-50"
-          >
-            {savingControls ? 'Saving Controls...' : 'Submit'}
-          </button>
-        </div>
-      )}
+          {/* Mobile View: Select User / User Controls */}
+          {currentView === 'user_controls' && (
+            <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  onClick={() => {
+                    if (selectedUser) setSelectedUser(null);
+                    else setCurrentView('menu');
+                  }}
+                  className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <h1 className="text-xl font-black text-white tracking-wide">
+                  {selectedUser ? 'User Controls' : 'Select User'}
+                </h1>
+              </div>
 
-      {/* ────────────────────────────────────────────────────────── */}
-      {/* 4. ACCESS CONTROL VIEW (Video frame 00:23-34)               */}
-      {/* ────────────────────────────────────────────────────────── */}
-      {currentView === 'access_control' && (
-        <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => setCurrentView('menu')}
-              className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-black text-white tracking-wide">Access Control</h1>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative mb-4">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={accessSearch}
-              onChange={(e) => setAccessSearch(e.target.value)}
-              placeholder="Search user by name, ID, HQ..."
-              className="w-full bg-[#1e243d] border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
-            />
-          </div>
-
-          {/* Access Control Table / Card List */}
-          <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl overflow-hidden shadow-xl">
-            {/* Table Header Row */}
-            <div className="px-4 py-3 bg-[#171c31] border-b border-slate-700/70 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
-              <span>User</span>
-              <span>Lock Status</span>
-            </div>
-
-            {/* User Rows */}
-            <div className="divide-y divide-slate-800/80 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              {loadingUsers ? (
-                <div className="p-8 text-center text-xs text-slate-400">Loading user list...</div>
-              ) : filteredAccessUsers.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">No users found</div>
-              ) : (
-                filteredAccessUsers.map((u) => {
-                  const locked = isUserLocked(u);
-                  const fullName = `${u.firstName} ${u.lastName || ''}`.trim();
-                  return (
-                    <div
-                      key={u._id}
-                      className="px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-sky-400 shrink-0 overflow-hidden">
-                          {u.profilePic ? (
-                            <img src={u.profilePic} alt={fullName} className="w-full h-full object-cover" />
-                          ) : (
-                            fullName.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-xs text-white truncate flex items-center gap-2">
-                            <span>{fullName}</span>
-                            {locked && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                                Locked
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                            {u.employeeId} &bull; {u.designation || 'Staff'} {u.hq ? `• ${u.hq}` : ''}
-                          </div>
-                        </div>
+              {!selectedUser ? (
+                /* Select User Dropdown Card */
+                <div className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-xl">
+                  <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-700/60">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold">
+                        <UserCheck size={20} />
                       </div>
-
-                      {/* Lock Toggle Switch (Video frame 00:24-34) */}
-                      <div className="shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (locked) {
-                              setUnlockTarget(u);
-                            } else {
-                              setLockTarget(u);
-                            }
-                          }}
-                          className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                            locked ? 'bg-rose-600 justify-end' : 'bg-slate-700 justify-start'
-                          }`}
-                          title={locked ? 'Click to Unlock' : 'Click to Lock'}
-                        >
-                          <div className="bg-white w-4 h-4 rounded-full shadow-md flex items-center justify-center">
-                            {locked ? (
-                              <Lock size={10} className="text-rose-600" />
-                            ) : (
-                              <Unlock size={10} className="text-slate-700" />
-                            )}
-                          </div>
-                        </button>
-                      </div>
+                      <span className="font-bold text-sm text-white">Select User</span>
                     </div>
-                  );
-                })
+                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                      {activeUsers.length}
+                    </span>
+                  </div>
+
+                  <div className="relative mb-3">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Search user..."
+                      className="w-full bg-[#151928] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-800/80 pr-1">
+                    {loadingUsers ? (
+                      <div className="p-8 text-center text-xs text-slate-400">Loading active users...</div>
+                    ) : filteredActiveUsers.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-slate-400">No active users found</div>
+                    ) : (
+                      filteredActiveUsers.map((u) => (
+                        <button
+                          key={u._id}
+                          type="button"
+                          onClick={() => handleSelectUser(u)}
+                          className="w-full text-left py-3 px-2 flex items-center justify-between hover:bg-slate-800/50 rounded-xl transition-colors group"
+                        >
+                          <div className="min-w-0 pr-3">
+                            <div className="font-bold text-xs text-white group-hover:text-sky-300 truncate">
+                              {u.firstName} {u.lastName || ''}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                              {u.employeeId} &bull; {u.designation || 'Staff'} {u.hq ? `• ${u.hq}` : ''}
+                            </div>
+                          </div>
+                          <span className="text-xs font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">
+                            Select &rarr;
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                renderUserControlsConfig()
               )}
             </div>
+          )}
+
+          {/* Mobile View: Access Control */}
+          {currentView === 'access_control' && (
+            <div className="flex-1 flex flex-col max-w-xl w-full mx-auto p-4 sm:p-6 animate-fadeIn">
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  onClick={() => setCurrentView('menu')}
+                  className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <h1 className="text-xl font-black text-white tracking-wide">Access Control</h1>
+              </div>
+
+              {renderAccessControlTable()}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ════════════════════════════════════════════════════════════════ */
+        /* 2. DESKTOP VIEW (Screen width >= 1024px)                        */
+        /* Full Medorn-Style Master-Detail layout with all settings tabs   */
+        /* ════════════════════════════════════════════════════════════════ */
+        <div className="flex h-screen overflow-hidden">
+          {/* Left Sidebar */}
+          <div className="w-64 bg-[#1c1c2e] border-r border-[#3b3b5a] flex flex-col shrink-0 relative z-10 shadow-2xl">
+            <div className="p-6 border-b border-[#3b3b5a] flex items-center justify-between">
+              <button 
+                onClick={() => navigate('/extras')} 
+                className="flex items-center gap-2 text-sky-400 font-bold hover:text-sky-300 transition-colors text-base tracking-wide"
+              >
+                <ArrowLeft size={18} /> Settings
+              </button>
+              {/* Optional Mobile preview trigger */}
+              <button
+                onClick={() => setIsMobile(true)}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-sky-400 border border-slate-700 transition-colors"
+                title="Preview Mobile Settings View"
+              >
+                <Smartphone size={15} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-1.5 overflow-y-auto flex-1 custom-scrollbar">
+              {DESKTOP_SIDEBAR_ITEMS.map((item) => {
+                const IconComponent = item.icon;
+                const isActive = desktopTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectDesktopTab(item.id)}
+                    className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs tracking-normal transition-all duration-200 flex items-center justify-between ${
+                      isActive 
+                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                        : 'text-slate-400 hover:bg-[#27273f] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <IconComponent size={15} className={isActive ? 'text-white' : 'text-slate-400'} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.isNew && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        new
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Content Area */}
+          <div className="flex-1 bg-[#1e1e2d] relative flex flex-col h-full overflow-y-auto custom-scrollbar">
+            {desktopTab === 'holidays' ? (
+              <div className="p-8">
+                <SettingsHolidays />
+              </div>
+            ) : desktopTab === 'preferences' ? (
+              <div className="p-8">
+                <SettingsPreferences />
+              </div>
+            ) : desktopTab === 'doctor_controls' ? (
+              <div className="h-full">
+                <SettingsDoctorControls />
+              </div>
+            ) : desktopTab === 'user_controls' ? (
+              <div className="p-8 max-w-4xl mx-auto w-full">
+                <div className="mb-6 pb-4 border-b border-[#3b3b5a] flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-wide">User Controls</h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Configure field member mandatory rules, geo-fencing, limits &amp; automatic approval modules.
+                    </p>
+                  </div>
+                </div>
+
+                {!selectedUser ? (
+                  <div className="bg-[#1c233c] border border-[#333e66] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-700/60">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold">
+                          <UserCheck size={20} />
+                        </div>
+                        <span className="font-bold text-base text-white">Select User to Configure</span>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                        {activeUsers.length} Active Users
+                      </span>
+                    </div>
+
+                    <div className="relative mb-4">
+                      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Search active user by name, ID, designation, HQ..."
+                        className="w-full bg-[#151928] border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div className="max-h-[55vh] overflow-y-auto custom-scrollbar divide-y divide-slate-800/80 pr-1">
+                      {loadingUsers ? (
+                        <div className="p-8 text-center text-xs text-slate-400">Loading active users...</div>
+                      ) : filteredActiveUsers.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-slate-400">No active users found</div>
+                      ) : (
+                        filteredActiveUsers.map((u) => (
+                          <div
+                            key={u._id}
+                            className="py-3 px-3 flex items-center justify-between hover:bg-slate-800/50 rounded-xl transition-colors"
+                          >
+                            <div className="min-w-0 pr-4">
+                              <div className="font-bold text-sm text-white">{u.firstName} {u.lastName || ''}</div>
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {u.employeeId} &bull; {u.designation || 'Staff'} {u.hq ? `• ${u.hq}` : ''}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectUser(u)}
+                              className="px-4 py-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 hover:bg-sky-500 hover:text-white font-bold text-xs transition-colors"
+                            >
+                              Configure &rarr;
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#1c233c] border border-[#333e66] rounded-2xl p-6 shadow-xl">
+                    {renderUserControlsConfig()}
+                  </div>
+                )}
+              </div>
+            ) : desktopTab === 'access_control' ? (
+              <div className="p-8 max-w-4xl mx-auto w-full">
+                <div className="mb-6 pb-4 border-b border-[#3b3b5a]">
+                  <h2 className="text-xl font-bold text-white tracking-wide">Access Control</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Lock or deactivate field accounts, specify separation reasons, and manage mobile app portal access.
+                  </p>
+                </div>
+                {renderAccessControlTable()}
+              </div>
+            ) : desktopTab === 'typography' ? (
+              <div className="p-8 max-w-5xl">
+                <TypographySettingsModal isInline={true} />
+              </div>
+            ) : desktopTab === 'restore' ? (
+              <div className="p-8 max-w-4xl mx-auto w-full">
+                <div className="mb-6 pb-4 border-b border-[#3b3b5a]">
+                  <h2 className="text-xl font-bold text-white tracking-wide">Restore Deleted</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Restore archived or inadvertently deleted doctors, chemists, stockists, and operational routes.
+                  </p>
+                </div>
+                <div className="bg-[#1c233c] border border-slate-700/80 rounded-2xl p-8 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center mx-auto mb-4">
+                    <RotateCcw size={32} />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">Trash &amp; Data Recovery Hub</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto mb-6">
+                    No soft-deleted records currently pending recovery. Any doctor, chemist, stockist, or city deleted from active lists within the last 30 days can be audited and restored here.
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <Check size={14} /> Database Integrity Verified
+                  </div>
+                </div>
+              </div>
+            ) : desktopTab === 'campaigns' ? (
+              <div className="p-8 max-w-4xl mx-auto w-full">
+                <div className="mb-6 pb-4 border-b border-[#3b3b5a]">
+                  <h2 className="text-xl font-bold text-white tracking-wide">Campaigns &amp; Brand Drives</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage active marketing initiatives, specialized product campaigns, and field incentive programs.
+                  </p>
+                </div>
+                <div className="bg-[#1c233c] border border-slate-700/80 rounded-2xl p-8 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-4">
+                    <Megaphone size={32} />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">Field Campaign Hub</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Campaign tracking module is active and synchronizing brand drive targets with monthly DCR detailing.
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
 
       {/* ────────────────────────────────────────────────────────── */}
-      {/* SUCCESS MODAL (Matching video frame 01:05)                  */}
+      {/* SUCCESS MODAL                                              */}
       {/* ────────────────────────────────────────────────────────── */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -751,17 +995,17 @@ export default function Settings() {
             >
               <X size={18} />
             </button>
-
-            <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-500/30">
-              <Check size={36} strokeWidth={3} />
+            <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mb-3">
+              <Check size={28} />
             </div>
-
-            <h3 className="text-lg font-black text-white mb-1">Success !</h3>
-            <p className="text-xs text-slate-300 font-medium">Updated Successfully!</p>
-
+            <h3 className="text-base font-bold text-white mb-1">Saved Successfully</h3>
+            <p className="text-xs text-slate-400 mb-5">
+              User controls and auto-approvals for {selectedUser?.firstName} have been updated.
+            </p>
             <button
+              type="button"
               onClick={() => setShowSuccessModal(false)}
-              className="mt-6 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md"
+              className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-xl transition-all"
             >
               Done
             </button>
@@ -770,50 +1014,69 @@ export default function Settings() {
       )}
 
       {/* ────────────────────────────────────────────────────────── */}
-      {/* LOCK CONFIRMATION MODAL                                    */}
+      {/* LOCK REASON MODAL                                          */}
       {/* ────────────────────────────────────────────────────────── */}
       {lockTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#1c233c] border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl flex flex-col text-left">
-            <div className="flex items-center gap-2.5 text-rose-400 mb-3">
-              <ShieldAlert size={20} />
-              <h3 className="text-sm font-black text-white">Lock User Account</h3>
+          <div className="bg-[#1c233c] border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+                  <Lock size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Lock User Account</h3>
+                  <p className="text-[11px] text-slate-400">{lockTarget.firstName} {lockTarget.lastName || ''}</p>
+                </div>
+              </div>
+              <button onClick={() => setLockTarget(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
             </div>
 
-            <p className="text-xs text-slate-300 mb-4">
-              Are you sure you want to lock and de-activate <strong className="text-white">{lockTarget.firstName} {lockTarget.lastName}</strong>? They will not be able to log in or submit reports.
+            <p className="text-xs text-slate-300 mb-3">
+              Locking this user will immediately deactivate their account, revoke mobile app access, and prohibit call reporting.
             </p>
 
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Select Reason
-            </label>
-            <select
-              value={lockReasonCategory}
-              onChange={(e) => setLockReasonCategory(e.target.value)}
-              className="w-full bg-[#151928] border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-rose-500 mb-3"
-            >
-              <option value="Resigned">Resigned</option>
-              <option value="Asked to resign due to behavioural issues.">Behavioural issues</option>
-              <option value="Integrity issues with candidate">Integrity issues</option>
-              <option value="Other">Other Reason</option>
-            </select>
+            <div className="mb-4">
+              <label className="text-[11px] font-bold text-slate-300 block mb-1.5 uppercase tracking-wide">
+                Reason for Separation / Lock *
+              </label>
+              <select
+                value={lockReasonCategory}
+                onChange={(e) => setLockReasonCategory(e.target.value)}
+                className="w-full bg-[#151928] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+              >
+                <option value="Resigned">Resigned</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Absconding">Absconding</option>
+                <option value="Disciplinary Action">Disciplinary Action</option>
+                <option value="Prolonged Inactivity">Prolonged Inactivity</option>
+                <option value="Temporary Suspension">Temporary Suspension</option>
+                <option value="Other">Other (Specify)</option>
+              </select>
+            </div>
 
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Remarks (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Resigned due to health issues"
-              value={lockCustomReason}
-              onChange={(e) => setLockCustomReason(e.target.value)}
-              className="w-full bg-[#151928] border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 mb-5"
-            />
+            {lockReasonCategory === 'Other' && (
+              <div className="mb-4">
+                <label className="text-[11px] font-bold text-slate-300 block mb-1.5 uppercase tracking-wide">
+                  Specify Custom Reason
+                </label>
+                <textarea
+                  rows={2}
+                  value={lockCustomReason}
+                  onChange={(e) => setLockCustomReason(e.target.value)}
+                  placeholder="Enter custom separation reason..."
+                  className="w-full bg-[#151928] border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                />
+              </div>
+            )}
 
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-3 mt-5">
               <button
                 type="button"
                 onClick={() => setLockTarget(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
@@ -821,7 +1084,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleConfirmLock}
                 disabled={lockActionLoading}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors disabled:opacity-50 shadow-md shadow-rose-600/30"
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {lockActionLoading ? 'Locking...' : 'Confirm Lock'}
               </button>
@@ -831,25 +1094,35 @@ export default function Settings() {
       )}
 
       {/* ────────────────────────────────────────────────────────── */}
-      {/* UNLOCK CONFIRMATION MODAL                                  */}
+      {/* UNLOCK MODAL                                               */}
       {/* ────────────────────────────────────────────────────────── */}
       {unlockTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#1c233c] border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl flex flex-col text-left">
-            <div className="flex items-center gap-2.5 text-emerald-400 mb-3">
-              <Unlock size={20} />
-              <h3 className="text-sm font-black text-white">Unlock &amp; Re-activate User</h3>
+          <div className="bg-[#1c233c] border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                  <Unlock size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Unlock User Account</h3>
+                  <p className="text-[11px] text-slate-400">{unlockTarget.firstName} {unlockTarget.lastName || ''}</p>
+                </div>
+              </div>
+              <button onClick={() => setUnlockTarget(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
             </div>
 
             <p className="text-xs text-slate-300 mb-5">
-              Re-activate <strong className="text-white">{unlockTarget.firstName} {unlockTarget.lastName}</strong>? This user will regain full access to the portal and mobile app.
+              Are you sure you want to reactivate this account? The user will regain access to log into the mobile app and submit field reports.
             </p>
 
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setUnlockTarget(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
@@ -857,7 +1130,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleConfirmUnlock}
                 disabled={lockActionLoading}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors disabled:opacity-50 shadow-md shadow-emerald-600/30"
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {lockActionLoading ? 'Unlocking...' : 'Confirm Unlock'}
               </button>
