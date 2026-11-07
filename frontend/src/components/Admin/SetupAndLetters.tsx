@@ -309,7 +309,9 @@ export default function SetupAndLetters() {
     let finalContent = editorRef.current?.innerHTML || '';
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
-    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
+    const selectedTemplateObj = templateOptions.find(t => t.id === activeTemplate);
+    const activeLetterType = selectedTemplateObj?.type || 'offer';
+    const activeLetterTitle = selectedTemplateObj?.label?.replace(/^[^a-zA-Z0-9]+/, '').trim() || '';
     
     try {
       const pdfBlob = await generatePdfBlob();
@@ -328,6 +330,7 @@ export default function SetupAndLetters() {
       const res = await api.post('/admin/save-letter-snapshot', {
         email: targetApplicant,
         letterType: activeLetterType,
+        letterTitle: activeLetterTitle,
         letterData: finalContent,
         pdfBase64: pdfBase64,
         notifyByEmail: true

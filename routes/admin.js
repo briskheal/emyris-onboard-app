@@ -2311,7 +2311,7 @@ router.post('/send-letter', async (req, res) => {
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
 router.post('/save-letter-snapshot', async (req, res) => {
     try {
-        const { email, letterType, letterData, pdfBase64, notifyByEmail, cc } = req.body;
+        const { email, letterType, letterData, pdfBase64, notifyByEmail, cc, letterTitle } = req.body;
         const applicant = await Applicant.findOne({ email });
         const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
@@ -2362,7 +2362,42 @@ router.post('/save-letter-snapshot', async (req, res) => {
 
         let ccList = [];
         if (notifyByEmail) {
-            const label = letterType === 'offer' ? 'Offer Letter' : (letterType === 'appt' ? 'Appointment Letter' : letterType.toUpperCase().replace('_', ' '));
+            const coreLabelMap = {
+                offer: 'Offer Letter',
+                appt: 'Appointment Letter',
+                confirm: 'Confirmation Letter',
+                confirm_delayed: 'Confirmation Extension Letter',
+                emyfe: 'Field Force Code Allotment',
+                emyho: 'Head Office Code Allotment',
+                emyhr: 'HR Department Code Allotment',
+                revised_salary: 'Salary Revision Letter',
+                experience: 'Experience Letter',
+                relieving: 'Relieving Letter',
+                warning: 'Warning Letter',
+                show_cause: 'Show Cause Notice',
+                incentive: 'Incentive Circular'
+            };
+
+            let customTitle = letterTitle || '';
+            if (letterType && letterType.startsWith('misc_')) {
+                const miscId = letterType.replace(/^misc_/, '');
+                const miscLetter = (company.miscLetters || []).find(m => m && (m.id === miscId || `misc_${m.id}` === letterType));
+                if (miscLetter && miscLetter.title) {
+                    customTitle = customTitle || miscLetter.title;
+                }
+            }
+
+            let label = coreLabelMap[letterType] || customTitle || letterType.toUpperCase().replace(/_/g, ' ');
+
+            const isRelocation = 
+                letterType === 'misc_motqehst' ||
+                (label && (label.toLowerCase().includes('transfer') || label.toLowerCase().includes('relocat'))) ||
+                (letterTitle && (letterTitle.toLowerCase().includes('transfer') || letterTitle.toLowerCase().includes('relocat'))) ||
+                (typeof letterData === 'string' && (letterData.toLowerCase().includes('transfer notice') || letterData.toLowerCase().includes('transfer letter') || letterData.toLowerCase().includes('relocation notification')));
+
+            if (isRelocation) {
+                label = 'Relocation Notification';
+            }
 
             let attachments = [];
             let pdfBuffer;
@@ -2375,8 +2410,10 @@ router.post('/save-letter-snapshot', async (req, res) => {
             }
 
             if (pdfBuffer && pdfBuffer.length > 0) {
+                const safeLabel = label.trim().replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
+                const safeApplicantName = (applicant.fullName || 'Employee').trim().replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
                 attachments.push({
-                    filename: `${label.replace(/\s+/g, '_')}_${(applicant.fullName || 'Employee').replace(/\s+/g, '_')}.pdf`,
+                    filename: `${safeLabel}_${safeApplicantName}.pdf`,
                     content: pdfBuffer,
                     contentType: 'application/pdf'
                 });
@@ -2399,7 +2436,7 @@ router.post('/save-letter-snapshot', async (req, res) => {
 
             let targetEmail = email;
             let finalCc = ccList.length > 0 ? ccList.join(', ') : undefined;
-            let emailSubject = `Official Document: ${label} - ${company.name}`;
+            let emailSubject = `${label} - ${applicant.fullName} (${applicant.empCode || 'N/A'}) | ${company.name}`;
             let emailBodyHtml = `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                     <div style="background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 24px; text-align: center;">
@@ -2424,6 +2461,52 @@ router.post('/save-letter-snapshot', async (req, res) => {
                         This is an official communication from ${company.name}. Admin and Reporting Manager are copied for official records.
                     </div>
                 </div>`;
+
+            if (isRelocation) {
+                emailSubject = `Relocation Notification - ${applicant.fullName} (${applicant.empCode || 'N/A'}) | ${company.name}`;
+                emailBodyHtml = `
+                    <div style="font-family: Arial, 'Segoe UI', sans-serif; line-height: 1.6; color: #1e293b; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background-color: #ffffff;">
+                        <div style="background: linear-gradient(135deg, #0284c7, #1e3a8a); padding: 22px 28px; text-align: left;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</h2>
+                            <p style="color: #e0e7ff; margin: 4px 0 0 0; font-size: 13px;">Official Relocation Notification</p>
+                        </div>
+                        <div style="padding: 26px 28px;">
+                            <p style="font-size: 15px; margin-top: 0; color: #0f172a;">Dear <strong>${applicant.fullName}</strong>,</p>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                                We are pleased to formally issue your official <strong>Relocation Notification / Transfer Letter</strong> with <strong>${company.name || 'Emyris Biolifesciences Pvt Ltd'}</strong>.
+                            </p>
+                            <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px 18px; margin: 18px 0; border-radius: 4px; font-size: 13.5px; line-height: 1.6;">
+                                <strong>Employee Name:</strong> ${applicant.fullName}<br>
+                                <strong>Employee Code:</strong> ${applicant.empCode || 'N/A'}<br>
+                                <strong>Designation:</strong> ${applicant.designation || 'Staff'}<br>
+                                <strong>Division:</strong> ${applicant.division || 'CRITIZA'}<br>
+                                <strong>Headquarters:</strong> ${applicant.hq || 'N/A'}<br>
+                                <strong>Document:</strong> Relocation Notification
+                            </div>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                                Please find attached your official <strong>Relocation Notification</strong> containing the comprehensive terms and details of your work location transfer and reporting structure.
+                            </p>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 16px;">
+                                Kindly review the document, acknowledge receipt by signing the duplicate copy, and submit the signed copy to HR Operations at <a href="mailto:hradmin@emyrishr.in" style="color: #0284c7; text-decoration: none; font-weight: bold;">hradmin@emyrishr.in</a> for official records.
+                            </p>
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 24px;">
+                                We wish you continued growth and grand success in your assigned headquarters!
+                            </p>
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 20px;">
+                                <p style="margin: 0; font-size: 14px; font-weight: bold; color: #0f172a;">${company.signatoryName || 'HR Operations'}</p>
+                                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">${company.signatoryDesignation || 'HR BUSINESS PARTNER'}</p>
+                                <p style="margin: 2px 0 0 0; font-size: 13px; font-weight: bold; color: #334155;">${company.name || 'EMYRIS BIOLIFESCIENCES PVT LTD'}</p>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">
+                                    Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana - 500003<br>
+                                    Email: hradmin@emyrishr.in | Web: www.emyrisbio.com | Toll Free: 1800 889 1217
+                                </p>
+                            </div>
+                        </div>
+                        <div style="background: #f1f5f9; padding: 12px 24px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                            This is an official document from ${company.name || 'Emyris Biolifesciences Pvt Ltd'}. Confidentiality applies.
+                        </div>
+                    </div>`;
+            }
 
             // If Appointment Letter: Forward to adminEmail in candidate-addressed format ready for review & forward
             if (letterType === 'appt') {
