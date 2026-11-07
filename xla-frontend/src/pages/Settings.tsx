@@ -629,9 +629,9 @@ export default function Settings() {
               <div className="flex items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => navigate('/extras')}
+                    onClick={() => navigate('/admin')}
                     className="p-2 rounded-xl bg-[#1e243d] border border-slate-700/60 text-sky-400 hover:text-white transition-colors"
-                    title="Back to Extras"
+                    title="Back to Admin Panel"
                   >
                     <ArrowLeft size={18} />
                   </button>
@@ -796,8 +796,9 @@ export default function Settings() {
           <div className="w-64 bg-[#1c1c2e] border-r border-[#3b3b5a] flex flex-col shrink-0 relative z-10 shadow-2xl">
             <div className="p-6 border-b border-[#3b3b5a] flex items-center justify-between">
               <button 
-                onClick={() => navigate('/extras')} 
+                onClick={() => navigate('/admin')} 
                 className="flex items-center gap-2 text-sky-400 font-bold hover:text-sky-300 transition-colors text-base tracking-wide"
+                title="Back to Admin Panel"
               >
                 <ArrowLeft size={18} /> Settings
               </button>

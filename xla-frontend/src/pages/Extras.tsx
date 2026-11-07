@@ -1,9 +1,17 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { extrasOptions } from '../config/navigation';
 
 export default function Extras() {
   const navigate = useNavigate();
   const options = extrasOptions;
+
+  // Extras grid is exclusively a mobile drawer menu; on desktop screens, redirect to Admin Panel
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-full bg-slate-900 flex flex-col pb-36 md:pb-12 text-slate-100 font-sans">
