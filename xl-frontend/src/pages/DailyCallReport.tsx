@@ -163,35 +163,32 @@ export default function DailyCallReport() {
       return !q || name.includes(q) || hq.includes(q) || area.includes(q) || spec.includes(q);
     });
 
-    if (myLat && myLng) {
-      filtered = filtered.map(e => {
-        const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
-        const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
-        const minDist = Math.min(dist1, dist2);
-        const inRange = isFinite(minDist) && minDist <= 300;
-        return { 
-          ...e, 
-          _dist: isFinite(minDist) ? minDist : null,
-          _inRange: inRange,
-          _hasGps: Boolean(e.lat1 && e.lng1)
-        };
-      }).sort((a, b) => {
-        // Prioritize in-range entities first
-        if (a._inRange && !b._inRange) return -1;
-        if (!a._inRange && b._inRange) return 1;
-        if (a._dist !== null && b._dist !== null) return a._dist - b._dist;
-        if (a._dist !== null) return -1;
-        if (b._dist !== null) return 1;
-        return (a.name || a.businessName || '').localeCompare(b.name || b.businessName || '');
-      });
-
-      if (isGeoFencingActive && onlyInRange) {
-        filtered = filtered.filter(e => e._inRange);
+    if (dcrDate === today && entityType !== 'Reminder') {
+      if (myLat && myLng) {
+        filtered = filtered.map(e => {
+          const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
+          const dist2 = (e.lat2 && e.lng2) ? haversineMetres(myLat, myLng, e.lat2, e.lng2) : Infinity;
+          const minDist = Math.min(dist1, dist2);
+          const hasGps = Boolean(e.lat1 && e.lng1);
+          const inRange = hasGps && isFinite(minDist) && minDist <= 300;
+          return { 
+            ...e, 
+            _dist: isFinite(minDist) ? minDist : null,
+            _inRange: inRange,
+            _hasGps: hasGps
+          };
+        })
+        // STRICT RULE: Unless a doctor is geo-tagged AND physically in location (<= 300m), do NOT show for reporting
+        .filter(e => e._hasGps && e._inRange)
+        .sort((a, b) => (a._dist || 0) - (b._dist || 0));
+      } else {
+        // While GPS is acquiring or if GPS not available, do not show any doctors for today's report
+        filtered = [];
       }
     }
 
     return filtered;
-  }, [entities, searchQuery, myLat, myLng, isGeoFencingActive, onlyInRange]);
+  }, [entities, searchQuery, myLat, myLng, dcrDate, entityType]);
 
   useEffect(() => {
     let dObj;
@@ -864,11 +861,13 @@ export default function DailyCallReport() {
                           );
                         }) : (
                           <div className="p-4 text-center text-sm text-slate-400">
-                            {isGeoFencingActive && onlyInRange 
-                              ? "No doctors found at your current location (< 200m). Uncheck 'In-location only' to view full directory."
-                              : entities.length === 0 
-                                ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
-                                : "No matches found for search query."}
+                            {dcrDate === today 
+                              ? (geoLoading 
+                                  ? "Acquiring live GPS location..." 
+                                  : `No geo-tagged ${entityType?.toLowerCase() || 'doctor'}s found at your current physical location (within 200m). You must be present at the tagged clinic to report.`)
+                              : (entities.length === 0 
+                                  ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
+                                  : "No matches found for search query.")}
                           </div>
                         )}
                       </div>
