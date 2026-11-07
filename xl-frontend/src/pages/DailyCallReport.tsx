@@ -71,7 +71,8 @@ export default function DailyCallReport() {
   const [selectedEntityId, setSelectedEntityId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
-  const [userControls, setUserControls] = useState<any>({});
+  const initialControls = (user?.controls && typeof user.controls === 'object') ? user.controls : {};
+  const [userControls, setUserControls] = useState<any>(initialControls);
   const [onlyInRange, setOnlyInRange] = useState(false);
 
   // GPS
@@ -151,7 +152,15 @@ export default function DailyCallReport() {
     };
   }, [step, dcrDate, entityType]);;
 
-  const isGeoFencingActive = userControls?.geoFencing !== false && Boolean(userControls?.geoFencing);
+  const isGeoFencingActive = React.useMemo(() => {
+    const controls = (userControls && Object.keys(userControls).length > 0)
+      ? userControls 
+      : ((user?.controls && typeof user.controls === 'object') ? user.controls : null);
+    if (!controls) return true;
+    if (controls.geoFencing !== undefined) return Boolean(controls.geoFencing);
+    if (controls.GEO_FENCING !== undefined) return Boolean(controls.GEO_FENCING);
+    return true;
+  }, [userControls, user]);
 
   const sortedEntities = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -163,32 +172,58 @@ export default function DailyCallReport() {
       return !q || name.includes(q) || hq.includes(q) || area.includes(q) || spec.includes(q);
     });
 
-    if (dcrDate === today && entityType !== 'Reminder') {
+    const isTodayDcr = dcrDate === today && entityType !== 'Reminder';
+
+    if (isGeoFencingActive && isTodayDcr) {
+      // STRICT RULE: Geo-Fencing is ON for this user.
+      // Rep CANNOT report unless physically at the location (<= 300m).
+      // Any doctor without registered GPS or not physically in range is EXCLUDED.
       if (myLat && myLng) {
         filtered = filtered.map(e => {
-          const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
-          const dist2 = (e.lat2 && e.lng2) ? haversineMetres(myLat, myLng, e.lat2, e.lng2) : Infinity;
-          const minDist = Math.min(dist1, dist2);
+          const dist1 = (e.lat1 && e.lng1) ? haversineMetres(myLat, myLng, e.lat1, e.lng1) : null;
+          const dist2 = (e.lat2 && e.lng2) ? haversineMetres(myLat, myLng, e.lat2, e.lng2) : null;
+          const minDist = dist1 !== null ? (dist2 !== null ? Math.min(dist1, dist2) : dist1) : dist2;
           const hasGps = Boolean(e.lat1 && e.lng1);
-          const inRange = hasGps && isFinite(minDist) && minDist <= 300;
+          const inRange = hasGps && minDist !== null && minDist <= 300;
           return { 
             ...e, 
-            _dist: isFinite(minDist) ? minDist : null,
+            _dist: minDist,
             _inRange: inRange,
             _hasGps: hasGps
           };
         })
-        // STRICT RULE: Unless a doctor is geo-tagged AND physically in location (<= 300m), do NOT show for reporting
         .filter(e => e._hasGps && e._inRange)
         .sort((a, b) => (a._dist || 0) - (b._dist || 0));
       } else {
-        // While GPS is acquiring or if GPS not available, do not show any doctors for today's report
+        // While GPS is acquiring or if GPS not available, geo-fenced user cannot see or select doctors
         filtered = [];
       }
+    } else {
+      // Geo-Fencing is OFF (Admin gave permission by turning off geo-fencing in User Controls)
+      // ALL doctors in territory/HQ are AVAILABLE and reportable.
+      filtered = filtered.map(e => {
+        let minDist: number | null = null;
+        if (myLat && myLng && e.lat1 && e.lng1) {
+          const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
+          const dist2 = (e.lat2 && e.lng2) ? haversineMetres(myLat, myLng, e.lat2, e.lng2) : Infinity;
+          minDist = Math.min(dist1, dist2);
+        }
+        return {
+          ...e,
+          _dist: (minDist !== null && isFinite(minDist)) ? minDist : null,
+          _inRange: true, // Always allowed when Geo-Fencing is OFF
+          _hasGps: Boolean(e.lat1 && e.lng1)
+        };
+      }).sort((a, b) => {
+        if (a._dist !== null && b._dist !== null) return a._dist - b._dist;
+        if (a._dist !== null) return -1;
+        if (b._dist !== null) return 1;
+        return (a.name || a.businessName || '').localeCompare(b.name || b.businessName || '');
+      });
     }
 
     return filtered;
-  }, [entities, searchQuery, myLat, myLng, dcrDate, entityType]);
+  }, [entities, searchQuery, myLat, myLng, dcrDate, entityType, isGeoFencingActive]);
 
   useEffect(() => {
     let dObj;
@@ -277,10 +312,18 @@ export default function DailyCallReport() {
       .then(r => setTodaysDcrs(r.data.data || []))
       .catch(()=>{});
 
-    if (USER_EMAIL) {
-      axios.get(`/api/xl/user-controls?employeeId=${encodeURIComponent(USER_EMAIL)}`)
+    const empId = user?.employeeId || user?.email || USER_EMAIL;
+    if (empId) {
+      axios.get(`/api/xl/user-controls?employeeId=${encodeURIComponent(empId)}`)
         .then(res => {
-          if (res.data && res.data.controls) setUserControls(res.data.controls);
+          if (res.data && res.data.controls) {
+            setUserControls(res.data.controls);
+            try {
+              const u = JSON.parse(localStorage.getItem('xl_user') || '{}');
+              u.controls = res.data.controls;
+              localStorage.setItem('xl_user', JSON.stringify(u));
+            } catch(e) {}
+          }
         }).catch(() => {});
     }
   }, [dcrDate, USER_EMAIL]);
@@ -335,7 +378,7 @@ export default function DailyCallReport() {
   const handleSubmitInitial = () => {
     if (!selectedEntityId && entityType !== 'Reminder') { setError(`Please select a ${entityType}`); return; }
     
-    if (isGeoFencingActive && entityType !== 'Reminder') {
+    if (isGeoFencingActive && entityType !== 'Reminder' && dcrDate === today) {
       const eMatch = entities.find(e => e._id === selectedEntityId);
       if (!eMatch?.lat1 || !eMatch?.lng1) {
         setError(`Geo-Fencing Active: ${eMatch?.name || eMatch?.businessName || 'This entity'} has no registered GPS location. Please tag their location in Geo Fencing Manager first.`);
@@ -349,6 +392,9 @@ export default function DailyCallReport() {
           setError(`Geo-Fencing Active: You are ${d < 1000 ? Math.round(d) + 'm' : (d/1000).toFixed(1) + 'km'} away from ${eMatch.name || eMatch.businessName}. You must be physically at the location (within 200m) to submit a Call Report.`);
           return;
         }
+      } else {
+        setError('GPS location is required to submit a call report when Geo-Fencing is active.');
+        return;
       }
     }
     
@@ -769,23 +815,16 @@ export default function DailyCallReport() {
                   {isEntityDropdownOpen && (
                     <div className="absolute z-50 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[340px]">
                       {/* Geo-Fencing Banner */}
-                      {isGeoFencingActive && (
+                      {isGeoFencingActive && dcrDate === today && entityType !== 'Reminder' && (
                         <div className="px-3 py-2 bg-slate-900 border-b border-[#3b3b5a] flex items-center justify-between text-[11px]">
                           <span className="font-semibold text-sky-400 flex items-center gap-1">
                             <MapPin size={12} />
-                            {sortedEntities.filter(e => e._inRange).length > 0 
-                              ? `${sortedEntities.filter(e => e._inRange).length} in-range at your location` 
-                              : 'No doctors within 200m range'}
+                            {geoLoading 
+                              ? 'Acquiring GPS location...' 
+                              : sortedEntities.length > 0 
+                                ? `${sortedEntities.length} ${entityType.toLowerCase()}${sortedEntities.length > 1 ? 's' : ''} in range at your location` 
+                                : `No ${entityType.toLowerCase()}s within 200m range`}
                           </span>
-                          <label className="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer select-none">
-                            <input 
-                              type="checkbox" 
-                              checked={onlyInRange} 
-                              onChange={e => setOnlyInRange(e.target.checked)} 
-                              className="accent-sky-500 rounded" 
-                            />
-                            <span>In-location only</span>
-                          </label>
                         </div>
                       )}
 
@@ -796,7 +835,6 @@ export default function DailyCallReport() {
 
                       <div className="overflow-y-auto max-h-64">
                         {sortedEntities.length > 0 ? sortedEntities.map(e => {
-                          const isOutOfRange = isGeoFencingActive && (!e._hasGps || !e._inRange);
                           const distStr = e._dist !== null && e._dist !== undefined 
                             ? (e._dist < 1000 ? `${Math.round(e._dist)}m` : `${(e._dist/1000).toFixed(1)}km`) 
                             : null;
@@ -805,13 +843,13 @@ export default function DailyCallReport() {
                             <div 
                               key={e._id} 
                               onClick={() => {
-                                if (isGeoFencingActive) {
+                                if (isGeoFencingActive && dcrDate === today && entityType !== 'Reminder') {
                                   if (!e._hasGps) {
                                     setError(`Geo-Fencing Active: ${e.name || e.businessName} has no registered GPS location. Please tag their location in Geo Fencing Manager first.`);
                                     return;
                                   }
                                   if (!e._inRange) {
-                                    setError(`Geo-Fencing Active: You are ${distStr || 'far away'} from ${e.name || e.businessName}. You must be physically at the doctor's location (within 200m) to submit a Call Report.`);
+                                    setError(`Geo-Fencing Active: You are ${distStr || 'far away'} from ${e.name || e.businessName}. You must be physically at the location (within 200m) to submit a Call Report.`);
                                     return;
                                   }
                                 }
@@ -819,18 +857,15 @@ export default function DailyCallReport() {
                                 setIsEntityDropdownOpen(false);
                                 setError('');
                               }} 
-                              className={`px-4 py-3 border-b border-[#3b3b5a]/50 text-sm flex justify-between items-center transition-colors ${
-                                isOutOfRange 
-                                  ? 'opacity-60 bg-slate-900/40 hover:bg-slate-900 cursor-not-allowed' 
-                                  : 'hover:bg-[#3b3b5a] cursor-pointer text-slate-200'
-                              } ${e._inRange ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500' : ''}`}
+                              className={`px-4 py-3 border-b border-[#3b3b5a]/50 text-sm flex justify-between items-center transition-colors hover:bg-[#3b3b5a] cursor-pointer text-slate-200 ${
+                                e._inRange && isGeoFencingActive ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500' : ''
+                              }`}
                             >
                               <div className="flex flex-col pr-2 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className={`font-semibold ${isOutOfRange ? 'text-slate-400' : 'text-white'}`}>
+                                  <span className="font-semibold text-white">
                                     {e.name || e.businessName}
                                   </span>
-                                  {isOutOfRange && <Lock size={12} className="text-rose-400 shrink-0" />}
                                 </div>
                                 <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
                                   {e.specialization && <span>{e.specialization}</span>}
@@ -840,18 +875,11 @@ export default function DailyCallReport() {
                               </div>
 
                               <div className="shrink-0 flex items-center gap-1.5">
-                                {!e._hasGps && isGeoFencingActive && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                    No GPS
-                                  </span>
-                                )}
                                 {distStr && (
                                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                                     e._inRange
                                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                      : isGeoFencingActive
-                                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                                        : 'bg-slate-700 text-slate-400'
+                                      : 'bg-slate-700 text-slate-400'
                                   }`}>
                                     {e._inRange ? `📍 ${distStr}` : distStr}
                                   </span>
@@ -861,13 +889,28 @@ export default function DailyCallReport() {
                           );
                         }) : (
                           <div className="p-4 text-center text-sm text-slate-400">
-                            {dcrDate === today 
-                              ? (geoLoading 
-                                  ? "Acquiring live GPS location..." 
-                                  : `No geo-tagged ${entityType?.toLowerCase() || 'doctor'}s found at your current physical location (within 200m). You must be present at the tagged clinic to report.`)
-                              : (entities.length === 0 
-                                  ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
-                                  : "No matches found for search query.")}
+                            {isGeoFencingActive && dcrDate === today && entityType !== 'Reminder' ? (
+                              geoLoading ? (
+                                <div className="space-y-2 py-2">
+                                  <p className="text-sky-400 font-semibold">Acquiring GPS location...</p>
+                                  <p className="text-xs text-slate-400">Verifying doctors at your location</p>
+                                </div>
+                              ) : (!myLat || !myLng) ? (
+                                <div className="space-y-2 py-2">
+                                  <p className="text-amber-400 font-semibold">GPS Location Required</p>
+                                  <p className="text-xs text-slate-400">Please enable GPS to view nearby doctors.</p>
+                                </div>
+                              ) : (
+                                <div className="space-y-1 py-2">
+                                  <p className="text-rose-400 font-semibold">No {entityType}s within range (200m)</p>
+                                  <p className="text-xs text-slate-400">You must be physically at the location to report.</p>
+                                </div>
+                              )
+                            ) : (
+                              entities.length === 0 
+                                ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
+                                : "No matches found for search query."
+                            )}
                           </div>
                         )}
                       </div>

@@ -946,7 +946,7 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const DEFAULT_RADIUS_METRES = 200;
+const DEFAULT_RADIUS_METRES = 300;
 
 // Helper to generate common designation aliases (Sr. vs Senior, ZSM, ABM, etc.)
 function getDesignationAliases(desig) {
@@ -3536,7 +3536,7 @@ router.get('/chemists', async (req, res) => {
 
         await applyDCSListFilter(where, req);
 
-        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
+        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'userAllotted', 'lat1', 'lng1', 'lat2', 'lng2'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
         console.error(e);
@@ -3559,7 +3559,7 @@ router.get('/stockists', async (req, res) => {
 
         await applyDCSListFilter(where, req);
 
-        const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'name', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
+        const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'name', 'headquarter', 'workingArea', 'userAllotted', 'lat1', 'lng1', 'lat2', 'lng2'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: stockists });
     } catch (e) {
         console.error(e);
