@@ -164,8 +164,12 @@ export default function Expense() {
         try {
            const dcrRes = await axios.get(`/api/xl/dcr/my?email=${getUserId()}&date=${dayData.dateStr}`);
            const dcrs = dcrRes.data.data || [];
-           if (dcrs.length === 0 || !dcrs.some((d: any) => d.status === 'Submitted' || d.status === 'Approved')) {
-               alert('You must submit your Daily Call Report (DCR) for this date before claiming expenses!');
+           if (dcrs.length === 0) {
+               alert('You must submit your Daily Call Report (DCR) for this date and have it approved by Admin before claiming expenses!');
+               return;
+           }
+           if (!dcrs.some((d: any) => d.status === 'Approved')) {
+               alert('Your Daily Call Report (DCR) for this date is pending Admin approval. You can only claim expenses after your DCR has been approved by Admin.');
                return;
            }
         } catch(e) {

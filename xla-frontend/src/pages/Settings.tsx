@@ -33,7 +33,7 @@ const USER_CONTROLS_DEFINITIONS: ControlDefinition[] = [
   {
     id: 'callReportMandatoryForExpense',
     title: 'Call Report Mandatory For Expense',
-    desc: 'Your expenses will be automatically submitted once the associated Call Report has been approved.'
+    desc: 'Blocks expense submissions for a date until the Daily Call Report (DCR) for that date has been submitted and approved by Admin.'
   },
   {
     id: 'blockBacklogReporting',
@@ -48,7 +48,7 @@ const USER_CONTROLS_DEFINITIONS: ControlDefinition[] = [
   {
     id: 'tourLimit',
     title: 'Tour Limit',
-    desc: 'If enabled, you cannot create tour programs for a specific route beyond the limit set by the admin.'
+    desc: 'Limit the number of Outstation and Ex-Market days a representative can plan in their monthly Tour Program.'
   },
   {
     id: 'deletionRequest',
@@ -231,6 +231,8 @@ export default function Settings() {
       blockBacklogReporting: Boolean(c.blockBacklogReporting ?? c.BLOCK_BACKLOG_REPORTING),
       geoFencing: Boolean(c.geoFencing ?? c.GEO_FENCING),
       tourLimit: Boolean(c.tourLimit ?? c.TOUR_LIMIT),
+      outstationLimit: c.outstationLimit ?? c.maxOutstationDays ?? '',
+      exMarketLimit: c.exMarketLimit ?? c.maxExMarketDays ?? '',
       deletionRequest: Boolean(c.deletionRequest ?? c.DELETION_REQUEST),
       dcsListFilter: Boolean(c.dcsListFilter ?? c.DCS_LIST_FILTER),
       autoApproval: Boolean(c.autoApproval ?? c.AUTO_APPROVAL),
@@ -277,6 +279,10 @@ export default function Settings() {
         GEO_FENCING: userControls.geoFencing,
         tourLimit: userControls.tourLimit,
         TOUR_LIMIT: userControls.tourLimit,
+        outstationLimit: userControls.outstationLimit !== '' && userControls.outstationLimit !== null && userControls.outstationLimit !== undefined ? Number(userControls.outstationLimit) : null,
+        maxOutstationDays: userControls.outstationLimit !== '' && userControls.outstationLimit !== null && userControls.outstationLimit !== undefined ? Number(userControls.outstationLimit) : null,
+        exMarketLimit: userControls.exMarketLimit !== '' && userControls.exMarketLimit !== null && userControls.exMarketLimit !== undefined ? Number(userControls.exMarketLimit) : null,
+        maxExMarketDays: userControls.exMarketLimit !== '' && userControls.exMarketLimit !== null && userControls.exMarketLimit !== undefined ? Number(userControls.exMarketLimit) : null,
         deletionRequest: userControls.deletionRequest,
         DELETION_REQUEST: userControls.deletionRequest,
         dcsListFilter: userControls.dcsListFilter,
@@ -411,27 +417,72 @@ export default function Settings() {
           return (
             <div
               key={ctrl.id}
-              className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md flex items-start justify-between gap-4"
+              className="bg-[#1e243d] border border-[#333e66] rounded-2xl p-4 shadow-md space-y-3"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Check size={15} className="text-emerald-400 shrink-0" />
-                  <h4 className="text-xs font-bold text-white tracking-wide">{ctrl.title}</h4>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Check size={15} className="text-emerald-400 shrink-0" />
+                    <h4 className="text-xs font-bold text-white tracking-wide">{ctrl.title}</h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">{ctrl.desc}</p>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed mt-1.5">{ctrl.desc}</p>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setUserControls(prev => ({ ...prev, [ctrl.id]: checked }));
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setUserControls(prev => ({ ...prev, [ctrl.id]: checked }));
-                  }}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-              </label>
+
+              {/* Customization for Outstation and Ex-Market monthly limits */}
+              {ctrl.id === 'tourLimit' && isActive && (
+                <div className="pt-3 border-t border-slate-700/60 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-[#171c31] p-3 rounded-xl border border-slate-700/70">
+                    <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block mb-1">
+                      Max Outstation Days (per month)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="31"
+                      placeholder="e.g. 6"
+                      value={userControls.outstationLimit ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setUserControls(prev => ({ ...prev, outstationLimit: val }));
+                      }}
+                      className="w-full bg-[#1e243d] border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-bold"
+                    />
+                    <span className="text-[9px] text-slate-400 mt-1 block">Maximum allowed Outstation days in Tour Program</span>
+                  </div>
+
+                  <div className="bg-[#171c31] p-3 rounded-xl border border-slate-700/70">
+                    <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block mb-1">
+                      Max Ex-Market Days (per month)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="31"
+                      placeholder="e.g. 4"
+                      value={userControls.exMarketLimit ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setUserControls(prev => ({ ...prev, exMarketLimit: val }));
+                      }}
+                      className="w-full bg-[#1e243d] border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-bold"
+                    />
+                    <span className="text-[9px] text-slate-400 mt-1 block">Maximum allowed Ex-Market / Ex-Station days in Tour Program</span>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

@@ -907,6 +907,8 @@ async function getUserControls(userOrEmployeeId) {
             blockBacklogReporting: Boolean(controls.blockBacklogReporting ?? controls.BLOCK_BACKLOG_REPORTING),
             geoFencing: controls.geoFencing !== undefined ? Boolean(controls.geoFencing) : (controls.GEO_FENCING !== undefined ? Boolean(controls.GEO_FENCING) : true),
             tourLimit: Boolean(controls.tourLimit ?? controls.TOUR_LIMIT),
+            outstationLimit: Number(controls.outstationLimit ?? controls.maxOutstationDays) || 0,
+            exMarketLimit: Number(controls.exMarketLimit ?? controls.maxExMarketDays) || 0,
             deletionRequest: Boolean(controls.deletionRequest ?? controls.DELETION_REQUEST),
             dcsListFilter: Boolean(controls.dcsListFilter ?? controls.DCS_LIST_FILTER),
             autoApproval: Boolean(controls.autoApproval ?? controls.AUTO_APPROVAL),
@@ -3628,20 +3630,36 @@ router.post('/tour-program', async (req, res) => {
 
         const userControls = await getUserControls(userForId || employeeId);
 
-        // Tour Limit Check
+        // Tour Limit Check (Customized on Outstation and Ex-Market basis)
         if (userControls.tourLimit && entries && entries.length > 0) {
-            const routeCounts = {};
-            const MAX_ALLOWED_ROUTE_DAYS = 4;
+            const outstationMax = Number(userControls.outstationLimit) || 0;
+            const exMarketMax = Number(userControls.exMarketLimit) || 0;
+
+            let outstationCount = 0;
+            let exMarketCount = 0;
+
             for (const entry of entries) {
-                const rName = entry.routeName || entry.route || entry.toCity;
-                if (rName && entry.type !== 'Holiday' && entry.type !== 'Sunday' && entry.type !== 'SUNDAY') {
-                    routeCounts[rName] = (routeCounts[rName] || 0) + 1;
-                    if (routeCounts[rName] > MAX_ALLOWED_ROUTE_DAYS) {
-                        return res.status(403).json({
-                            error: `Tour Limit exceeded: Route "${rName}" is planned ${routeCounts[rName]} times (maximum allowed is ${MAX_ALLOWED_ROUTE_DAYS} times per month).`
-                        });
-                    }
-                }
+                const t = (entry.type || entry.areaType || '').toLowerCase().trim();
+                const act = (entry.activityType || '').toLowerCase().trim();
+                if (t === 'sunday' || t === 'holiday' || act === 'sunday' || act === 'holiday' || act === 'leave') continue;
+
+                const isOutstation = t.includes('out') || t === 'out-station' || t === 'outstation' || t === 'out-mkt' || t === 'out-stn-last-day';
+                const isExMarket = (!isOutstation) && (t.includes('ex') || t === 'ex-station' || t === 'ex-market' || t === 'ex-mkt' || t === 'out-ex-mkt');
+
+                if (isOutstation) outstationCount++;
+                else if (isExMarket) exMarketCount++;
+            }
+
+            if (outstationMax > 0 && outstationCount > outstationMax) {
+                return res.status(403).json({
+                    error: `Tour Limit exceeded: You have planned ${outstationCount} Outstation days (maximum allowed is ${outstationMax} days per month).`
+                });
+            }
+
+            if (exMarketMax > 0 && exMarketCount > exMarketMax) {
+                return res.status(403).json({
+                    error: `Tour Limit exceeded: You have planned ${exMarketCount} Ex-Market days (maximum allowed is ${exMarketMax} days per month).`
+                });
             }
         }
 
@@ -5133,15 +5151,21 @@ router.post('/expense', async (req, res) => {
                 if (user.email) idArray.push(user.email);
                 if (user.uid) idArray.push(user.uid);
             }
-            const dcrExists = await XlDCR.findOne({
+            const dcrs = await XlDCR.findAll({
                 where: {
                     employeeId: { [Op.in]: idArray },
                     date
                 }
             });
-            if (!dcrExists) {
+            if (!dcrs || dcrs.length === 0) {
                 return res.status(403).json({
-                    error: `Call Report Mandatory for Expense is enabled. Please submit your Daily Call Report for ${date} before claiming expenses.`
+                    error: `Call Report Mandatory for Expense is enabled: You must submit your Daily Call Report for ${date} and have it approved by Admin before claiming expenses.`
+                });
+            }
+            const hasApprovedDcr = dcrs.some(d => d.status === 'Approved');
+            if (!hasApprovedDcr) {
+                return res.status(403).json({
+                    error: `Call Report Mandatory for Expense is enabled: Your Daily Call Report for ${date} is pending Admin approval. You can only claim expenses after your DCR is approved by Admin.`
                 });
             }
         }
