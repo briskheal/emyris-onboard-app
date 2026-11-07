@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
-  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon, Trash2, FileText
+  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon, Trash2, FileText,
+  Lock, MapPin, AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -70,6 +71,8 @@ export default function DailyCallReport() {
   const [selectedEntityId, setSelectedEntityId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
+  const [userControls, setUserControls] = useState<any>({});
+  const [onlyInRange, setOnlyInRange] = useState(false);
 
   // GPS
   const [myLat, setMyLat] = useState<number | null>(null);
@@ -148,6 +151,8 @@ export default function DailyCallReport() {
     };
   }, [step, dcrDate, entityType]);;
 
+  const isGeoFencingActive = userControls?.geoFencing !== false && Boolean(userControls?.geoFencing);
+
   const sortedEntities = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     let filtered = entities.filter(e => {
@@ -163,17 +168,30 @@ export default function DailyCallReport() {
         const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
         const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
         const minDist = Math.min(dist1, dist2);
-        return { ...e, _dist: isFinite(minDist) ? minDist : null };
+        const inRange = isFinite(minDist) && minDist <= 300;
+        return { 
+          ...e, 
+          _dist: isFinite(minDist) ? minDist : null,
+          _inRange: inRange,
+          _hasGps: Boolean(e.lat1 && e.lng1)
+        };
       }).sort((a, b) => {
+        // Prioritize in-range entities first
+        if (a._inRange && !b._inRange) return -1;
+        if (!a._inRange && b._inRange) return 1;
         if (a._dist !== null && b._dist !== null) return a._dist - b._dist;
         if (a._dist !== null) return -1;
         if (b._dist !== null) return 1;
         return (a.name || a.businessName || '').localeCompare(b.name || b.businessName || '');
       });
+
+      if (isGeoFencingActive && onlyInRange) {
+        filtered = filtered.filter(e => e._inRange);
+      }
     }
 
     return filtered;
-  }, [entities, searchQuery, myLat, myLng]);
+  }, [entities, searchQuery, myLat, myLng, isGeoFencingActive, onlyInRange]);
 
   useEffect(() => {
     let dObj;
@@ -261,6 +279,13 @@ export default function DailyCallReport() {
     axios.get(`/api/xl/dcr/my?email=${USER_EMAIL}&date=${dcrDate}`)
       .then(r => setTodaysDcrs(r.data.data || []))
       .catch(()=>{});
+
+    if (USER_EMAIL) {
+      axios.get(`/api/xl/user-controls?employeeId=${encodeURIComponent(USER_EMAIL)}`)
+        .then(res => {
+          if (res.data && res.data.controls) setUserControls(res.data.controls);
+        }).catch(() => {});
+    }
   }, [dcrDate, USER_EMAIL]);
 
   const loadEntities = (type: string) => {
@@ -277,6 +302,7 @@ export default function DailyCallReport() {
     }
 
     const params = new URLSearchParams({
+      employeeId: user?.employeeId || USER_EMAIL,
       hq,
       designation: desig,
       workingAreas: workingAreas || '',
@@ -311,6 +337,24 @@ export default function DailyCallReport() {
 
   const handleSubmitInitial = () => {
     if (!selectedEntityId && entityType !== 'Reminder') { setError(`Please select a ${entityType}`); return; }
+    
+    if (isGeoFencingActive && entityType !== 'Reminder') {
+      const eMatch = entities.find(e => e._id === selectedEntityId);
+      if (!eMatch?.lat1 || !eMatch?.lng1) {
+        setError(`Geo-Fencing Active: ${eMatch?.name || eMatch?.businessName || 'This entity'} has no registered GPS location. Please tag their location in Geo Fencing Manager first.`);
+        return;
+      }
+      if (myLat && myLng) {
+        const d1 = haversineMetres(myLat, myLng, eMatch.lat1, eMatch.lng1);
+        const d2 = (eMatch.lat2 && eMatch.lng2) ? haversineMetres(myLat, myLng, eMatch.lat2, eMatch.lng2) : Infinity;
+        const d = Math.min(d1, d2);
+        if (d > 300) {
+          setError(`Geo-Fencing Active: You are ${d < 1000 ? Math.round(d) + 'm' : (d/1000).toFixed(1) + 'km'} away from ${eMatch.name || eMatch.businessName}. You must be physically at the location (within 200m) to submit a Call Report.`);
+          return;
+        }
+      }
+    }
+    
     setStep('rating');
   };
 
@@ -708,7 +752,17 @@ export default function DailyCallReport() {
 
               {entityType !== 'Reminder' && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Select {entityType} <span className="text-rose-500">*</span></label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    Select {entityType} <span className="text-rose-500">*</span>
+                  </label>
+                  {isGeoFencingActive && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center gap-1">
+                      <MapPin size={10} /> Geo-Fencing Active
+                    </span>
+                  )}
+                </div>
+
                 <div className="relative">
                   <div onClick={() => setIsEntityDropdownOpen(!isEntityDropdownOpen)} className="w-full h-[50px] px-4 border border-[#3b3b5a] rounded-xl text-white font-semibold bg-[#27273f] flex items-center justify-between cursor-pointer">
                     <span className="truncate">{selectedEntityId ? (entities.find(e => e._id === selectedEntityId)?.name || entities.find(e => e._id === selectedEntityId)?.businessName) : `Select ${entityType}`}</span>
@@ -716,41 +770,105 @@ export default function DailyCallReport() {
                   </div>
                   
                   {isEntityDropdownOpen && (
-                    <div className="absolute z-50 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[250px]">
+                    <div className="absolute z-50 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[340px]">
+                      {/* Geo-Fencing Banner */}
+                      {isGeoFencingActive && (
+                        <div className="px-3 py-2 bg-slate-900 border-b border-[#3b3b5a] flex items-center justify-between text-[11px]">
+                          <span className="font-semibold text-sky-400 flex items-center gap-1">
+                            <MapPin size={12} />
+                            {sortedEntities.filter(e => e._inRange).length > 0 
+                              ? `${sortedEntities.filter(e => e._inRange).length} in-range at your location` 
+                              : 'No doctors within 200m range'}
+                          </span>
+                          <label className="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={onlyInRange} 
+                              onChange={e => setOnlyInRange(e.target.checked)} 
+                              className="accent-sky-500 rounded" 
+                            />
+                            <span>In-location only</span>
+                          </label>
+                        </div>
+                      )}
+
                       <div className="p-2 border-b border-[#3b3b5a] relative">
                         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onClick={e => e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg pl-8 pr-3 py-2 focus:outline-none" />
                       </div>
-                      <div className="overflow-y-auto max-h-60">
-                        {sortedEntities.length > 0 ? sortedEntities.map(e => (
-                          <div 
-                            key={e._id} 
-                            onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} 
-                            className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm flex justify-between items-center transition-colors"
-                          >
-                            <div className="flex flex-col pr-2">
-                              <span className="font-semibold text-white">{e.name || e.businessName}</span>
-                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
-                                {e.specialization && <span>{e.specialization}</span>}
-                                {e.headquarter && <span className="bg-slate-700/80 px-1.5 py-0.2 rounded text-[10px] text-slate-300 uppercase">{e.headquarter}</span>}
-                                {e.workingArea && <span className="text-slate-400">({e.workingArea})</span>}
+
+                      <div className="overflow-y-auto max-h-64">
+                        {sortedEntities.length > 0 ? sortedEntities.map(e => {
+                          const isOutOfRange = isGeoFencingActive && (!e._hasGps || !e._inRange);
+                          const distStr = e._dist !== null && e._dist !== undefined 
+                            ? (e._dist < 1000 ? `${Math.round(e._dist)}m` : `${(e._dist/1000).toFixed(1)}km`) 
+                            : null;
+
+                          return (
+                            <div 
+                              key={e._id} 
+                              onClick={() => {
+                                if (isGeoFencingActive) {
+                                  if (!e._hasGps) {
+                                    setError(`Geo-Fencing Active: ${e.name || e.businessName} has no registered GPS location. Please tag their location in Geo Fencing Manager first.`);
+                                    return;
+                                  }
+                                  if (!e._inRange) {
+                                    setError(`Geo-Fencing Active: You are ${distStr || 'far away'} from ${e.name || e.businessName}. You must be physically at the doctor's location (within 200m) to submit a Call Report.`);
+                                    return;
+                                  }
+                                }
+                                setSelectedEntityId(e._id);
+                                setIsEntityDropdownOpen(false);
+                                setError('');
+                              }} 
+                              className={`px-4 py-3 border-b border-[#3b3b5a]/50 text-sm flex justify-between items-center transition-colors ${
+                                isOutOfRange 
+                                  ? 'opacity-60 bg-slate-900/40 hover:bg-slate-900 cursor-not-allowed' 
+                                  : 'hover:bg-[#3b3b5a] cursor-pointer text-slate-200'
+                              } ${e._inRange ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500' : ''}`}
+                            >
+                              <div className="flex flex-col pr-2 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`font-semibold ${isOutOfRange ? 'text-slate-400' : 'text-white'}`}>
+                                    {e.name || e.businessName}
+                                  </span>
+                                  {isOutOfRange && <Lock size={12} className="text-rose-400 shrink-0" />}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                                  {e.specialization && <span>{e.specialization}</span>}
+                                  {e.headquarter && <span className="bg-slate-700/80 px-1.5 py-0.2 rounded text-[10px] text-slate-300 uppercase">{e.headquarter}</span>}
+                                  {e.workingArea && <span className="text-slate-400">({e.workingArea})</span>}
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 flex items-center gap-1.5">
+                                {!e._hasGps && isGeoFencingActive && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                    No GPS
+                                  </span>
+                                )}
+                                {distStr && (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                    e._inRange
+                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                      : isGeoFencingActive
+                                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                        : 'bg-slate-700 text-slate-400'
+                                  }`}>
+                                    {e._inRange ? `📍 ${distStr}` : distStr}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            {e._dist !== null && e._dist !== undefined && (
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                                e._dist <= 300 
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                  : 'bg-slate-700 text-slate-400'
-                              }`}>
-                                {e._dist < 1000 ? `${Math.round(e._dist)}m` : `${(e._dist/1000).toFixed(1)}km`}
-                              </span>
-                            )}
-                          </div>
-                        )) : (
+                          );
+                        }) : (
                           <div className="p-4 text-center text-sm text-slate-400">
-                            {entities.length === 0 
-                              ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
-                              : "No matches found for search query."}
+                            {isGeoFencingActive && onlyInRange 
+                              ? "No doctors found at your current location (< 200m). Uncheck 'In-location only' to view full directory."
+                              : entities.length === 0 
+                                ? (loading ? "Loading directory..." : `No ${entityType?.toLowerCase() || 'records'} found in directory.`)
+                                : "No matches found for search query."}
                           </div>
                         )}
                       </div>

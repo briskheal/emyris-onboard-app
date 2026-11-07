@@ -369,6 +369,7 @@ export default function DoctorForm() {
         headquarter: form.hq,
         extraInformation: form.extraInfo,
         employeeId: user.employeeId,
+        userAllotted: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.employeeId,
         lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address
       };
       await axios.post('/api/xl/doctor', payload);

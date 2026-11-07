@@ -924,6 +924,16 @@ function shouldAutoApprove(userControls, moduleKey) {
     return Boolean(subApprovals[moduleKey]);
 }
 
+router.get('/user-controls', async (req, res) => {
+    try {
+        const emp = req.query.employeeId || req.query.email || req.query.user;
+        const controls = await getUserControls(emp);
+        res.json({ success: true, controls });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
 // Returns distance in metres between two GPS coordinates
 function haversineMetres(lat1, lng1, lat2, lng2) {
@@ -3451,21 +3461,37 @@ async function applyDCSListFilter(where, req) {
     const empParam = req.query.employeeId || req.query.email || req.query.user;
     if (empParam) {
         const userControls = await getUserControls(empParam);
+        const user = await XlUser.findOne({
+            where: {
+                [Op.or]: [{ employeeId: empParam }, { email: empParam }, { uid: empParam }]
+            }
+        });
+        const repName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+        const repIds = [empParam, user?.employeeId, user?.email, user?.uid, repName].filter(Boolean);
+        const { sequelize } = require('../db');
+
         if (userControls.dcsListFilter) {
-            const user = await XlUser.findOne({
-                where: {
-                    [Op.or]: [{ employeeId: empParam }, { email: empParam }, { uid: empParam }]
-                }
-            });
-            const repName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-            const repIds = [empParam, user?.employeeId, user?.email, user?.uid, repName].filter(Boolean);
-            const { sequelize } = require('../db');
+            // Strict filter: ONLY doctors/chemists/stockists explicitly allotted to this representative
             const allottedConditions = repIds.map(val => sequelize.where(
                 sequelize.fn('lower', sequelize.col('userAllotted')),
                 { [Op.like]: `%${val.toLowerCase()}%` }
             ));
             where[Op.and] = where[Op.and] || [];
             where[Op.and].push({ [Op.or]: allottedConditions });
+        } else {
+            // Exclude records that are assigned to a different representative
+            const allottedToMe = repIds.map(val => sequelize.where(
+                sequelize.fn('lower', sequelize.col('userAllotted')),
+                { [Op.like]: `%${val.toLowerCase()}%` }
+            ));
+            where[Op.and] = where[Op.and] || [];
+            where[Op.and].push({
+                [Op.or]: [
+                    { userAllotted: null },
+                    { userAllotted: '' },
+                    ...allottedToMe
+                ]
+            });
         }
     }
 }
@@ -3769,21 +3795,23 @@ router.get('/tour-program/submission-reminder', async (req, res) => {
 
         const now = new Date();
         const currentDay = now.getDate();
+        const currentMonthIndex = now.getMonth();
+        const currentYear = now.getFullYear();
         const isAfter25th = currentDay >= 25;
 
-        // Calculate coming month comparing current month
+        // Month names
         const monthNames = [
             'January', 'February', 'March', 'April', 'May', 'June',
             'July', 'August', 'September', 'October', 'November', 'December'
         ];
-        const comingDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const currentMonthName = monthNames[currentMonthIndex];
+
+        // Calculate coming month comparing current month
+        const comingDate = new Date(currentYear, currentMonthIndex + 1, 1);
         const comingMonthName = monthNames[comingDate.getMonth()];
         const comingMonthShort = comingMonthName.slice(0, 3);
         const comingYear = comingDate.getFullYear().toString();
         const comingMonthStr = `${comingMonthName} ${comingYear}`;
-
-        // Exact message format: "Submit your Tour Plan for Coming Month- xxxxx"
-        const reminderMessage = `Submit your Tour Plan for Coming Month- ${comingMonthStr}`;
 
         let isSubmitted = false;
         let tpRecord = null;
@@ -3826,8 +3854,18 @@ router.get('/tour-program/submission-reminder', async (req, res) => {
             }
         }
 
-        // Message floats for all employees until they submit TP for the coming month
-        const shouldShow = !isSubmitted;
+        // Reminder only shows starting on the 23rd of the month until TP is submitted.
+        // It scrolls continuously after the 25th until submission.
+        const shouldShow = (currentDay >= 23 || preview === 'true') && !isSubmitted;
+
+        let reminderMessage = '';
+        if (currentDay >= 23 && currentDay <= 25) {
+            reminderMessage = `Please submit your Tour Plan for ${comingMonthStr} by 25th ${currentMonthName}`;
+        } else if (currentDay > 25) {
+            reminderMessage = `Mandatory Reminder: Tour Plan for ${comingMonthStr} was due on 25th ${currentMonthName}. Please submit immediately`;
+        } else {
+            reminderMessage = `Submit your Tour Plan for Coming Month - ${comingMonthStr}`;
+        }
 
         res.json({
             success: true,
