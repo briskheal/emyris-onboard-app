@@ -21,6 +21,11 @@ export default function Backlog() {
   const [selMonth, setSelMonth] = useState(today.getMonth() + 1);
   const [selYear, setSelYear] = useState(today.getFullYear());
   
+  const storedUser = localStorage.getItem('xl_user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const initialControls = (user?.controls && typeof user.controls === 'object') ? user.controls : {};
+  const [userControls, setUserControls] = useState<any>(initialControls);
+
   const [overview, setOverview] = useState<any[]>([]);
   const [error, setError] = useState('');
 
@@ -29,6 +34,26 @@ export default function Backlog() {
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const empId = user?.employeeId || user?.email || getUserId();
+    if (empId) {
+      axios.get(`/api/xl/user-controls?employeeId=${encodeURIComponent(empId)}`)
+        .then(res => {
+          if (res.data && res.data.controls) {
+            setUserControls(res.data.controls);
+            try {
+              const u = JSON.parse(localStorage.getItem('xl_user') || '{}');
+              u.controls = res.data.controls;
+              localStorage.setItem('xl_user', JSON.stringify(u));
+            } catch(e) {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const isBacklogBlocked = Boolean(userControls?.blockBacklogReporting ?? userControls?.BLOCK_BACKLOG_REPORTING);
 
   useEffect(() => {
     fetchOverview();
@@ -47,6 +72,10 @@ export default function Backlog() {
   };
 
   const openCalendar = () => {
+    if (isBacklogBlocked) {
+      alert('Backlog reporting has been disabled for your account by Admin.');
+      return;
+    }
     // Auto-select all locked dates
     const lockedDates = overview.filter(o => o.status === 'Locked').map(o => o.date);
     setSelectedDates(new Set(lockedDates));
@@ -62,6 +91,10 @@ export default function Backlog() {
   };
 
   const handleSubmit = async () => {
+    if (isBacklogBlocked) {
+      alert('Backlog reporting has been disabled for your account by Admin.');
+      return;
+    }
     if (selectedDates.size === 0) return alert('Select at least one date.');
     if (!reason) return alert('Reason is required.');
     
@@ -154,6 +187,20 @@ export default function Backlog() {
       </div>
 
       <div className="flex-1 p-4 pb-36">
+        {isBacklogBlocked && (
+          <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <Lock size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-rose-300">Backlog Reporting Blocked by Admin</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Admin has disabled backlog reporting for your account. You cannot request to unlock missing days.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Month/Year Selectors */}
         <div className="flex gap-3 mb-6">
           <div className="flex-1 bg-[#1c1c2e] rounded-xl border border-[#3b3b5a] px-3 py-1.5 flex flex-col">
@@ -207,7 +254,9 @@ export default function Backlog() {
                     </div>
                     
                     {req.status === 'Locked' ? (
-                      <p className="text-xs text-slate-400">Request unlock to fill this report.</p>
+                      <p className="text-xs text-slate-400">
+                        {isBacklogBlocked ? 'Reporting disabled by Admin.' : 'Request unlock to fill this report.'}
+                      </p>
                     ) : (
                       <p className="text-xs text-slate-300 line-clamp-1">{req.reason}</p>
                     )}
@@ -216,7 +265,13 @@ export default function Backlog() {
                     
                     {req.status === 'Approved' && (
                       <button 
-                        onClick={() => navigate('/report', { state: { overrideDate: req.date } })}
+                        onClick={() => {
+                          if (isBacklogBlocked) {
+                            alert('Backlog reporting has been disabled for your account by Admin.');
+                            return;
+                          }
+                          navigate('/report', { state: { overrideDate: req.date } });
+                        }}
                         className="mt-3 w-full py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold text-xs active:bg-emerald-500/30 transition-colors"
                       >
                         Fill Call Report Now
@@ -233,13 +288,20 @@ export default function Backlog() {
       {/* Floating Action Button for Unlock */}
       {hasLocked && (
         <div className="fixed bottom-24 left-0 right-0 px-6 flex justify-center z-50">
-          <button 
-            onClick={openCalendar}
-            className="bg-sky-500 hover:bg-sky-400 text-white font-black text-sm px-8 py-4 rounded-full shadow-lg shadow-sky-900/50 flex items-center gap-2 active:scale-95 transition-all"
-          >
-            <CalendarIcon size={18} />
-            Unlock Missing Days
-          </button>
+          {isBacklogBlocked ? (
+            <div className="bg-slate-900/90 border border-rose-500/30 text-rose-300 font-bold text-xs px-6 py-3.5 rounded-full shadow-xl flex items-center gap-2 backdrop-blur-md">
+              <Lock size={14} className="text-rose-400" />
+              <span>Backlog Unlock Blocked by Admin</span>
+            </div>
+          ) : (
+            <button 
+              onClick={openCalendar}
+              className="bg-sky-500 hover:bg-sky-400 text-white font-black text-sm px-8 py-4 rounded-full shadow-lg shadow-sky-900/50 flex items-center gap-2 active:scale-95 transition-all"
+            >
+              <CalendarIcon size={18} />
+              Unlock Missing Days
+            </button>
+          )}
         </div>
       )}
 
