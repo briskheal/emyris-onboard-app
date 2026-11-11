@@ -1388,54 +1388,61 @@ export default function ManageDCS() {
       let stkList: any[] = [];
 
       if (mode === 'hq') {
-        if (subTab === 'transfer') {
-          if (sourceHq) {
-            const hqLower = sourceHq.toLowerCase().trim();
-            docList = doctors.filter(d => (d.headquarter || '').toLowerCase().trim() === hqLower);
-            chemList = chemists.filter(c => (c.headquarter || '').toLowerCase().trim() === hqLower);
-            stkList = stockists.filter(s => (s.headquarter || '').toLowerCase().trim() === hqLower);
-          }
-        } else if (subTab === 'allot') {
-          if (unallottedOnly) {
-            docList = doctors.filter(d => !d.headquarter || d.headquarter.toLowerCase().trim() === 'unassigned' || !d.userAllotted);
-            chemList = chemists.filter(c => !c.headquarter || c.headquarter.toLowerCase().trim() === 'unassigned' || !c.userAllotted);
-            stkList = stockists.filter(s => !s.headquarter || s.headquarter.toLowerCase().trim() === 'unassigned' || !s.userAllotted);
-          } else {
-            docList = doctors;
-            chemList = chemists;
-            stkList = stockists;
-          }
-        } else if (subTab === 'deallot') {
-          if (sourceHq) {
-            const hqLower = sourceHq.toLowerCase().trim();
-            docList = doctors.filter(d => (d.headquarter || '').toLowerCase().trim() === hqLower);
-            chemList = chemists.filter(c => (c.headquarter || '').toLowerCase().trim() === hqLower);
-            stkList = stockists.filter(s => (s.headquarter || '').toLowerCase().trim() === hqLower);
+        const activeHq = subTab === 'allot' ? targetHq : sourceHq;
+
+        // NO NEED TO SHOW DRS UNLESS HQ IS SELECTED!
+        if (activeHq) {
+          const hqLower = activeHq.toLowerCase().trim();
+          const matchesHq = (itemHq?: string) => {
+            if (!itemHq) return false;
+            return itemHq.toLowerCase().trim() === hqLower;
+          };
+
+          docList = doctors.filter(d => matchesHq(d.headquarter));
+          chemList = chemists.filter(c => matchesHq(c.headquarter));
+          stkList = stockists.filter(s => matchesHq(s.headquarter));
+
+          if (subTab === 'allot' && unallottedOnly) {
+            docList = docList.filter(d => !d.userAllotted && !d.employeeId);
+            chemList = chemList.filter(c => !c.userAllotted && !c.employeeId);
+            stkList = stkList.filter(s => !s.userAllotted && !s.employeeId);
           }
         }
       } else {
         // Mode === 'user'
-        if (subTab === 'transfer' || subTab === 'deallot') {
-          const uId = sourceUserId;
-          if (uId) {
-            docList = doctors.filter(d => isMatchUser(d.userAllotted, uId) || isMatchUser(d.employeeId, uId));
-            chemList = chemists.filter(c => isMatchUser(c.userAllotted, uId) || isMatchUser(c.employeeId, uId));
-            stkList = stockists.filter(s => isMatchUser(s.userAllotted, uId) || isMatchUser(s.employeeId, uId));
-          }
-        } else if (subTab === 'allot') {
-          if (unallottedOnly) {
-            docList = doctors.filter(d => !d.userAllotted && !d.employeeId);
-            chemList = chemists.filter(c => !c.userAllotted && !c.employeeId);
-            stkList = stockists.filter(s => !s.userAllotted && !s.employeeId);
-          } else {
-            docList = doctors;
-            chemList = chemists;
-            stkList = stockists;
+        const activeUserId = (subTab === 'allot') ? targetUserId : sourceUserId;
+
+        // NO NEED TO SHOW DRS UNLESS EMPLOYEE IS SELECTED!
+        if (activeUserId) {
+          if (subTab === 'transfer' || subTab === 'deallot') {
+            docList = doctors.filter(d => isMatchUser(d.userAllotted, activeUserId) || isMatchUser(d.employeeId, activeUserId));
+            chemList = chemists.filter(c => isMatchUser(c.userAllotted, activeUserId) || isMatchUser(c.employeeId, activeUserId));
+            stkList = stockists.filter(s => isMatchUser(s.userAllotted, activeUserId) || isMatchUser(s.employeeId, activeUserId));
+          } else if (subTab === 'allot') {
+            const userObj = users.find(u => u.employeeId === activeUserId || u._id === activeUserId);
+            const userHq = (userObj?.hq || '').toLowerCase().trim();
+
+            if (userHq) {
+              // ONLY show doctors belonging to this selected employee's HQ!
+              docList = doctors.filter(d => (d.headquarter || '').toLowerCase().trim() === userHq);
+              chemList = chemists.filter(c => (c.headquarter || '').toLowerCase().trim() === userHq);
+              stkList = stockists.filter(s => (s.headquarter || '').toLowerCase().trim() === userHq);
+            } else {
+              docList = doctors.filter(d => isMatchUser(d.userAllotted, activeUserId));
+              chemList = chemists.filter(c => isMatchUser(c.userAllotted, activeUserId));
+              stkList = stockists.filter(s => isMatchUser(s.userAllotted, activeUserId));
+            }
+
+            if (unallottedOnly) {
+              docList = docList.filter(d => !d.userAllotted && !d.employeeId);
+              chemList = chemList.filter(c => !c.userAllotted && !c.employeeId);
+              stkList = stkList.filter(s => !s.userAllotted && !s.employeeId);
+            }
           }
         }
       }
 
-      // Filter by Search
+      // Filter by Search (only within the selected HQ/user items!)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         docList = docList.filter(d => (d.name || '').toLowerCase().includes(q) || (d.headquarter || '').toLowerCase().includes(q) || (d.workingArea || '').toLowerCase().includes(q) || (d.specialization || '').toLowerCase().includes(q) || (d.userAllotted || '').toLowerCase().includes(q));
@@ -2235,20 +2242,22 @@ export default function ManageDCS() {
                 {visibleItems.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
-                      {(subTab === 'transfer' || subTab === 'deallot') && (mode === 'hq' ? !sourceHq : !sourceUserId) ? (
+                      {((mode === 'hq' ? !(subTab === 'allot' ? targetHq : sourceHq) : !(subTab === 'allot' ? targetUserId : sourceUserId))) ? (
                         <div className="flex flex-col items-center justify-center gap-2">
-                          {mode === 'hq' ? <MapPin size={28} className="text-slate-600 mb-1" /> : <Users size={28} className="text-slate-600 mb-1" />}
-                          <span className="font-bold text-slate-300">
+                          {mode === 'hq' ? <MapPin size={32} className="text-slate-600 mb-1" /> : <Users size={32} className="text-slate-600 mb-1" />}
+                          <span className="font-bold text-slate-300 text-sm">
                             Please select a {mode === 'hq' ? 'Headquarter' : 'User'} from the dropdown above.
                           </span>
                           <span className="text-xs text-slate-500">
-                            {mode === 'hq' ? 'All doctors, chemists, and stockists tagged to that HQ will be displayed.' : 'Their currently allotted accounts will display here.'}
+                            {mode === 'hq' 
+                              ? 'No records will be shown until a Headquarter is selected. Only doctors, chemists, and stockists tagged to that HQ will appear.' 
+                              : 'No records will be shown until an Employee is selected. Only records belonging to that Employee will appear.'}
                           </span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center gap-1">
                           <span className="font-bold text-slate-300">No records found.</span>
-                          <span className="text-xs text-slate-500">Try adjusting your search query, type filters, or unassigned toggle.</span>
+                          <span className="text-xs text-slate-500">No records match the selected {mode === 'hq' ? `Headquarter "${subTab === 'allot' ? targetHq : sourceHq}"` : 'User'}. Try adjusting your search query or filters.</span>
                         </div>
                       )}
                     </td>
