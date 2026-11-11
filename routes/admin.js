@@ -6515,6 +6515,201 @@ router.post('/dcs/stockists', async (req, res) => { try { const data = req.body;
 router.put('/dcs/stockists/:id', async (req, res) => { try { await XlStockist.update(req.body, { where: { _id: req.params.id } }); if (req.body.lat1 === null) { const { XlGeoFencing } = require('../db'); await XlGeoFencing.destroy({ where: { entityId: req.params.id, entityType: 'Stockist' } }); } res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/stockists/:id', async (req, res) => { try { await XlStockist.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
+// ==========================================
+// DCS LIST MANAGEMENT (ALLOT, DE-ALLOT, TRANSFER)
+// ==========================================
+
+router.get('/dcs/allotments', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+
+        let whereCondition = {};
+        if (!employeeId || employeeId === 'unallotted') {
+            whereCondition = {
+                [Op.or]: [
+                    { userAllotted: null },
+                    { userAllotted: '' }
+                ]
+            };
+        } else {
+            whereCondition = {
+                [Op.or]: [
+                    { userAllotted: employeeId },
+                    { employeeId: employeeId }
+                ]
+            };
+        }
+
+        const [doctors, chemists, stockists] = await Promise.all([
+            XlDoctor.findAll({ where: whereCondition, order: [['name', 'ASC']] }),
+            XlChemist.findAll({ where: whereCondition, order: [['businessName', 'ASC']] }),
+            XlStockist.findAll({ where: whereCondition, order: [['businessName', 'ASC']] })
+        ]);
+
+        res.json({
+            success: true,
+            doctors,
+            chemists,
+            stockists
+        });
+    } catch (e) {
+        console.error('DCS Allotments Fetch Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/dcs/allot', async (req, res) => {
+    try {
+        const { targetEmpId, targetEmpName, doctorIds = [], chemistIds = [], stockistIds = [] } = req.body;
+        if (!targetEmpId) {
+            return res.status(400).json({ success: false, message: 'Target User is required' });
+        }
+
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        let totalUpdated = 0;
+
+        if (doctorIds.length > 0) {
+            const [dCount] = await XlDoctor.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId, employeeName: targetEmpName || '' },
+                { where: { _id: doctorIds } }
+            );
+            totalUpdated += dCount;
+        }
+
+        if (chemistIds.length > 0) {
+            const [cCount] = await XlChemist.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId },
+                { where: { _id: chemistIds } }
+            );
+            totalUpdated += cCount;
+        }
+
+        if (stockistIds.length > 0) {
+            const [sCount] = await XlStockist.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId },
+                { where: { _id: stockistIds } }
+            );
+            totalUpdated += sCount;
+        }
+
+        res.json({ success: true, message: `Successfully allotted ${totalUpdated} records to ${targetEmpName || targetEmpId}.`, totalUpdated });
+    } catch (e) {
+        console.error('DCS Allot Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/dcs/deallot', async (req, res) => {
+    try {
+        const { doctorIds = [], chemistIds = [], stockistIds = [] } = req.body;
+        if (doctorIds.length === 0 && chemistIds.length === 0 && stockistIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'No records selected for de-allotment' });
+        }
+
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        let totalUpdated = 0;
+
+        if (doctorIds.length > 0) {
+            const [dCount] = await XlDoctor.update(
+                { userAllotted: null, employeeId: null, employeeName: null },
+                { where: { _id: doctorIds } }
+            );
+            totalUpdated += dCount;
+        }
+
+        if (chemistIds.length > 0) {
+            const [cCount] = await XlChemist.update(
+                { userAllotted: null, employeeId: null },
+                { where: { _id: chemistIds } }
+            );
+            totalUpdated += cCount;
+        }
+
+        if (stockistIds.length > 0) {
+            const [sCount] = await XlStockist.update(
+                { userAllotted: null, employeeId: null },
+                { where: { _id: stockistIds } }
+            );
+            totalUpdated += sCount;
+        }
+
+        res.json({ success: true, message: `Successfully de-allotted ${totalUpdated} records.`, totalUpdated });
+    } catch (e) {
+        console.error('DCS De-allot Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/dcs/transfer', async (req, res) => {
+    try {
+        const { sourceEmpId, targetEmpId, targetEmpName, doctorIds = [], chemistIds = [], stockistIds = [], transferAll } = req.body;
+        if (!sourceEmpId || !targetEmpId) {
+            return res.status(400).json({ success: false, message: 'Both Source User and Target User are required' });
+        }
+        if (sourceEmpId === targetEmpId) {
+            return res.status(400).json({ success: false, message: 'Source User and Target User cannot be the same' });
+        }
+
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+        let totalUpdated = 0;
+
+        if (transferAll) {
+            const sourceWhere = {
+                [Op.or]: [
+                    { userAllotted: sourceEmpId },
+                    { employeeId: sourceEmpId }
+                ]
+            };
+
+            const [dCount] = await XlDoctor.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId, employeeName: targetEmpName || '' },
+                { where: sourceWhere }
+            );
+            const [cCount] = await XlChemist.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId },
+                { where: sourceWhere }
+            );
+            const [sCount] = await XlStockist.update(
+                { userAllotted: targetEmpId, employeeId: targetEmpId },
+                { where: sourceWhere }
+            );
+            totalUpdated = dCount + cCount + sCount;
+        } else {
+            if (doctorIds.length > 0) {
+                const [dCount] = await XlDoctor.update(
+                    { userAllotted: targetEmpId, employeeId: targetEmpId, employeeName: targetEmpName || '' },
+                    { where: { _id: doctorIds } }
+                );
+                totalUpdated += dCount;
+            }
+
+            if (chemistIds.length > 0) {
+                const [cCount] = await XlChemist.update(
+                    { userAllotted: targetEmpId, employeeId: targetEmpId },
+                    { where: { _id: chemistIds } }
+                );
+                totalUpdated += cCount;
+            }
+
+            if (stockistIds.length > 0) {
+                const [sCount] = await XlStockist.update(
+                    { userAllotted: targetEmpId, employeeId: targetEmpId },
+                    { where: { _id: stockistIds } }
+                );
+                totalUpdated += sCount;
+            }
+        }
+
+        res.json({ success: true, message: `Successfully transferred ${totalUpdated} records to ${targetEmpName || targetEmpId}.`, totalUpdated });
+    } catch (e) {
+        console.error('DCS Transfer Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.get('/dcs/controls', async (req, res) => { try { const controls = await XlDoctorControl.findAll(); res.json({ success: true, controls }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/controls/bulk', async (req, res) => { try { const inserted = await XlDoctorControl.bulkCreate(req.body); res.json({ success: true, count: inserted.length }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });

@@ -5,9 +5,10 @@ interface CustomUserSelectProps {
   users: any[];
   selectedUser: string;
   onChange: (employeeId: string) => void;
+  placeholder?: string;
 }
 
-export default function CustomUserSelect({ users, selectedUser, onChange }: CustomUserSelectProps) {
+export default function CustomUserSelect({ users, selectedUser, onChange, placeholder = 'Select User' }: CustomUserSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,7 +86,7 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
               </div>
             </>
           ) : (
-            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider">Select User</span>
+            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider">{placeholder}</span>
           )}
         </div>
         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-sky-400' : ''}`} />
