@@ -6710,6 +6710,131 @@ router.post('/dcs/transfer', async (req, res) => {
     }
 });
 
+router.post('/dcs/transfer-hq', async (req, res) => {
+    try {
+        const { sourceHq, targetHq, doctorIds = [], chemistIds = [], stockistIds = [], transferAll, clearUserAllotment = true } = req.body;
+        if (!sourceHq || !targetHq) {
+            return res.status(400).json({ success: false, message: 'Both Source HQ and Target HQ are required' });
+        }
+        if (sourceHq.toLowerCase().trim() === targetHq.toLowerCase().trim()) {
+            return res.status(400).json({ success: false, message: 'Source HQ and Target HQ cannot be the same' });
+        }
+
+        const { XlDoctor, XlChemist, XlStockist, sequelize } = require('../db');
+        const { Op } = require('sequelize');
+        let totalUpdated = 0;
+
+        const updateData = { headquarter: targetHq };
+        if (clearUserAllotment) {
+            updateData.userAllotted = null;
+            updateData.employeeId = null;
+            updateData.employeeName = null;
+        }
+
+        if (transferAll) {
+            const hqWhere = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), sourceHq.toLowerCase().trim());
+            const [dCount] = await XlDoctor.update(updateData, { where: hqWhere });
+            const [cCount] = await XlChemist.update(updateData, { where: hqWhere });
+            const [sCount] = await XlStockist.update(updateData, { where: hqWhere });
+            totalUpdated = dCount + cCount + sCount;
+        } else {
+            if (doctorIds.length > 0) {
+                const [dCount] = await XlDoctor.update(updateData, { where: { _id: doctorIds } });
+                totalUpdated += dCount;
+            }
+            if (chemistIds.length > 0) {
+                const [cCount] = await XlChemist.update(updateData, { where: { _id: chemistIds } });
+                totalUpdated += cCount;
+            }
+            if (stockistIds.length > 0) {
+                const [sCount] = await XlStockist.update(updateData, { where: { _id: stockistIds } });
+                totalUpdated += sCount;
+            }
+        }
+
+        res.json({ success: true, message: `Successfully transferred ${totalUpdated} records from HQ "${sourceHq}" to HQ "${targetHq}".`, totalUpdated });
+    } catch (e) {
+        console.error('DCS HQ Transfer Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/dcs/release-to-hq', async (req, res) => {
+    try {
+        const { hq, doctorIds = [], chemistIds = [], stockistIds = [], releaseAll } = req.body;
+        const { XlDoctor, XlChemist, XlStockist, sequelize } = require('../db');
+        let totalUpdated = 0;
+
+        const updateData = {
+            userAllotted: null,
+            employeeId: null,
+            employeeName: null
+        };
+
+        if (releaseAll && hq) {
+            const hqWhere = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), hq.toLowerCase().trim());
+            const [dCount] = await XlDoctor.update(updateData, { where: hqWhere });
+            const [cCount] = await XlChemist.update(updateData, { where: hqWhere });
+            const [sCount] = await XlStockist.update(updateData, { where: hqWhere });
+            totalUpdated = dCount + cCount + sCount;
+        } else {
+            if (doctorIds.length > 0) {
+                const [dCount] = await XlDoctor.update(updateData, { where: { _id: doctorIds } });
+                totalUpdated += dCount;
+            }
+            if (chemistIds.length > 0) {
+                const [cCount] = await XlChemist.update(updateData, { where: { _id: chemistIds } });
+                totalUpdated += cCount;
+            }
+            if (stockistIds.length > 0) {
+                const [sCount] = await XlStockist.update(updateData, { where: { _id: stockistIds } });
+                totalUpdated += sCount;
+            }
+        }
+
+        res.json({ success: true, message: `Successfully released ${totalUpdated} records to HQ pool. Anyone in this HQ will now see all records!`, totalUpdated });
+    } catch (e) {
+        console.error('DCS Release to HQ Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/dcs/allot-hq', async (req, res) => {
+    try {
+        const { targetHq, doctorIds = [], chemistIds = [], stockistIds = [] } = req.body;
+        if (!targetHq) {
+            return res.status(400).json({ success: false, message: 'Target Headquarter is required' });
+        }
+        const { XlDoctor, XlChemist, XlStockist } = require('../db');
+        let totalUpdated = 0;
+
+        const updateData = {
+            headquarter: targetHq,
+            userAllotted: null,
+            employeeId: null,
+            employeeName: null
+        };
+
+        if (doctorIds.length > 0) {
+            const [dCount] = await XlDoctor.update(updateData, { where: { _id: doctorIds } });
+            totalUpdated += dCount;
+        }
+        if (chemistIds.length > 0) {
+            const [cCount] = await XlChemist.update(updateData, { where: { _id: chemistIds } });
+            totalUpdated += cCount;
+        }
+        if (stockistIds.length > 0) {
+            const [sCount] = await XlStockist.update(updateData, { where: { _id: stockistIds } });
+            totalUpdated += sCount;
+        }
+
+        res.json({ success: true, message: `Successfully allotted ${totalUpdated} records to HQ "${targetHq}".`, totalUpdated });
+    } catch (e) {
+        console.error('DCS Allot HQ Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 router.get('/dcs/controls', async (req, res) => { try { const controls = await XlDoctorControl.findAll(); res.json({ success: true, controls }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/controls/bulk', async (req, res) => { try { const inserted = await XlDoctorControl.bulkCreate(req.body); res.json({ success: true, count: inserted.length }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });

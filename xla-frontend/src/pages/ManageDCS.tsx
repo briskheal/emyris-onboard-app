@@ -4,11 +4,12 @@ import axios from 'axios';
 import { 
   Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff,
   Stethoscope, Pill, Building2, UserCog, UploadCloud, ListChecks, PanelLeftClose, PanelLeftOpen,
-  CheckCircle, XCircle, CalendarDays, Search, Check, RefreshCw
+  CheckCircle, XCircle, CalendarDays, Search, Check, RefreshCw, MapPin
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MonthlyCallPlanTab from '../components/MonthlyCallPlanTab';
 import CustomUserSelect from '../components/CustomUserSelect';
+import CustomHqSelect from '../components/CustomHqSelect';
 
 const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fetchData, onEdit }: any) => {
   const checkHQMatch = (h1?: string, h2?: string) => {
@@ -428,7 +429,7 @@ export default function ManageDCS() {
         axios.get('/api/admin/dcs/controls'),
         axios.get('/api/admin/locations/hqs'),
         axios.get('/api/admin/locations/states'),
-        axios.get('/api/admin/users').catch(() => ({ data: { success: false, users: [] } }))
+        axios.get('/api/admin/users?includeDeactivated=true').catch(() => ({ data: { success: false, users: [] } }))
       ]);
       if(docRes.data.success) setDoctors(docRes.data.doctors);
       if(chemRes.data.success) setChemists(chemRes.data.chemists);
@@ -1325,6 +1326,14 @@ export default function ManageDCS() {
   // --- DCS LIST MANAGEMENT TAB ---
   const ListManagementTab = () => {
     const [subTab, setSubTab] = useState<'allot' | 'deallot' | 'transfer' | ''>('');
+    const [mode, setMode] = useState<'hq' | 'user'>('hq'); // Default to HQ-wise!
+    
+    // HQ-wise states
+    const [sourceHq, setSourceHq] = useState('');
+    const [targetHq, setTargetHq] = useState('');
+    const [clearUserLocks, setClearUserLocks] = useState(true);
+
+    // User-wise states
     const [sourceUserId, setSourceUserId] = useState('');
     const [targetUserId, setTargetUserId] = useState('');
     
@@ -1338,13 +1347,25 @@ export default function ManageDCS() {
     const [actionLoading, setActionLoading] = useState(false);
     const [actionMsg, setActionMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    // Reset selections on subTab or user change
+    // Count DCS per HQ for the dropdown badges
+    const hqCountMap = React.useMemo(() => {
+      const map: Record<string, number> = {};
+      [...doctors, ...chemists, ...stockists].forEach(item => {
+        if (item.headquarter) {
+          const hqKey = item.headquarter.toLowerCase().trim();
+          map[hqKey] = (map[hqKey] || 0) + 1;
+        }
+      });
+      return map;
+    }, [doctors, chemists, stockists]);
+
+    // Reset selections on state change
     useEffect(() => {
       setSelectedDocIds([]);
       setSelectedChemIds([]);
       setSelectedStkIds([]);
       setActionMsg(null);
-    }, [subTab, sourceUserId, targetUserId]);
+    }, [subTab, mode, sourceHq, targetHq, sourceUserId, targetUserId]);
 
     const getUserIdentifierList = (empId: string) => {
       if (!empId) return [];
@@ -1360,37 +1381,66 @@ export default function ManageDCS() {
       return ids.some(id => lowerAllotted.includes(id));
     };
 
-    // Filter available records based on subTab
+    // Filter available records based on subTab & mode
     const getRecords = () => {
       let docList: any[] = [];
       let chemList: any[] = [];
       let stkList: any[] = [];
 
-      if (subTab === 'transfer' || subTab === 'deallot') {
-        const uId = sourceUserId;
-        if (uId) {
-          docList = doctors.filter(d => isMatchUser(d.userAllotted, uId) || isMatchUser(d.employeeId, uId));
-          chemList = chemists.filter(c => isMatchUser(c.userAllotted, uId) || isMatchUser(c.employeeId, uId));
-          stkList = stockists.filter(s => isMatchUser(s.userAllotted, uId) || isMatchUser(s.employeeId, uId));
+      if (mode === 'hq') {
+        if (subTab === 'transfer') {
+          if (sourceHq) {
+            const hqLower = sourceHq.toLowerCase().trim();
+            docList = doctors.filter(d => (d.headquarter || '').toLowerCase().trim() === hqLower);
+            chemList = chemists.filter(c => (c.headquarter || '').toLowerCase().trim() === hqLower);
+            stkList = stockists.filter(s => (s.headquarter || '').toLowerCase().trim() === hqLower);
+          }
+        } else if (subTab === 'allot') {
+          if (unallottedOnly) {
+            docList = doctors.filter(d => !d.headquarter || d.headquarter.toLowerCase().trim() === 'unassigned' || !d.userAllotted);
+            chemList = chemists.filter(c => !c.headquarter || c.headquarter.toLowerCase().trim() === 'unassigned' || !c.userAllotted);
+            stkList = stockists.filter(s => !s.headquarter || s.headquarter.toLowerCase().trim() === 'unassigned' || !s.userAllotted);
+          } else {
+            docList = doctors;
+            chemList = chemists;
+            stkList = stockists;
+          }
+        } else if (subTab === 'deallot') {
+          if (sourceHq) {
+            const hqLower = sourceHq.toLowerCase().trim();
+            docList = doctors.filter(d => (d.headquarter || '').toLowerCase().trim() === hqLower);
+            chemList = chemists.filter(c => (c.headquarter || '').toLowerCase().trim() === hqLower);
+            stkList = stockists.filter(s => (s.headquarter || '').toLowerCase().trim() === hqLower);
+          }
         }
-      } else if (subTab === 'allot') {
-        if (unallottedOnly) {
-          docList = doctors.filter(d => !d.userAllotted && !d.employeeId);
-          chemList = chemists.filter(c => !c.userAllotted && !c.employeeId);
-          stkList = stockists.filter(s => !s.userAllotted && !s.employeeId);
-        } else {
-          docList = doctors;
-          chemList = chemists;
-          stkList = stockists;
+      } else {
+        // Mode === 'user'
+        if (subTab === 'transfer' || subTab === 'deallot') {
+          const uId = sourceUserId;
+          if (uId) {
+            docList = doctors.filter(d => isMatchUser(d.userAllotted, uId) || isMatchUser(d.employeeId, uId));
+            chemList = chemists.filter(c => isMatchUser(c.userAllotted, uId) || isMatchUser(c.employeeId, uId));
+            stkList = stockists.filter(s => isMatchUser(s.userAllotted, uId) || isMatchUser(s.employeeId, uId));
+          }
+        } else if (subTab === 'allot') {
+          if (unallottedOnly) {
+            docList = doctors.filter(d => !d.userAllotted && !d.employeeId);
+            chemList = chemists.filter(c => !c.userAllotted && !c.employeeId);
+            stkList = stockists.filter(s => !s.userAllotted && !s.employeeId);
+          } else {
+            docList = doctors;
+            chemList = chemists;
+            stkList = stockists;
+          }
         }
       }
 
       // Filter by Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        docList = docList.filter(d => (d.name || '').toLowerCase().includes(q) || (d.headquarter || '').toLowerCase().includes(q) || (d.workingArea || '').toLowerCase().includes(q) || (d.specialization || '').toLowerCase().includes(q));
-        chemList = chemList.filter(c => (c.businessName || c.proprietorName || '').toLowerCase().includes(q) || (c.headquarter || '').toLowerCase().includes(q) || (c.workingArea || '').toLowerCase().includes(q));
-        stkList = stkList.filter(s => (s.businessName || s.name || '').toLowerCase().includes(q) || (s.headquarter || '').toLowerCase().includes(q) || (s.workingArea || '').toLowerCase().includes(q));
+        docList = docList.filter(d => (d.name || '').toLowerCase().includes(q) || (d.headquarter || '').toLowerCase().includes(q) || (d.workingArea || '').toLowerCase().includes(q) || (d.specialization || '').toLowerCase().includes(q) || (d.userAllotted || '').toLowerCase().includes(q));
+        chemList = chemList.filter(c => (c.businessName || c.proprietorName || '').toLowerCase().includes(q) || (c.headquarter || '').toLowerCase().includes(q) || (c.workingArea || '').toLowerCase().includes(q) || (c.userAllotted || '').toLowerCase().includes(q));
+        stkList = stkList.filter(s => (s.businessName || s.name || '').toLowerCase().includes(q) || (s.headquarter || '').toLowerCase().includes(q) || (s.workingArea || '').toLowerCase().includes(q) || (s.userAllotted || '').toLowerCase().includes(q));
       }
 
       return { docList, chemList, stkList };
@@ -1477,45 +1527,98 @@ export default function ManageDCS() {
 
     // Actions
     const handleTransferSubmit = async (transferAll = false) => {
-      if (!sourceUserId) {
-        alert('Please select a Source User.');
-        return;
-      }
-      if (!targetUserId) {
-        alert('Please select a Target User.');
-        return;
-      }
-      if (sourceUserId === targetUserId) {
-        alert('Source User and Target User cannot be the same.');
-        return;
-      }
-      if (!transferAll && totalSelectedCount === 0) {
-        alert('Please select at least one record to transfer.');
-        return;
-      }
-
-      const targetUserObj = users.find(u => u.employeeId === targetUserId || u._id === targetUserId);
-      const targetName = targetUserObj ? `${targetUserObj.firstName || ''} ${targetUserObj.lastName || ''}`.trim() : targetUserId;
-
-      const confirmMsg = transferAll 
-        ? `Are you sure you want to transfer ALL allotted Doctors, Chemists, and Stockists from ${sourceUserId} to ${targetName} (${targetUserId})?`
-        : `Transfer ${totalSelectedCount} selected record(s) to ${targetName} (${targetUserId})?`;
-
-      if (!window.confirm(confirmMsg)) return;
-
       setActionLoading(true);
       setActionMsg(null);
       try {
-        const res = await axios.post('/api/admin/dcs/transfer', {
-          sourceEmpId: sourceUserId,
-          targetEmpId: targetUserId,
-          targetEmpName: targetName,
-          doctorIds: transferAll ? [] : selectedDocIds,
-          chemistIds: transferAll ? [] : selectedChemIds,
-          stockistIds: transferAll ? [] : selectedStkIds,
-          transferAll
-        });
-        setActionMsg({ type: 'success', text: res.data.message || 'Records transferred successfully!' });
+        if (mode === 'hq') {
+          if (!sourceHq) {
+            alert('Please select a Source Headquarter.');
+            setActionLoading(false);
+            return;
+          }
+          if (!targetHq) {
+            alert('Please select a Target Headquarter.');
+            setActionLoading(false);
+            return;
+          }
+          if (sourceHq.toLowerCase().trim() === targetHq.toLowerCase().trim()) {
+            alert('Source HQ and Target HQ cannot be the same.');
+            setActionLoading(false);
+            return;
+          }
+          if (!transferAll && totalSelectedCount === 0) {
+            alert('Please select at least one record to transfer.');
+            setActionLoading(false);
+            return;
+          }
+
+          const countToTransfer = transferAll ? (docList.length + chemList.length + stkList.length) : totalSelectedCount;
+          const confirmMsg = `Transfer ${countToTransfer} record(s) from HQ "${sourceHq}" to HQ "${targetHq}"?` + 
+            (clearUserLocks ? '\n\nUser locks will be cleared so any representative in the new HQ automatically sees them.' : '');
+
+          if (!window.confirm(confirmMsg)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/transfer-hq', {
+            sourceHq,
+            targetHq,
+            doctorIds: transferAll ? [] : selectedDocIds,
+            chemistIds: transferAll ? [] : selectedChemIds,
+            stockistIds: transferAll ? [] : selectedStkIds,
+            transferAll,
+            clearUserAllotment: clearUserLocks
+          });
+
+          setActionMsg({ type: 'success', text: res.data.message || 'Records transferred successfully to new HQ!' });
+        } else {
+          // User mode
+          if (!sourceUserId) {
+            alert('Please select a Source User.');
+            setActionLoading(false);
+            return;
+          }
+          if (!targetUserId) {
+            alert('Please select a Target User.');
+            setActionLoading(false);
+            return;
+          }
+          if (sourceUserId === targetUserId) {
+            alert('Source User and Target User cannot be the same.');
+            setActionLoading(false);
+            return;
+          }
+          if (!transferAll && totalSelectedCount === 0) {
+            alert('Please select at least one record to transfer.');
+            setActionLoading(false);
+            return;
+          }
+
+          const targetUserObj = users.find(u => u.employeeId === targetUserId || u._id === targetUserId);
+          const targetName = targetUserObj ? `${targetUserObj.firstName || ''} ${targetUserObj.lastName || ''}`.trim() : targetUserId;
+
+          const confirmMsg = transferAll 
+            ? `Are you sure you want to transfer ALL allotted Doctors, Chemists, and Stockists from ${sourceUserId} to ${targetName} (${targetUserId})?`
+            : `Transfer ${totalSelectedCount} selected record(s) to ${targetName} (${targetUserId})?`;
+
+          if (!window.confirm(confirmMsg)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/transfer', {
+            sourceEmpId: sourceUserId,
+            targetEmpId: targetUserId,
+            targetEmpName: targetName,
+            doctorIds: transferAll ? [] : selectedDocIds,
+            chemistIds: transferAll ? [] : selectedChemIds,
+            stockistIds: transferAll ? [] : selectedStkIds,
+            transferAll
+          });
+          setActionMsg({ type: 'success', text: res.data.message || 'Records transferred successfully!' });
+        }
+
         setSelectedDocIds([]);
         setSelectedChemIds([]);
         setSelectedStkIds([]);
@@ -1528,31 +1631,64 @@ export default function ManageDCS() {
     };
 
     const handleAllotSubmit = async () => {
-      if (!targetUserId) {
-        alert('Please select a Target User.');
-        return;
-      }
-      if (totalSelectedCount === 0) {
-        alert('Please select at least one record to allot.');
-        return;
-      }
-
-      const targetUserObj = users.find(u => u.employeeId === targetUserId || u._id === targetUserId);
-      const targetName = targetUserObj ? `${targetUserObj.firstName || ''} ${targetUserObj.lastName || ''}`.trim() : targetUserId;
-
-      if (!window.confirm(`Allot ${totalSelectedCount} selected record(s) to ${targetName} (${targetUserId})?`)) return;
-
       setActionLoading(true);
       setActionMsg(null);
       try {
-        const res = await axios.post('/api/admin/dcs/allot', {
-          targetEmpId: targetUserId,
-          targetEmpName: targetName,
-          doctorIds: selectedDocIds,
-          chemistIds: selectedChemIds,
-          stockistIds: selectedStkIds
-        });
-        setActionMsg({ type: 'success', text: res.data.message || 'Records allotted successfully!' });
+        if (mode === 'hq') {
+          if (!targetHq) {
+            alert('Please select a Target Headquarter.');
+            setActionLoading(false);
+            return;
+          }
+          if (totalSelectedCount === 0) {
+            alert('Please select at least one record to allot to ' + targetHq + '.');
+            setActionLoading(false);
+            return;
+          }
+
+          if (!window.confirm(`Allot ${totalSelectedCount} selected record(s) to Headquarter "${targetHq}"?`)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/allot-hq', {
+            targetHq,
+            doctorIds: selectedDocIds,
+            chemistIds: selectedChemIds,
+            stockistIds: selectedStkIds
+          });
+          setActionMsg({ type: 'success', text: res.data.message || `Records allotted to HQ "${targetHq}" successfully!` });
+        } else {
+          // User mode
+          if (!targetUserId) {
+            alert('Please select a Target User.');
+            setActionLoading(false);
+            return;
+          }
+          if (totalSelectedCount === 0) {
+            alert('Please select at least one record to allot.');
+            setActionLoading(false);
+            return;
+          }
+
+          const targetUserObj = users.find(u => u.employeeId === targetUserId || u._id === targetUserId);
+          const targetName = targetUserObj ? `${targetUserObj.firstName || ''} ${targetUserObj.lastName || ''}`.trim() : targetUserId;
+
+          if (!window.confirm(`Allot ${totalSelectedCount} selected record(s) to ${targetName} (${targetUserId})?`)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/allot', {
+            targetEmpId: targetUserId,
+            targetEmpName: targetName,
+            doctorIds: selectedDocIds,
+            chemistIds: selectedChemIds,
+            stockistIds: selectedStkIds
+          });
+          setActionMsg({ type: 'success', text: res.data.message || 'Records allotted successfully!' });
+        }
+
         setSelectedDocIds([]);
         setSelectedChemIds([]);
         setSelectedStkIds([]);
@@ -1564,23 +1700,60 @@ export default function ManageDCS() {
       }
     };
 
-    const handleDeallotSubmit = async () => {
-      if (totalSelectedCount === 0) {
-        alert('Please select at least one record to de-allot.');
-        return;
-      }
-
-      if (!window.confirm(`De-allot ${totalSelectedCount} selected record(s)? They will become unassigned.`)) return;
-
+    const handleDeallotSubmit = async (releaseAllHq = false) => {
       setActionLoading(true);
       setActionMsg(null);
       try {
-        const res = await axios.post('/api/admin/dcs/deallot', {
-          doctorIds: selectedDocIds,
-          chemistIds: selectedChemIds,
-          stockistIds: selectedStkIds
-        });
-        setActionMsg({ type: 'success', text: res.data.message || 'Records de-allotted successfully!' });
+        if (mode === 'hq') {
+          if (!sourceHq) {
+            alert('Please select a Headquarter.');
+            setActionLoading(false);
+            return;
+          }
+          if (!releaseAllHq && totalSelectedCount === 0) {
+            alert('Please select at least one record to release.');
+            setActionLoading(false);
+            return;
+          }
+
+          const confirmMsg = releaseAllHq
+            ? `Release ALL personal locks on records in HQ "${sourceHq}"?\n\nThis will clear any old rep locks so anyone assigned to "${sourceHq}" sees all records.`
+            : `Release user locks for ${totalSelectedCount} selected record(s) in HQ "${sourceHq}"?`;
+
+          if (!window.confirm(confirmMsg)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/release-to-hq', {
+            hq: sourceHq,
+            doctorIds: releaseAllHq ? [] : selectedDocIds,
+            chemistIds: releaseAllHq ? [] : selectedChemIds,
+            stockistIds: releaseAllHq ? [] : selectedStkIds,
+            releaseAll: releaseAllHq
+          });
+          setActionMsg({ type: 'success', text: res.data.message || 'Records released to open HQ pool successfully!' });
+        } else {
+          // User mode
+          if (totalSelectedCount === 0) {
+            alert('Please select at least one record to de-allot.');
+            setActionLoading(false);
+            return;
+          }
+
+          if (!window.confirm(`De-allot ${totalSelectedCount} selected record(s)? They will become unassigned.`)) {
+            setActionLoading(false);
+            return;
+          }
+
+          const res = await axios.post('/api/admin/dcs/deallot', {
+            doctorIds: selectedDocIds,
+            chemistIds: selectedChemIds,
+            stockistIds: selectedStkIds
+          });
+          setActionMsg({ type: 'success', text: res.data.message || 'Records de-allotted successfully!' });
+        }
+
         setSelectedDocIds([]);
         setSelectedChemIds([]);
         setSelectedStkIds([]);
@@ -1595,37 +1768,75 @@ export default function ManageDCS() {
     if (!subTab) {
       return (
         <div className="flex-1 min-w-0 overflow-auto p-6 md:p-8 relative z-10">
-          <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">DOC / CHEM / STK LIST MANAGEMENT</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-wide uppercase">DOC / CHEM / STK LIST MANAGEMENT</h2>
+              <p className="text-xs text-slate-400 mt-1">Manage territorial allocation, transfer accounts between Headquarters or Representatives, and clear locks.</p>
+            </div>
+            {/* Global Mode Switcher Preview */}
+            <div className="inline-flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 self-start sm:self-auto">
+              <button
+                onClick={() => setMode('hq')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mode === 'hq' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <MapPin size={13} />
+                <span>HQ-Wise Mode (Recommended)</span>
+              </button>
+              <button
+                onClick={() => setMode('user')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mode === 'user' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Users size={13} />
+                <span>Employee-Wise</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <button 
-              onClick={() => { setSubTab('allot'); setTargetUserId(''); setSourceUserId(''); }} 
+              onClick={() => { setSubTab('allot'); setSourceHq(''); setTargetHq(''); setTargetUserId(''); setSourceUserId(''); }} 
               className="bg-slate-800/80 border border-slate-700 hover:border-sky-500 hover:bg-slate-800 rounded-2xl p-10 flex flex-col items-center gap-6 transition-all shadow-xl group text-center"
             >
               <div className="w-20 h-20 bg-slate-700 group-hover:bg-sky-500/20 rounded-full flex items-center justify-center transition-colors">
                 <Users size={32} className="text-white group-hover:text-sky-400" />
               </div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider">ALLOT DCS</h3>
-              <p className="text-xs text-slate-400">Assign unallocated doctors, chemists, and stockists to field representatives.</p>
+              <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-wider">ALLOT DCS</h3>
+                <span className="text-[10px] text-sky-400 font-bold uppercase tracking-widest block mt-1">Assign to HQ or User</span>
+              </div>
+              <p className="text-xs text-slate-400">Assign unallocated doctors, chemists, and stockists directly to a Headquarter territory or representative.</p>
             </button>
+
             <button 
-              onClick={() => { setSubTab('deallot'); setSourceUserId(''); setTargetUserId(''); }} 
+              onClick={() => { setSubTab('deallot'); setSourceHq(''); setTargetHq(''); setSourceUserId(''); setTargetUserId(''); }} 
               className="bg-slate-800/80 border border-slate-700 hover:border-rose-500 hover:bg-slate-800 rounded-2xl p-10 flex flex-col items-center gap-6 transition-all shadow-xl group text-center"
             >
               <div className="w-20 h-20 bg-slate-700 group-hover:bg-rose-500/20 rounded-full flex items-center justify-center transition-colors">
                 <UserMinus size={32} className="text-white group-hover:text-rose-400" />
               </div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider">DE-ALLOT DCS</h3>
-              <p className="text-xs text-slate-400">Unassign DCS records from an employee to return them to the open pool.</p>
+              <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-wider">DE-ALLOT / RELEASE</h3>
+                <span className="text-[10px] text-rose-400 font-bold uppercase tracking-widest block mt-1">Clear Rep Locks to HQ Pool</span>
+              </div>
+              <p className="text-xs text-slate-400">Release personal rep locks so doctors belong purely to the HQ territory for any current or incoming staff.</p>
             </button>
+
             <button 
-              onClick={() => { setSubTab('transfer'); setSourceUserId(''); setTargetUserId(''); }} 
+              onClick={() => { setSubTab('transfer'); setSourceHq(''); setTargetHq(''); setSourceUserId(''); setTargetUserId(''); }} 
               className="bg-slate-800/80 border border-slate-700 hover:border-emerald-500 hover:bg-slate-800 rounded-2xl p-10 flex flex-col items-center gap-6 transition-all shadow-xl group text-center"
             >
               <div className="w-20 h-20 bg-slate-700 group-hover:bg-emerald-500/20 rounded-full flex items-center justify-center transition-colors">
                 <ArrowRightLeft size={32} className="text-white group-hover:text-emerald-400" />
               </div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider">TRANSFER DCS</h3>
-              <p className="text-xs text-slate-400">Reassign territorial accounts from an outgoing employee to a new representative.</p>
+              <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-wider">TRANSFER DCS</h3>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest block mt-1">Source HQ → Target HQ</span>
+              </div>
+              <p className="text-xs text-slate-400">Transfer accounts from Source HQ to Target HQ, or reassign from an outgoing employee to a new hire.</p>
             </button>
           </div>
         </div>
@@ -1638,25 +1849,51 @@ export default function ManageDCS() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => { setSubTab(''); setSourceUserId(''); setTargetUserId(''); setActionMsg(null); }} 
+              onClick={() => { setSubTab(''); setSourceHq(''); setTargetHq(''); setSourceUserId(''); setTargetUserId(''); setActionMsg(null); }} 
               className="text-sky-400 font-bold hover:underline flex items-center gap-2 text-sm"
             >
               <ArrowLeft size={16} /> Back To Management
             </button>
             <span className="text-slate-600">/</span>
             <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-              {subTab === 'allot' && 'ALLOT DCS TO USER'}
-              {subTab === 'deallot' && 'DE-ALLOT DCS FROM USER'}
-              {subTab === 'transfer' && 'TRANSFER DCS (SOURCE → TARGET USER)'}
+              {subTab === 'allot' && (mode === 'hq' ? 'ALLOT DCS TO HEADQUARTER' : 'ALLOT DCS TO USER')}
+              {subTab === 'deallot' && (mode === 'hq' ? 'RELEASE DCS USER LOCKS IN HQ' : 'DE-ALLOT DCS FROM USER')}
+              {subTab === 'transfer' && (mode === 'hq' ? 'TRANSFER DCS (SOURCE HQ → TARGET HQ)' : 'TRANSFER DCS (SOURCE → TARGET USER)')}
             </span>
           </div>
 
-          <button 
-            onClick={fetchData} 
-            className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
-          >
-            <RefreshCw size={13} /> Refresh Lists
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Mode Toggle inside subTab */}
+            <div className="inline-flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+              <button
+                onClick={() => setMode('hq')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mode === 'hq' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="HQ-Wise territory management"
+              >
+                <MapPin size={12} />
+                <span>HQ-Wise</span>
+              </button>
+              <button
+                onClick={() => setMode('user')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mode === 'user' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Employee-specific management"
+              >
+                <Users size={12} />
+                <span>By Employee</span>
+              </button>
+            </div>
+
+            <button 
+              onClick={fetchData} 
+              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+            >
+              <RefreshCw size={13} /> Refresh
+            </button>
+          </div>
         </div>
 
         {/* Action notification banner */}
@@ -1674,63 +1911,142 @@ export default function ManageDCS() {
           </div>
         )}
 
-        {/* Top Selection Box: Searchable User Dropdowns */}
+        {/* Top Selection Box */}
         <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
-            {/* User Dropdown(s) */}
-            <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              {/* For Transfer or De-Allot: Source User / Select User */}
-              {(subTab === 'transfer' || subTab === 'deallot') && (
-                <div className="flex-1 max-w-sm">
-                  <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5 block">
-                    {subTab === 'transfer' ? 'Select Source User *' : 'Select User *'}
-                  </label>
-                  <CustomUserSelect 
-                    users={users} 
-                    selectedUser={sourceUserId} 
-                    onChange={val => setSourceUserId(val)}
-                    placeholder={subTab === 'transfer' ? 'Select Source User...' : 'Select User...'}
-                  />
-                </div>
-              )}
-
-              {/* Middle Transfer Arrow */}
-              {subTab === 'transfer' && (
-                <div className="hidden sm:flex flex-col items-center justify-center pt-5 shrink-0 px-2 text-slate-500">
-                  <ArrowRightLeft size={22} className="text-emerald-400 animate-pulse" />
-                </div>
-              )}
-
-              {/* For Transfer or Allot: Target User */}
-              {(subTab === 'transfer' || subTab === 'allot') && (
-                <div className="flex-1 max-w-sm">
-                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 block">
-                    Select Target User *
-                  </label>
-                  <CustomUserSelect 
-                    users={users} 
-                    selectedUser={targetUserId} 
-                    onChange={val => setTargetUserId(val)}
-                    placeholder="Select Target User..."
-                  />
-                </div>
-              )}
-
-              {/* If Allot: Option for unallotted vs all */}
-              {subTab === 'allot' && (
-                <div className="flex flex-col justify-end pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={unallottedOnly} 
-                      onChange={e => setUnallottedOnly(e.target.checked)}
-                      className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
-                    />
-                    <span className="font-semibold text-xs">Unallotted DCS Only</span>
-                  </label>
-                </div>
-              )}
+          {/* Explanation pill for HQ mode */}
+          {mode === 'hq' && (
+            <div className="flex items-center gap-2 text-xs text-sky-300 bg-sky-950/40 border border-sky-800/50 px-3.5 py-2 rounded-xl">
+              <MapPin size={14} className="text-sky-400 shrink-0" />
+              <span>
+                <strong>Headquarter Territory Mode:</strong> Doctors belong to their HQ. Anyone assigned to this HQ automatically sees all doctors.
+              </span>
             </div>
+          )}
+
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
+            {/* HQ-WISE CONTROLS */}
+            {mode === 'hq' ? (
+              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                {/* For Transfer or De-Allot: Source HQ */}
+                {(subTab === 'transfer' || subTab === 'deallot') && (
+                  <div className="flex-1 max-w-sm">
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5 block">
+                      {subTab === 'transfer' ? 'Select Source Headquarter *' : 'Select Headquarter *'}
+                    </label>
+                    <CustomHqSelect
+                      hqs={hqs}
+                      selectedHq={sourceHq}
+                      onChange={setSourceHq}
+                      countMap={hqCountMap}
+                      placeholder={subTab === 'transfer' ? 'Select Source HQ...' : 'Select Headquarter...'}
+                    />
+                  </div>
+                )}
+
+                {/* Middle Transfer Arrow */}
+                {subTab === 'transfer' && (
+                  <div className="hidden sm:flex flex-col items-center justify-center pt-5 shrink-0 px-2 text-slate-500">
+                    <ArrowRightLeft size={22} className="text-emerald-400 animate-pulse" />
+                  </div>
+                )}
+
+                {/* For Transfer or Allot: Target HQ */}
+                {(subTab === 'transfer' || subTab === 'allot') && (
+                  <div className="flex-1 max-w-sm">
+                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 block">
+                      Select Target Headquarter *
+                    </label>
+                    <CustomHqSelect
+                      hqs={hqs}
+                      selectedHq={targetHq}
+                      onChange={setTargetHq}
+                      countMap={hqCountMap}
+                      placeholder="Select Target HQ..."
+                    />
+                  </div>
+                )}
+
+                {/* Checkbox Options */}
+                {subTab === 'transfer' && (
+                  <div className="flex flex-col justify-end pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={clearUserLocks} 
+                        onChange={e => setClearUserLocks(e.target.checked)}
+                        className="rounded accent-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="font-semibold text-xs text-emerald-300">Clear old user locks</span>
+                    </label>
+                  </div>
+                )}
+
+                {subTab === 'allot' && (
+                  <div className="flex flex-col justify-end pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={unallottedOnly} 
+                        onChange={e => setUnallottedOnly(e.target.checked)}
+                        className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="font-semibold text-xs">Unassigned HQ Only</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* USER-WISE CONTROLS */
+              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                {(subTab === 'transfer' || subTab === 'deallot') && (
+                  <div className="flex-1 max-w-sm">
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5 block">
+                      {subTab === 'transfer' ? 'Select Source User *' : 'Select User *'}
+                    </label>
+                    <CustomUserSelect 
+                      users={users} 
+                      selectedUser={sourceUserId} 
+                      onChange={setSourceUserId}
+                      placeholder={subTab === 'transfer' ? 'Select Source User...' : 'Select User...'}
+                    />
+                  </div>
+                )}
+
+                {subTab === 'transfer' && (
+                  <div className="hidden sm:flex flex-col items-center justify-center pt-5 shrink-0 px-2 text-slate-500">
+                    <ArrowRightLeft size={22} className="text-emerald-400 animate-pulse" />
+                  </div>
+                )}
+
+                {(subTab === 'transfer' || subTab === 'allot') && (
+                  <div className="flex-1 max-w-sm">
+                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 block">
+                      Select Target User *
+                    </label>
+                    <CustomUserSelect 
+                      users={users} 
+                      selectedUser={targetUserId} 
+                      onChange={setTargetUserId}
+                      placeholder="Select Target User..."
+                    />
+                  </div>
+                )}
+
+                {subTab === 'allot' && (
+                  <div className="flex flex-col justify-end pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={unallottedOnly} 
+                        onChange={e => setUnallottedOnly(e.target.checked)}
+                        className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="font-semibold text-xs">Unallotted DCS Only</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex items-center gap-3 shrink-0 self-end lg:self-center">
@@ -1738,7 +2054,7 @@ export default function ManageDCS() {
                 <>
                   <button
                     onClick={() => handleTransferSubmit(false)}
-                    disabled={actionLoading || !sourceUserId || !targetUserId || totalSelectedCount === 0}
+                    disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq) : (!sourceUserId || !targetUserId)) || totalSelectedCount === 0}
                     className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
                   >
                     <ArrowRightLeft size={16} />
@@ -1746,9 +2062,9 @@ export default function ManageDCS() {
                   </button>
                   <button
                     onClick={() => handleTransferSubmit(true)}
-                    disabled={actionLoading || !sourceUserId || !targetUserId || (docList.length + chemList.length + stkList.length === 0)}
+                    disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq || (docList.length + chemList.length + stkList.length === 0)) : (!sourceUserId || !targetUserId || (docList.length + chemList.length + stkList.length === 0)))}
                     className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2"
-                    title="Transfer all doctors, chemists, and stockists allotted to Source User"
+                    title={mode === 'hq' ? `Transfer all records in ${sourceHq} to ${targetHq}` : 'Transfer all records allotted to Source User'}
                   >
                     <span>Transfer All ({docList.length + chemList.length + stkList.length})</span>
                   </button>
@@ -1758,7 +2074,7 @@ export default function ManageDCS() {
               {subTab === 'allot' && (
                 <button
                   onClick={handleAllotSubmit}
-                  disabled={actionLoading || !targetUserId || totalSelectedCount === 0}
+                  disabled={actionLoading || (mode === 'hq' ? !targetHq : !targetUserId) || totalSelectedCount === 0}
                   className="bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500 text-white font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-sky-500/20 active:scale-95 flex items-center gap-2"
                 >
                   <Check size={16} />
@@ -1767,14 +2083,26 @@ export default function ManageDCS() {
               )}
 
               {subTab === 'deallot' && (
-                <button
-                  onClick={handleDeallotSubmit}
-                  disabled={actionLoading || totalSelectedCount === 0}
-                  className="bg-rose-500 hover:bg-rose-400 disabled:opacity-40 disabled:hover:bg-rose-500 text-white font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-rose-500/20 active:scale-95 flex items-center gap-2"
-                >
-                  <UserMinus size={16} />
-                  <span>De-Allot Selected ({totalSelectedCount})</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => handleDeallotSubmit(false)}
+                    disabled={actionLoading || totalSelectedCount === 0}
+                    className="bg-rose-500 hover:bg-rose-400 disabled:opacity-40 disabled:hover:bg-rose-500 text-white font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-rose-500/20 active:scale-95 flex items-center gap-2"
+                  >
+                    <UserMinus size={16} />
+                    <span>{mode === 'hq' ? 'Release Selected Locks' : 'De-Allot Selected'} ({totalSelectedCount})</span>
+                  </button>
+                  {mode === 'hq' && (
+                    <button
+                      onClick={() => handleDeallotSubmit(true)}
+                      disabled={actionLoading || !sourceHq || (docList.length + chemList.length + stkList.length === 0)}
+                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2"
+                      title="Clear all employee locks in this HQ so doctors belong to the open HQ pool"
+                    >
+                      <span>Release All in HQ ({docList.length + chemList.length + stkList.length})</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1814,7 +2142,7 @@ export default function ManageDCS() {
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Filter by name, HQ, area, specialization..."
+              placeholder="Filter by name, HQ, area, specialization, user..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:border-sky-500 transition-colors placeholder:text-slate-500 font-medium"
@@ -1840,7 +2168,7 @@ export default function ManageDCS() {
                   <th className="py-3 px-4">Name / Business Details</th>
                   <th className="py-3 px-4">Headquarter</th>
                   <th className="py-3 px-4">Working Area</th>
-                  <th className="py-3 px-4">Current Allotment</th>
+                  <th className="py-3 px-4">Territory / User Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/60 text-xs">
@@ -1879,19 +2207,24 @@ export default function ManageDCS() {
                         <div className="text-[11px] text-slate-400">{item.sub}</div>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-300">
-                        {item.hq}
+                        <div className="flex items-center gap-1.5">
+                          <MapPin size={12} className="text-emerald-400 shrink-0" />
+                          <span>{item.hq}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-slate-400">
                         {item.area}
                       </td>
                       <td className="py-3 px-4">
                         {item.userAllotted ? (
-                          <span className="text-[11px] font-semibold text-sky-300 bg-sky-950/60 border border-sky-800/60 px-2 py-0.5 rounded-md inline-block">
-                            {item.userAllotted}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md inline-block">
+                              Locked: {item.userAllotted}
+                            </span>
+                          </div>
                         ) : (
-                          <span className="text-[11px] font-medium text-slate-500 italic">
-                            Unassigned
+                          <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded-md inline-block">
+                            Open HQ Pool
                           </span>
                         )}
                       </td>
@@ -1902,16 +2235,20 @@ export default function ManageDCS() {
                 {visibleItems.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
-                      {(subTab === 'transfer' || subTab === 'deallot') && !sourceUserId ? (
+                      {(subTab === 'transfer' || subTab === 'deallot') && (mode === 'hq' ? !sourceHq : !sourceUserId) ? (
                         <div className="flex flex-col items-center justify-center gap-2">
-                          <Users size={28} className="text-slate-600 mb-1" />
-                          <span className="font-bold text-slate-300">Please select a user from the dropdown above.</span>
-                          <span className="text-xs text-slate-500">Their currently allotted doctors, chemists, and stockists will display here.</span>
+                          {mode === 'hq' ? <MapPin size={28} className="text-slate-600 mb-1" /> : <Users size={28} className="text-slate-600 mb-1" />}
+                          <span className="font-bold text-slate-300">
+                            Please select a {mode === 'hq' ? 'Headquarter' : 'User'} from the dropdown above.
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {mode === 'hq' ? 'All doctors, chemists, and stockists tagged to that HQ will be displayed.' : 'Their currently allotted accounts will display here.'}
+                          </span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center gap-1">
                           <span className="font-bold text-slate-300">No records found.</span>
-                          <span className="text-xs text-slate-500">Try adjusting your search query or type filters.</span>
+                          <span className="text-xs text-slate-500">Try adjusting your search query, type filters, or unassigned toggle.</span>
                         </div>
                       )}
                     </td>

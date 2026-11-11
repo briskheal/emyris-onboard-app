@@ -34,6 +34,11 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
 
   const getDisplayName = (u: any) => u.name || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.employeeId || 'User';
 
+  const isDeactivated = (u: any) => {
+    const s = (u.status || '').toLowerCase();
+    return s === 'deactivated' || s === 'inactive' || s === 'blocked' || Boolean(u.isLocked);
+  };
+
   const selectedData = users.find(u => u.employeeId === selectedUser || u._id === selectedUser);
 
   const filteredUsers = searchTerm
@@ -42,8 +47,9 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
         const role = (u.designation || '').toLowerCase();
         const empId = (u.employeeId || '').toLowerCase();
         const hq = (u.hq || '').toLowerCase();
+        const status = (u.status || '').toLowerCase();
         const q = searchTerm.toLowerCase();
-        return name.includes(q) || role.includes(q) || empId.includes(q) || hq.includes(q);
+        return name.includes(q) || role.includes(q) || empId.includes(q) || hq.includes(q) || status.includes(q);
       })
     : users;
 
@@ -77,9 +83,16 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
                 )}
               </div>
               <div className="flex flex-col overflow-hidden w-full">
-                <span className="text-xs md:text-sm font-bold text-white truncate">
-                  {getDisplayName(selectedData)}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs md:text-sm font-bold text-white truncate">
+                    {getDisplayName(selectedData)}
+                  </span>
+                  {isDeactivated(selectedData) && (
+                    <span className="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1 py-0.2 rounded font-black shrink-0">
+                      DEACTIVATED
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-wider leading-tight">
                   {selectedData.employeeId}{selectedData.hq ? ` • ${selectedData.hq}` : ''}{selectedData.designation ? ` • ${selectedData.designation}` : ''}
                 </span>
@@ -98,6 +111,7 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
             {filteredUsers.map(u => {
               const uId = u.employeeId || u._id;
               const isSelected = selectedUser === uId || selectedUser === u.employeeId;
+              const deactivated = isDeactivated(u);
               return (
                 <div
                   key={uId}
@@ -108,13 +122,20 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
                     {u.profilePic ? (
                       <img src={u.profilePic} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <User size={14} className="text-slate-300" />
+                      <User size={14} className={deactivated ? 'text-rose-400' : 'text-slate-300'} />
                     )}
                   </div>
                   <div className="flex flex-col flex-1 overflow-hidden">
-                    <span className="text-xs md:text-sm font-bold text-white truncate">
-                      {getDisplayName(u)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs md:text-sm font-bold text-white truncate">
+                        {getDisplayName(u)}
+                      </span>
+                      {deactivated && (
+                        <span className="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1 py-0.2 rounded font-black shrink-0">
+                          DEACTIVATED
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-wider">
                       {u.employeeId}{u.hq ? ` • ${u.hq}` : ''}{u.designation ? ` • ${u.designation}` : ''}
                     </span>
