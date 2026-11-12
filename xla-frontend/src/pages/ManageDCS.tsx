@@ -2083,7 +2083,11 @@ export default function ManageDCS() {
                   <button
                     onClick={() => handleTransferSubmit(false)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq) : (!sourceUserId || !targetUserId)) || totalSelectedCount === 0}
-                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
+                    className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all flex items-center gap-2 shadow-sm ${
+                      (mode === 'hq' ? (sourceHq && targetHq) : (sourceUserId && targetUserId)) && totalSelectedCount > 0
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 border border-emerald-400/40 cursor-pointer active:scale-95'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700/80 cursor-not-allowed opacity-80'
+                    }`}
                   >
                     <ArrowRightLeft size={15} />
                     <span>Transfer Selected ({totalSelectedCount})</span>
@@ -2091,7 +2095,11 @@ export default function ManageDCS() {
                   <button
                     onClick={() => handleTransferSubmit(true)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq || (docList.length + chemList.length + stkList.length === 0)) : (!sourceUserId || !targetUserId || (docList.length + chemList.length + stkList.length === 0)))}
-                    className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
+                    className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-sm ${
+                      (mode === 'hq' ? (sourceHq && targetHq && (docList.length + chemList.length + stkList.length > 0)) : (sourceUserId && targetUserId && (docList.length + chemList.length + stkList.length > 0)))
+                        ? 'bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white cursor-pointer active:scale-95'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700/80 cursor-not-allowed opacity-80'
+                    }`}
                     title={mode === 'hq' ? `Transfer all records in ${sourceHq} to ${targetHq}` : 'Transfer all records allotted to Source User'}
                   >
                     <span>Transfer All ({docList.length + chemList.length + stkList.length})</span>
@@ -2103,7 +2111,11 @@ export default function ManageDCS() {
                 <button
                   onClick={handleAllotSubmit}
                   disabled={actionLoading || (mode === 'hq' ? !targetHq : !targetUserId) || totalSelectedCount === 0}
-                  className="bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500 text-white font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-sky-500/20 active:scale-95 flex items-center gap-2"
+                  className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all flex items-center gap-2 shadow-sm ${
+                    (mode === 'hq' ? Boolean(targetHq) : Boolean(targetUserId)) && totalSelectedCount > 0
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sky-900/40 border border-sky-400/40 cursor-pointer active:scale-95'
+                      : 'bg-slate-800 text-slate-500 border border-slate-700/80 cursor-not-allowed opacity-80'
+                  }`}
                 >
                   <Check size={15} />
                   <span>Allot Selected ({totalSelectedCount})</span>
@@ -2115,7 +2127,11 @@ export default function ManageDCS() {
                   <button
                     onClick={() => handleDeallotSubmit(false)}
                     disabled={actionLoading || totalSelectedCount === 0}
-                    className="bg-rose-500 hover:bg-rose-400 disabled:opacity-40 disabled:hover:bg-rose-500 text-white font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-rose-500/20 active:scale-95 flex items-center gap-2"
+                    className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all flex items-center gap-2 shadow-sm ${
+                      totalSelectedCount > 0
+                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/40 border border-rose-400/40 cursor-pointer active:scale-95'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700/80 cursor-not-allowed opacity-80'
+                    }`}
                   >
                     <UserMinus size={15} />
                     <span>{mode === 'hq' ? 'Release Selected Locks' : 'De-Allot Selected'} ({totalSelectedCount})</span>
@@ -2124,7 +2140,11 @@ export default function ManageDCS() {
                     <button
                       onClick={() => handleDeallotSubmit(true)}
                       disabled={actionLoading || !sourceHq || (docList.length + chemList.length + stkList.length === 0)}
-                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
+                      className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-sm ${
+                        sourceHq && (docList.length + chemList.length + stkList.length > 0)
+                          ? 'bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white cursor-pointer active:scale-95'
+                          : 'bg-slate-800 text-slate-500 border border-slate-700/80 cursor-not-allowed opacity-80'
+                      }`}
                       title="Clear all employee locks in this HQ so doctors belong to the open HQ pool"
                     >
                       <span>Release All in HQ ({docList.length + chemList.length + stkList.length})</span>
