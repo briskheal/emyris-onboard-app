@@ -1460,7 +1460,7 @@ export default function ManageDCS() {
       const items: { id: string, type: 'Doctor' | 'Chemist' | 'Stockist', name: string, sub: string, hq: string, area: string, userAllotted?: string }[] = [];
       if (entityType === 'All' || entityType === 'Doctor') {
         docList.forEach(d => items.push({
-          id: d._id,
+          id: d._id || d.id || `${d.name}-${Math.random()}`,
           type: 'Doctor',
           name: d.name,
           sub: d.specialization || d.degree || d.category || 'Doctor',
@@ -1471,7 +1471,7 @@ export default function ManageDCS() {
       }
       if (entityType === 'All' || entityType === 'Chemist') {
         chemList.forEach(c => items.push({
-          id: c._id,
+          id: c._id || c.id || `${c.businessName || c.proprietorName}-${Math.random()}`,
           type: 'Chemist',
           name: c.businessName || c.proprietorName || 'Chemist',
           sub: c.proprietorName ? `Prop: ${c.proprietorName}` : 'Retail Outlet',
@@ -1482,7 +1482,7 @@ export default function ManageDCS() {
       }
       if (entityType === 'All' || entityType === 'Stockist') {
         stkList.forEach(s => items.push({
-          id: s._id,
+          id: s._id || s.id || `${s.businessName || s.name}-${Math.random()}`,
           type: 'Stockist',
           name: s.businessName || s.name || 'Stockist',
           sub: s.name ? `Contact: ${s.name}` : 'Distributor',
@@ -1919,11 +1919,11 @@ export default function ManageDCS() {
         )}
 
         {/* Top Selection Box */}
-        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 sm:p-4 shadow-lg space-y-3 shrink-0">
           {/* Explanation pill for HQ mode */}
           {mode === 'hq' && (
-            <div className="flex items-center gap-2 text-xs text-sky-300 bg-sky-950/40 border border-sky-800/50 px-3.5 py-2.5 rounded-xl">
-              <MapPin size={15} className="text-sky-400 shrink-0" />
+            <div className="flex items-center gap-2 text-xs text-sky-300 bg-sky-950/40 border border-sky-800/40 px-3 py-1.5 rounded-lg">
+              <MapPin size={14} className="text-sky-400 shrink-0" />
               <span>
                 <strong>Headquarter Territory Mode:</strong> Doctors belong directly to their HQ territory. Representatives assigned to this HQ automatically inherit these doctors.
               </span>
@@ -1931,7 +1931,7 @@ export default function ManageDCS() {
           )}
 
           {/* ROW 1: SELECTORS & OPTIONS */}
-          <div className="flex flex-wrap items-end gap-4 lg:gap-6">
+          <div className="flex flex-wrap items-end gap-3 lg:gap-4">
             {mode === 'hq' ? (
               <>
                 {/* For Transfer or De-Allot: Source HQ */}
@@ -2064,8 +2064,8 @@ export default function ManageDCS() {
             )}
           </div>
 
-          {/* ROW 2: ACTION BAR (SEPARATED, SPACIOUS, PROMINENT) */}
-          <div className="border-t border-slate-700/60 pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          {/* ROW 2: ACTION BAR (SEPARATED, COMPACT, PROMINENT) */}
+          <div className="border-t border-slate-700/60 pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
                 Selected: <strong className="text-white font-bold">{totalSelectedCount}</strong> record(s)
@@ -2077,21 +2077,21 @@ export default function ManageDCS() {
               )}
             </div>
 
-            <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
               {subTab === 'transfer' && (
                 <>
                   <button
                     onClick={() => handleTransferSubmit(false)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq) : (!sourceUserId || !targetUserId)) || totalSelectedCount === 0}
-                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
+                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
                   >
-                    <ArrowRightLeft size={16} />
+                    <ArrowRightLeft size={15} />
                     <span>Transfer Selected ({totalSelectedCount})</span>
                   </button>
                   <button
                     onClick={() => handleTransferSubmit(true)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq || (docList.length + chemList.length + stkList.length === 0)) : (!sourceUserId || !targetUserId || (docList.length + chemList.length + stkList.length === 0)))}
-                    className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
+                    className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
                     title={mode === 'hq' ? `Transfer all records in ${sourceHq} to ${targetHq}` : 'Transfer all records allotted to Source User'}
                   >
                     <span>Transfer All ({docList.length + chemList.length + stkList.length})</span>
@@ -2103,9 +2103,9 @@ export default function ManageDCS() {
                 <button
                   onClick={handleAllotSubmit}
                   disabled={actionLoading || (mode === 'hq' ? !targetHq : !targetUserId) || totalSelectedCount === 0}
-                  className="bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500 text-white font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-sky-500/20 active:scale-95 flex items-center gap-2"
+                  className="bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500 text-white font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-sky-500/20 active:scale-95 flex items-center gap-2"
                 >
-                  <Check size={16} />
+                  <Check size={15} />
                   <span>Allot Selected ({totalSelectedCount})</span>
                 </button>
               )}
@@ -2115,16 +2115,16 @@ export default function ManageDCS() {
                   <button
                     onClick={() => handleDeallotSubmit(false)}
                     disabled={actionLoading || totalSelectedCount === 0}
-                    className="bg-rose-500 hover:bg-rose-400 disabled:opacity-40 disabled:hover:bg-rose-500 text-white font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-rose-500/20 active:scale-95 flex items-center gap-2"
+                    className="bg-rose-500 hover:bg-rose-400 disabled:opacity-40 disabled:hover:bg-rose-500 text-white font-black px-5 py-2 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-rose-500/20 active:scale-95 flex items-center gap-2"
                   >
-                    <UserMinus size={16} />
+                    <UserMinus size={15} />
                     <span>{mode === 'hq' ? 'Release Selected Locks' : 'De-Allot Selected'} ({totalSelectedCount})</span>
                   </button>
                   {mode === 'hq' && (
                     <button
                       onClick={() => handleDeallotSubmit(true)}
                       disabled={actionLoading || !sourceHq || (docList.length + chemList.length + stkList.length === 0)}
-                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
+                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
                       title="Clear all employee locks in this HQ so doctors belong to the open HQ pool"
                     >
                       <span>Release All in HQ ({docList.length + chemList.length + stkList.length})</span>
@@ -2137,7 +2137,7 @@ export default function ManageDCS() {
         </div>
 
         {/* Filter bar & Search */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
           {/* Entity Type Tabs */}
           <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 rounded-xl shrink-0 overflow-x-auto">
             {(['All', 'Doctor', 'Chemist', 'Stockist'] as const).map(tab => {
@@ -2179,12 +2179,12 @@ export default function ManageDCS() {
         </div>
 
         {/* DCS Table / List */}
-        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden shadow-xl flex flex-col">
-          <div className="overflow-x-auto">
+        <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col flex-1 min-h-[360px]">
+          <div className="overflow-auto flex-1 max-h-[56vh] sm:max-h-[60vh]">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900/90 border-b border-slate-700 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-4 w-12 text-center">
+              <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-700 shadow-sm">
+                <tr className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="py-2.5 px-3.5 w-12 text-center bg-slate-900">
                     <input 
                       type="checkbox" 
                       onChange={handleSelectAllVisible}
@@ -2192,11 +2192,11 @@ export default function ManageDCS() {
                       className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
                     />
                   </th>
-                  <th className="py-3 px-4">Entity Type</th>
-                  <th className="py-3 px-4">Name / Business Details</th>
-                  <th className="py-3 px-4">Headquarter</th>
-                  <th className="py-3 px-4">Working Area</th>
-                  <th className="py-3 px-4">Territory / User Status</th>
+                  <th className="py-2.5 px-3.5 bg-slate-900">Entity Type</th>
+                  <th className="py-2.5 px-3.5 bg-slate-900">Name / Business Details</th>
+                  <th className="py-2.5 px-3.5 bg-slate-900">Headquarter</th>
+                  <th className="py-2.5 px-3.5 bg-slate-900">Working Area</th>
+                  <th className="py-2.5 px-3.5 bg-slate-900">Territory / User Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/60 text-xs">
@@ -2210,7 +2210,7 @@ export default function ManageDCS() {
                         isChecked ? 'bg-sky-500/10 hover:bg-sky-500/15' : 'hover:bg-slate-700/40'
                       }`}
                     >
-                      <td className="py-3 px-4 text-center" onClick={e => e.stopPropagation()}>
+                      <td className="py-2.5 px-3.5 text-center" onClick={e => e.stopPropagation()}>
                         <input 
                           type="checkbox" 
                           checked={isChecked}
@@ -2218,7 +2218,7 @@ export default function ManageDCS() {
                           className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
                         />
                       </td>
-                      <td className="py-3 px-4 font-semibold">
+                      <td className="py-2.5 px-3.5 font-semibold">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 border ${
                           item.type === 'Doctor' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' :
                           item.type === 'Chemist' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
@@ -2230,20 +2230,20 @@ export default function ManageDCS() {
                           <span>{item.type}</span>
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 px-3.5">
                         <div className="font-bold text-white text-xs sm:text-sm">{item.name}</div>
                         <div className="text-[11px] text-slate-400">{item.sub}</div>
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-300">
+                      <td className="py-2.5 px-3.5 font-semibold text-slate-300">
                         <div className="flex items-center gap-1.5">
                           <MapPin size={12} className="text-emerald-400 shrink-0" />
                           <span>{item.hq}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-400">
+                      <td className="py-2.5 px-3.5 text-slate-400">
                         {item.area}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 px-3.5">
                         {item.userAllotted ? (
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md inline-block">
@@ -2289,7 +2289,7 @@ export default function ManageDCS() {
           </div>
 
           {/* Table Footer Summary */}
-          <div className="px-5 py-3 bg-slate-900 border-t border-slate-700/80 flex items-center justify-between text-xs text-slate-400">
+          <div className="px-4 py-2.5 bg-slate-900 border-t border-slate-700/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
             <span>Showing <strong className="text-white">{visibleItems.length}</strong> records</span>
             <span>Selected: <strong className="text-sky-400 font-bold">{totalSelectedCount}</strong> record(s)</span>
           </div>
