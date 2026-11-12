@@ -68,12 +68,12 @@ export default function CustomHqSelect({
     : uniqueHqs;
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full min-w-[240px]">
       <div
         onClick={() => setIsOpen(prev => !prev)}
         className={`w-full bg-[#1e243d] border ${
           isOpen ? 'border-sky-500 ring-2 ring-sky-500/30' : 'border-[#363e63]'
-        } text-slate-300 rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer hover:border-sky-400 transition-colors h-[42px]`}
+        } text-slate-300 rounded-xl px-3.5 py-1.5 flex items-center justify-between cursor-pointer hover:border-sky-400 transition-colors min-h-[44px]`}
       >
         <div className="flex items-center gap-2.5 w-full pr-2 overflow-hidden">
           {isOpen ? (
@@ -86,13 +86,13 @@ export default function CustomHqSelect({
                 onChange={e => setSearchTerm(e.target.value)}
                 onClick={e => e.stopPropagation()}
                 placeholder="Search HQ by name or state..."
-                className="w-full bg-transparent outline-none text-white placeholder:text-slate-400 font-semibold text-xs md:text-sm"
+                className="w-full bg-transparent outline-none text-white placeholder:text-slate-400 font-semibold text-xs md:text-sm pl-1"
               />
             </div>
           ) : selectedData ? (
             <>
-              <div className="w-6 h-6 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63]">
-                <MapPin size={13} className="text-emerald-400" />
+              <div className="w-7 h-7 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63]">
+                <MapPin size={14} className="text-emerald-400" />
               </div>
               <div className="flex flex-col overflow-hidden w-full">
                 <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export default function CustomHqSelect({
                     {getHqName(selectedData)}
                   </span>
                   {countMap && countMap[getHqName(selectedData).toLowerCase().trim()] !== undefined && (
-                    <span className="text-[10px] bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded-full font-mono">
+                    <span className="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded-full font-mono shrink-0">
                       {countMap[getHqName(selectedData).toLowerCase().trim()]} DCS
                     </span>
                   )}
@@ -113,7 +113,7 @@ export default function CustomHqSelect({
               </div>
             </>
           ) : (
-            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider">
+            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider truncate">
               {placeholder}
             </span>
           )}
@@ -127,7 +127,7 @@ export default function CustomHqSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-[#181f38] border border-[#363e63] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-72">
+        <div className="absolute top-full mt-1.5 left-0 min-w-[340px] w-full z-50 bg-[#181f38] border border-[#363e63] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-80">
           <div className="overflow-y-auto p-1.5 space-y-1">
             {filteredHqs.map(h => {
               const name = getHqName(h);
@@ -159,8 +159,8 @@ export default function CustomHqSelect({
                         {name}
                       </span>
                       {count !== undefined && (
-                        <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono border border-slate-700">
-                          {count} records
+                        <span className="text-[10px] bg-slate-800 text-sky-300 border border-slate-700 px-1.5 py-0.2 rounded-full font-mono shrink-0 ml-1.5">
+                          {count} DCS
                         </span>
                       )}
                     </div>
@@ -170,7 +170,7 @@ export default function CustomHqSelect({
                       </span>
                     )}
                   </div>
-                  {isSelected && <Check size={16} className="text-sky-400 shrink-0" />}
+                  {isSelected && <Check size={16} className="text-sky-400 shrink-0 ml-auto" />}
                 </div>
               );
             })}

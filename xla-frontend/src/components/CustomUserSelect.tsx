@@ -54,10 +54,10 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
     : users;
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full min-w-[240px]">
       <div
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full bg-[#1e243d] border ${isOpen ? 'border-sky-500 ring-2 ring-sky-500/30' : 'border-[#363e63]'} text-slate-300 rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer hover:border-sky-400 transition-colors h-[42px]`}
+        className={`w-full bg-[#1e243d] border ${isOpen ? 'border-sky-500 ring-2 ring-sky-500/30' : 'border-[#363e63]'} text-slate-300 rounded-xl px-3.5 py-1.5 flex items-center justify-between cursor-pointer hover:border-sky-400 transition-colors min-h-[44px]`}
       >
         <div className="flex items-center gap-2.5 w-full pr-2 overflow-hidden">
           {isOpen ? (
@@ -70,16 +70,16 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
                 onChange={e => setSearchTerm(e.target.value)}
                 onClick={e => e.stopPropagation()}
                 placeholder="Search user by name, ID, HQ..."
-                className="w-full bg-transparent outline-none text-white placeholder:text-slate-400 font-semibold text-xs md:text-sm"
+                className="w-full bg-transparent outline-none text-white placeholder:text-slate-400 font-semibold text-xs md:text-sm pl-1"
               />
             </div>
           ) : selectedData ? (
             <>
-              <div className="w-6 h-6 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63] overflow-hidden">
+              <div className="w-7 h-7 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63] overflow-hidden">
                 {selectedData.profilePic ? (
                   <img src={selectedData.profilePic} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={13} className="text-sky-400" />
+                  <User size={14} className="text-sky-400" />
                 )}
               </div>
               <div className="flex flex-col overflow-hidden w-full">
@@ -99,14 +99,14 @@ export default function CustomUserSelect({ users, selectedUser, onChange, placeh
               </div>
             </>
           ) : (
-            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider">{placeholder}</span>
+            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider truncate">{placeholder}</span>
           )}
         </div>
         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-sky-400' : ''}`} />
       </div>
 
       {isOpen && (
-        <div className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-[#181f38] border border-[#363e63] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-72">
+        <div className="absolute top-full mt-1.5 left-0 min-w-[340px] w-full z-50 bg-[#181f38] border border-[#363e63] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-80">
           <div className="overflow-y-auto p-1.5 space-y-1">
             {filteredUsers.map(u => {
               const uId = u.employeeId || u._id;

@@ -1851,7 +1851,7 @@ export default function ManageDCS() {
     }
 
     return (
-      <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 md:p-8 relative z-10 flex flex-col gap-6">
+      <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 relative z-10 flex flex-col gap-5 w-full">
         {/* Top Header & Breadcrumb */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
@@ -1919,64 +1919,68 @@ export default function ManageDCS() {
         )}
 
         {/* Top Selection Box */}
-        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
           {/* Explanation pill for HQ mode */}
           {mode === 'hq' && (
-            <div className="flex items-center gap-2 text-xs text-sky-300 bg-sky-950/40 border border-sky-800/50 px-3.5 py-2 rounded-xl">
-              <MapPin size={14} className="text-sky-400 shrink-0" />
+            <div className="flex items-center gap-2 text-xs text-sky-300 bg-sky-950/40 border border-sky-800/50 px-3.5 py-2.5 rounded-xl">
+              <MapPin size={15} className="text-sky-400 shrink-0" />
               <span>
-                <strong>Headquarter Territory Mode:</strong> Doctors belong to their HQ. Anyone assigned to this HQ automatically sees all doctors.
+                <strong>Headquarter Territory Mode:</strong> Doctors belong directly to their HQ territory. Representatives assigned to this HQ automatically inherit these doctors.
               </span>
             </div>
           )}
 
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
-            {/* HQ-WISE CONTROLS */}
+          {/* ROW 1: SELECTORS & OPTIONS */}
+          <div className="flex flex-wrap items-end gap-4 lg:gap-6">
             {mode === 'hq' ? (
-              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <>
                 {/* For Transfer or De-Allot: Source HQ */}
                 {(subTab === 'transfer' || subTab === 'deallot') && (
-                  <div className="flex-1 max-w-sm">
-                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5 block">
-                      {subTab === 'transfer' ? 'Select Source Headquarter *' : 'Select Headquarter *'}
+                  <div className="flex-1 min-w-[280px]">
+                    <label className="text-[11px] font-black text-sky-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <MapPin size={12} />
+                      <span>{subTab === 'transfer' ? 'Source Headquarter *' : 'Headquarter *'}</span>
                     </label>
                     <CustomHqSelect
                       hqs={hqs}
                       selectedHq={sourceHq}
                       onChange={setSourceHq}
                       countMap={hqCountMap}
-                      placeholder={subTab === 'transfer' ? 'Select Source HQ...' : 'Select Headquarter...'}
+                      placeholder={subTab === 'transfer' ? 'Select Source Headquarter...' : 'Select Headquarter...'}
                     />
                   </div>
                 )}
 
                 {/* Middle Transfer Arrow */}
                 {subTab === 'transfer' && (
-                  <div className="hidden sm:flex flex-col items-center justify-center pt-5 shrink-0 px-2 text-slate-500">
-                    <ArrowRightLeft size={22} className="text-emerald-400 animate-pulse" />
+                  <div className="hidden sm:flex flex-col items-center justify-center pb-2.5 shrink-0 px-1 text-slate-500">
+                    <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">
+                      <ArrowRightLeft size={16} className="text-emerald-400" />
+                    </div>
                   </div>
                 )}
 
                 {/* For Transfer or Allot: Target HQ */}
                 {(subTab === 'transfer' || subTab === 'allot') && (
-                  <div className="flex-1 max-w-sm">
-                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 block">
-                      Select Target Headquarter *
+                  <div className="flex-1 min-w-[280px]">
+                    <label className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <MapPin size={12} />
+                      <span>Target Headquarter *</span>
                     </label>
                     <CustomHqSelect
                       hqs={hqs}
                       selectedHq={targetHq}
                       onChange={setTargetHq}
                       countMap={hqCountMap}
-                      placeholder="Select Target HQ..."
+                      placeholder="Select Target Headquarter..."
                     />
                   </div>
                 )}
 
-                {/* Checkbox Options */}
+                {/* Options / Checkbox */}
                 {subTab === 'transfer' && (
-                  <div className="flex flex-col justify-end pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                  <div className="pb-0.5 shrink-0">
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-900/90 border border-slate-700 hover:border-emerald-500/50 px-4 py-2.5 rounded-xl text-xs text-slate-300 hover:text-white transition-all whitespace-nowrap h-[44px]">
                       <input 
                         type="checkbox" 
                         checked={clearUserLocks} 
@@ -1989,26 +1993,27 @@ export default function ManageDCS() {
                 )}
 
                 {subTab === 'allot' && (
-                  <div className="flex flex-col justify-end pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                  <div className="pb-0.5 shrink-0">
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-900/90 border border-slate-700 hover:border-sky-500/50 px-4 py-2.5 rounded-xl text-xs text-slate-300 hover:text-white transition-all whitespace-nowrap h-[44px]">
                       <input 
                         type="checkbox" 
                         checked={unallottedOnly} 
                         onChange={e => setUnallottedOnly(e.target.checked)}
                         className="rounded accent-sky-500 w-4 h-4 cursor-pointer"
                       />
-                      <span className="font-semibold text-xs">Unassigned HQ Only</span>
+                      <span className="font-semibold text-xs">Unassigned Only</span>
                     </label>
                   </div>
                 )}
-              </div>
+              </>
             ) : (
-              /* USER-WISE CONTROLS */
-              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              /* USER-WISE SELECTORS */
+              <>
                 {(subTab === 'transfer' || subTab === 'deallot') && (
-                  <div className="flex-1 max-w-sm">
-                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5 block">
-                      {subTab === 'transfer' ? 'Select Source User *' : 'Select User *'}
+                  <div className="flex-1 min-w-[280px]">
+                    <label className="text-[11px] font-black text-sky-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <Users size={12} />
+                      <span>{subTab === 'transfer' ? 'Source User *' : 'Select User *'}</span>
                     </label>
                     <CustomUserSelect 
                       users={users} 
@@ -2020,15 +2025,18 @@ export default function ManageDCS() {
                 )}
 
                 {subTab === 'transfer' && (
-                  <div className="hidden sm:flex flex-col items-center justify-center pt-5 shrink-0 px-2 text-slate-500">
-                    <ArrowRightLeft size={22} className="text-emerald-400 animate-pulse" />
+                  <div className="hidden sm:flex flex-col items-center justify-center pb-2.5 shrink-0 px-1 text-slate-500">
+                    <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">
+                      <ArrowRightLeft size={16} className="text-emerald-400" />
+                    </div>
                   </div>
                 )}
 
                 {(subTab === 'transfer' || subTab === 'allot') && (
-                  <div className="flex-1 max-w-sm">
-                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 block">
-                      Select Target User *
+                  <div className="flex-1 min-w-[280px]">
+                    <label className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <Users size={12} />
+                      <span>Target User *</span>
                     </label>
                     <CustomUserSelect 
                       users={users} 
@@ -2040,8 +2048,8 @@ export default function ManageDCS() {
                 )}
 
                 {subTab === 'allot' && (
-                  <div className="flex flex-col justify-end pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                  <div className="pb-0.5 shrink-0">
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-900/90 border border-slate-700 hover:border-sky-500/50 px-4 py-2.5 rounded-xl text-xs text-slate-300 hover:text-white transition-all whitespace-nowrap h-[44px]">
                       <input 
                         type="checkbox" 
                         checked={unallottedOnly} 
@@ -2052,17 +2060,30 @@ export default function ManageDCS() {
                     </label>
                   </div>
                 )}
-              </div>
+              </>
             )}
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 shrink-0 self-end lg:self-center">
+          {/* ROW 2: ACTION BAR (SEPARATED, SPACIOUS, PROMINENT) */}
+          <div className="border-t border-slate-700/60 pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                Selected: <strong className="text-white font-bold">{totalSelectedCount}</strong> record(s)
+              </span>
+              {mode === 'hq' && sourceHq && subTab === 'transfer' && (
+                <span className="hidden md:inline-block text-slate-500">
+                  Total in {sourceHq}: <strong className="text-sky-300 font-mono">{docList.length + chemList.length + stkList.length}</strong>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
               {subTab === 'transfer' && (
                 <>
                   <button
                     onClick={() => handleTransferSubmit(false)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq) : (!sourceUserId || !targetUserId)) || totalSelectedCount === 0}
-                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
+                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
                   >
                     <ArrowRightLeft size={16} />
                     <span>Transfer Selected ({totalSelectedCount})</span>
@@ -2070,7 +2091,7 @@ export default function ManageDCS() {
                   <button
                     onClick={() => handleTransferSubmit(true)}
                     disabled={actionLoading || (mode === 'hq' ? (!sourceHq || !targetHq || (docList.length + chemList.length + stkList.length === 0)) : (!sourceUserId || !targetUserId || (docList.length + chemList.length + stkList.length === 0)))}
-                    className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2"
+                    className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
                     title={mode === 'hq' ? `Transfer all records in ${sourceHq} to ${targetHq}` : 'Transfer all records allotted to Source User'}
                   >
                     <span>Transfer All ({docList.length + chemList.length + stkList.length})</span>
@@ -2103,7 +2124,7 @@ export default function ManageDCS() {
                     <button
                       onClick={() => handleDeallotSubmit(true)}
                       disabled={actionLoading || !sourceHq || (docList.length + chemList.length + stkList.length === 0)}
-                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2"
+                      className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow"
                       title="Clear all employee locks in this HQ so doctors belong to the open HQ pool"
                     >
                       <span>Release All in HQ ({docList.length + chemList.length + stkList.length})</span>
@@ -2376,7 +2397,7 @@ export default function ManageDCS() {
         </div>
         
         {/* Right Content Area */}
-        <div className={`flex-1 min-w-0 bg-slate-900 ${(activeTab === 'edit_delete' && !editingRecord) || activeTab === 'monthly_call_plan' ? 'p-0 flex flex-col overflow-y-auto' : 'p-4 md:p-6 overflow-y-auto'}`}>
+        <div className={`flex-1 min-w-0 bg-slate-900 ${(activeTab === 'edit_delete' && !editingRecord) || activeTab === 'monthly_call_plan' || activeTab === 'dcs_list_management' ? 'p-0 flex flex-col overflow-y-auto' : 'p-4 md:p-6 overflow-y-auto'}`}>
       
       {activeTab === 'create_doctor' && (
         <CreateDoctorTab 
