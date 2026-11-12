@@ -1,5 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins, CheckSquare } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins, CheckSquare, Share2 } from 'lucide-react';
 import api from '../api/client';
 
 const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
@@ -11,10 +11,11 @@ const PendingExams = lazy(() => import('../components/Admin/PendingExams'));
 const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
 const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
 const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
+const LinkedInDesk = lazy(() => import('../components/Admin/LinkedInDesk'));
 
 const SupportManagement = lazy(() => import('../components/Admin/SupportManagement'));
 
-type AdminView = 'company' | 'applicants' | 'confirmations' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support';
+type AdminView = 'company' | 'applicants' | 'confirmations' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support' | 'linkedin';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -132,6 +133,7 @@ const AdminPanel: React.FC = () => {
             { id: 'pending', icon: <ClipboardList size={16} style={{ flexShrink: 0 }} />, label: 'Test Results' },
             { id: 'psychometric', icon: <Award size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🧠 Psychometric Dossiers' },
             { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
+            { id: 'linkedin', icon: <Share2 size={16} style={{ flexShrink: 0, color: '#38bdf8' }} />, label: '💼 Executive LinkedIn Desk' },
           ].map(item => {
             const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
             const isRestricted = adminRole === 'subadmin' && !['questions', 'voice-studio', 'pending', 'psychometric', 'applicants'].includes(item.id);
@@ -272,6 +274,7 @@ const AdminPanel: React.FC = () => {
           {activeView === 'pending' && <PendingExams />}
           {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
           {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
+          {activeView === 'linkedin' && <LinkedInDesk />}
 
           {activeView === 'support' && <SupportManagement activeSubTab={supportSubView} setSubTab={setSupportSubView} />}
         </Suspense>

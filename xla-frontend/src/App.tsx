@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import PerformanceMenu from './pages/PerformanceMenu';
 import AdminMenu from './pages/AdminMenu';
 import ManageCompanyProfile from './pages/ManageCompanyProfile';
+import LinkedInDesk from './pages/LinkedInDesk';
 
 import UserPerformanceAnalysis from './pages/UserPerformanceAnalysis';
 import Utilities from './pages/Utilities';
@@ -76,6 +77,7 @@ function App() {
           <Route path="admin/expenses" element={<ManageAllowances />} />
           <Route path="admin/dcs" element={<ManageDCS />} />
           <Route path="admin/company-profile" element={<ManageCompanyProfile />} />
+          <Route path="admin/linkedin-desk" element={<LinkedInDesk />} />
           <Route path="admin/approvals" element={<Approvals />} />
 
           <Route path="utilities" element={<Utilities />} />

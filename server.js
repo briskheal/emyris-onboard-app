@@ -493,6 +493,11 @@ app.get('/api/test-email', async (req, res) => {
 
 // --- RAPID TEST APIs ---
 
+// Executive LinkedIn Desk redirect
+app.get(['/admin/linkedin-desk', '/admin/linkedin'], (req, res) => {
+    res.redirect('/xla/admin/linkedin-desk');
+});
+
 // Serve Emyris Admin Portal (React SPA)
 app.get(['/admin', '/admin/'], (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));

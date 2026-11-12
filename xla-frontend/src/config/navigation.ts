@@ -1,7 +1,7 @@
 import { 
   Building2, Users, ClipboardList, FileBarChart, DollarSign, Stethoscope, Gift, CheckSquare, CalendarDays, Settings as SettingsIcon,
   FileText, BarChart3, Receipt, MapPin, BellRing, Clock, PackageSearch, TrendingUp, ShoppingCart, CalendarRange,
-  History, UserCheck, MonitorPlay, Shield, Bell
+  History, UserCheck, MonitorPlay, Shield, Bell, Share2
 } from 'lucide-react';
 
 export interface RouteItem {
@@ -29,6 +29,7 @@ export const adminItems: RouteItem[] = [
   { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals', title: 'Approvals Hub', breadcrumb: 'Admin > Approvals', keywords: ['approval', 'approvals', 'pending', 'call plan approval', 'tp approval', 'tour program approval', 'expense approval', 'leave approval', 'dcr approval'] },
   { label: 'MANAGE LEAVE', icon: CalendarDays, path: '/admin/leave', title: 'Manage Leave', breadcrumb: 'Admin > Leave', keywords: ['leave', 'holiday', 'leave type', 'leave balance', 'vacation', 'casual leave', 'sick leave'] },
   { label: 'COMPANY PROFILE & CONTACT', icon: Building2, path: '/admin/company-profile', title: 'Company Profile & Contact', breadcrumb: 'Admin > Company Profile', keywords: ['company', 'profile', 'address', 'contact', 'email', 'phone', 'support', 'helpdesk', 'corporate office', 'head office'] },
+  { label: 'EXECUTIVE LINKEDIN DESK', icon: Share2, path: '/admin/linkedin-desk', title: 'Executive LinkedIn Desk', breadcrumb: 'Admin > LinkedIn Desk', keywords: ['linkedin', 'reply', 'post', 'draft', 'social', 'desk', 'assistant', 'executive'] },
   { label: 'SETTINGS', icon: SettingsIcon, path: '/extras/settings', title: 'Admin Settings', breadcrumb: 'Admin > Settings', keywords: ['settings', 'configuration', 'preferences', 'system', 'typography', 'theme'] }
 ];
 
