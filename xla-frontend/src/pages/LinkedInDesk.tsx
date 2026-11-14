@@ -195,7 +195,12 @@ export default function LinkedInDesk() {
       const saved = localStorage.getItem('emyris_saved_linkedin_feeds');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If first item is stale dummy "Industry Connection", discard and use curated feeds
+          if (parsed[0].author !== 'Industry Connection') {
+            return parsed;
+          }
+        }
       }
     } catch (e) {}
     return ALL_FEEDS;
@@ -280,40 +285,40 @@ export default function LinkedInDesk() {
     setIsRefreshing(true);
     setSyncNotification(null);
 
-    // 1. Dispatch sync request to extension content script
-    window.postMessage({ type: 'EMYRIS_TRIGGER_SYNC', source: 'emyris-portal' }, '*');
-
-    // 2. Query backend in parallel
-    fetch('/api/admin/linkedin/feeds')
+    // 1. Always fetch fresh live pool immediately from backend with cache buster
+    fetch('/api/admin/linkedin/feeds?refresh=true&t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
-          setFeeds(data.posts);
+          // Clean out any stale dummy posts
+          const cleanPosts = data.posts.filter((p: FeedPost) => p.author !== 'Industry Connection');
+          const finalPosts = cleanPosts.length > 0 ? cleanPosts : data.posts;
+          setFeeds(finalPosts);
+          try {
+            localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(finalPosts));
+          } catch (e) {}
           const now = new Date();
           setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          setSyncNotification({
+            type: 'success',
+            message: `✓ Live Feeds Updated! ${finalPosts.length} fresh discussions across Pharma, Leadership, Economy & Biotech loaded with exact permalinks.`
+          });
+          setTimeout(() => setSyncNotification(null), 7000);
         }
       })
-      .catch(() => {});
-
-    // 3. Fallback timeout if extension is not installed or tab not open
-    setTimeout(() => {
-      setIsRefreshing((prev) => {
-        if (prev) {
-          const hasExt = typeof document !== 'undefined' && document.documentElement.getAttribute('data-emyris-extension-installed') === 'true';
-          if (!hasExt) {
-            setSyncNotification({
-              type: 'info',
-              message: 'Option 1 Active: Make sure the Emyris Chrome Extension is loaded and your LinkedIn tab is open in Chrome to sync fresh posts.'
-            });
-            setTimeout(() => setSyncNotification(null), 9000);
-          }
-          const now = new Date();
-          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-          return false;
-        }
-        return false;
+      .catch((err) => {
+        console.warn('Backend sync failed, falling back to local feeds pool:', err);
+        setFeeds(ALL_FEEDS);
+        try {
+          localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(ALL_FEEDS));
+        } catch (e) {}
+      })
+      .finally(() => {
+        setTimeout(() => setIsRefreshing(false), 500);
       });
-    }, 3800);
+
+    // 2. Also dispatch trigger to Extension bridge if running
+    window.postMessage({ type: 'EMYRIS_TRIGGER_SYNC', source: 'emyris-portal' }, '*');
   };
 
   const handleCopy = (text: string, id: string) => {
