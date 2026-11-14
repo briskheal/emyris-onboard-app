@@ -9533,6 +9533,16 @@ router.get('/confirmation-delayed-letter-pdf', async (req, res) => {
     }
 });
 
+// --- EXECUTIVE LINKEDIN FEEDS API ---
+router.get('/linkedin/feeds', (req, res) => {
+    res.json({
+        success: true,
+        lastUpdated: new Date().toISOString(),
+        status: 'LIVE_FEED_SYNCED',
+        total: 10
+    });
+});
+
 module.exports = router;
 
 

@@ -1,5 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins, CheckSquare, Share2 } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins, CheckSquare, Share2, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import api from '../api/client';
 
 const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
@@ -23,7 +23,27 @@ const AdminPanel: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeView, setActiveView] = useState<AdminView>('applicants');
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeView, setActiveView] = useState<AdminView>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab') as AdminView;
+      if (tab) return tab;
+      const saved = sessionStorage.getItem('admin_active_view') as AdminView;
+      if (saved) return saved;
+    } catch (e) {}
+    return 'applicants';
+  });
+
+  const handleSelectView = (view: AdminView) => {
+    setActiveView(view);
+    try {
+      sessionStorage.setItem('admin_active_view', view);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', view);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  };
 
   const [supportMenuExpanded, setSupportMenuExpanded] = useState(false);
   const [supportSubView, setSupportSubView] = useState('loan');
@@ -59,30 +79,189 @@ const AdminPanel: React.FC = () => {
 
   if (!isLoggedIn) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-body)' }}>
-        <div className="dash-card" style={{ width: '400px', padding: '2.5rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '0.5rem', color: 'var(--primary)' }}>Admin Portal</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>Emyris Biolifesciences</p>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              required
-            />
-            <input
-              className="form-input"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-            {loginError && <p style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>{loginError}</p>}
-            <button className="btn btn-primary" type="submit" disabled={loginLoading}>
-              {loginLoading ? 'Logging in...' : 'Login'}
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'radial-gradient(ellipse at top, #0f172a 0%, #020617 100%)',
+        padding: '1.5rem',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ 
+          width: '100%',
+          maxWidth: '430px', 
+          background: 'rgba(15, 23, 42, 0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '24px',
+          padding: '2.5rem 2rem',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          boxSizing: 'border-box'
+        }}>
+          {/* Logo / Badge */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              margin: '0 auto 1.25rem',
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 12px 28px -5px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+            }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.5px' }}>EM</span>
+            </div>
+            <h2 style={{ margin: '0 0 0.35rem 0', color: '#ffffff', fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Admin Portal
+            </h2>
+            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
+              Emyris Biolifesciences
+            </p>
+          </div>
+
+          {loginError && (
+            <div style={{ 
+              background: 'rgba(239, 68, 68, 0.12)', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', 
+              borderRadius: '14px', 
+              padding: '12px 14px', 
+              color: '#f87171', 
+              fontSize: '0.82rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px',
+              marginBottom: '1.25rem'
+            }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span style={{ lineHeight: '1.4' }}>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+            {/* Username / Email Input */}
+            <div style={{ position: 'relative', width: '100%' }}>
+              <Mail 
+                size={18} 
+                style={{ 
+                  position: 'absolute', 
+                  left: '16px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  color: '#64748b',
+                  pointerEvents: 'none'
+                }} 
+              />
+              <input
+                type="text"
+                placeholder="Admin Username or Email"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  height: '52px',
+                  padding: '0 16px 0 46px',
+                  background: 'rgba(2, 6, 23, 0.65)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '16px',
+                  color: '#ffffff',
+                  fontSize: '0.92rem',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s, box-shadow 0.2s'
+                }}
+              />
+            </div>
+
+            {/* Password Input with Visibility Toggle */}
+            <div style={{ position: 'relative', width: '100%' }}>
+              <Lock 
+                size={18} 
+                style={{ 
+                  position: 'absolute', 
+                  left: '16px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  color: '#64748b',
+                  pointerEvents: 'none'
+                }} 
+              />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  height: '52px',
+                  padding: '0 48px 0 46px',
+                  background: 'rgba(2, 6, 23, 0.65)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '16px',
+                  color: '#ffffff',
+                  fontSize: '0.92rem',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s, box-shadow 0.2s'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px'
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loginLoading}
+              style={{
+                width: '100%',
+                height: '52px',
+                marginTop: '0.5rem',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                border: 'none',
+                borderRadius: '16px',
+                color: '#ffffff',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: loginLoading ? 'not-allowed' : 'pointer',
+                opacity: loginLoading ? 0.7 : 1,
+                boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.45)',
+                transition: 'transform 0.15s, box-shadow 0.15s'
+              }}
+            >
+              <LogIn size={18} />
+              <span>{loginLoading ? 'Logging in...' : 'Login to Admin'}</span>
             </button>
           </form>
         </div>
@@ -147,7 +326,7 @@ const AdminPanel: React.FC = () => {
                   alert("Meant for Superadmin Only");
                   return;
                 }
-                setActiveView(item.id as AdminView);
+                handleSelectView(item.id as AdminView);
                 setMobileMenuOpen(false);
               }}
               style={{ 
@@ -206,7 +385,7 @@ const AdminPanel: React.FC = () => {
                   <button
                     key={subItem.id}
                     onClick={() => {
-                      setActiveView('support');
+                      handleSelectView('support');
                       setSupportSubView(subItem.id);
                       setMobileMenuOpen(false);
                     }}
