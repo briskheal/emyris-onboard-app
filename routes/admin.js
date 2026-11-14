@@ -9533,14 +9533,119 @@ router.get('/confirmation-delayed-letter-pdf', async (req, res) => {
     }
 });
 
-// --- EXECUTIVE LINKEDIN FEEDS API ---
+// --- EXECUTIVE LINKEDIN FEEDS API & SYNC STORAGE ---
+const LINKEDIN_STORAGE_FILE = path.join(__dirname, '../uploads/linkedin_saved_feeds.json');
+
+function generateExecutiveDrafts(post) {
+    const authorFirstName = (post.author || 'there').split(' ')[0];
+    const text = (post.rawText || post.summary || '').toLowerCase();
+    
+    let strategic = '';
+    let concise = '';
+    let question = '';
+
+    if (text.includes('pharma') || text.includes('doctor') || text.includes('field') || text.includes('execution') || text.includes('rep') || text.includes('chemist') || text.includes('target')) {
+        strategic = `Spot on perspective, ${authorFirstName}. Having led business units and cross-functional teams in the pharmaceutical industry over the last three decades, I have consistently found that execution at the ground level is where strategy either thrives or falters.\n\nThe real differentiator is always the 'last mile' — enabling first-line managers to coach and build conviction at the doctor-chemist interface rather than just auditing call numbers. When front-line alignment is strong, business performance follows naturally.`;
+        concise = `In 30+ years leading pharma operations, I've seen that strategy is only as effective as ground execution. Empowering first-line leaders to coach with clinical conviction is the highest-ROI investment any pharma organization can make.`;
+        question = `Compelling points, ${authorFirstName}. In your experience, what is the single biggest impediment preventing field teams and first-line managers from translating brand positioning into impact on the ground?`;
+    } else if (text.includes('leadership') || text.includes('culture') || text.includes('people') || text.includes('team') || text.includes('trust') || text.includes('mindset')) {
+        strategic = `Resonates deeply with my leadership experience across corporate healthcare. Business metrics are lagging indicators; team morale, psychological safety, and day-to-day operational support are the leading indicators.\n\nWhen executive leaders invest in building team strength and removing roadblocks for the front line, extraordinary outcomes become repeatable.`;
+        concise = `Timeless leadership wisdom, ${authorFirstName}. When you cultivate people, give them trust, and provide operational clarity, targets take care of themselves. Great share!`;
+        question = `Spot on! For fast-scaling teams across diverse regions, what practical leadership routines have you found most effective to preserve this culture consistently?`;
+    } else if (text.includes('economy') || text.includes('india') || text.includes('stock') || text.includes('manufacturing') || text.includes('gdp') || text.includes('market') || text.includes('export')) {
+        strategic = `A historic milestone reflecting the underlying resilience of the Indian industrial ecosystem. From a pharmaceutical manufacturing and healthcare perspective, this expansion provides tremendous runway for scaled CDMO capabilities, formulation innovation, and global competitiveness.`;
+        concise = `The fundamentals of the Indian growth story continue to demonstrate immense strength and scale. A proud moment for our manufacturing and corporate ecosystem!`;
+        question = `Fascinating breakdown, ${authorFirstName}. As capital expenditure scales, which specific domestic manufacturing sectors do you anticipate driving the next phase of sustainable growth?`;
+    } else {
+        strategic = `Fascinating analysis, ${authorFirstName}. The intersection of clinical rigor and commercial formulation represents the most vital growth frontier. Bridging scientific innovation with robust supply-chain and field execution is where true value is created for patients and stakeholders alike.`;
+        concise = `An invaluable perspective on where the industry is heading. Ground-level execution combined with innovation will define the leaders of the next decade.`;
+        question = `Great insights, ${authorFirstName}. How do you see the regulatory and operational landscape evolving over the next 2-3 years to support this transition?`;
+    }
+
+    return { strategic, concise, question };
+}
+
+// GET /api/admin/linkedin/feeds
 router.get('/linkedin/feeds', (req, res) => {
+    try {
+        if (fs.existsSync(LINKEDIN_STORAGE_FILE)) {
+            const fileData = fs.readFileSync(LINKEDIN_STORAGE_FILE, 'utf8');
+            const parsed = JSON.parse(fileData);
+            if (parsed && Array.isArray(parsed.posts) && parsed.posts.length > 0) {
+                return res.json({
+                    success: true,
+                    source: 'saved_sync',
+                    lastUpdated: parsed.lastUpdated || new Date().toISOString(),
+                    status: 'LIVE_FEED_SYNCED',
+                    total: parsed.posts.length,
+                    posts: parsed.posts
+                });
+            }
+        }
+    } catch (e) {
+        console.error('[LINKEDIN FEEDS READ ERROR]', e.message);
+    }
+
     res.json({
         success: true,
+        source: 'default_curated',
         lastUpdated: new Date().toISOString(),
-        status: 'LIVE_FEED_SYNCED',
-        total: 10
+        status: 'READY_TO_SYNC',
+        total: 0,
+        posts: []
     });
+});
+
+// POST /api/admin/linkedin/feeds
+router.post('/linkedin/feeds', (req, res) => {
+    try {
+        const incomingPosts = req.body.posts;
+        if (!Array.isArray(incomingPosts) || incomingPosts.length === 0) {
+            return res.status(400).json({ success: false, error: 'No posts provided.' });
+        }
+
+        const formattedPosts = incomingPosts.map((post, index) => {
+            const drafts = (post.drafts && post.drafts.strategic) ? post.drafts : generateExecutiveDrafts(post);
+            return {
+                id: post.id || ('sync-' + Date.now() + '-' + index),
+                author: post.author || 'LinkedIn Connection',
+                role: post.role || 'Executive Leader',
+                badge: post.badge || 'Live Synced Post',
+                category: post.category || 'leadership',
+                metrics: post.metrics || { likes: '500+', comments: '45', views: '18K' },
+                summary: post.summary || post.rawText || '',
+                rawText: post.rawText || post.summary || '',
+                question: post.question || null,
+                link: post.link || (post.urn ? `https://www.linkedin.com/feed/update/${post.urn}/` : 'https://www.linkedin.com/feed/'),
+                drafts: drafts
+            };
+        });
+
+        const storagePayload = {
+            lastUpdated: new Date().toISOString(),
+            count: formattedPosts.length,
+            posts: formattedPosts
+        };
+
+        const uploadsDir = path.dirname(LINKEDIN_STORAGE_FILE);
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        fs.writeFileSync(LINKEDIN_STORAGE_FILE, JSON.stringify(storagePayload, null, 2), 'utf8');
+
+        console.log(`[LINKEDIN FEEDS] Saved ${formattedPosts.length} live posts to ${LINKEDIN_STORAGE_FILE}`);
+
+        res.json({
+            success: true,
+            message: `Synced and saved ${formattedPosts.length} posts with executive drafts.`,
+            lastUpdated: storagePayload.lastUpdated,
+            total: formattedPosts.length,
+            posts: formattedPosts
+        });
+    } catch (err) {
+        console.error('[LINKEDIN FEEDS SAVE ERROR]', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 module.exports = router;

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
-  Share2, Copy, Check, ExternalLink, Sparkles, Send, 
+  Share2, Copy, Check, ExternalLink, Sparkles, Send, Plus, RotateCcw, Link2, 
   MessageSquare, Award, ArrowRight, RefreshCw, Smartphone,
-  ThumbsUp, Eye, Filter
+  ThumbsUp, Eye, Filter, CheckCircle2, Info, AlertTriangle
 } from 'lucide-react';
 
 interface FeedPost {
@@ -36,7 +36,7 @@ const ALL_FEEDS: FeedPost[] = [
     metrics: { likes: '1,420', comments: '186', views: '24.5K' },
     summary: 'Analyzes why competitor pharma companies grow faster with identical budgets and team sizes. Identifies 5 gaps: disconnected portfolio logic, marketing disconnected from field execution, unrealistic targets, decoupled training, and ineffective review meetings.',
     question: '"Pharma Owners, Directors and Leaders: Imagine you were asked to improve an underperforming pharma company without increasing budget. Which would you fix first? And which gap is most underestimated?"',
-    link: 'https://www.linkedin.com/in/saurabhrajput-pharmatrainer/',
+    link: 'https://www.linkedin.com/feed/update/urn:li:activity:7520450009834885120/',
     drafts: {
       strategic: `Spot on analysis, Saurabh. Having led business units and cross-functional pharma teams over the last three decades, I would unequivocally fix Marketing-to-Field Execution first.
 
@@ -72,7 +72,7 @@ The most underestimated gap is managerial capability at the first-line level. Wh
     metrics: { likes: '3,210', comments: '295', views: '52K' },
     summary: 'India reclaims position as the 5th largest stock market globally, overtaking Taiwan, with total market cap crossing $5.5 Trillion (up $660B). Reflects strong industrial fundamentals and capital inflow.',
     question: '"What does this $5.5T milestone signal for Indian domestic manufacturing and corporate capital expenditure in 2026-2027?"',
-    link: 'https://www.linkedin.com/in/ukagarwal/',
+    link: 'https://www.linkedin.com/in/ukagarwal/recent-activity/all/',
     drafts: {
       strategic: `A historic milestone reflecting India’s underlying macroeconomic resilience and industrial expansion. From a healthcare and domestic pharmaceutical manufacturing perspective, this capital growth provides tremendous runway for scaled operations, CDMO expansion, and global competitiveness.`,
       concise: `A proud moment for India's corporate and manufacturing ecosystem! The fundamentals of the Indian growth story continue to demonstrate immense strength and scale.`,
@@ -190,31 +190,130 @@ The most underestimated gap is managerial capability at the first-line level. Wh
 ];
 
 export default function LinkedInDesk() {
+  const [feeds, setFeeds] = useState<FeedPost[]>(() => {
+    try {
+      const saved = localStorage.getItem('emyris_saved_linkedin_feeds');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return ALL_FEEDS;
+  });
+
+  // Quick Import Live Post State
+  const [showImporter, setShowImporter] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importAuthor, setImportAuthor] = useState('');
+  const [importRole, setImportRole] = useState('');
+  const [importTopic, setImportTopic] = useState('');
   const [activeTab, setActiveTab] = useState<'feed' | 'generator'>('feed');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   
+  // Extension status and notification toast
+  const [isExtensionConnected, setIsExtensionConnected] = useState<boolean>(() => {
+    return typeof document !== 'undefined' && document.documentElement.getAttribute('data-emyris-extension-installed') === 'true';
+  });
+  const [syncNotification, setSyncNotification] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null);
+
   // Custom generator state
   const [inputPost, setInputPost] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [generatedDrafts, setGeneratedDrafts] = useState<{ strategic: string; concise: string; question: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Auto-refresh feeds when user opens/logs into this page
+  // Listen for extension events and load initial feeds
   useEffect(() => {
-    refreshLiveFeeds();
+    const handleWindowMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'EMYRIS_EXTENSION_READY') {
+        setIsExtensionConnected(true);
+      }
+      if (event.data?.type === 'EMYRIS_SYNC_COMPLETED') {
+        setIsRefreshing(false);
+        if (event.data.success && Array.isArray(event.data.posts) && event.data.posts.length > 0) {
+          setFeeds(event.data.posts);
+          try {
+            localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(event.data.posts));
+          } catch (e) {}
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          setSyncNotification({
+            type: 'success',
+            message: `Successfully pulled ${event.data.posts.length} live posts with exact permalinks directly from your LinkedIn session!`
+          });
+          setTimeout(() => setSyncNotification(null), 8000);
+        } else {
+          setSyncNotification({
+            type: 'error',
+            message: event.data.message || 'Unable to pull live feed. Please ensure your LinkedIn tab is open in Chrome.'
+          });
+          setTimeout(() => setSyncNotification(null), 8000);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleWindowMessage);
+
+    // Initial load from backend API
+    fetch('/api/admin/linkedin/feeds')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
+          setFeeds(data.posts);
+          if (data.lastUpdated) {
+            const d = new Date(data.lastUpdated);
+            setLastSyncedTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      window.removeEventListener('message', handleWindowMessage);
+    };
   }, []);
 
   const refreshLiveFeeds = () => {
     setIsRefreshing(true);
-    // Simulate real-time API sync with timestamp update
+    setSyncNotification(null);
+
+    // 1. Dispatch sync request to extension content script
+    window.postMessage({ type: 'EMYRIS_TRIGGER_SYNC', source: 'emyris-portal' }, '*');
+
+    // 2. Query backend in parallel
+    fetch('/api/admin/linkedin/feeds')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
+          setFeeds(data.posts);
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        }
+      })
+      .catch(() => {});
+
+    // 3. Fallback timeout if extension is not installed or tab not open
     setTimeout(() => {
-      setIsRefreshing(false);
-      const now = new Date();
-      setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 700);
+      setIsRefreshing((prev) => {
+        if (prev) {
+          const hasExt = typeof document !== 'undefined' && document.documentElement.getAttribute('data-emyris-extension-installed') === 'true';
+          if (!hasExt) {
+            setSyncNotification({
+              type: 'info',
+              message: 'Option 1 Active: Make sure the Emyris Chrome Extension is loaded and your LinkedIn tab is open in Chrome to sync fresh posts.'
+            });
+            setTimeout(() => setSyncNotification(null), 9000);
+          }
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          return false;
+        }
+        return false;
+      });
+    }, 3800);
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -244,9 +343,52 @@ export default function LinkedInDesk() {
     }, 600);
   };
 
+  const handleAddLivePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importUrl.trim()) return;
+
+    const author = importAuthor.trim() || 'Industry Connection';
+    const topic = importTopic.trim() || 'Strategic Discussion';
+
+    const newPost: FeedPost = {
+      id: 'custom-' + Date.now(),
+      author: author,
+      role: importRole.trim() || 'LinkedIn Connection',
+      badge: 'Live Imported Post',
+      category: 'pharma',
+      metrics: { likes: 'Live', comments: 'Active' },
+      summary: topic,
+      link: importUrl.trim(),
+      drafts: {
+        strategic: `Insightful perspective, ${author}. Having steered business units and field operations across the pharmaceutical landscape for over 30 years, I find that success invariably hinges on ground-level execution and front-line conviction. Strategy provides direction, but empowering the team at the point of customer engagement is what truly translates vision into market leadership.`,
+        concise: `Spot on, ${author}. Ground execution and disciplined team leadership remain the decisive competitive advantages in our industry today. Thank you for sharing these valuable insights!`,
+        question: `Very thoughtful points, ${author}. In your operational experience, what has proven to be the most reliable metric or behavior that signals front-line teams have genuinely embraced this strategic shift?`
+      }
+    };
+
+    const updated = [newPost, ...feeds];
+    setFeeds(updated);
+    try {
+      localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(updated));
+    } catch (err) {}
+
+    setImportUrl('');
+    setImportAuthor('');
+    setImportRole('');
+    setImportTopic('');
+    setShowImporter(false);
+  };
+
+  const handleResetFeeds = () => {
+    if (window.confirm("Reset active feeds back to the default 10 posts?")) {
+      setFeeds(ALL_FEEDS);
+      localStorage.removeItem('emyris_saved_linkedin_feeds');
+    }
+  };
+
   const filteredFeeds = selectedCategory === 'all' 
-    ? ALL_FEEDS 
-    : ALL_FEEDS.filter(feed => feed.category === selectedCategory);
+    ? feeds 
+    : feeds.filter(feed => feed.category === selectedCategory);
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', color: '#f8fafc' }}>
@@ -271,17 +413,39 @@ export default function LinkedInDesk() {
             <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
               Executive LinkedIn Desk
             </h2>
-            <span style={{ 
-              background: 'rgba(16, 185, 129, 0.2)', 
-              color: '#34d399', 
-              fontSize: '0.7rem', 
-              fontWeight: 700, 
-              padding: '2px 8px', 
-              borderRadius: '999px',
-              border: '1px solid rgba(52, 211, 153, 0.4)' 
-            }}>
-              LIVE FEED SYNCED
-            </span>
+            {isExtensionConnected ? (
+              <span style={{ 
+                background: 'rgba(16, 185, 129, 0.2)', 
+                color: '#34d399', 
+                fontSize: '0.7rem', 
+                fontWeight: 700, 
+                padding: '3px 9px', 
+                borderRadius: '999px',
+                border: '1px solid rgba(52, 211, 153, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', display: 'inline-block', boxShadow: '0 0 6px #34d399' }}></span>
+                EXTENSION BRIDGE LINKED
+              </span>
+            ) : (
+              <span style={{ 
+                background: 'rgba(56, 189, 248, 0.15)', 
+                color: '#38bdf8', 
+                fontSize: '0.7rem', 
+                fontWeight: 700, 
+                padding: '3px 9px', 
+                borderRadius: '999px',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#38bdf8', display: 'inline-block' }}></span>
+                LIVE SYNC READY
+              </span>
+            )}
           </div>
           <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
             Personalized for <strong style={{ color: '#e2e8f0' }}>J. Ranjan Dash</strong> • Business Operation Head, Emyris Biolifesciences • <span style={{ color: '#38bdf8' }}>Last Synced: {lastSyncedTime}</span>
@@ -336,6 +500,34 @@ export default function LinkedInDesk() {
           </button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {syncNotification && (
+        <div style={{
+          background: syncNotification.type === 'success' ? 'rgba(6, 78, 59, 0.9)' : syncNotification.type === 'error' ? 'rgba(127, 29, 29, 0.9)' : 'rgba(30, 58, 138, 0.9)',
+          border: `1px solid ${syncNotification.type === 'success' ? '#10b981' : syncNotification.type === 'error' ? '#ef4444' : '#38bdf8'}`,
+          borderRadius: '12px',
+          padding: '12px 18px',
+          marginBottom: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '0.85rem',
+          color: '#ffffff',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+        }}>
+          {syncNotification.type === 'success' && <CheckCircle2 size={18} style={{ color: '#34d399', flexShrink: 0 }} />}
+          {syncNotification.type === 'error' && <AlertTriangle size={18} style={{ color: '#f87171', flexShrink: 0 }} />}
+          {syncNotification.type === 'info' && <Info size={18} style={{ color: '#38bdf8', flexShrink: 0 }} />}
+          <div style={{ flex: 1 }}>{syncNotification.message}</div>
+          <button
+            onClick={() => setSyncNotification(null)}
+            style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1rem', padding: '0 4px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '16px' }}>
@@ -419,6 +611,192 @@ export default function LinkedInDesk() {
       {/* Content Area */}
       {activeTab === 'feed' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Quick Import Bar */}
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.75)',
+            border: '1px dashed rgba(56, 189, 248, 0.4)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px', display: 'flex' }}>
+                  <Link2 size={16} />
+                </span>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#ffffff' }}>
+                    Import Any Live Post by Exact Permalink
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>
+                    Copy any post link on LinkedIn (... &gt; Copy link to post) and paste here to generate instant executive drafts!
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowImporter(!showImporter)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: showImporter ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                    color: showImporter ? '#f87171' : '#38bdf8',
+                    border: '1px solid ' + (showImporter ? 'rgba(239, 68, 68, 0.3)' : 'rgba(56, 189, 248, 0.35)'),
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Plus size={14} style={{ transform: showImporter ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <span>{showImporter ? 'Close' : '➕ Add Post Permalink'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetFeeds}
+                  title="Reset to default 10 curated feeds"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(30, 41, 59, 0.5)',
+                    color: '#94a3b8',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    fontSize: '0.72rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <RotateCcw size={12} />
+                  <span>Reset</span>
+                </button>
+              </div>
+            </div>
+
+            {showImporter && (
+              <form onSubmit={handleAddLivePost} style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Exact LinkedIn Post Permalink URL (Required)
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.linkedin.com/feed/update/urn:li:activity:..."
+                    value={importUrl}
+                    onChange={e => setImportUrl(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#090d16',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      fontSize: '0.8rem',
+                      color: '#ffffff',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Author Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Umesh Kumar Agarwal"
+                      value={importAuthor}
+                      onChange={e => setImportAuthor(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#090d16',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#ffffff',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Author Headline / Role
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Geopolitical Analyst, Editor in Chief"
+                      value={importRole}
+                      onChange={e => setImportRole(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#090d16',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#ffffff',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Post Topic / Core Message
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Paste post excerpt or topic summary..."
+                    value={importTopic}
+                    onChange={e => setImportTopic(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#090d16',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.8rem',
+                      color: '#ffffff',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7, #059669)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start'
+                  }}
+                >
+                  🚀 Save &amp; Generate Executive Drafts
+                </button>
+              </form>
+            )}
+          </div>
           <div style={{ 
             background: 'rgba(30, 41, 59, 0.5)', 
             border: '1px solid rgba(255, 255, 255, 0.08)', 

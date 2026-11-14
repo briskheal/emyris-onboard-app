@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
-  Share2, Copy, Check, ExternalLink, Sparkles, Send, 
+  Share2, Copy, Check, ExternalLink, Sparkles, Send, Plus, RotateCcw, Link2, 
   MessageSquare, Award, ArrowRight, RefreshCw, Smartphone,
-  ThumbsUp, Eye, Filter
+  ThumbsUp, Eye, Filter, CheckCircle2, Info, AlertTriangle
 } from 'lucide-react';
 
 interface FeedPost {
@@ -36,7 +36,7 @@ const ALL_FEEDS: FeedPost[] = [
     metrics: { likes: '1,420', comments: '186', views: '24.5K' },
     summary: 'Analyzes why competitor pharma companies grow faster with identical budgets and team sizes. Identifies 5 gaps: disconnected portfolio logic, marketing disconnected from field execution, unrealistic targets, decoupled training, and ineffective review meetings.',
     question: '"Pharma Owners, Directors and Leaders: Imagine you were asked to improve an underperforming pharma company without increasing budget. Which would you fix first? And which gap is most underestimated?"',
-    link: 'https://www.linkedin.com/in/saurabhrajput-pharmatrainer/',
+    link: 'https://www.linkedin.com/feed/update/urn:li:activity:7520450009834885120/',
     drafts: {
       strategic: `Spot on analysis, Saurabh. Having led business units and cross-functional pharma teams over the last three decades, I would unequivocally fix Marketing-to-Field Execution first.
 
@@ -72,7 +72,7 @@ The most underestimated gap is managerial capability at the first-line level. Wh
     metrics: { likes: '3,210', comments: '295', views: '52K' },
     summary: 'India reclaims position as the 5th largest stock market globally, overtaking Taiwan, with total market cap crossing $5.5 Trillion (up $660B). Reflects strong industrial fundamentals and capital inflow.',
     question: '"What does this $5.5T milestone signal for Indian domestic manufacturing and corporate capital expenditure in 2026-2027?"',
-    link: 'https://www.linkedin.com/in/ukagarwal/',
+    link: 'https://www.linkedin.com/in/ukagarwal/recent-activity/all/',
     drafts: {
       strategic: `A historic milestone reflecting India’s underlying macroeconomic resilience and industrial expansion. From a healthcare and domestic pharmaceutical manufacturing perspective, this capital growth provides tremendous runway for scaled operations, CDMO expansion, and global competitiveness.`,
       concise: `A proud moment for India's corporate and manufacturing ecosystem! The fundamentals of the Indian growth story continue to demonstrate immense strength and scale.`,
@@ -190,29 +190,130 @@ The most underestimated gap is managerial capability at the first-line level. Wh
 ];
 
 export default function LinkedInDesk() {
+  const [feeds, setFeeds] = useState<FeedPost[]>(() => {
+    try {
+      const saved = localStorage.getItem('emyris_saved_linkedin_feeds');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return ALL_FEEDS;
+  });
+
+  // Quick Import Live Post State
+  const [showImporter, setShowImporter] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importAuthor, setImportAuthor] = useState('');
+  const [importRole, setImportRole] = useState('');
+  const [importTopic, setImportTopic] = useState('');
   const [activeTab, setActiveTab] = useState<'feed' | 'generator'>('feed');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   
+  // Extension status and notification toast
+  const [isExtensionConnected, setIsExtensionConnected] = useState<boolean>(() => {
+    return typeof document !== 'undefined' && document.documentElement.getAttribute('data-emyris-extension-installed') === 'true';
+  });
+  const [syncNotification, setSyncNotification] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null);
+
   // Custom generator state
   const [inputPost, setInputPost] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [generatedDrafts, setGeneratedDrafts] = useState<{ strategic: string; concise: string; question: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Listen for extension events and load initial feeds
   useEffect(() => {
-    refreshLiveFeeds();
+    const handleWindowMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'EMYRIS_EXTENSION_READY') {
+        setIsExtensionConnected(true);
+      }
+      if (event.data?.type === 'EMYRIS_SYNC_COMPLETED') {
+        setIsRefreshing(false);
+        if (event.data.success && Array.isArray(event.data.posts) && event.data.posts.length > 0) {
+          setFeeds(event.data.posts);
+          try {
+            localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(event.data.posts));
+          } catch (e) {}
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          setSyncNotification({
+            type: 'success',
+            message: `Successfully pulled ${event.data.posts.length} live posts with exact permalinks directly from your LinkedIn session!`
+          });
+          setTimeout(() => setSyncNotification(null), 8000);
+        } else {
+          setSyncNotification({
+            type: 'error',
+            message: event.data.message || 'Unable to pull live feed. Please ensure your LinkedIn tab is open in Chrome.'
+          });
+          setTimeout(() => setSyncNotification(null), 8000);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleWindowMessage);
+
+    // Initial load from backend API
+    fetch('/api/admin/linkedin/feeds')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
+          setFeeds(data.posts);
+          if (data.lastUpdated) {
+            const d = new Date(data.lastUpdated);
+            setLastSyncedTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      window.removeEventListener('message', handleWindowMessage);
+    };
   }, []);
 
   const refreshLiveFeeds = () => {
     setIsRefreshing(true);
+    setSyncNotification(null);
+
+    // 1. Dispatch sync request to extension content script
+    window.postMessage({ type: 'EMYRIS_TRIGGER_SYNC', source: 'emyris-portal' }, '*');
+
+    // 2. Query backend in parallel
+    fetch('/api/admin/linkedin/feeds')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
+          setFeeds(data.posts);
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        }
+      })
+      .catch(() => {});
+
+    // 3. Fallback timeout if extension is not installed or tab not open
     setTimeout(() => {
-      setIsRefreshing(false);
-      const now = new Date();
-      setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 700);
+      setIsRefreshing((prev) => {
+        if (prev) {
+          const hasExt = typeof document !== 'undefined' && document.documentElement.getAttribute('data-emyris-extension-installed') === 'true';
+          if (!hasExt) {
+            setSyncNotification({
+              type: 'info',
+              message: 'Option 1 Active: Make sure the Emyris Chrome Extension is loaded and your LinkedIn tab is open in Chrome to sync fresh posts.'
+            });
+            setTimeout(() => setSyncNotification(null), 9000);
+          }
+          const now = new Date();
+          setLastSyncedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          return false;
+        }
+        return false;
+      });
+    }, 3800);
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -242,439 +343,916 @@ export default function LinkedInDesk() {
     }, 600);
   };
 
+  const handleAddLivePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importUrl.trim()) return;
+
+    const author = importAuthor.trim() || 'Industry Connection';
+    const topic = importTopic.trim() || 'Strategic Discussion';
+
+    const newPost: FeedPost = {
+      id: 'custom-' + Date.now(),
+      author: author,
+      role: importRole.trim() || 'LinkedIn Connection',
+      badge: 'Live Imported Post',
+      category: 'pharma',
+      metrics: { likes: 'Live', comments: 'Active' },
+      summary: topic,
+      link: importUrl.trim(),
+      drafts: {
+        strategic: `Insightful perspective, ${author}. Having steered business units and field operations across the pharmaceutical landscape for over 30 years, I find that success invariably hinges on ground-level execution and front-line conviction. Strategy provides direction, but empowering the team at the point of customer engagement is what truly translates vision into market leadership.`,
+        concise: `Spot on, ${author}. Ground execution and disciplined team leadership remain the decisive competitive advantages in our industry today. Thank you for sharing these valuable insights!`,
+        question: `Very thoughtful points, ${author}. In your operational experience, what has proven to be the most reliable metric or behavior that signals front-line teams have genuinely embraced this strategic shift?`
+      }
+    };
+
+    const updated = [newPost, ...feeds];
+    setFeeds(updated);
+    try {
+      localStorage.setItem('emyris_saved_linkedin_feeds', JSON.stringify(updated));
+    } catch (err) {}
+
+    setImportUrl('');
+    setImportAuthor('');
+    setImportRole('');
+    setImportTopic('');
+    setShowImporter(false);
+  };
+
+  const handleResetFeeds = () => {
+    if (window.confirm("Reset active feeds back to the default 10 posts?")) {
+      setFeeds(ALL_FEEDS);
+      localStorage.removeItem('emyris_saved_linkedin_feeds');
+    }
+  };
+
   const filteredFeeds = selectedCategory === 'all' 
-    ? ALL_FEEDS 
-    : ALL_FEEDS.filter(feed => feed.category === selectedCategory);
+    ? feeds 
+    : feeds.filter(feed => feed.category === selectedCategory);
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-32 text-slate-100">
+    <div style={{ maxWidth: '1100px', margin: '0 auto', color: '#f8fafc' }}>
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-sky-950/40 to-slate-900 border-b border-slate-800 px-4 py-5 md:px-8">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
-                <Share2 size={20} />
+      <div style={{ 
+        background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 0.85))', 
+        border: '1px solid rgba(56, 189, 248, 0.3)', 
+        borderRadius: '18px', 
+        padding: '20px 24px', 
+        marginBottom: '20px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px'
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <span style={{ background: 'rgba(56, 189, 248, 0.2)', padding: '6px', borderRadius: '8px', color: '#38bdf8', display: 'flex' }}>
+              <Share2 size={20} />
+            </span>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+              Executive LinkedIn Desk
+            </h2>
+            {isExtensionConnected ? (
+              <span style={{ 
+                background: 'rgba(16, 185, 129, 0.2)', 
+                color: '#34d399', 
+                fontSize: '0.7rem', 
+                fontWeight: 700, 
+                padding: '3px 9px', 
+                borderRadius: '999px',
+                border: '1px solid rgba(52, 211, 153, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', display: 'inline-block', boxShadow: '0 0 6px #34d399' }}></span>
+                EXTENSION BRIDGE LINKED
               </span>
-              <h1 className="text-lg md:text-xl font-black text-white tracking-wide uppercase">
-                Executive LinkedIn Desk
-              </h1>
-              <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-                LIVE FEED SYNCED
+            ) : (
+              <span style={{ 
+                background: 'rgba(56, 189, 248, 0.15)', 
+                color: '#38bdf8', 
+                fontSize: '0.7rem', 
+                fontWeight: 700, 
+                padding: '3px 9px', 
+                borderRadius: '999px',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#38bdf8', display: 'inline-block' }}></span>
+                LIVE SYNC READY
               </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Personalized for <strong className="text-slate-200">J. Ranjan Dash</strong> • Business Operation Head, Emyris Biolifesciences • <span className="text-sky-400">Last Synced: {lastSyncedTime}</span>
-            </p>
+            )}
           </div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
+            Personalized for <strong style={{ color: '#e2e8f0' }}>J. Ranjan Dash</strong> • Business Operation Head, Emyris Biolifesciences • <span style={{ color: '#38bdf8' }}>Last Synced: {lastSyncedTime}</span>
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap self-start md:self-auto">
-            {/* Sync Feeds Button */}
-            <button
-              onClick={refreshLiveFeeds}
-              disabled={isRefreshing}
-              className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all"
-            >
-              <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
-              <span>{isRefreshing ? 'Syncing...' : 'Sync Live Feeds'}</span>
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Refresh Live Feeds Button */}
+          <button
+            onClick={refreshLiveFeeds}
+            disabled={isRefreshing}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(30, 41, 59, 0.9)',
+              color: '#38bdf8',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '10px',
+              padding: '10px 16px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+            <span>{isRefreshing ? 'Syncing...' : 'Sync Live Feeds'}</span>
+          </button>
 
-            {/* Open LinkedIn Button */}
-            <button
-              onClick={() => handleOpenLinkedIn()}
-              className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-sky-600/20 active:scale-95 transition-all"
-            >
-              <Smartphone size={16} />
-              <span>Open LinkedIn</span>
-              <ExternalLink size={14} />
-            </button>
-          </div>
+          {/* Open LinkedIn App Button */}
+          <button
+            onClick={() => handleOpenLinkedIn()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#0284c7',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px 16px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)'
+            }}
+          >
+            <Smartphone size={16} />
+            <span>Open LinkedIn</span>
+            <ExternalLink size={14} />
+          </button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {syncNotification && (
+        <div style={{
+          background: syncNotification.type === 'success' ? 'rgba(6, 78, 59, 0.9)' : syncNotification.type === 'error' ? 'rgba(127, 29, 29, 0.9)' : 'rgba(30, 58, 138, 0.9)',
+          border: `1px solid ${syncNotification.type === 'success' ? '#10b981' : syncNotification.type === 'error' ? '#ef4444' : '#38bdf8'}`,
+          borderRadius: '12px',
+          padding: '12px 18px',
+          marginBottom: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '0.85rem',
+          color: '#ffffff',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+        }}>
+          {syncNotification.type === 'success' && <CheckCircle2 size={18} style={{ color: '#34d399', flexShrink: 0 }} />}
+          {syncNotification.type === 'error' && <AlertTriangle size={18} style={{ color: '#f87171', flexShrink: 0 }} />}
+          {syncNotification.type === 'info' && <Info size={18} style={{ color: '#38bdf8', flexShrink: 0 }} />}
+          <div style={{ flex: 1 }}>{syncNotification.message}</div>
+          <button
+            onClick={() => setSyncNotification(null)}
+            style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1rem', padding: '0 4px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
-      <div className="max-w-4xl mx-auto w-full px-4 pt-4">
-        <div className="flex border-b border-slate-800 gap-2">
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={`pb-3 px-3 text-xs font-bold transition-colors relative flex items-center gap-2 ${
-              activeTab === 'feed' ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <MessageSquare size={16} />
-            <span>Active Feed Postings ({ALL_FEEDS.length})</span>
-            {activeTab === 'feed' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full" />
-            )}
-          </button>
+      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '16px' }}>
+        <button
+          onClick={() => setActiveTab('feed')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'feed' ? '2px solid #38bdf8' : '2px solid transparent',
+            color: activeTab === 'feed' ? '#38bdf8' : '#94a3b8',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          <MessageSquare size={16} />
+          <span>Active Feed Postings ({ALL_FEEDS.length})</span>
+        </button>
 
-          <button
-            onClick={() => setActiveTab('generator')}
-            className={`pb-3 px-3 text-xs font-bold transition-colors relative flex items-center gap-2 ${
-              activeTab === 'generator' ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Sparkles size={16} />
-            <span>Mobile Reply Generator</span>
-            {activeTab === 'generator' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full" />
-            )}
-          </button>
-        </div>
-
-        {/* Filter Pills */}
-        {activeTab === 'feed' && (
-          <div className="flex gap-2 flex-wrap items-center pt-3 pb-1">
-            <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1 mr-1">
-              <Filter size={12} />
-              Topics:
-            </span>
-            {[
-              { id: 'all', label: `All Feeds (${ALL_FEEDS.length})` },
-              { id: 'pharma', label: 'Pharma & Healthcare (4)' },
-              { id: 'leadership', label: 'Leadership & Strategy (2)' },
-              { id: 'economy', label: 'Economy & Industry (2)' },
-              { id: 'biotech', label: 'Biotech & AI Innovation (2)' },
-            ].map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`text-[11px] font-bold px-3 py-1 rounded-full transition-all ${
-                  selectedCategory === cat.id
-                    ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40'
-                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => setActiveTab('generator')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'generator' ? '2px solid #38bdf8' : '2px solid transparent',
+            color: activeTab === 'generator' ? '#38bdf8' : '#94a3b8',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          <Sparkles size={16} />
+          <span>Mobile Post Responder</span>
+        </button>
       </div>
 
-      {/* Content Area */}
-      <div className="max-w-4xl mx-auto w-full px-4 pt-4 space-y-6">
-        {/* TAB 1: CURATED FEED POSTS */}
-        {activeTab === 'feed' && (
-          <div className="space-y-6">
-            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 text-xs text-slate-300 flex items-center gap-3">
-              <Award className="text-amber-400 shrink-0" size={24} />
-              <div>
-                <span className="font-bold text-white">Live LinkedIn Workflow: </span>
-                Feeds auto-sync on login. Tap <strong className="text-sky-400">"Copy Draft"</strong> on your preferred tone, then tap <strong className="text-sky-400">"Open Post"</strong> to paste your comment on LinkedIn in seconds!
-              </div>
-            </div>
-
-            {filteredFeeds.map((post, idx) => (
-              <div 
-                key={post.id} 
-                className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-xl space-y-4"
-              >
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="bg-indigo-500/20 text-indigo-300 text-[10px] font-black px-2 py-0.5 rounded">
-                        #{idx + 1}
-                      </span>
-                      <h3 className="font-black text-white text-base">{post.author}</h3>
-                      {post.badge && (
-                        <span className="bg-sky-500/10 text-sky-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-sky-500/20">
-                          {post.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{post.role}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {/* Engagement */}
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <ThumbsUp size={12} className="text-sky-400" /> {post.metrics.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare size={12} className="text-purple-400" /> {post.metrics.comments}
-                      </span>
-                      {post.metrics.views && (
-                        <span className="flex items-center gap-1">
-                          <Eye size={12} className="text-emerald-400" /> {post.metrics.views}
-                        </span>
-                      )}
-                    </div>
-
-                    {post.link && (
-                      <button
-                        onClick={() => handleOpenLinkedIn(post.link)}
-                        className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 font-bold bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 active:scale-95 transition-all"
-                      >
-                        <span>Open Post</span>
-                        <ExternalLink size={13} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Post Summary & Question */}
-                <div className="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800 space-y-2 text-xs">
-                  <p className="text-slate-300 leading-relaxed">
-                    <strong className="text-slate-200">Post Core:</strong> {post.summary}
-                  </p>
-                  {post.question && (
-                    <p className="text-amber-300/90 italic border-l-2 border-amber-500/50 pl-2.5 py-0.5">
-                      {post.question}
-                    </p>
-                  )}
-                </div>
-
-                {/* Draft Replies */}
-                <div className="space-y-3 pt-1">
-                  <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-sky-400" />
-                    <span>Choose Your Executive Draft Reply:</span>
-                  </h4>
-
-                  {/* Option 1: Strategic / Executive */}
-                  <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                        Option 1 • Executive Leadership (Recommended)
-                      </span>
-                      <button
-                        onClick={() => handleCopy(post.drafts.strategic, `${post.id}-strategic`)}
-                        className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg transition-all ${
-                          copiedId === `${post.id}-strategic`
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-800 hover:bg-slate-700 text-sky-400'
-                        }`}
-                      >
-                        {copiedId === `${post.id}-strategic` ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copy Draft</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-line font-normal">
-                      {post.drafts.strategic}
-                    </p>
-                  </div>
-
-                  {/* Option 2: Concise */}
-                  <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                        Option 2 • Concise & Direct
-                      </span>
-                      <button
-                        onClick={() => handleCopy(post.drafts.concise, `${post.id}-concise`)}
-                        className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg transition-all ${
-                          copiedId === `${post.id}-concise`
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-800 hover:bg-slate-700 text-sky-400'
-                        }`}
-                      >
-                        {copiedId === `${post.id}-concise` ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copy Draft</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                      {post.drafts.concise}
-                    </p>
-                  </div>
-
-                  {/* Option 3: Discussion Starter */}
-                  <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                        Option 3 • Engaging Question
-                      </span>
-                      <button
-                        onClick={() => handleCopy(post.drafts.question, `${post.id}-question`)}
-                        className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg transition-all ${
-                          copiedId === `${post.id}-question`
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-800 hover:bg-slate-700 text-sky-400'
-                        }`}
-                      >
-                        {copiedId === `${post.id}-question` ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copy Draft</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                      {post.drafts.question}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* Category Filter Pills (When on Feeds Tab) */}
+      {activeTab === 'feed' && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginRight: '4px' }}>
+            <Filter size={14} />
+            <span>Topics:</span>
           </div>
-        )}
 
-        {/* TAB 2: MOBILE REPLY GENERATOR */}
-        {activeTab === 'generator' && (
-          <div className="space-y-6">
-            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sparkles className="text-sky-400" size={18} />
-                  <span>On-The-Fly Reply Generator (From Mobile)</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Reading any post on your LinkedIn phone app right now? Paste the author name and post text below to instantly generate executive drafts in your voice.
-                </p>
+          {[
+            { id: 'all', label: `All Feeds (${ALL_FEEDS.length})` },
+            { id: 'pharma', label: 'Pharma & Healthcare (4)' },
+            { id: 'leadership', label: 'Leadership & Strategy (2)' },
+            { id: 'economy', label: 'Economy & Industry (2)' },
+            { id: 'biotech', label: 'Biotech & AI Innovation (2)' },
+          ].map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              style={{
+                background: selectedCategory === cat.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.5)',
+                color: selectedCategory === cat.id ? '#38bdf8' : '#94a3b8',
+                border: selectedCategory === cat.id ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '20px',
+                padding: '5px 12px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Content Area */}
+      {activeTab === 'feed' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Quick Import Bar */}
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.75)',
+            border: '1px dashed rgba(56, 189, 248, 0.4)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px', display: 'flex' }}>
+                  <Link2 size={16} />
+                </span>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#ffffff' }}>
+                    Import Any Live Post by Exact Permalink
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>
+                    Copy any post link on LinkedIn (... &gt; Copy link to post) and paste here to generate instant executive drafts!
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Author / Connection Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    placeholder="e.g. Dr. Rajesh Sharma, Rajesh, Amit..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Paste Post Text or Topic
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={inputPost}
-                    onChange={(e) => setInputPost(e.target.value)}
-                    placeholder="Paste the LinkedIn post, discussion question, or announcement here..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowImporter(!showImporter)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: showImporter ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                    color: showImporter ? '#f87171' : '#38bdf8',
+                    border: '1px solid ' + (showImporter ? 'rgba(239, 68, 68, 0.3)' : 'rgba(56, 189, 248, 0.35)'),
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Plus size={14} style={{ transform: showImporter ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <span>{showImporter ? 'Close' : '➕ Add Post Permalink'}</span>
+                </button>
 
                 <button
-                  disabled={!inputPost.trim() || isGenerating}
-                  onClick={generateCustomReplies}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl shadow-lg active:scale-95 transition-all"
+                  type="button"
+                  onClick={handleResetFeeds}
+                  title="Reset to default 10 curated feeds"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(30, 41, 59, 0.5)',
+                    color: '#94a3b8',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    fontSize: '0.72rem',
+                    cursor: 'pointer'
+                  }}
                 >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw size={16} className="animate-spin" />
-                      <span>Drafting Executive Responses...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} />
-                      <span>Generate Executive Replies</span>
-                    </>
-                  )}
+                  <RotateCcw size={12} />
+                  <span>Reset</span>
                 </button>
               </div>
             </div>
 
-            {/* Generated Results */}
-            {generatedDrafts && (
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
-                  <Check className="text-emerald-400" size={16} />
-                  <span>Ready-to-Post Drafts:</span>
-                </h3>
+            {showImporter && (
+              <form onSubmit={handleAddLivePost} style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Exact LinkedIn Post Permalink URL (Required)
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.linkedin.com/feed/update/urn:li:activity:..."
+                    value={importUrl}
+                    onChange={e => setImportUrl(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#090d16',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      fontSize: '0.8rem',
+                      color: '#ffffff',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
 
-                {/* Strategic */}
-                <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                      Strategic / BU Head Perspective
-                    </span>
-                    <button
-                      onClick={() => handleCopy(generatedDrafts.strategic, 'custom-strategic')}
-                      className="flex items-center gap-1 text-xs font-bold px-3 py-1 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg"
-                    >
-                      {copiedId === 'custom-strategic' ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copiedId === 'custom-strategic' ? 'Copied!' : 'Copy'}</span>
-                    </button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Author Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Umesh Kumar Agarwal"
+                      value={importAuthor}
+                      onChange={e => setImportAuthor(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#090d16',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#ffffff',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
                   </div>
-                  <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                    {generatedDrafts.strategic}
-                  </p>
-                </div>
-
-                {/* Concise */}
-                <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                      Concise & Direct
-                    </span>
-                    <button
-                      onClick={() => handleCopy(generatedDrafts.concise, 'custom-concise')}
-                      className="flex items-center gap-1 text-xs font-bold px-3 py-1 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg"
-                    >
-                      {copiedId === 'custom-concise' ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copiedId === 'custom-concise' ? 'Copied!' : 'Copy'}</span>
-                    </button>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Author Headline / Role
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Geopolitical Analyst, Editor in Chief"
+                      value={importRole}
+                      onChange={e => setImportRole(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#090d16',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#ffffff',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
                   </div>
-                  <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                    {generatedDrafts.concise}
-                  </p>
                 </div>
 
-                {/* Question */}
-                <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                      Discussion Provoking
-                    </span>
-                    <button
-                      onClick={() => handleCopy(generatedDrafts.question, 'custom-question')}
-                      className="flex items-center gap-1 text-xs font-bold px-3 py-1 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg"
-                    >
-                      {copiedId === 'custom-question' ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copiedId === 'custom-question' ? 'Copied!' : 'Copy'}</span>
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                    {generatedDrafts.question}
-                  </p>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Post Topic / Core Message
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Paste post excerpt or topic summary..."
+                    value={importTopic}
+                    onChange={e => setImportTopic(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#090d16',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.8rem',
+                      color: '#ffffff',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                  />
                 </div>
 
-                <div className="text-center pt-2">
-                  <button
-                    onClick={() => handleOpenLinkedIn()}
-                    className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all"
-                  >
-                    <span>Open LinkedIn on Phone to Paste</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
+                <button
+                  type="submit"
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7, #059669)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start'
+                  }}
+                >
+                  🚀 Save &amp; Generate Executive Drafts
+                </button>
+              </form>
             )}
           </div>
-        )}
-      </div>
+          <div style={{ 
+            background: 'rgba(30, 41, 59, 0.5)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)', 
+            borderRadius: '12px', 
+            padding: '14px 18px', 
+            fontSize: '0.8rem', 
+            color: '#cbd5e1', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px' 
+          }}>
+            <Award size={22} style={{ color: '#fbbf24', flexShrink: 0 }} />
+            <div>
+              <strong style={{ color: '#ffffff' }}>Mobile Workflow: </strong> 
+              Review the live feeds below across pharma, strategy, economy, and innovation. Tap <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>"Copy Draft"</span> on any tone, then tap <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>"Open Post"</span> to paste directly on LinkedIn in seconds!
+            </div>
+          </div>
+
+          {filteredFeeds.map((post, idx) => (
+            <div 
+              key={post.id}
+              style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ 
+                      background: 'rgba(99, 102, 241, 0.2)', 
+                      color: '#a5b4fc', 
+                      fontSize: '0.68rem', 
+                      fontWeight: 800, 
+                      padding: '2px 7px', 
+                      borderRadius: '6px' 
+                    }}>
+                      #{idx + 1}
+                    </span>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#ffffff' }}>{post.author}</h3>
+                    {post.badge && (
+                      <span style={{ 
+                        background: 'rgba(56, 189, 248, 0.15)', 
+                        color: '#38bdf8', 
+                        fontSize: '0.68rem', 
+                        fontWeight: 700, 
+                        padding: '2px 8px', 
+                        borderRadius: '999px',
+                        border: '1px solid rgba(56, 189, 248, 0.3)' 
+                      }}>
+                        {post.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#94a3b8', lineHeight: '1.4' }}>{post.role}</p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Engagement Metrics */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.72rem', color: '#64748b', marginRight: '4px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ThumbsUp size={12} style={{ color: '#38bdf8' }} /> {post.metrics.likes}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MessageSquare size={12} style={{ color: '#a855f7' }} /> {post.metrics.comments}
+                    </span>
+                    {post.metrics.views && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Eye size={12} style={{ color: '#34d399' }} /> {post.metrics.views}
+                      </span>
+                    )}
+                  </div>
+
+                  {post.link && (
+                    <button
+                      onClick={() => handleOpenLinkedIn(post.link)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        color: '#38bdf8',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span>Open Post</span>
+                      <ExternalLink size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{ 
+                background: 'rgba(2, 6, 23, 0.6)', 
+                border: '1px solid rgba(255, 255, 255, 0.05)', 
+                borderRadius: '10px', 
+                padding: '12px 14px',
+                fontSize: '0.8rem',
+                lineHeight: '1.5'
+              }}>
+                <p style={{ margin: 0, color: '#cbd5e1' }}>
+                  <strong style={{ color: '#e2e8f0' }}>Topic:</strong> {post.summary}
+                </p>
+                {post.question && (
+                  <p style={{ margin: '8px 0 0 0', color: '#fef08a', fontStyle: 'italic', borderLeft: '2px solid #facc15', paddingLeft: '8px' }}>
+                    {post.question}
+                  </p>
+                )}
+              </div>
+
+              {/* Drafts */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={13} style={{ color: '#38bdf8' }} />
+                  <span>Choose Your Executive Draft Reply:</span>
+                </div>
+
+                {/* Option 1 */}
+                <div style={{ 
+                  background: 'rgba(2, 6, 23, 0.8)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: '10px', 
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Option 1 • Executive Leadership (Recommended)
+                    </span>
+                    <button
+                      onClick={() => handleCopy(post.drafts.strategic, `${post.id}-strategic`)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: copiedId === `${post.id}-strategic` ? '#10b981' : '#1e293b',
+                        color: copiedId === `${post.id}-strategic` ? '#ffffff' : '#38bdf8',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {copiedId === `${post.id}-strategic` ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedId === `${post.id}-strategic` ? 'Copied!' : 'Copy Draft'}</span>
+                    </button>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
+                    {post.drafts.strategic}
+                  </p>
+                </div>
+
+                {/* Option 2 */}
+                <div style={{ 
+                  background: 'rgba(2, 6, 23, 0.8)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: '10px', 
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Option 2 • Concise & Direct
+                    </span>
+                    <button
+                      onClick={() => handleCopy(post.drafts.concise, `${post.id}-concise`)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: copiedId === `${post.id}-concise` ? '#10b981' : '#1e293b',
+                        color: copiedId === `${post.id}-concise` ? '#ffffff' : '#38bdf8',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {copiedId === `${post.id}-concise` ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedId === `${post.id}-concise` ? 'Copied!' : 'Copy Draft'}</span>
+                    </button>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: '1.5' }}>
+                    {post.drafts.concise}
+                  </p>
+                </div>
+
+                {/* Option 3 */}
+                <div style={{ 
+                  background: 'rgba(2, 6, 23, 0.8)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: '10px', 
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#c084fc', background: 'rgba(192, 132, 252, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Option 3 • Engaging Question
+                    </span>
+                    <button
+                      onClick={() => handleCopy(post.drafts.question, `${post.id}-question`)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: copiedId === `${post.id}-question` ? '#10b981' : '#1e293b',
+                        color: copiedId === `${post.id}-question` ? '#ffffff' : '#38bdf8',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {copiedId === `${post.id}-question` ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedId === `${post.id}-question` ? 'Copied!' : 'Copy Draft'}</span>
+                    </button>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: '1.5' }}>
+                    {post.drafts.question}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TAB 2: GENERATOR */}
+      {activeTab === 'generator' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ 
+            background: 'rgba(15, 23, 42, 0.85)', 
+            border: '1px solid rgba(255, 255, 255, 0.1)', 
+            borderRadius: '16px', 
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} style={{ color: '#38bdf8' }} />
+                <span>On-The-Fly Mobile Post Responder</span>
+              </h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
+                Reading any post on your LinkedIn phone app? Paste the text or topic below to generate drafts in your executive voice.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  Author / Connection Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={authorName}
+                  onChange={e => setAuthorName(e.target.value)}
+                  placeholder="e.g. Dr. Rajesh Sharma, Saurabh..."
+                  style={{
+                    width: '100%',
+                    background: '#090d16',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    fontSize: '0.82rem',
+                    color: '#ffffff',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  Post Text or Topic
+                </label>
+                <textarea
+                  rows={4}
+                  value={inputPost}
+                  onChange={e => setInputPost(e.target.value)}
+                  placeholder="Paste the post content or main point here..."
+                  style={{
+                    width: '100%',
+                    background: '#090d16',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    fontSize: '0.82rem',
+                    color: '#ffffff',
+                    outline: 'none',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <button
+                disabled={!inputPost.trim() || isGenerating}
+                onClick={generateCustomReplies}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, #0284c7, #059669)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: isGenerating || !inputPost.trim() ? 'not-allowed' : 'pointer',
+                  opacity: !inputPost.trim() ? 0.5 : 1
+                }}
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw size={16} />
+                    <span>Drafting Executive Responses...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    <span>Generate Executive Replies</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {generatedDrafts && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ 
+                background: 'rgba(2, 6, 23, 0.85)', 
+                border: '1px solid rgba(255, 255, 255, 0.1)', 
+                borderRadius: '12px', 
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                    Strategic BU Head Perspective
+                  </span>
+                  <button
+                    onClick={() => handleCopy(generatedDrafts.strategic, 'custom-strategic')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: copiedId === 'custom-strategic' ? '#10b981' : '#1e293b',
+                      color: copiedId === 'custom-strategic' ? '#ffffff' : '#38bdf8',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {copiedId === 'custom-strategic' ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copiedId === 'custom-strategic' ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: '1.5' }}>
+                  {generatedDrafts.strategic}
+                </p>
+              </div>
+
+              <div style={{ 
+                background: 'rgba(2, 6, 23, 0.85)', 
+                border: '1px solid rgba(255, 255, 255, 0.1)', 
+                borderRadius: '12px', 
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                    Concise & Direct
+                  </span>
+                  <button
+                    onClick={() => handleCopy(generatedDrafts.concise, 'custom-concise')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: copiedId === 'custom-concise' ? '#10b981' : '#1e293b',
+                      color: copiedId === 'custom-concise' ? '#ffffff' : '#38bdf8',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {copiedId === 'custom-concise' ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copiedId === 'custom-concise' ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: '1.5' }}>
+                  {generatedDrafts.concise}
+                </p>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '6px' }}>
+                <button
+                  onClick={() => handleOpenLinkedIn()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#0284c7',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '10px 20px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>Open LinkedIn App to Paste</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
