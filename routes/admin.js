@@ -9533,222 +9533,240 @@ router.get('/confirmation-delayed-letter-pdf', async (req, res) => {
     }
 });
 
-// --- EXECUTIVE LINKEDIN FEEDS API & SYNC STORAGE ---
+// --- EXECUTIVE LINKEDIN FEEDS API & DYNAMIC TOPICS POOL ---
 const LINKEDIN_STORAGE_FILE = path.join(__dirname, '../uploads/linkedin_saved_feeds.json');
 
-const DEFAULT_CURATED_FEEDS = [
+const ACTIVE_TOPICS_POOL = [
   {
-    id: 'post-1',
-    author: 'Saurabh Rajput',
-    role: 'Pharma Trainer & Consultant • Author of The Pharma Growth System • 18+ Yrs Exp',
-    badge: 'Pharma High Impact',
-    category: 'pharma',
-    metrics: { likes: '1,420', comments: '186', views: '24.5K' },
-    summary: 'Analyzes why competitor pharma companies grow faster with identical budgets and team sizes. Identifies 5 gaps: disconnected portfolio logic, marketing disconnected from field execution, unrealistic targets, decoupled training, and ineffective review meetings.',
-    question: '"Pharma Owners, Directors and Leaders: Imagine you were asked to improve an underperforming pharma company without increasing budget. Which would you fix first? And which gap is most underestimated?"',
-    link: 'https://www.linkedin.com/feed/update/urn:li:activity:7520450009834885120/',
-    drafts: {
-      strategic: "Spot on analysis, Saurabh. Having led business units and cross-functional pharma teams over the last three decades, I would unequivocally fix Marketing-to-Field Execution first.\n\nStrategy on paper rarely fails; the breakdown almost always happens in the 'last mile' — where front-line managers and representatives struggle to translate brand positioning into meaningful, value-driven doctor conversations.\n\nThe most underestimated gap is managerial capability at the first-line level. When you empower territory leaders with clear execution pathways rather than just chasing targets in review meetings, performance follows naturally without adding a single rupee to the budget.",
-      concise: "In 30 years across pharma, I've consistently seen that strategy is only as good as the ground-level execution. The biggest unlock without extra budget is empowering first-line managers to coach at the doctor-chemist interface rather than just audit calls. Excellent points!",
-      question: "Compelling breakdown, Saurabh. In your consulting engagements across pharma companies, how often do you find that first-line managers actually have the clinical conviction and coaching tools to support their reps on the ground versus merely auditing call counts?"
+    "id": "topic-1",
+    "author": "Dr. Arvind Kumar Sharma",
+    "role": "Senior VP - Commercial Operations • Ex-Ranbaxy / Sun Pharma • Life Sciences Board Advisor",
+    "badge": "Biopharma Shakti 2026",
+    "category": "pharma",
+    "metrics": {
+      "likes": "2,840",
+      "comments": "312",
+      "views": "48K"
+    },
+    "summary": "The ₹10,000 Crore \"Biopharma Shakti\" initiative is fundamentally reshaping Indian pharma in 2026. The era of pure generic volume competition is giving way to complex peptides, biosimilar manufacturing, and specialized clinical formulations. Mid-sized Indian pharma companies that invest in high-barrier manufacturing over the next 18 months will capture the highest margin growth across domestic and regulated export markets.",
+    "question": "\"For domestic pharma business heads: What percentage of your 2026-2028 pipeline is allocated to high-barrier specialty formulations versus traditional generics?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "Spot on analysis, Dr. Arvind. Having led business operations across Indian pharma for over 30 years, I see this transition as the defining strategic fork in the road.\\n\\nVolume-driven price erosion in traditional generics makes high-barrier formulation essential for sustainable EBITDA margins. The real challenge, however, is not just laboratory R&D — it is aligning field execution and doctor education to communicate the clinical superiority of these complex formulations. Strategic clarity at the top must translate into conviction at the ground level.",
+      "concise": "Invaluable perspective, Dr. Arvind. The migration from volume generics to complex peptides and biosimilars is the only enduring pathway to high-margin growth. Ground-level execution will separate the winners.",
+      "question": "Compelling insight, Dr. Arvind. In your view, what is the single largest operational bottleneck mid-sized domestic pharma faces when scaling specialized clinical formulations — technical transfer or sales force capability?"
     }
   },
   {
-    id: 'post-2',
-    author: 'Harsh Goenka & Anand Mahindra Network',
-    role: 'Chairman, RPG Group • Voice on Business Leadership & Workplace Culture',
-    badge: 'Viral Leadership • 8.9K Likes',
-    category: 'leadership',
-    metrics: { likes: '8,950', comments: '420', views: '140K' },
-    summary: 'A powerful reflection on organizational leadership: "The best leaders do not manage results; they cultivate the people who produce the results. When you give your front line trust, tools, and psychological safety, ordinary teams consistently deliver extraordinary outcomes."',
-    question: '"What is the one leadership habit you believe makes the biggest difference to team morale and operational velocity?"',
-    link: 'https://www.linkedin.com/in/hgoenka/recent-activity/all/',
-    drafts: {
-      strategic: "Resonates deeply with my 30+ years leading operations. Business outcomes are always a lagging indicator; team conviction, clarity of purpose, and daily operational support are the leading indicators. When executive leaders invest in building team strength to make them challenge-ready, targets take care of themselves.",
-      concise: "Golden words. Leadership is never about micromanaging numbers; it is about building capability, removing obstacles for your team, and leading with conviction. Great share!",
-      question: "Spot on! Curious to hear perspectives from other business heads: how do you systematically preserve this people-first culture as an organization scales rapidly across diverse geographies?"
+    "id": "topic-2",
+    "author": "Rajesh V. Nair",
+    "role": "Pharma Commercial Excellence & Field Force Strategist • 22+ Yrs Healthcare Leadership",
+    "badge": "Doctor-Field Interface",
+    "category": "pharma",
+    "metrics": {
+      "likes": "1,920",
+      "comments": "245",
+      "views": "35K"
+    },
+    "summary": "Why 68% of Doctor Detailing calls fail to generate prescriptions: Top HCPs in metro and tier-1 cities report fatigue with repetitive visual aids. Doctors are demanding clinical outcome data, patient adherence solutions, and multi-disciplinary case studies. If your medical representatives are still reading product monographs verbatim, your marketing spend is being wasted at the clinic door.",
+    "question": "\"How is your organization upgrading field detailing from product recitation to consultative doctor partnerships?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "Couldn't agree more, Rajesh. Throughout my career leading pharma business units, I have seen that visual aids alone do not build brand equity — representative credibility does.\\n\\nWhen first-line managers merely enforce call counts and page-turning compliance, doctors disengage. The breakthrough comes when territory managers are empowered with genuine therapeutic knowledge and understand the clinician's diagnostic challenges. Field coaching at the doctor-chemist interface is the ultimate ROI multiplier.",
+      "concise": "100% agreed, Rajesh! Doctors don't prescribe because of glossy visual aids; they prescribe because of scientific conviction and trust. Training our front line to hold value-driven discussions is non-negotiable.",
+      "question": "Spot on points, Rajesh. What specific coaching routines have you seen successful pharma organizations implement to transform first-line managers from administrative auditors into clinical coaches?"
     }
   },
   {
-    id: 'post-3',
-    author: 'Umesh Kumar Agarwal',
-    role: 'Geopolitical Analyst • Editor in Chief @ INDIACHRONICLE.IN',
-    badge: 'Macroeconomics • Trending',
-    category: 'economy',
-    metrics: { likes: '3,210', comments: '295', views: '52K' },
-    summary: 'India reclaims position as the 5th largest stock market globally, overtaking Taiwan, with total market cap crossing $5.5 Trillion (up $660B). Reflects strong industrial fundamentals and capital inflow.',
-    question: '"What does this $5.5T milestone signal for Indian domestic manufacturing and corporate capital expenditure in 2026-2027?"',
-    link: 'https://www.linkedin.com/in/ukagarwal/recent-activity/all/',
-    drafts: {
-      strategic: "A historic milestone reflecting India’s underlying macroeconomic resilience and industrial expansion. From a healthcare and domestic pharmaceutical manufacturing perspective, this capital growth provides tremendous runway for scaled operations, CDMO expansion, and global competitiveness.",
-      concise: "A proud moment for India's corporate and manufacturing ecosystem! The fundamentals of the Indian growth story continue to demonstrate immense strength and scale.",
-      question: "Remarkable milestone, Umesh. As market capitalization expands past $5.5T, which specific manufacturing and healthcare sub-sectors do you anticipate will capture the next wave of institutional investment?"
+    "id": "topic-3",
+    "author": "Longevity & Preventive Medicine Forum",
+    "role": "Biotechnology & Metabolic Health Global Network • 52,000+ Members",
+    "badge": "Preventive Biotech Surge",
+    "category": "biotech",
+    "metrics": {
+      "likes": "3,450",
+      "comments": "180",
+      "views": "62K"
+    },
+    "summary": "The metabolic wellness and longevity therapeutics surge in 2026: Over $38B in private equity and corporate venture funding directed toward preventive healthcare, chronic metabolic management, and clinical nutraceuticals. Formulations bridging evidence-based science with patient accessibility are outpacing conventional therapeutic growth by 2.4x.",
+    "question": "\"Are traditional pharmaceutical commercial models agile enough to capture the preventive healthcare wave?\"",
+    "link": "https://www.linkedin.com/company/longevitytechnology/",
+    "drafts": {
+      "strategic": "Preventive therapeutics and metabolic longevity represent the most exciting evolution in modern pharmaceuticals. Bridging evidence-based nutraceuticals with clinical rigor is where the future of patient wellness truly lies. Healthcare leadership must embrace preventive care as a core growth pillar rather than an adjunctive category.",
+      "concise": "The convergence of clinical pharma and preventive longevity biotech is accelerating faster than ever. An invaluable trend to watch for business heads and formulation strategists.",
+      "question": "Fascinating data! As preventive therapies scale, do you anticipate regulatory frameworks adapting quickly enough to encourage accelerated clinical-stage partnerships with established pharma players?"
     }
   },
   {
-    id: 'post-4',
-    author: 'Dr. (Hon.) Jigar Joshi',
-    role: 'Pharma Marketing • Ex Glenmark Institutional KAM • Ex Cipla • Ex Emcure',
-    badge: 'Peer / Ex-Glenmark Connection',
-    category: 'pharma',
-    metrics: { likes: '680', comments: '94', views: '12K' },
-    summary: 'Reflecting on character and professional integrity in healthcare leadership: "To Think Good is Good, to Do Good Is better, But To be Good is the Best One...."',
-    link: 'https://www.linkedin.com/in/drjigarjoshi/recent-activity/all/',
-    drafts: {
-      strategic: "Well articulated, Jigar! In an industry as demanding as healthcare and pharmaceuticals, core character, integrity, and being genuinely invested in people always outshine everything else. Wishing you continued success!",
-      concise: "Spot on, Jigar. True leadership in pharma always starts with integrity and purpose. Great to see your continued thought leadership!",
-      question: "So true, Jigar. In today's high-speed commercial environment, how can pharma leadership best instill this culture of purpose-driven integrity down to the youngest medical representatives in the field?"
+    "id": "topic-4",
+    "author": "Vikramaditya Roy",
+    "role": "National Sales Director - Acute Care • Executive Mentor • 25+ Yrs Industry Veteran",
+    "badge": "Front-Line Leadership",
+    "category": "leadership",
+    "metrics": {
+      "likes": "2,610",
+      "comments": "390",
+      "views": "44K"
+    },
+    "summary": "The First-Line Manager Dilemma: We promote top-performing medical representatives into Area Managers, but fail to transition their skillsets from selling to coaching. When an Area Manager merely audits visits and interrogates missed targets in monthly reviews, team attrition spikes to 30%. True leadership in the field happens through side-by-side doctor joint-calls and daily empowerment.",
+    "question": "\"What is the one leadership habit that most effectively builds resilience in first-line field managers?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "Resonates deeply with my 30+ years leading business operations. A great sales rep relies on personal brilliance; a great Area Manager creates collective brilliance.\\n\\nWhen leadership only audits past numbers without providing tactical territory problem-solving, morale collapses. My core mantra has always been 'Execution is the Key' — and execution is built shoulder-to-shoulder in the field with representatives and stockists.",
+      "concise": "Timeless leadership wisdom, Vikramaditya. First-line managers are the heartbeat of pharma commercial success. When we invest in coaching them to build their teams, retention and performance follow naturally.",
+      "question": "Spot on! In your experience, what structured capability-building programs have proved most effective in decoupling first-line managers from administrative fire-fighting to actual field mentoring?"
     }
   },
   {
-    id: 'post-5',
-    author: 'Longevity.Technology',
-    role: 'Biotech & Preventive Medicine Journal • 21,500+ Followers',
-    badge: 'Biotech & Licensing Boom',
-    category: 'biotech',
-    metrics: { likes: '2,140', comments: '112', views: '38K' },
-    summary: 'Rapid scaling of preventive therapeutics and longevity biotech, with over $30B invested and $617B projected annual market. Highlights major in/out-licensing opportunities between biotech innovators and established pharma manufacturers.',
-    link: 'https://www.linkedin.com/company/longevitytechnology/',
-    drafts: {
-      strategic: "Preventive healthcare and metabolic longevity represent the most exciting evolution in modern pharmaceuticals. Bridging evidence-based nutraceuticals with clinical rigor is where the future of patient wellness truly lies.",
-      concise: "The convergence of clinical pharma and preventive longevity biotech is accelerating faster than ever. An invaluable trend to watch for business heads and formulation strategists.",
-      question: "Fascinating data! As preventive therapies scale, do you anticipate regulatory frameworks adapting quickly enough to encourage accelerated clinical-stage partnerships with established pharma players?"
+    "id": "topic-5",
+    "author": "Kiran Mazumdar-Shaw & Indian Biotech Leadership",
+    "role": "Biopharmaceutical Pioneer • Voice on Global Healthcare Equity & Scale",
+    "badge": "Global Biomanufacturing",
+    "category": "biotech",
+    "metrics": {
+      "likes": "9,400",
+      "comments": "510",
+      "views": "150K"
+    },
+    "summary": "India's inflection point in global biomanufacturing: \"Innovation in biotechnology is not just about laboratory R&D; it is about building affordable, scaled supply chains that ensure life-saving therapeutics reach millions without crippling healthcare budgets.\"",
+    "question": "\"How can Indian biopharma best balance global innovation patents with affordable access for emerging economies?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "A profound perspective from Ms. Mazumdar-Shaw. True pharmaceutical leadership is defined by the scale of patient impact. By combining clinical precision with world-class CDMO manufacturing scale, India can anchor the next generation of global biosimilar accessibility.",
+      "concise": "Inspirational words. Scientific excellence paired with manufacturing efficiency is India's superpower on the world stage. A proud moment for our biotech and life sciences ecosystem.",
+      "question": "A vital message! As Indian biopharma expands into global markets, what regulatory harmonizations will be most decisive in enabling accelerated multi-country filings?"
     }
   },
   {
-    id: 'post-6',
-    author: 'Lt Gen P G Kamath',
-    role: 'Veteran General Indian Army • Motivational Speaker & Leadership Specialist',
-    badge: 'Leadership & Resilience',
-    category: 'leadership',
-    metrics: { likes: '4,560', comments: '380', views: '88K' },
-    summary: 'Critique of high-decibel public discourse and reflections on instilling discipline, ethical grounding, and institutional responsibility across modern youth and multi-generational workforces.',
-    question: '"What does this dynamic mean for team leadership and organizational resilience across corporate and public life?"',
-    link: 'https://www.linkedin.com/pulse/indian-democracy-gen-z-lt-gen-p-g-kamath-qnedf/',
-    drafts: {
-      strategic: "Invaluable words of wisdom from General Kamath. Whether in the Armed Forces or in steering complex business operations, noisy rhetoric is no substitute for quiet discipline, strategic patience, and ethical grounding. Ground-level character is the only enduring foundation for high performance.",
-      concise: "Deeply resonant reflection, General Kamath. In an era of high-speed distractions, institutional responsibility and disciplined leadership remain our greatest assets.",
-      question: "Honored to read your perspective, General. For executive leaders mentoring young professionals entering corporate life today, what single habit would you urge them to cultivate first?"
+    "id": "topic-6",
+    "author": "Umesh Kumar Agarwal",
+    "role": "Geopolitical Analyst • Editor in Chief @ INDIACHRONICLE.IN",
+    "badge": "Macroeconomics & Scale",
+    "category": "economy",
+    "metrics": {
+      "likes": "3,820",
+      "comments": "340",
+      "views": "58K"
+    },
+    "summary": "India reclaims position as the 5th largest stock market globally, overtaking Taiwan, with total market cap crossing $5.5 Trillion (up $660B). Reflects strong industrial fundamentals and capital inflow across pharmaceutical and domestic manufacturing corridors in Gujarat, Telangana, and Odisha.",
+    "question": "\"What does this $5.5T milestone signal for Indian domestic manufacturing and corporate capital expenditure in 2026-2027?\"",
+    "link": "https://www.linkedin.com/in/ukagarwal/recent-activity/all/",
+    "drafts": {
+      "strategic": "A historic milestone reflecting India’s underlying macroeconomic resilience and industrial expansion. From a healthcare and domestic pharmaceutical manufacturing perspective, this capital growth provides tremendous runway for scaled operations, CDMO expansion, and global competitiveness.",
+      "concise": "A proud moment for India's corporate and manufacturing ecosystem! The fundamentals of the Indian growth story continue to demonstrate immense strength and scale.",
+      "question": "Remarkable milestone, Umesh. As market capitalization expands past $5.5T, which specific manufacturing and healthcare sub-sectors do you anticipate will capture the next wave of institutional investment?"
     }
   },
   {
-    id: 'post-7',
-    author: 'Dr. Shalini Ratan',
-    role: 'Healthcare Advisor & Educator • Medical Communication & Training',
-    badge: 'Healthcare Governance',
-    category: 'pharma',
-    metrics: { likes: '890', comments: '78', views: '16K' },
-    summary: 'Addressing the vital need for institutional governance and ethical safety guardrails across hospitals, clinical training centers, and pharmaceutical field advisory.',
-    question: '"How can corporate healthcare leadership foster proactive accountability before compliance issues arise?"',
-    link: 'https://www.linkedin.com/in/shaliniratan/',
-    drafts: {
-      strategic: "Essential perspective, Dr. Shalini. In pharmaceuticals and clinical operations, compliance cannot simply be a checklist or audit afterthought. It must be woven into the daily operational fabric and leadership culture of the organization.",
-      concise: "Crucial points on healthcare governance, Dr. Shalini. Ethical integrity is not optional in healthcare; it is our primary license to operate.",
-      question: "From your vantage point in medical advisory, what is the single most effective framework healthcare organizations can adopt to foster proactive accountability before crises occur?"
+    "id": "topic-7",
+    "author": "Dr. Shalini Ratan",
+    "role": "Healthcare Advisor & Educator • Medical Communication & Training",
+    "badge": "Healthcare Governance",
+    "category": "pharma",
+    "metrics": {
+      "likes": "1,120",
+      "comments": "95",
+      "views": "22K"
+    },
+    "summary": "With tighter CDSCO pharmacovigilance and ethical marketing practice codes in force in 2026, compliant medical education and scientific exchange are becoming non-negotiable competitive advantages for pharmaceutical brands.",
+    "question": "\"How can corporate healthcare leadership foster proactive accountability before compliance issues arise?\"",
+    "link": "https://www.linkedin.com/in/shaliniratan/",
+    "drafts": {
+      "strategic": "Essential perspective, Dr. Shalini. In pharmaceuticals and clinical operations, compliance cannot simply be a checklist or audit afterthought. It must be woven into the daily operational fabric and leadership culture of the organization.",
+      "concise": "Crucial points on healthcare governance, Dr. Shalini. Ethical integrity is not optional in healthcare; it is our primary license to operate.",
+      "question": "From your vantage point in medical advisory, what is the single most effective framework healthcare organizations can adopt to foster proactive accountability before crises occur?"
     }
   },
   {
-    id: 'post-8',
-    author: 'PharmaTech Insights & Digital SFA',
-    role: 'Digital Transformation in Commercial Healthcare • 45K Followers',
-    badge: 'AI in Field Operations',
-    category: 'biotech',
-    metrics: { likes: '3,890', comments: '260', views: '65K' },
-    summary: 'How AI-driven SFA (Sales Force Automation) and doctor profiling are replacing static monthly reporting. Field teams equipped with real-time prescription insights and automated call planning achieve 34% higher doctor conversion rates.',
-    question: '"Are pharma companies ready to move from traditional DCR auditing to proactive AI-guided field execution?"',
-    link: 'https://www.linkedin.com/feed/',
-    drafts: {
-      strategic: "The shift from retrospective call auditing to predictive field enablement is long overdue in pharma. Technology should never be an administrative burden on the medical representative; it must serve as an intelligent copilot that enriches doctor engagement at the clinic level. Execution becomes effortless when data empowers the front line.",
-      concise: "Spot on! SFA tools should empower representatives with clinical insights, not just track GPS coordinates. True digital transformation begins when field managers use analytics for coaching rather than policing.",
-      question: "Excellent analysis. In your implementations, what has been the primary bottleneck in getting field forces to actively embrace AI-guided call planning — tech adoption or change management from senior management?"
+    "id": "topic-8",
+    "author": "PharmaTech Insights & Digital SFA",
+    "role": "Digital Transformation in Commercial Healthcare • 48K Followers",
+    "badge": "AI in Field Operations",
+    "category": "biotech",
+    "metrics": {
+      "likes": "4,150",
+      "comments": "280",
+      "views": "70K"
+    },
+    "summary": "How AI-driven SFA (Sales Force Automation) and doctor profiling are replacing static monthly reporting. Field teams equipped with real-time prescription insights and automated call planning achieve 34% higher doctor conversion rates.",
+    "question": "\"Are pharma companies ready to move from traditional DCR auditing to proactive AI-guided field execution?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "The shift from retrospective call auditing to predictive field enablement is long overdue in pharma. Technology should never be an administrative burden on the medical representative; it must serve as an intelligent copilot that enriches doctor engagement at the clinic level. Execution becomes effortless when data empowers the front line.",
+      "concise": "Spot on! SFA tools should empower representatives with clinical insights, not just track GPS coordinates. True digital transformation begins when field managers use analytics for coaching rather than policing.",
+      "question": "Excellent analysis. In your implementations, what has been the primary bottleneck in getting field forces to actively embrace AI-guided call planning — tech adoption or change management from senior management?"
     }
   },
   {
-    id: 'post-9',
-    author: 'Rising India & CDMO Manufacturing',
-    role: 'Indian Industrial Corridor • 68K Followers',
-    badge: 'Domestic Scale & Exports',
-    category: 'economy',
-    metrics: { likes: '5,400', comments: '410', views: '95K' },
-    summary: 'Cabinet approvals and PLI incentives accelerate domestic active pharmaceutical ingredients (API) and complex formulations manufacturing. India solidifies position as the pharmacy to the world with expanding export corridors.',
-    link: 'https://www.linkedin.com/feed/',
-    drafts: {
-      strategic: "Strengthening backward integration and domestic formulation scale is vital for India's strategic healthcare sovereignty. As quality benchmarks rise globally, domestic pharma companies that marry cost leadership with stringent regulatory compliance will dominate global value chains.",
-      concise: "Incredible momentum for Indian pharmaceutical manufacturing. The transition towards high-value formulations and API self-reliance is a game-changer for our entire healthcare ecosystem.",
-      question: "A monumental milestone! As domestic capacity expands, what policy interventions would further accelerate Indian mid-sized pharma in capturing high-margin biologic and specialty therapeutic markets abroad?"
+    "id": "topic-9",
+    "author": "Lt Gen P G Kamath",
+    "role": "Veteran General Indian Army • Motivational Speaker & Leadership Specialist",
+    "badge": "Leadership & Resilience",
+    "category": "leadership",
+    "metrics": {
+      "likes": "5,100",
+      "comments": "410",
+      "views": "92K"
+    },
+    "summary": "Critique of high-decibel public discourse and reflections on instilling discipline, ethical grounding, and institutional responsibility across modern youth and multi-generational workforces: \"Noisy rhetoric is no substitute for quiet discipline, strategic patience, and ethical grounding.\"",
+    "question": "\"What does this dynamic mean for team leadership and organizational resilience across corporate and public life?\"",
+    "link": "https://www.linkedin.com/pulse/indian-democracy-gen-z-lt-gen-p-g-kamath-qnedf/",
+    "drafts": {
+      "strategic": "Invaluable words of wisdom from General Kamath. Whether in the Armed Forces or in steering complex business operations, noisy rhetoric is no substitute for quiet discipline, strategic patience, and ethical grounding. Ground-level character is the only enduring foundation for high performance.",
+      "concise": "Deeply resonant reflection, General Kamath. In an era of high-speed distractions, institutional responsibility and disciplined leadership remain our greatest assets.",
+      "question": "Honored to read your perspective, General. For executive leaders mentoring young professionals entering corporate life today, what single habit would you urge them to cultivate first?"
     }
   },
   {
-    id: 'post-10',
-    author: 'Samvrant Mishra',
-    role: 'Pharma Business Strategist • Commercial Operations Specialist',
-    badge: 'Field Execution & Strategy',
-    category: 'pharma',
-    metrics: { likes: '1,830', comments: '145', views: '32K' },
-    summary: 'The difference between top-quartile and median pharma business units: "Top BU heads do not spend 80% of their time in HQ presentations; they spend it aligning field managers, refining doctor target lists, and ensuring stockist pipeline integrity."',
-    question: '"What is the ideal ratio of field time vs review meetings for operational leadership in pharma?"',
-    link: 'https://www.linkedin.com/feed/',
-    drafts: {
-      strategic: "Couldn't agree more, Samvrant. In my 30+ years as a BU Head, I have consistently lived by the principle: 'Execution is the Key.' Reviews that only lament past misses without equipping managers to solve territory coverage on the ground are futile. Real commercial excellence is built shoulder-to-shoulder with the field force.",
-      concise: "100% agreed! Strategy formulated in air-conditioned boardrooms must withstand the heat of the field. When leadership stays close to the doctor-chemist interface, operational velocity skyrockets.",
-      question: "Spot on perspective, Samvrant. How do you advise growing pharma enterprises to prevent their second-line and first-line managers from getting bogged down by endless administrative reporting at the expense of field coaching?"
+    "id": "topic-10",
+    "author": "Samvrant Mishra & Commercial Pharma Forum",
+    "role": "Pharma Business Strategist • Commercial Operations Specialist",
+    "badge": "Field Execution & Stockist Trust",
+    "category": "pharma",
+    "metrics": {
+      "likes": "2,240",
+      "comments": "165",
+      "views": "38K"
+    },
+    "summary": "Supply Chain Integrity and Stockist Relationships: Why secondary sales velocity is governed by stockist trust and distributor cash-flow alignment. A top-performing BU Head stays as close to wholesale stockist partners as to top-prescribing clinicians.",
+    "question": "\"What is the ideal ratio of field time vs review meetings for operational leadership in pharma?\"",
+    "link": "https://www.linkedin.com/feed/",
+    "drafts": {
+      "strategic": "Couldn't agree more, Samvrant. In my 30+ years as a BU Head, I have consistently lived by the principle: 'Execution is the Key.' Reviews that only lament past misses without equipping managers to solve territory coverage on the ground are futile. Real commercial excellence is built shoulder-to-shoulder with the field force and supply chain partners.",
+      "concise": "100% agreed! Strategy formulated in air-conditioned boardrooms must withstand the heat of the field. When leadership stays close to the doctor-chemist interface, operational velocity skyrockets.",
+      "question": "Spot on perspective, Samvrant. How do you advise growing pharma enterprises to prevent their second-line and first-line managers from getting bogged down by endless administrative reporting at the expense of field coaching?"
     }
   }
 ];
 
-function generateExecutiveDrafts(post) {
-    const authorFirstName = (post.author || 'there').split(' ')[0];
-    const text = (post.rawText || post.summary || '').toLowerCase();
-    
-    let strategic = '';
-    let concise = '';
-    let question = '';
-
-    if (text.includes('pharma') || text.includes('doctor') || text.includes('field') || text.includes('execution') || text.includes('rep') || text.includes('chemist') || text.includes('target')) {
-        strategic = `Spot on perspective, ${authorFirstName}. Having led business units and cross-functional teams in the pharmaceutical industry over the last three decades, I have consistently found that execution at the ground level is where strategy either thrives or falters.\n\nThe real differentiator is always the 'last mile' — enabling first-line managers to coach and build conviction at the doctor-chemist interface rather than just auditing call numbers. When front-line alignment is strong, business performance follows naturally.`;
-        concise = `In 30+ years leading pharma operations, I've seen that strategy is only as effective as ground execution. Empowering first-line leaders to coach with clinical conviction is the highest-ROI investment any pharma organization can make.`;
-        question = `Compelling points, ${authorFirstName}. In your experience, what is the single biggest impediment preventing field teams and first-line managers from translating brand positioning into impact on the ground?`;
-    } else if (text.includes('leadership') || text.includes('culture') || text.includes('people') || text.includes('team') || text.includes('trust') || text.includes('mindset')) {
-        strategic = `Resonates deeply with my leadership experience across corporate healthcare. Business metrics are lagging indicators; team morale, psychological safety, and day-to-day operational support are the leading indicators.\n\nWhen executive leaders invest in building team strength and removing roadblocks for the front line, extraordinary outcomes become repeatable.`;
-        concise = `Timeless leadership wisdom, ${authorFirstName}. When you cultivate people, give them trust, and provide operational clarity, targets take care of themselves. Great share!`;
-        question = `Spot on! For fast-scaling teams across diverse regions, what practical leadership routines have you found most effective to preserve this culture consistently?`;
-    } else if (text.includes('economy') || text.includes('india') || text.includes('stock') || text.includes('manufacturing') || text.includes('gdp') || text.includes('market') || text.includes('export')) {
-        strategic = `A historic milestone reflecting the underlying resilience of the Indian industrial ecosystem. From a pharmaceutical manufacturing and healthcare perspective, this expansion provides tremendous runway for scaled CDMO capabilities, formulation innovation, and global competitiveness.`;
-        concise = `The fundamentals of the Indian growth story continue to demonstrate immense strength and scale. A proud moment for our manufacturing and corporate ecosystem!`;
-        question = `Fascinating breakdown, ${authorFirstName}. As capital expenditure scales, which specific domestic manufacturing sectors do you anticipate driving the next phase of sustainable growth?`;
-    } else {
-        strategic = `Fascinating analysis, ${authorFirstName}. The intersection of clinical rigor and commercial formulation represents the most vital growth frontier. Bridging scientific innovation with robust supply-chain and field execution is where true value is created for patients and stakeholders alike.`;
-        concise = `An invaluable perspective on where the industry is heading. Ground-level execution combined with innovation will define the leaders of the next decade.`;
-        question = `Great insights, ${authorFirstName}. How do you see the regulatory and operational landscape evolving over the next 2-3 years to support this transition?`;
-    }
-
-    return { strategic, concise, question };
-}
-
 // GET /api/admin/linkedin/feeds
 router.get('/linkedin/feeds', (req, res) => {
     try {
-        let returnPosts = DEFAULT_CURATED_FEEDS;
-        if (fs.existsSync(LINKEDIN_STORAGE_FILE)) {
+        let returnPosts = ACTIVE_TOPICS_POOL;
+        const isRefresh = req.query.refresh === 'true';
+
+        if (fs.existsSync(LINKEDIN_STORAGE_FILE) && !isRefresh) {
             const fileData = fs.readFileSync(LINKEDIN_STORAGE_FILE, 'utf8');
             const parsed = JSON.parse(fileData);
             if (parsed && Array.isArray(parsed.posts) && parsed.posts.length > 0) {
-                returnPosts = parsed.posts;
+                // Filter out any stale Saurabh Rajput or dummy items
+                const clean = parsed.posts.filter(p => !p.author.includes('Saurabh Rajput') && p.author !== 'Industry Connection');
+                if (clean.length > 0) {
+                    returnPosts = clean;
+                }
             }
-        } else {
-            // Seed storage file with default feeds
-            const uploadsDir = path.dirname(LINKEDIN_STORAGE_FILE);
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-            fs.writeFileSync(LINKEDIN_STORAGE_FILE, JSON.stringify({
-                lastUpdated: new Date().toISOString(),
-                count: DEFAULT_CURATED_FEEDS.length,
-                posts: DEFAULT_CURATED_FEEDS
-            }, null, 2), 'utf8');
+        }
+
+        // If refresh requested, cycle/shuffle topics slightly to always provide a fresh view
+        if (isRefresh) {
+            const first = returnPosts[0];
+            const rest = returnPosts.slice(1);
+            returnPosts = [...rest, first]; // Cycle 1 position
         }
 
         return res.json({
             success: true,
-            source: 'active_pool',
+            source: isRefresh ? 'dynamic_refresh' : 'active_pool',
             lastUpdated: new Date().toISOString(),
             status: 'LIVE_FEED_SYNCED',
             total: returnPosts.length,
@@ -9761,8 +9779,8 @@ router.get('/linkedin/feeds', (req, res) => {
             source: 'fallback_pool',
             lastUpdated: new Date().toISOString(),
             status: 'LIVE_FEED_SYNCED',
-            total: DEFAULT_CURATED_FEEDS.length,
-            posts: DEFAULT_CURATED_FEEDS
+            total: ACTIVE_TOPICS_POOL.length,
+            posts: ACTIVE_TOPICS_POOL
         });
     }
 });
@@ -9776,7 +9794,6 @@ router.post('/linkedin/feeds', (req, res) => {
         }
 
         const formattedPosts = incomingPosts.map((post, index) => {
-            const drafts = (post.drafts && post.drafts.strategic) ? post.drafts : generateExecutiveDrafts(post);
             return {
                 id: post.id || ('sync-' + Date.now() + '-' + index),
                 author: post.author || 'LinkedIn Connection',
@@ -9788,7 +9805,11 @@ router.post('/linkedin/feeds', (req, res) => {
                 rawText: post.rawText || post.summary || '',
                 question: post.question || null,
                 link: post.link || (post.urn ? `https://www.linkedin.com/feed/update/${post.urn}/` : 'https://www.linkedin.com/feed/'),
-                drafts: drafts
+                drafts: post.drafts || {
+                    strategic: `Insightful perspective. Ground execution and disciplined leadership remain decisive in our industry today.`,
+                    concise: `Spot on! Thank you for sharing these valuable insights.`,
+                    question: `Thought-provoking breakdown. What operational routines have you found most effective to sustain this?`
+                }
             };
         });
 
@@ -9804,11 +9825,9 @@ router.post('/linkedin/feeds', (req, res) => {
         }
         fs.writeFileSync(LINKEDIN_STORAGE_FILE, JSON.stringify(storagePayload, null, 2), 'utf8');
 
-        console.log(`[LINKEDIN FEEDS] Saved ${formattedPosts.length} live posts to ${LINKEDIN_STORAGE_FILE}`);
-
         res.json({
             success: true,
-            message: `Synced and saved ${formattedPosts.length} posts with executive drafts.`,
+            message: `Synced and saved ${formattedPosts.length} posts.`,
             lastUpdated: storagePayload.lastUpdated,
             total: formattedPosts.length,
             posts: formattedPosts
