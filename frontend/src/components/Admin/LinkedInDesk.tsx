@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Share2, Copy, Check, ExternalLink, Sparkles, Send, Plus, RotateCcw, Link2, 
   MessageSquare, Award, ArrowRight, RefreshCw, Smartphone,
-  ThumbsUp, Eye, Filter, CheckCircle2, Info, AlertTriangle
+  ThumbsUp, Eye, CheckCircle2, Info, AlertTriangle
 } from 'lucide-react';
 
 interface FeedPost {
@@ -213,7 +213,6 @@ export default function LinkedInDesk() {
   const [importRole, setImportRole] = useState('');
   const [importTopic, setImportTopic] = useState('');
   const [activeTab, setActiveTab] = useState<'feed' | 'generator'>('feed');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
@@ -391,9 +390,8 @@ export default function LinkedInDesk() {
     }
   };
 
-  const filteredFeeds = selectedCategory === 'all' 
-    ? feeds 
-    : feeds.filter(feed => feed.category === selectedCategory);
+  // Always display the latest 10 live topics without categorization
+  const latestTenTopics = feeds.slice(0, 10);
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', color: '#f8fafc' }}>
@@ -553,7 +551,7 @@ export default function LinkedInDesk() {
           }}
         >
           <MessageSquare size={16} />
-          <span>Active Feed Postings ({ALL_FEEDS.length})</span>
+          <span>Latest 10 Live Topics</span>
         </button>
 
         <button
@@ -577,41 +575,7 @@ export default function LinkedInDesk() {
         </button>
       </div>
 
-      {/* Category Filter Pills (When on Feeds Tab) */}
-      {activeTab === 'feed' && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginRight: '4px' }}>
-            <Filter size={14} />
-            <span>Topics:</span>
-          </div>
 
-          {[
-            { id: 'all', label: `All Feeds (${ALL_FEEDS.length})` },
-            { id: 'pharma', label: 'Pharma & Healthcare (4)' },
-            { id: 'leadership', label: 'Leadership & Strategy (2)' },
-            { id: 'economy', label: 'Economy & Industry (2)' },
-            { id: 'biotech', label: 'Biotech & AI Innovation (2)' },
-          ].map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              style={{
-                background: selectedCategory === cat.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.5)',
-                color: selectedCategory === cat.id ? '#38bdf8' : '#94a3b8',
-                border: selectedCategory === cat.id ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '20px',
-                padding: '5px 12px',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Content Area */}
       {activeTab === 'feed' && (
@@ -820,7 +784,7 @@ export default function LinkedInDesk() {
             </div>
           </div>
 
-          {filteredFeeds.map((post, idx) => (
+          {latestTenTopics.map((post, idx) => (
             <div 
               key={post.id}
               style={{
